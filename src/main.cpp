@@ -137,20 +137,20 @@ class PyramidGame : public Game {
       state.add_WasdControls(bottomId, gimbalId, WasdControls::ROTATE_ABOUT_Z);
       float sphereRadius = 0.8f;
       state.add_Physics(bottomId, 1.f, &sphereRadius, Physics::SPHERE);
-      /*std::vector<float> hullVerts = {
-          *//*{ 0.f,  0.f, -0.2f},
-          {-.2f, -.2f, 0.f},
-          {-.2f,  .2f, 0.f},
-          { .2f, -.2f, 0.f},
-          { .2f,  .2f, 0.f}*//*
-           1.f,  0.f,  0.f,
-           0.f,  1.f,  0.f,
-           0.f,  0.f,  1.f,
-          -1.f,  0.f,  0.f,
-           0.f, -1.f,  0.f,
-           0.f,  0.f, -1.f
-      };
-      state.addPhysics(bottomId, 1.f, &hullVerts, Physics::MESH);*/
+//      std::vector<float> hullVerts = {
+//          /*{ 0.f,  0.f, -0.2f},
+//          {-.2f, -.2f, 0.f},
+//          {-.2f,  .2f, 0.f},
+//          { .2f, -.2f, 0.f},
+//          { .2f,  .2f, 0.f}*/
+//           1.f,  0.f,  0.f,
+//           0.f,  1.f,  0.f,
+//           0.f,  0.f,  1.f,
+//          -1.f,  0.f,  0.f,
+//           0.f, -1.f,  0.f,
+//           0.f,  0.f, -1.f
+//      };
+//      state.add_Physics(bottomId, 1.f, &hullVerts, Physics::MESH);
 
       Physics* physics;
       state.get_Physics(bottomId, &physics);

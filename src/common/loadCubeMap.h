@@ -4,7 +4,7 @@
  *
  */
 
-#include <GL/glew.h>
+#include <epoxy/gl.h>
 
 #ifndef LOADCUBEMAP_H
 #define  LOADCUBEMAP_H

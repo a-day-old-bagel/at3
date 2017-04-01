@@ -24,12 +24,13 @@
 #ifndef LD2016_COMMON_DEBUG_H_
 #define LD2016_COMMON_DEBUG_H_
 
-#include <GL/glew.h>
+#include <epoxy/gl.h>
 #include <memory>
 #include <vector>
 
 #include "sceneObject.h"
 #include "ecsState.generated.hpp"
+#include "../src/bullet/btIDebugDraw.h"
 
 namespace ld2016 {
   class Debug : public SceneObject {
@@ -91,6 +92,29 @@ namespace ld2016 {
           const glm::mat4 &worldView, const glm::mat4 &projection,
           float alpha, bool debug);
   };
+
+  class GLDebugDrawer : public btIDebugDraw
+  {
+      int m_debugMode;
+
+    public:
+
+      GLDebugDrawer();
+
+      virtual void   drawLine(const btVector3& from,const btVector3& to,const btVector3& color);
+
+      virtual void   drawContactPoint(const btVector3& PointOnB,const btVector3& normalOnB,btScalar distance,int lifeTime,const btVector3& color);
+
+      virtual void   reportErrorWarning(const char* warningString);
+
+      virtual void   draw3dText(const btVector3& location,const char* textString);
+
+      virtual void   setDebugMode(int debugMode);
+
+      virtual int      getDebugMode() const { return m_debugMode;}
+
+  };
+
 }
 
 #endif

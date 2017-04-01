@@ -23,7 +23,7 @@
 #ifndef LD2016_SKYBOX_H
 #define LD2016_SKYBOX_H
 
-#include <GL/glew.h>
+#include <epoxy/gl.h>
 #include <string>
 #include "sceneObject.h"
 #include "loadCubeMap.h"

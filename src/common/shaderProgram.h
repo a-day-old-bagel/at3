@@ -24,7 +24,7 @@
 #ifndef LD2016_COMMON_SHADER_PROGRAM_H_
 #define LD2016_COMMON_SHADER_PROGRAM_H_
 
-#include <GL/glew.h>
+#include <epoxy/gl.h>
 #include <string>
 
 namespace ld2016 {

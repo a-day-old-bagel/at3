@@ -86,21 +86,20 @@ namespace ld2016 {
           SDL_GetError());
       return false;
     }
-    // Initialize GL entry points
+
+    /*// Initialize GL entry points
     GLenum error = glewInit();
     if (error != GLEW_OK) {
       fprintf(stderr, "Failed to initialize GLEW: %s\n",
           glewGetErrorString(error));
       return false;
-    }
-
+    }*/
 
     // Set vSync
     /*if (SDL_GL_SetSwapInterval(1) != 0) {
       fprintf(stderr, "Failed to enable VSync: %s\n", SDL_GetError());
       // TODO: decide whether or not to exit if VSync could not be set.
     }*/
-
 
     // Configure the GL
     glClearColor(0.0, 0.0, 0.0, 0.0);

@@ -26,7 +26,7 @@
 
 #include <cassert>
 
-#include <GL/glew.h>
+#include <epoxy/gl.h>
 
 #ifdef __EMSCRIPTEN__
 #define DISABLE_CHECK_GL_ERROR true

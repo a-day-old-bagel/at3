@@ -24,7 +24,7 @@
 
 #ifndef LD2016_COMMON_GAME_H_
 #define LD2016_COMMON_GAME_H_
-#include <GL/glew.h>
+#include <epoxy/gl.h>
 #include <SDL.h>
 #include <memory>
 #include "ecsState.generated.hpp"

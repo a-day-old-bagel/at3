@@ -24,7 +24,7 @@
 #ifndef LD2016_COMMON_MESH_OBJECT_H_
 #define LD2016_COMMON_MESH_OBJECT_H_
 
-#include <GL/glew.h>
+#include <epoxy/gl.h>
 #include <string>
 
 #include "sceneObject.h"

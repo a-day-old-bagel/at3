@@ -24,8 +24,8 @@ include_directories( "./extern/stb" )
 find_package( OpenGL REQUIRED )
 include_directories( SYSTEM ${OPENGL_INCLUDE_DIR} )
 
-find_package( GLEW REQUIRED )
-include_directories( SYSTEM ${GLEW_INCLUDE_DIR} )
+find_package( Epoxy REQUIRED )
+include_directories( SYSTEM epoxy_INCLUDE_DIR )
 
 find_package( SDL2 REQUIRED )
 include_directories( SYSTEM ${SDL2_INCLUDE_DIR} )
