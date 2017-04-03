@@ -52,6 +52,10 @@ static glm::mat4 pyrFireWiggle(const glm::mat4& transformIn, uint32_t time) {
   return glm::scale(glm::mat4(), { 1.f, 1.f, pyrFireSize + pyrFireScale * sin(time * 0.1f) });
 }
 
+static glm::mat4 pyrTopRotate(const glm::mat4& transformIn, uint32_t time) {
+  return glm::rotate(glm::mat4(), time * 0.002f, {0.f, 0.f, 1.f});
+}
+
 void debugGenerateFloorGrid(State& state, float xMin, float xMax, unsigned xRes, float yMin, float yMax, unsigned yRes){
   float sclX = (xMax - xMin) * .5f;
   float sclY = (yMax - yMin) * .5f;
@@ -71,6 +75,66 @@ void debugGenerateFloorGrid(State& state, float xMin, float xMax, unsigned xRes,
                      glm::vec3(ctrX + sclX, ctrY + (y * yStep * sclY - sclY), 0.f),
                      glm::vec3(1.f, 0.f, 1.f) );
   }
+}
+
+void debugGenerateVirus(State& state) {
+  float delta = 0.3f;
+  Debug::drawLine(state,
+                  glm::vec3(10 * delta, 0.f, 4.f),
+                  glm::vec3(11 * delta, 0.f, 2.f),
+                  glm::vec3(0.f, 1.f, 0.f));
+  Debug::drawLine(state,
+                  glm::vec3(11 * delta, 0.f, 2.f),
+                  glm::vec3(12 * delta, 0.f, 4.f),
+                  glm::vec3(0.f, 1.f, 0.f));
+
+  Debug::drawLine(state,
+                  glm::vec3(13 * delta, 0.f, 2.f),
+                  glm::vec3(13 * delta, 0.f, 4.f),
+                  glm::vec3(0.f, 1.f, 0.f));
+
+  Debug::drawLine(state,
+                  glm::vec3(14 * delta, 0.f, 2.f),
+                  glm::vec3(14 * delta, 0.f, 4.f),
+                  glm::vec3(0.f, 1.f, 0.f));
+  Debug::drawLine(state,
+                  glm::vec3(14 * delta, 0.f, 4.f),
+                  glm::vec3(15 * delta, 0.f, 3.5f),
+                  glm::vec3(0.f, 1.f, 0.f));
+  Debug::drawLine(state,
+                  glm::vec3(15 * delta, 0.f, 3.5f),
+                  glm::vec3(14 * delta, 0.f, 3.f),
+                  glm::vec3(0.f, 1.f, 0.f));
+  Debug::drawLine(state,
+                  glm::vec3(14 * delta, 0.f, 3.f),
+                  glm::vec3(15 * delta, 0.f, 2.f),
+                  glm::vec3(0.f, 1.f, 0.f));
+
+  Debug::drawLine(state,
+                  glm::vec3(16 * delta, 0.f, 2.f),
+                  glm::vec3(16 * delta, 0.f, 4.f),
+                  glm::vec3(0.f, 1.f, 0.f));
+  Debug::drawLine(state,
+                  glm::vec3(16 * delta, 0.f, 2.f),
+                  glm::vec3(17 * delta, 0.f, 2.f),
+                  glm::vec3(0.f, 1.f, 0.f));
+  Debug::drawLine(state,
+                  glm::vec3(17 * delta, 0.f, 2.f),
+                  glm::vec3(17 * delta, 0.f, 4.f),
+                  glm::vec3(0.f, 1.f, 0.f));
+
+  Debug::drawLine(state,
+                  glm::vec3(19 * delta, 0.f, 4.f),
+                  glm::vec3(18 * delta, 0.f, 3.3f),
+                  glm::vec3(0.f, 1.f, 0.f));
+  Debug::drawLine(state,
+                  glm::vec3(18 * delta, 0.f, 3.3f),
+                  glm::vec3(19 * delta, 0.f, 2.6f),
+                  glm::vec3(0.f, 1.f, 0.f));
+  Debug::drawLine(state,
+                  glm::vec3(19 * delta, 0.f, 2.6f),
+                  glm::vec3(18 * delta, 0.f, 2.f),
+                  glm::vec3(0.f, 1.f, 0.f));
 }
 
 class PyramidGame : public Game {
@@ -143,7 +207,7 @@ class PyramidGame : public Game {
       state.add_MouseControls(gimbalId, false, false);
 
       entityId bottomId = m_pyrBottom->getId();
-      state.add_WasdControls(bottomId, gimbalId, WasdControls::ROTATE_ABOUT_Z);
+      state.add_PyramidControls(bottomId, gimbalId, PyramidControls::ROTATE_ABOUT_Z);
       std::vector<float> hullVerts = {
           1.0f,  1.0f, -0.4f,
           1.0f, -1.0f, -0.4f,
@@ -161,83 +225,26 @@ class PyramidGame : public Game {
       Physics* physics;
       state.get_Physics(bottomId, &physics);
       physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
+      physics->rigidBody->setDamping(0.f, 0.8f);
 
       entityId topId = m_pyrTop->getId();
+      state.add_TransformFunction(topId, DELEGATE_NOCLASS(pyrTopRotate));
 
       entityId fireId = m_pyrFire->getId();
       state.add_TransformFunction(fireId, DELEGATE_NOCLASS(pyrFireWiggle));
+
 
       // Add some debug-drawn features...
 
       // a floor grid
       debugGenerateFloorGrid(state, -10.5f, 10.5f, 21, -10.5f, 10.5f, 21);
-
+      // a virus
+      debugGenerateVirus(state);
       // a bullet physics debug-drawing thing
       /*bulletDebug = std::shared_ptr<BulletDebug> ( new BulletDebug(&state) );
       bulletDebug->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
       physicsSystem.activateDebugDrawer(bulletDebug);
       this->scene()->addObject(bulletDebug);*/
-
-      // a virus
-      //region VIRUS
-      float delta = 0.3f;
-      Debug::drawLine(state,
-                      glm::vec3(10 * delta, 0.f, 4.f),
-                      glm::vec3(11 * delta, 0.f, 2.f),
-                      glm::vec3(0.f, 1.f, 0.f));
-      Debug::drawLine(state,
-                      glm::vec3(11 * delta, 0.f, 2.f),
-                      glm::vec3(12 * delta, 0.f, 4.f),
-                      glm::vec3(0.f, 1.f, 0.f));
-
-      Debug::drawLine(state,
-                      glm::vec3(13 * delta, 0.f, 2.f),
-                      glm::vec3(13 * delta, 0.f, 4.f),
-                      glm::vec3(0.f, 1.f, 0.f));
-
-      Debug::drawLine(state,
-                      glm::vec3(14 * delta, 0.f, 2.f),
-                      glm::vec3(14 * delta, 0.f, 4.f),
-                      glm::vec3(0.f, 1.f, 0.f));
-      Debug::drawLine(state,
-                      glm::vec3(14 * delta, 0.f, 4.f),
-                      glm::vec3(15 * delta, 0.f, 3.5f),
-                      glm::vec3(0.f, 1.f, 0.f));
-      Debug::drawLine(state,
-                      glm::vec3(15 * delta, 0.f, 3.5f),
-                      glm::vec3(14 * delta, 0.f, 3.f),
-                      glm::vec3(0.f, 1.f, 0.f));
-      Debug::drawLine(state,
-                      glm::vec3(14 * delta, 0.f, 3.f),
-                      glm::vec3(15 * delta, 0.f, 2.f),
-                      glm::vec3(0.f, 1.f, 0.f));
-
-      Debug::drawLine(state,
-                      glm::vec3(16 * delta, 0.f, 2.f),
-                      glm::vec3(16 * delta, 0.f, 4.f),
-                      glm::vec3(0.f, 1.f, 0.f));
-      Debug::drawLine(state,
-                      glm::vec3(16 * delta, 0.f, 2.f),
-                      glm::vec3(17 * delta, 0.f, 2.f),
-                      glm::vec3(0.f, 1.f, 0.f));
-      Debug::drawLine(state,
-                      glm::vec3(17 * delta, 0.f, 2.f),
-                      glm::vec3(17 * delta, 0.f, 4.f),
-                      glm::vec3(0.f, 1.f, 0.f));
-
-      Debug::drawLine(state,
-                      glm::vec3(19 * delta, 0.f, 4.f),
-                      glm::vec3(18 * delta, 0.f, 3.3f),
-                      glm::vec3(0.f, 1.f, 0.f));
-      Debug::drawLine(state,
-                      glm::vec3(18 * delta, 0.f, 3.3f),
-                      glm::vec3(19 * delta, 0.f, 2.6f),
-                      glm::vec3(0.f, 1.f, 0.f));
-      Debug::drawLine(state,
-                      glm::vec3(19 * delta, 0.f, 2.6f),
-                      glm::vec3(18 * delta, 0.f, 2.f),
-                      glm::vec3(0.f, 1.f, 0.f));
-      //endregion
 
       return EZECS_SUCCESS;
     }
@@ -253,8 +260,8 @@ class PyramidGame : public Game {
       movementSystem.tick(dt);
 
       // make the fire look big if the pyramid is thrusting upwards
-      WasdControls* controls;
-      state.get_WasdControls(m_pyrBottom->getId(), &controls);
+      PyramidControls* controls;
+      state.get_PyramidControls(m_pyrBottom->getId(), &controls);
       if (controls->accel.z > 0) {
         pyrFireSize = 1.5f;
         pyrFireScale = 1.f;

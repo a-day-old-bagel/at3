@@ -30,7 +30,5 @@ namespace at3 {
   {
     ezecs::CompOpReturn status = state.add_MouseControls(id, false, false);
     assert(status == ezecs::SUCCESS);
-    status = state.add_WasdControls(id, 0, ezecs::WasdControls::ROTATE_ALL_AXES);
-    assert(status == ezecs::SUCCESS);
   }
 }

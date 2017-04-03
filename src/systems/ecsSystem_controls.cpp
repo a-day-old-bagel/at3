@@ -90,43 +90,46 @@ namespace at3 {
       }
     }
     for (auto id : (registries[1].ids)) {
-      WasdControls* wasdControls;
-      state->get_WasdControls(id, &wasdControls);
+      PyramidControls* pyramidControls;
+      state->get_PyramidControls(id, &pyramidControls);
       glm::mat4 transformContext;
-      if (wasdControls->gimbalId == 0) {
-        Placement* placement;
-        state->get_Placement(id, &placement);
+      Placement* placement;
+      state->get_Placement(id, &placement);
+      if (pyramidControls->gimbalId == 0) {
         transformContext = placement->mat;
       } else {
-        Placement* placement, *childPlacement;
-        CompOpReturn status = state->get_Placement(wasdControls->gimbalId, &childPlacement);
+        Placement* childPlacement;
+        CompOpReturn status = state->get_Placement(pyramidControls->gimbalId, &childPlacement);
         if (status != SUCCESS) {
           assert(false);
           continue;
         }
-        state->get_Placement(id, &placement);
         transformContext = placement->mat * childPlacement->mat;
       }
 
-      // zero out acceleration
-      wasdControls->accel = glm::vec3();
+      // provide the up vector
+      pyramidControls->up = glm::quat_cast(placement->mat) * glm::vec3(0.f, 0.f, 1.f);
+
+      // zero out stuff
+      pyramidControls->accel = glm::vec3();
+      pyramidControls->force = glm::vec3();
 
       // Get current keyboard state and apply actions accordingly
       const Uint8 *keyStates = SDL_GetKeyboardState(NULL);
       #define DO_ON_KEYS(action, ...) if(anyPressed(keyStates, __VA_ARGS__)) { action; }
-      DO_ON_KEYS(wasdControls->accel += glm::vec3( 0.0f,  1.0f,  0.0f), SDL_SCANCODE_W, SDL_SCANCODE_UP)
-      DO_ON_KEYS(wasdControls->accel += glm::vec3( 0.0f, -1.0f,  0.0f), SDL_SCANCODE_S, SDL_SCANCODE_DOWN)
-      DO_ON_KEYS(wasdControls->accel += glm::vec3(-1.0f,  0.0f,  0.0f), SDL_SCANCODE_A, SDL_SCANCODE_LEFT)
-      DO_ON_KEYS(wasdControls->accel += glm::vec3( 1.0f,  0.0f,  0.0f), SDL_SCANCODE_D, SDL_SCANCODE_RIGHT)
-      DO_ON_KEYS(wasdControls->accel += glm::vec3( 0.0f,  0.0f, -1.0f), SDL_SCANCODE_LCTRL, SDL_SCANCODE_LSHIFT)
-      DO_ON_KEYS(wasdControls->accel += glm::vec3( 0.0f,  0.0f,  1.0f), SDL_SCANCODE_SPACE)
+      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  1.0f,  0.0f), SDL_SCANCODE_W, SDL_SCANCODE_UP)
+      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f, -1.0f,  0.0f), SDL_SCANCODE_S, SDL_SCANCODE_DOWN)
+      DO_ON_KEYS(pyramidControls->accel += glm::vec3(-1.0f,  0.0f,  0.0f), SDL_SCANCODE_A, SDL_SCANCODE_LEFT)
+      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 1.0f,  0.0f,  0.0f), SDL_SCANCODE_D, SDL_SCANCODE_RIGHT)
+      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  0.0f, -1.0f), SDL_SCANCODE_LCTRL, SDL_SCANCODE_LSHIFT)
+      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  0.0f,  1.0f), SDL_SCANCODE_SPACE)
       #undef DO_ON_KEYS
 
-      if (length(wasdControls->accel) > 0.0f) {
+      if (length(pyramidControls->accel) > 0.0f) {
         glm::quat quat = glm::quat_cast(transformContext);
         glm::mat3 rotMat;
-        switch (wasdControls->style) {
-          case WasdControls::ROTATE_ABOUT_Z: {
+        switch (pyramidControls->style) {
+          case PyramidControls::ROTATE_ABOUT_Z: {
             glm::vec3 axis = glm::vec3(0.f, 0.f, 1.f);
             glm::vec3 orth0 = glm::vec3(0.f, 1.0, 0.f);
             glm::vec3 transformed = quat * orth0;
@@ -136,14 +139,13 @@ namespace at3 {
             rotMat = glm::mat3(glm::rotate(rotZ, glm::vec3(0.f, 0.f, 1.f)));
             break;
           }
-          case WasdControls::ROTATE_ALL_AXES:
+          case PyramidControls::ROTATE_ALL_AXES:
             rotMat = glm::mat3_cast(quat);
           default:
             break;
         }
         // Rotate the movement axis to the correct orientation
-        wasdControls->accel = rotMat * wasdControls->accel;
-        wasdControls->accel = WASD_ACCELERATION * glm::normalize(wasdControls->accel);
+        pyramidControls->force = WASD_ACCELERATION * glm::normalize(rotMat * pyramidControls->accel);
       }
     }
     queuedEvents.clear();

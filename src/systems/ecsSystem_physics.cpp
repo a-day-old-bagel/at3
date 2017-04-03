@@ -55,11 +55,19 @@ namespace at3 {
   }
   void PhysicsSystem::onTick(float dt) {
     for (auto id : registries[1].ids) {
-      WasdControls *wasdControls;
-      state->get_WasdControls(id, &wasdControls);
+      PyramidControls *controls;
+      state->get_PyramidControls(id, &controls);
       Physics *physics;
       state->get_Physics(id, &physics);
-      physics->rigidBody->applyCentralImpulse({wasdControls->accel.x, wasdControls->accel.y, wasdControls->accel.z});
+      physics->rigidBody->applyCentralImpulse({controls->force.x, controls->force.y, controls->force.z});
+
+      // Custom constraint to keep the pyramid up FixMe: this sometimes gets it stuck in a horizontal position
+      glm::vec3 up {0.f, 0.f, 1.f};
+      float tip = glm::dot(controls->up, up);
+      glm::vec3 rotAxis = glm::cross(controls->up, up);
+      physics->rigidBody->applyTorque (
+        btVector3(rotAxis.x, rotAxis.y, rotAxis.z) * tip * (controls->up.z < 0 ? -10.f : 10.f)
+      );
     }
     dynamicsWorld->stepSimulation(dt); // time step (s), max sub-steps, sub-step length (s)
     if (debugDrawMode) { dynamicsWorld->debugDrawWorld(); }
@@ -121,7 +129,7 @@ namespace at3 {
     physics->shape->calculateLocalInertia(physics->mass, inertia);
     btRigidBody::btRigidBodyConstructionInfo ci(physics->mass, motionState, physics->shape, inertia);
     physics->rigidBody = new btRigidBody(ci);
-    physics->rigidBody->setRestitution(0.8f);
+    physics->rigidBody->setRestitution(0.5f);
     physics->rigidBody->setFriction(1.f);
     dynamicsWorld->addRigidBody(physics->rigidBody);
     return true;

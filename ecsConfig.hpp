@@ -68,16 +68,18 @@ namespace {
   };
   EZECS_COMPONENT_DEPENDENCIES(Perspective, Placement)
 
-  struct WasdControls : public Component<WasdControls> {
+  struct PyramidControls : public Component<PyramidControls> {
     enum Style {
       ROTATE_ALL_AXES, ROTATE_ABOUT_Z
     };
     glm::vec3 accel;
+    glm::vec3 force;
+    glm::vec3 up;
     entityId gimbalId;
     int style;
-    WasdControls(entityId gimbalId, Style style);
+    PyramidControls(entityId gimbalId, Style style);
   };
-  EZECS_COMPONENT_DEPENDENCIES(WasdControls, Placement)
+  EZECS_COMPONENT_DEPENDENCIES(PyramidControls, Placement)
 
   struct MouseControls : public Component<MouseControls> {
     bool invertedX, invertedY;
@@ -111,7 +113,7 @@ namespace {
   Perspective::Perspective(float fovy, float near, float far)
       : fovy(fovy), prevFovy(fovy), near(near), far(far) { }
 
-  WasdControls::WasdControls(entityId gimbalId, WasdControls::Style style)
+  PyramidControls::PyramidControls(entityId gimbalId, PyramidControls::Style style)
       : gimbalId(gimbalId), style(style) { }
 
   MouseControls::MouseControls(bool invertedX, bool invertedY)

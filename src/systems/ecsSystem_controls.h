@@ -33,7 +33,7 @@ namespace at3 {
       friend class System;
       std::vector<compMask> requiredComponents = {
           MOUSECONTROLS,
-          WASDCONTROLS
+          PYRAMIDCONTROLS
       };
       std::vector<SDL_Event> queuedEvents;
     public:

@@ -42,7 +42,7 @@ namespace at3 {
       friend class System;
       std::vector<compMask> requiredComponents = {
           PHYSICS,
-          PHYSICS | WASDCONTROLS
+          PHYSICS | PYRAMIDCONTROLS
       };
       /* Global physics data structures */
       btDispatcher *dispatcher;
