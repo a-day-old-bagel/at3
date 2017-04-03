@@ -59,7 +59,8 @@ namespace at3 {
       state->get_PyramidControls(id, &controls);
       Physics *physics;
       state->get_Physics(id, &physics);
-      physics->rigidBody->applyCentralImpulse({controls->force.x, controls->force.y, controls->force.z});
+      physics->rigidBody->applyImpulse({controls->force.x, controls->force.y, controls->force.z},
+                                       btVector3(controls->up.x, controls->up.y, controls->up.z) * 0.05f);
 
       // Custom constraint to keep the pyramid up FixMe: this sometimes gets it stuck in a horizontal position
       glm::vec3 up {0.f, 0.f, 1.f};

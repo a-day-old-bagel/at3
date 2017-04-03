@@ -162,7 +162,7 @@ class PyramidGame : public Game {
 
       // generate initial placement of objects
       glm::mat4 ident(1.0); // explicitly identity matrix
-      glm::mat4 cameraMat = glm::rotate(glm::translate(ident, {0.f, -4.f, 0.f}),
+      glm::mat4 cameraMat = glm::rotate(glm::translate(ident, {0.f, -4.f, 0.5f}),
                                         (float) M_PI * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f));
       glm::mat4 pyrBotMat = glm::translate(ident, { 0.f, 0.f, 100.f });
       glm::mat4 pyrFirMat = glm::scale(glm::rotate(glm::translate(ident, {0.f, 0.f, -0.4f}),
@@ -225,7 +225,7 @@ class PyramidGame : public Game {
       Physics* physics;
       state.get_Physics(bottomId, &physics);
       physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
-      physics->rigidBody->setDamping(0.f, 0.8f);
+      physics->rigidBody->setDamping(0.1f, 0.8f);
 
       entityId topId = m_pyrTop->getId();
       state.add_TransformFunction(topId, DELEGATE_NOCLASS(pyrTopRotate));
