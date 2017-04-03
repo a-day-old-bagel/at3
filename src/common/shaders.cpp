@@ -24,7 +24,7 @@
 #include "shaderProgram.h"
 #include "shaders.h"
 
-namespace ld2016 {
+namespace at3 {
 #define SHADER_DIR assets_shaders
 
 #define CAT(a, b) a ## b

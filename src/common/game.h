@@ -30,7 +30,7 @@
 #include "ecsState.generated.hpp"
 #include "ecsSystem.hpp"
 
-namespace ld2016 {
+namespace at3 {
   class Camera;
   class Scene;
   class Game {

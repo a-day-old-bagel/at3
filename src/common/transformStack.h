@@ -28,7 +28,7 @@
 
 #include "transform.h"
 
-namespace ld2016 {
+namespace at3 {
   /**
    * Stores a stack of matrix transforms.
    *

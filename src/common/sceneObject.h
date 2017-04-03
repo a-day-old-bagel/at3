@@ -32,7 +32,7 @@
 #include <unordered_map>
 #include "ecsState.generated.hpp"
 
-namespace ld2016 {
+namespace at3 {
   class Transform;
   /**
    * This abstract class defines a typical object in a 3D graphics scene.
@@ -134,7 +134,7 @@ namespace ld2016 {
                         const glm::mat4 &worldView, const glm::mat4 &projection,
                         float alpha, bool debug);
 
-      void reverseTransformLookup(glm::mat4& wv, float alpha) const;
+      void reverseTransformLookup(glm::mat4 &wv) const;
 
       /**
        * Get ID

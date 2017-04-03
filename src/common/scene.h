@@ -29,7 +29,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace ld2016 {
+namespace at3 {
   class Camera;
   class SceneObject;
   /**

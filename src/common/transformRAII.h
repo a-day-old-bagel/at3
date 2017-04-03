@@ -26,7 +26,7 @@
 
 #include "transform.h"
 
-namespace ld2016 {
+namespace at3 {
   /**
    * Implements a stack of matrix transforms that is unwound at the time of
    * destruction using the resource acquisition is initialization principle.

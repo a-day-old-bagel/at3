@@ -2,7 +2,7 @@
 #include "loadCubeMap.h"
 #include "stb_image.h"
 
-namespace ld2016 {
+namespace at3 {
 
   LoadResult readAndBufferCubeMap(const char *front,
                                   const char *back,

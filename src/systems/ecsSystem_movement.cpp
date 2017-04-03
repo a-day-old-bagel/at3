@@ -23,7 +23,7 @@
 #include <SDL_timer.h>
 #include "ecsSystem_movement.h"
 
-namespace ld2016 {
+namespace at3 {
 
   MovementSystem::MovementSystem(State *state) : System(state) {
 
@@ -33,11 +33,11 @@ namespace ld2016 {
   }
   void MovementSystem::onTick(float dt) {
     for (auto id : registries[0].ids) {
-      Scale* scale;
-      state->get_Scale(id, &scale);
-      ScalarMultFunc* scalarMultFunc;
-      state->get_ScalarMultFunc(id, &scalarMultFunc);
-      scale->vec = scalarMultFunc->multByFuncOfTime(scale->lastVec, SDL_GetTicks());
+      Placement* placement;
+      state->get_Placement(id, &placement);
+      TransformFunction* transformFunction;
+      state->get_TransformFunction(id, &transformFunction);
+      transformFunction->transformed = transformFunction->func(placement->mat, SDL_GetTicks());
     }
   }
 }

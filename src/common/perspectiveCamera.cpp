@@ -24,14 +24,15 @@
 #include <cmath>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "ezecs.hpp"
 #include "perspectiveCamera.h"
 
-namespace ld2016 {
-  PerspectiveCamera::PerspectiveCamera(ezecs::State& state, float fovy, float near, float far,
-      const glm::vec3 &position, const glm::quat &orientation)
-    : Camera(position, orientation, state)
+namespace at3 {
+  PerspectiveCamera::PerspectiveCamera(ezecs::State &state, float fovy, float near, float far, glm::mat4 &transform)
+    : Camera(state, transform)
   {
     ezecs::CompOpReturn status = this->state->add_Perspective(id, fovy, near, far);
+    EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
   }
 

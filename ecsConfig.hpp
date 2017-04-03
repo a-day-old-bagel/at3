@@ -42,54 +42,48 @@ namespace {
 
   // BEGIN DECLARATIONS
 
-  typedef Delegate<glm::vec3(const glm::vec3 &, uint32_t)> scalarMultFuncDlgt;
+  typedef Delegate<glm::mat4(const glm::mat4&, uint32_t time)> transformFunc;
 
-  struct Position : public Component<Position> {
-    glm::vec3 vec, lastVec;
-    Position(glm::vec3 vec);
-    glm::vec3 getVec(float alpha);
+  struct Placement : public Component<Placement> {
+    glm::mat4 mat {
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    };
+    Placement(glm::mat4 mat);
   };
 
-  struct Scale : public Component<Scale> {
-    glm::vec3 vec, lastVec;
-    Scale(glm::vec3 vec);
+  struct TransformFunction : public Component<TransformFunction> {
+    glm::mat4 transformed;
+    transformFunc func;
+    TransformFunction(transformFunc func);
   };
-
-  struct ScalarMultFunc : public Component<ScalarMultFunc> {
-    Delegate<glm::vec3(const glm::vec3&, uint32_t time)> multByFuncOfTime;
-    ScalarMultFunc(scalarMultFuncDlgt func);
-  };
-  EZECS_COMPONENT_DEPENDENCIES(ScalarMultFunc, Scale)
-
-  struct Orientation : public Component<Orientation> {
-    glm::quat quat, lastQuat;
-    Orientation(glm::quat quat);
-    glm::quat getQuat(float alpha);
-  };
+  EZECS_COMPONENT_DEPENDENCIES(TransformFunction, Placement)
 
   struct Perspective : public Component<Perspective> {
     float fovy, prevFovy,
         near, far;
     Perspective(float fovy, float near, float far);
   };
-  EZECS_COMPONENT_DEPENDENCIES(Perspective, Position, Orientation)
+  EZECS_COMPONENT_DEPENDENCIES(Perspective, Placement)
 
   struct WasdControls : public Component<WasdControls> {
     enum Style {
       ROTATE_ALL_AXES, ROTATE_ABOUT_Z
     };
     glm::vec3 accel;
-    entityId orientationProxy;
+    entityId gimbalId;
     int style;
-    WasdControls(entityId orientationProxy, Style style);
+    WasdControls(entityId gimbalId, Style style);
   };
-  EZECS_COMPONENT_DEPENDENCIES(WasdControls, Orientation)
+  EZECS_COMPONENT_DEPENDENCIES(WasdControls, Placement)
 
   struct MouseControls : public Component<MouseControls> {
     bool invertedX, invertedY;
     MouseControls(bool invertedX, bool invertedY);
   };
-  EZECS_COMPONENT_DEPENDENCIES(MouseControls, Orientation)
+  EZECS_COMPONENT_DEPENDENCIES(MouseControls, Placement)
 
   struct Physics : public Component<Physics> {
     enum Geometry {
@@ -102,35 +96,23 @@ namespace {
     void* geomInitData;
     Physics(float mass, void* geomData, Geometry geom);
   };
-  EZECS_COMPONENT_DEPENDENCIES(Physics, Position, Orientation)
+  EZECS_COMPONENT_DEPENDENCIES(Physics, Placement)
 
   // END DECLARATIONS
 
   // BEGIN DEFINITIONS
 
-  Position::Position(glm::vec3 vec)
-      : vec(vec), lastVec(vec) { }
-  glm::vec3 Position::getVec(float alpha) {
-    return glm::mix(lastVec, vec, alpha);
-  }
+  Placement::Placement(glm::mat4 mat)
+      : mat(mat) { }
 
-  Scale::Scale(glm::vec3 vec)
-      : vec(vec), lastVec(vec) { }
-
-  ScalarMultFunc::ScalarMultFunc(scalarMultFuncDlgt func)
-      : multByFuncOfTime(func) { }
-
-  Orientation::Orientation(glm::quat quat)
-      : quat(quat), lastQuat(quat) { }
-  glm::quat Orientation::getQuat(float alpha) {
-    return glm::slerp(lastQuat, quat, alpha);
-  }
+  TransformFunction::TransformFunction(transformFunc func)
+      : func(func) { }
 
   Perspective::Perspective(float fovy, float near, float far)
       : fovy(fovy), prevFovy(fovy), near(near), far(far) { }
 
-  WasdControls::WasdControls(entityId orientationProxy, WasdControls::Style style)
-      : orientationProxy(orientationProxy), style(style) { }
+  WasdControls::WasdControls(entityId gimbalId, WasdControls::Style style)
+      : gimbalId(gimbalId), style(style) { }
 
   MouseControls::MouseControls(bool invertedX, bool invertedY)
       : invertedX(invertedX), invertedY(invertedY) { }

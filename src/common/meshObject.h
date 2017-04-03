@@ -29,7 +29,7 @@
 
 #include "sceneObject.h"
 
-namespace ld2016 {
+namespace at3 {
   class MeshObject : public SceneObject {
     private:
       typedef struct {
@@ -50,9 +50,7 @@ namespace ld2016 {
           const glm::mat4 &projection);
     public:
       MeshObject(ezecs::State &state, const std::string &meshFile, const std::string &textureFile,
-                 const glm::vec3 &position = glm::vec3(),
-                 const glm::quat &orientation = glm::quat(),
-                 const glm::vec3 &scale = {1.f, 1.f, 1.f});
+                       glm::mat4 &transform);
       virtual ~MeshObject();
 
       virtual void draw(const glm::mat4 &modelWorld,

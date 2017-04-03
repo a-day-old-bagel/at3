@@ -23,13 +23,21 @@
 #ifndef LD2016_ECSSYSTEM_PHYSICS_H
 #define LD2016_ECSSYSTEM_PHYSICS_H
 
-#include "ecsSystem.hpp"
+#include <epoxy/gl.h>
 #include <btBulletDynamicsCommon.h>
+#include <LinearMath/btIDebugDraw.h>
+#include "ezecs.hpp"
+#include "sceneObject.h"
+#include "bulletDebug.h"
 
 using namespace ezecs;
 
 // TODO: figure out how to use bullet to simulate objects without collision components
-namespace ld2016 {
+namespace at3 {
+
+  /*
+   * The physics system
+   */
   class PhysicsSystem : public System<PhysicsSystem> {
       friend class System;
       std::vector<compMask> requiredComponents = {
@@ -43,9 +51,11 @@ namespace ld2016 {
       btCollisionConfiguration *collisionConfiguration;
       btDynamicsWorld *dynamicsWorld;
       btCollisionShape* planeShape;
+      bool debugDrawMode = false;
 
       btDefaultMotionState* groundMotionState;
       btRigidBody* groundRigidBody;
+
     public:
       PhysicsSystem(State* state);
       bool onInit();
@@ -53,6 +63,7 @@ namespace ld2016 {
       void deInit();
       bool onDiscover(const entityId& id);
       bool onForget(const entityId& id);
+      void activateDebugDrawer(std::shared_ptr<BulletDebug> debug);
   };
 }
 

@@ -28,7 +28,7 @@
 #include "shaders.h"
 #include "glError.h"
 
-namespace ld2016 {
+namespace at3 {
 
   SkyBox::SkyBox(ezecs::State &state) : SceneObject(state) {
     // generate a triangle that covers the screen

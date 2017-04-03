@@ -17,7 +17,6 @@ add_library(common STATIC
     transformStack.cpp
     wasdCamera.cpp
     skyBox.cpp
-    bulletDebugDraw.cpp
     )
 target_link_libraries(common
     ecs_static

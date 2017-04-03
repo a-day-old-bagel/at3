@@ -27,7 +27,7 @@
 #include "camera.h"
 #include "ecsState.generated.hpp"
 
-namespace ld2016 {
+namespace at3 {
   /**
    * A camera object with perspective projection.
    */
@@ -48,9 +48,7 @@ namespace ld2016 {
        * orientation should be pointed directly at the follow point with the
        * z-axis pointing up.
        */
-      PerspectiveCamera(ezecs::State& state, float fovy, float near = 0.1f, float far = 1000.0f,
-          const glm::vec3 &position = glm::vec3(0.0f, 0.0f, 0.0f),
-          const glm::quat &orientation = glm::quat());
+      PerspectiveCamera(ezecs::State &state, float fovy, float near, float far, glm::mat4 &transform);
       virtual ~PerspectiveCamera();
 
       void setFar(float far);

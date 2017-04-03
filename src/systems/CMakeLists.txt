@@ -2,6 +2,7 @@ add_library( at3_systems STATIC
     ecsSystem_controls.cpp
     ecsSystem_movement.cpp
     ecsSystem_physics.cpp
+    bulletDebug.cpp
     )
 target_link_libraries( at3_systems
     ecs_static

@@ -28,7 +28,7 @@
 
 #include "sceneObject.h"
 
-namespace ld2016 {
+namespace at3 {
   SceneObject::SceneObject(ezecs::State& state) : state(&state) {
     ezecs::CompOpReturn status;
     status = this->state->createEntity(&id);
@@ -62,7 +62,13 @@ namespace ld2016 {
     ezecs::compMask compsPresent = state->getComponents(id);
     assert(compsPresent);
 
-    if (compsPresent & ezecs::POSITION) {
+    if (compsPresent & ezecs::PLACEMENT) {
+      ezecs::Placement *placement;
+      state->get_Placement(id, &placement);
+      mw *= placement->mat;
+    }
+
+    /*if (compsPresent & ezecs::POSITION) {
       ezecs::Position *position;
       state->get_Position(id, &position);
       // Translate the object into position
@@ -73,7 +79,7 @@ namespace ld2016 {
       state->get_Orientation(id, &orientation);
       // Apply the object orientation as a rotation
       mw *= glm::mat4_cast(orientation->getQuat(alpha));
-    }
+    }*/
 
     // Delegate the actual drawing to derived classes
     this->draw(mw.peek(), worldView, projection, alpha, debug);
@@ -84,12 +90,18 @@ namespace ld2016 {
     }
   }
 
-  void SceneObject::reverseTransformLookup(glm::mat4 &wv, float alpha) const {
+  void SceneObject::reverseTransformLookup(glm::mat4 &wv) const {
 
     ezecs::compMask compsPresent = state->getComponents(id);
     assert(compsPresent);
 
-    if (compsPresent & ezecs::ORIENTATION) {
+    if (compsPresent & ezecs::PLACEMENT) {
+      ezecs::Placement *placement;
+      state->get_Placement(id, &placement);
+      wv *= glm::inverse(placement->mat);
+    }
+
+    /*if (compsPresent & ezecs::ORIENTATION) {
       ezecs::Orientation *orientation;
       state->get_Orientation(id, &orientation);
       wv *= glm::mat4_cast(glm::inverse(orientation->getQuat(alpha)));
@@ -98,10 +110,10 @@ namespace ld2016 {
       ezecs::Position *position;
       state->get_Position(id, &position);
       wv *= glm::translate(glm::mat4(), -1.f * position->getVec(alpha));
-    }
+    }*/
 
     if (m_parent != NULL) {
-      m_parent->reverseTransformLookup(wv, alpha);
+      m_parent->reverseTransformLookup(wv);
     }
 
   }

@@ -36,7 +36,7 @@
 
 #define TIME_MULTIPLIER_MS 0.001f
 
-namespace ld2016 {
+namespace at3 {
   Game::Game(int argc, char **argv, const char *windowTitle)
     : m_windowTitle(windowTitle), m_scene(nullptr),
     m_width(640), m_height(480)

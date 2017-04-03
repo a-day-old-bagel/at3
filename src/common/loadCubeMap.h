@@ -9,7 +9,7 @@
 #ifndef LOADCUBEMAP_H
 #define  LOADCUBEMAP_H
 
-namespace ld2016 {
+namespace at3 {
 
   enum LoadResult {
     LOAD_SUCCESS, LOAD_NOT_FOUND, LOAD_NOT_POW_2

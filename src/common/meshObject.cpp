@@ -29,23 +29,21 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "stb_image.h"
 
+#include "ezecs.hpp"
 #include "glError.h"
 #include "shaderProgram.h"
 #include "shaders.h"
-
 #include "meshObject.h"
 
-namespace ld2016 {
+using namespace ezecs;
+
+namespace at3 {
   MeshObject::MeshObject(ezecs::State &state, const std::string &meshFile, const std::string &textureFile,
-                           const glm::vec3 &position, const glm::quat &orientation, const glm::vec3 &scale)
+                           glm::mat4 &transform)
       : SceneObject(state)
   {
     ezecs::CompOpReturn status;
-    status = this->state->add_Position(id, position);
-    assert(status == ezecs::SUCCESS);
-    status = this->state->add_Orientation(id, orientation);
-    assert(status == ezecs::SUCCESS);
-    status = this->state->add_Scale(id, scale);
+    status = this->state->add_Placement(id, transform);
     assert(status == ezecs::SUCCESS);
 
     // Load the mesh from file using assimp
@@ -276,9 +274,14 @@ namespace ld2016 {
       const glm::mat4 &worldView, const glm::mat4 &projection,
       float alpha, bool debug)
   {
-    ezecs::Scale* scale;
-    state->get_Scale(id, &scale);
-    glm::mat4 modelView = worldView * modelWorld * glm::scale(glm::mat4(), scale->vec);
+//    ezecs::Scale* scale;
+//    state->get_Scale(id, &scale);
+    glm::mat4 modelView = worldView * modelWorld;
+    if (state->getComponents(id) & TRANSFORMFUNCTION) {
+      TransformFunction* transformFunction;
+      state->get_TransformFunction(id, &transformFunction);
+      modelView *= transformFunction->transformed;
+    }
     m_drawSurface(modelView, projection);
   }
 }

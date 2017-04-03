@@ -26,8 +26,9 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
-#include "ezecs.hpp"
+#include <glm/gtc/matrix_transform.hpp>
 
+#include "ezecs.hpp"
 #include "debug.h"
 #include "game.h"
 #include "meshObject.h"
@@ -35,7 +36,6 @@
 #include "perspectiveCamera.h"
 #include "skyBox.h"
 
-#include "ecsHelpers.hpp"
 #include "ecsSystem_movement.h"
 #include "ecsSystem_controls.h"
 #include "ecsSystem_physics.h"
@@ -44,11 +44,33 @@
 #define DURATION std::chrono::duration<double, std::milli>
 #define CHECK(compOpReturn) EZECS_CHECK_PRINT(EZECS_ERR(compOpReturn))
 
-using namespace ld2016;
+using namespace at3;
 using namespace ezecs;
 
-static glm::vec3 pyrFireWiggle(const glm::vec3& initialScale, uint32_t time) {
-  return { initialScale.x, initialScale.y, initialScale.z * (1.f + sin(time * 0.1f)) };
+static float pyrFireSize = 0.3f, pyrFireScale = 0.15f;
+static glm::mat4 pyrFireWiggle(const glm::mat4& transformIn, uint32_t time) {
+  return glm::scale(glm::mat4(), { 1.f, 1.f, pyrFireSize + pyrFireScale * sin(time * 0.1f) });
+}
+
+void debugGenerateFloorGrid(State& state, float xMin, float xMax, unsigned xRes, float yMin, float yMax, unsigned yRes){
+  float sclX = (xMax - xMin) * .5f;
+  float sclY = (yMax - yMin) * .5f;
+  float ctrX = xMin + sclX;
+  float ctrY = yMin + sclY;
+  float xStep = 2.f / xRes;
+  for (unsigned x = 0; x <= xRes; ++x) {
+    Debug::drawLine( state,
+                     glm::vec3(ctrX + (x * xStep * sclX - sclX), ctrY - sclY, 0.f),
+                     glm::vec3(ctrX + (x * xStep * sclX - sclX), ctrY + sclY, 0.f),
+                     glm::vec3(1.f, 0.f, 1.f) );
+  }
+  float yStep = 2.f / yRes;
+  for (unsigned y = 0; y <= yRes; ++y) {
+    Debug::drawLine( state,
+                     glm::vec3(ctrX - sclX, ctrY + (y * yStep * sclY - sclY), 0.f),
+                     glm::vec3(ctrX + sclX, ctrY + (y * yStep * sclY - sclY), 0.f),
+                     glm::vec3(1.f, 0.f, 1.f) );
+  }
 }
 
 class PyramidGame : public Game {
@@ -57,6 +79,7 @@ class PyramidGame : public Game {
     std::shared_ptr<MeshObject> m_pyrBottom, m_pyrTop, m_pyrThrusters, m_pyrFire;
     std::shared_ptr<SceneObject> m_camGimbal;
     std::shared_ptr<SkyBox> m_skyBox;
+    std::shared_ptr<BulletDebug> bulletDebug;
     ControlSystem controlSystem;
     MovementSystem movementSystem;
     PhysicsSystem physicsSystem;
@@ -67,53 +90,35 @@ class PyramidGame : public Game {
       systemsHandlerDlgt = DELEGATE(&PyramidGame::systemsHandler, this);
     }
     EzecsResult init() {
-      assert(controlSystem.init());
-      assert(movementSystem.init());
-      assert(physicsSystem.init());
+      bool initSuccess = true;
+      initSuccess &= controlSystem.init();
+      initSuccess &= physicsSystem.init();
+      initSuccess &= movementSystem.init();
+      assert(initSuccess);
 
+      // generate initial placement of objects
+      glm::mat4 ident(1.0); // explicitly identity matrix
+      glm::mat4 cameraMat = glm::rotate(glm::translate(ident, {0.f, -4.f, 0.f}),
+                                        (float) M_PI * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f));
+      glm::mat4 pyrBotMat = glm::translate(ident, { 0.f, 0.f, 100.f });
+      glm::mat4 pyrFirMat = glm::scale(glm::rotate(glm::translate(ident, {0.f, 0.f, -0.4f}),
+                                                   (float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f)), {0.105f, 0.105f, 0.15f});
       // Populate the graphics scene
       m_camera = std::shared_ptr<PerspectiveCamera> (
-          new PerspectiveCamera (
-              state,
-              80.0f * ((float) M_PI / 180.0f),  // fovy
-              0.1f,  // near
-              1000.0f,  // far
-              glm::vec3(0.0f, -4.f, 0.0f),  // position
-              glm::angleAxis(
-                  (float) M_PI * 0.5f,
-                  glm::vec3(1.0f, 0.0f, 0.0f))
-          ));
+          new PerspectiveCamera(state, 80.0f * ((float) M_PI / 180.0f), 0.1f, 1000.0f, cameraMat));
       m_pyrBottom = std::shared_ptr<MeshObject> (
-          new MeshObject(
-              state, "assets/models/pyramid_bottom.dae", "assets/textures/pyramid_bottom.png",
-              {0.f, 0.f, 100.f}));
+          new MeshObject(state, "assets/models/pyramid_bottom.dae", "assets/textures/pyramid_bottom.png", pyrBotMat));
       m_pyrTop = std::shared_ptr<MeshObject> (
-          new MeshObject(state, "assets/models/pyramid_top.dae", "assets/textures/pyramid_top.png"));
+          new MeshObject(state, "assets/models/pyramid_top.dae", "assets/textures/pyramid_top.png", ident));
       m_pyrThrusters = std::shared_ptr<MeshObject> (
-          new MeshObject(state, "assets/models/pyramid_thrusters.dae", "assets/textures/thrusters.png"));
+          new MeshObject(state, "assets/models/pyramid_thrusters.dae", "assets/textures/thrusters.png", ident));
       m_pyrFire = std::shared_ptr<MeshObject> (
-          new MeshObject (
-              state, "assets/models/pyramid_thruster_flames.dae", "assets/textures/pyramid_flames.png",
-              {0.f, 0.f, -0.85f},
-              glm::angleAxis((float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f)),
-              {0.105f, 0.105f, 0.25f}));
+          new MeshObject(state, "assets/models/pyramid_thruster_flames.dae", "assets/textures/pyramid_flames.png",
+                         pyrFirMat));
       m_camGimbal = std::shared_ptr<SceneObject> (
           new SceneObject(state));
       m_skyBox = std::shared_ptr<SkyBox> (
           new SkyBox(state));
-      float delta = 0.3f;
-      for (int i = 0; i < 100; ++i) {
-        Debug::drawLine (
-            state,
-            glm::vec3((float) i * delta, 0.0f, 0.0f),
-            glm::vec3((float) i * delta, 1.0f, 0.0f),
-            glm::vec3(1.0f, 0.0f, 1.0f));
-        Debug::drawLine (
-            state,
-            glm::vec3(0.0f, (float) i * delta, 0.0f),
-            glm::vec3(1.0f, (float) i * delta, 0.0f),
-            glm::vec3(1.0f, 0.0f, 1.0f));
-      }
 
       this->scene()->addObject(m_pyrBottom);
       this->scene()->addObject(m_skyBox);
@@ -129,28 +134,29 @@ class PyramidGame : public Game {
       this->setCamera(m_camera);
 
       entityId gimbalId = m_camGimbal->getId();
-      state.add_Position(gimbalId, {0.f, 0.f, 1.f});
-      state.add_Orientation(gimbalId, glm::quat());
+      state.add_Placement(gimbalId, {
+          1, 0, 0, 0,
+          0, 1, 0, 0,
+          0, 0, 1, 0,
+          0, 0, 1, 1  // at (0, 0, 1)
+      });
       state.add_MouseControls(gimbalId, false, false);
 
       entityId bottomId = m_pyrBottom->getId();
       state.add_WasdControls(bottomId, gimbalId, WasdControls::ROTATE_ABOUT_Z);
-      float sphereRadius = 0.8f;
-      state.add_Physics(bottomId, 1.f, &sphereRadius, Physics::SPHERE);
-//      std::vector<float> hullVerts = {
-//          /*{ 0.f,  0.f, -0.2f},
-//          {-.2f, -.2f, 0.f},
-//          {-.2f,  .2f, 0.f},
-//          { .2f, -.2f, 0.f},
-//          { .2f,  .2f, 0.f}*/
-//           1.f,  0.f,  0.f,
-//           0.f,  1.f,  0.f,
-//           0.f,  0.f,  1.f,
-//          -1.f,  0.f,  0.f,
-//           0.f, -1.f,  0.f,
-//           0.f,  0.f, -1.f
-//      };
-//      state.add_Physics(bottomId, 1.f, &hullVerts, Physics::MESH);
+      std::vector<float> hullVerts = {
+          1.0f,  1.0f, -0.4f,
+          1.0f, -1.0f, -0.4f,
+          0.f ,  0.f ,  1.7f,
+          1.0f,  1.0f, -0.4f,
+         -1.0f,  1.0f, -0.4f,
+          0.f ,  0.f ,  1.7f,
+         -1.0f, -1.0f, -0.4f,
+         -1.0f,  1.0f, -0.4f,
+          1.0f, -1.0f, -0.4f,
+         -1.0f, -1.0f, -0.4f,
+      };
+      state.add_Physics(bottomId, 1.f, &hullVerts, Physics::MESH);
 
       Physics* physics;
       state.get_Physics(bottomId, &physics);
@@ -159,9 +165,22 @@ class PyramidGame : public Game {
       entityId topId = m_pyrTop->getId();
 
       entityId fireId = m_pyrFire->getId();
-      state.add_ScalarMultFunc(fireId, DELEGATE_NOCLASS(pyrFireWiggle));
+      state.add_TransformFunction(fireId, DELEGATE_NOCLASS(pyrFireWiggle));
 
+      // Add some debug-drawn features...
+
+      // a floor grid
+      debugGenerateFloorGrid(state, -10.5f, 10.5f, 21, -10.5f, 10.5f, 21);
+
+      // a bullet physics debug-drawing thing
+      /*bulletDebug = std::shared_ptr<BulletDebug> ( new BulletDebug(&state) );
+      bulletDebug->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
+      physicsSystem.activateDebugDrawer(bulletDebug);
+      this->scene()->addObject(bulletDebug);*/
+
+      // a virus
       //region VIRUS
+      float delta = 0.3f;
       Debug::drawLine(state,
                       glm::vec3(10 * delta, 0.f, 4.f),
                       glm::vec3(11 * delta, 0.f, 2.f),
@@ -219,6 +238,7 @@ class PyramidGame : public Game {
                       glm::vec3(18 * delta, 0.f, 2.f),
                       glm::vec3(0.f, 1.f, 0.f));
       //endregion
+
       return EZECS_SUCCESS;
     }
     void deInit() {
@@ -229,8 +249,19 @@ class PyramidGame : public Game {
     }
     void tick(float dt) {
       controlSystem.tick(dt);
-      movementSystem.tick(dt);
       physicsSystem.tick(dt);
+      movementSystem.tick(dt);
+
+      // make the fire look big if the pyramid is thrusting upwards
+      WasdControls* controls;
+      state.get_WasdControls(m_pyrBottom->getId(), &controls);
+      if (controls->accel.z > 0) {
+        pyrFireSize = 1.5f;
+        pyrFireScale = 1.f;
+      } else {
+        pyrFireSize = 0.3f;
+        pyrFireScale = 0.15f;
+      }
     }
 };
 
@@ -250,7 +281,7 @@ int main(int argc, char **argv) {
   EzecsResult status = game.init();
   if (status.isError()) { fprintf(stderr, "%s", status.toString().c_str()); }
 
-  //region Sound
+/*  //region Sound
   Uint8 *gameMusic[4];
   Uint32 gameMusicLength[4];
   int count = SDL_GetNumAudioDevices(0);
@@ -311,7 +342,7 @@ int main(int argc, char **argv) {
     }
     SDL_PauseAudioDevice(dev, 0);  // start audio
   }
-  //endregion
+  //endregion*/
 
   while (true) {
     main_loop(&game);

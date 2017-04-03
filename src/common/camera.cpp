@@ -26,34 +26,20 @@
 
 #include "camera.h"
 
-namespace ld2016 {
-  Camera::Camera(const glm::vec3 &position, const glm::quat &orientation, ezecs::State& state) : SceneObject(state)
+namespace at3 {
+  Camera::Camera(ezecs::State &state, glm::mat4 &transform) : SceneObject(state)
   {
     ezecs::CompOpReturn status;
-    status = this->state->add_Position(id, position);
-    assert(status == ezecs::SUCCESS);
-    status = this->state->add_Orientation(id, orientation);
+    status = this->state->add_Placement(id, transform);
     assert(status == ezecs::SUCCESS);
   }
 
   Camera::~Camera() {
   }
 
-  glm::mat4 Camera::worldView(float alpha) const {
+  glm::mat4 Camera::worldView() const {
     glm::mat4 wv;
-    reverseTransformLookup(wv, alpha);
-//    wv = glm::inverse(wv);
-
-    /*// Translate the world so the camera is positioned in the center, and then
-    // rotate the world to be aligned with the camera's orientation
-    ecs::Orientation* orientation;
-    ecs::CompOpReturn status = state->getOrientation(id, &orientation);
-    assert(status == ecs::SUCCESS);
-    wv *= glm::mat4_cast(glm::inverse(orientation->getQuat(alpha)));
-    ecs::Position* position;
-    status = state->getPosition(id, &position);
-    assert(status == ecs::SUCCESS);
-    wv *= glm::translate(glm::mat4(), -1.f * position->getVec(alpha));*/
+    reverseTransformLookup(wv);
 
     return wv;
   }

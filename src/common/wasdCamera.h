@@ -28,7 +28,7 @@
 #include "perspectiveCamera.h"
 #include "ecsState.generated.hpp"
 
-namespace ld2016 {
+namespace at3 {
   /**
    * Class representing perspective camera that is controlled by the WASD or
    * arrow keys and the mouse. This is essentially the same as the traditional
@@ -54,8 +54,7 @@ namespace ld2016 {
        * orientation should be pointed directly at the follow point with the
        * z-axis pointing up.
        */
-      WasdCamera(ezecs::State& state, float fovy, float near, float far,
-                 const glm::vec3 &position, const glm::quat &orientation);
+      WasdCamera(ezecs::State &state, float fovy, float near, float far, glm::mat4 &transform);
   };
 }
 

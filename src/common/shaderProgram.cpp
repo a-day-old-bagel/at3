@@ -28,7 +28,7 @@
 
 #include "shaderProgram.h"
 
-namespace ld2016 {
+namespace at3 {
   ShaderProgram::ShaderProgram(
       const std::string &vert, const std::string &frag)
   {
@@ -112,8 +112,8 @@ namespace ld2016 {
   {
     std::stringstream ss;
 #ifndef __EMSCRIPTEN__
-    ss << "#version 100\n";
-    code_len += strlen("#version 100\n");
+    ss << "#version 120\n";
+    code_len += strlen("#version 120\n");
 #endif
     ss << code;
 

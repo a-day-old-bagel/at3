@@ -27,7 +27,7 @@
 #include <epoxy/gl.h>
 #include <string>
 
-namespace ld2016 {
+namespace at3 {
   /**
    * Class representing a compiled and linked GL shader program, suitable for
    * rendering GL graphics.

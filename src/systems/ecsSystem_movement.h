@@ -27,10 +27,10 @@
 
 using namespace ezecs;
 
-namespace ld2016 {
+namespace at3 {
   struct MovementSystem : public System<MovementSystem> {
       std::vector<compMask> requiredComponents = {
-          SCALE | SCALARMULTFUNC
+          TRANSFORMFUNCTION
       };
       MovementSystem(State* state);
       bool onInit();

@@ -28,12 +28,12 @@
 
 using namespace ezecs;
 
-namespace ld2016 {
+namespace at3 {
   class ControlSystem : public System<ControlSystem> {
       friend class System;
       std::vector<compMask> requiredComponents = {
-          ORIENTATION | MOUSECONTROLS,
-          ORIENTATION | WASDCONTROLS
+          MOUSECONTROLS,
+          WASDCONTROLS
       };
       std::vector<SDL_Event> queuedEvents;
     public:

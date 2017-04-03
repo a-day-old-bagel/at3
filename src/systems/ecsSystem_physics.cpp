@@ -22,7 +22,9 @@
  */
 #include "ecsSystem_physics.h"
 
-namespace ld2016 {
+using namespace ezecs;
+
+namespace at3 {
 
   PhysicsSystem::PhysicsSystem(State *state) : System(state) {
 
@@ -53,27 +55,25 @@ namespace ld2016 {
   }
   void PhysicsSystem::onTick(float dt) {
     for (auto id : registries[1].ids) {
-      WasdControls* wasdControls;
+      WasdControls *wasdControls;
       state->get_WasdControls(id, &wasdControls);
-      Physics* physics;
+      Physics *physics;
       state->get_Physics(id, &physics);
-      physics->rigidBody->applyCentralImpulse({-wasdControls->accel.x, -wasdControls->accel.y, wasdControls->accel.z});
+      physics->rigidBody->applyCentralImpulse({wasdControls->accel.x, wasdControls->accel.y, wasdControls->accel.z});
     }
     dynamicsWorld->stepSimulation(dt); // time step (s), max sub-steps, sub-step length (s)
+    if (debugDrawMode) { dynamicsWorld->debugDrawWorld(); }
     for (auto id : registries[0].ids) {
-      Physics* physics;
+      Physics *physics;
       state->get_Physics(id, &physics);
       btTransform currentTrans;
       physics->rigidBody->getMotionState()->getWorldTransform(currentTrans);
-      Position* position;
-      state->get_Position(id, &position);
-      btVector3 currentPos = currentTrans.getOrigin();
-      position->vec = {currentPos.getX(), currentPos.getY(), currentPos.getZ()};
 
-      Orientation* orientation;
-      state->get_Orientation(id, &orientation);
-      btQuaternion currentOr = currentTrans.getRotation();
-      orientation->quat = {currentOr.getX(), currentOr.getY(), currentOr.getZ(), currentOr.getW()};
+      Placement *placement;
+      state->get_Placement(id, &placement);
+      glm::mat4 newTransform;
+      currentTrans.getOpenGLMatrix((btScalar*)&newTransform);
+      placement->mat = newTransform;
     }
   }
   void PhysicsSystem::deInit() {
@@ -94,33 +94,29 @@ namespace ld2016 {
     delete broadphase;
   }
   bool PhysicsSystem::onDiscover(const entityId &id) {
-    Position* position;
-    state->get_Position(id, &position);
-    Orientation* orientation;
-    state->get_Orientation(id, &orientation);
-    Physics* physics;
+    Placement *placement;
+    state->get_Placement(id, &placement);
+    Physics *physics;
     state->get_Physics(id, &physics);
-    switch(physics->geom) {
+    switch (physics->geom) {
       case Physics::SPHERE:
-        physics->shape = new btSphereShape(*((float*)physics->geomInitData));
+        physics->shape = new btSphereShape(*((float *) physics->geomInitData));
         break;
       case Physics::PLANE:
         assert("missing plane collision implementation" == nullptr);
         break;
       case Physics::MESH: {
-          std::vector<float> *points = (std::vector<float> *) physics->geomInitData;
-          physics->shape = new btConvexHullShape(points->data(), (int) points->size());
-        }
+        std::vector<float> *points = (std::vector<float> *) physics->geomInitData;
+        physics->shape = new btConvexHullShape(points->data(), (int) points->size() / 3, 3 * sizeof(float));
+      }
         break;
       default:
         break;
     }
     physics->geomInitData = nullptr;
-    btDefaultMotionState* motionState =
-        new btDefaultMotionState(
-            btTransform(btQuaternion(
-                orientation->quat.x, orientation->quat.y, orientation->quat.z, orientation->quat.w),
-            btVector3(position->vec.x, position->vec.y, position->vec.z)));
+    btTransform transform;
+    transform.setFromOpenGLMatrix((btScalar*)&placement->mat);
+    btDefaultMotionState *motionState = new btDefaultMotionState(transform);
     btVector3 inertia(0.f, 0.f, 0.f);
     physics->shape->calculateLocalInertia(physics->mass, inertia);
     btRigidBody::btRigidBodyConstructionInfo ci(physics->mass, motionState, physics->shape, inertia);
@@ -131,12 +127,16 @@ namespace ld2016 {
     return true;
   }
   bool PhysicsSystem::onForget(const entityId &id) {
-    Physics* physics;
+    Physics *physics;
     state->get_Physics(id, &physics);
     dynamicsWorld->removeRigidBody(physics->rigidBody);
     delete physics->rigidBody->getMotionState();
     delete physics->rigidBody;
     delete physics->shape;
     return true;
+  }
+  void PhysicsSystem::activateDebugDrawer(std::shared_ptr<BulletDebug> debug) {
+    dynamicsWorld->setDebugDrawer(debug.get());
+    debugDrawMode = true;
   }
 }

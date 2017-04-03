@@ -29,7 +29,7 @@
 
 #include "sceneObject.h"
 
-namespace ld2016 {
+namespace at3 {
   /**
    * Abstract class defining a camera in a 3D graphics scene.
    *
@@ -49,7 +49,7 @@ namespace ld2016 {
        * \param position The position of the camera object.
        * \param orientation The orientation of the camera object.
        */
-      Camera(const glm::vec3 &position, const glm::quat &orientation, ezecs::State& state);
+      Camera(ezecs::State &state, glm::mat4 &transform);
       /**
        * Destroys the camera object. Since Camera is a polymorphic class, this
        * destructor is virtual.
@@ -65,7 +65,7 @@ namespace ld2016 {
        * \return The world-space to view-space matrix transform for this
        * camera.
        */
-      virtual glm::mat4 worldView(float alpha = 1.0) const;
+      virtual glm::mat4 worldView() const;
 
       /**
        * Derived camera classes must implement this method to return a

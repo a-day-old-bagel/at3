@@ -24,10 +24,9 @@
 
 #include "wasdCamera.h"
 
-namespace ld2016 {
-  WasdCamera::WasdCamera(ezecs::State& state, float fovy, float near, float far,
-                         const glm::vec3 &position, const glm::quat &orientation)
-      : PerspectiveCamera(state, fovy, near, far, position, orientation)
+namespace at3 {
+  WasdCamera::WasdCamera(ezecs::State &state, float fovy, float near, float far, glm::mat4 &transform)
+      : PerspectiveCamera(state, fovy, near, far, transform)
   {
     ezecs::CompOpReturn status = state.add_MouseControls(id, false, false);
     assert(status == ezecs::SUCCESS);

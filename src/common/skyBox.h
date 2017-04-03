@@ -28,7 +28,7 @@
 #include "sceneObject.h"
 #include "loadCubeMap.h"
 
-namespace ld2016 {
+namespace at3 {
   class SkyBox : public SceneObject {
       GLuint vertices, texture;
       void m_drawSurface( const glm::mat4 &modelView, const glm::mat4 &projection);

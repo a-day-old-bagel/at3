@@ -26,7 +26,7 @@
 
 #include <memory>
 
-namespace ld2016 {
+namespace at3 {
   class ShaderProgram;
   /**
    * Contains static declarations for GL shaders that are used in various

@@ -28,7 +28,7 @@
 
 #include <glm/glm.hpp>
 
-namespace ld2016 {
+namespace at3 {
   class TransformRAII;
 
   /**

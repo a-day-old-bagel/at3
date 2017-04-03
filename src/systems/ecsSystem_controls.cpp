@@ -26,10 +26,10 @@
 #include "glm/gtx/transform.hpp"
 #include "glm/gtx/matrix_decompose.hpp"
 
-#define WASD_ACCELERATION 0.5f //1000.f
+#define WASD_ACCELERATION 0.25f //1000.f
 #define MOUSE_SENSITIVITY 0.1f
 
-namespace ld2016 {
+namespace at3 {
 
   #if !SDL_VERSION_ATLEAST(2, 0, 4)
   SDL_Window *grabbedWindow = nullptr;
@@ -57,8 +57,8 @@ namespace ld2016 {
     for (auto id : registries[0].ids) {
       MouseControls* mouseControls;
       state->get_MouseControls(id, &mouseControls);
-      Orientation* orientation;
-      state->get_Orientation(id, &orientation);
+      Placement* placement;
+      state->get_Placement(id, &placement);
 
       for (auto event : queuedEvents) {
         switch(event.type) {
@@ -70,16 +70,17 @@ namespace ld2016 {
             }
             if (SDL_GetRelativeMouseMode()) {
               // Rotate object orientation according to the mouse motion
-              // delta
-              glm::quat rotation;
-              orientation->quat = glm::angleAxis(
-                  (float)event.motion.xrel * MOUSE_SENSITIVITY * ((float) M_PI / 180.0f) *
-                      (mouseControls->invertedX ? 1.f : -1.f),
-                  glm::vec3(0.0f, 0.0f, 1.0f)) * orientation->quat;
-              orientation->quat = orientation->quat * glm::angleAxis(
-                  (float)event.motion.yrel * MOUSE_SENSITIVITY * ((float) M_PI / 180.0f) *
-                      (mouseControls->invertedY ? 1.f : -1.f),
-                  glm::vec3(1.0f, 0.0f, 0.0f));
+              float inversionValue = (mouseControls->invertedX ? 1.f : -1.f);
+              placement->mat = glm::rotate(
+                  glm::mat4(),
+                  (float)event.motion.xrel * MOUSE_SENSITIVITY * ((float) M_PI / 180.0f) * inversionValue,
+                  { 0.0f, 0.0f, 1.0f }
+              ) * placement->mat;
+              placement->mat = placement->mat * glm::rotate(
+                  glm::mat4(),
+                  (float)event.motion.yrel * MOUSE_SENSITIVITY * ((float) M_PI / 180.0f) * inversionValue,
+                  { 1.0f, 0.0f, 0.0f }
+              );
             }
             break;
           }
@@ -91,14 +92,20 @@ namespace ld2016 {
     for (auto id : (registries[1].ids)) {
       WasdControls* wasdControls;
       state->get_WasdControls(id, &wasdControls);
-      Orientation* orientation;
-      if (wasdControls->orientationProxy == 0) {
-        state->get_Orientation(id, &orientation);
+      glm::mat4 transformContext;
+      if (wasdControls->gimbalId == 0) {
+        Placement* placement;
+        state->get_Placement(id, &placement);
+        transformContext = placement->mat;
       } else {
-        CompOpReturn status = state->get_Orientation(wasdControls->orientationProxy, &orientation);
+        Placement* placement, *childPlacement;
+        CompOpReturn status = state->get_Placement(wasdControls->gimbalId, &childPlacement);
         if (status != SUCCESS) {
+          assert(false);
           continue;
         }
+        state->get_Placement(id, &placement);
+        transformContext = placement->mat * childPlacement->mat;
       }
 
       // zero out acceleration
@@ -116,7 +123,7 @@ namespace ld2016 {
       #undef DO_ON_KEYS
 
       if (length(wasdControls->accel) > 0.0f) {
-        glm::quat quat = orientation->getQuat(1.0);
+        glm::quat quat = glm::quat_cast(transformContext);
         glm::mat3 rotMat;
         switch (wasdControls->style) {
           case WasdControls::ROTATE_ABOUT_Z: {
@@ -178,12 +185,12 @@ namespace ld2016 {
           }
             break;
           default:
-            return false;
+            return false; // could not handle it here
         }
         break;
       default:
-        return false;
+        return false; // could not handle it here
     }
-    return true;
+    return true; // handled it here
   }
 }

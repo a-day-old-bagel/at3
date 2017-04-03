@@ -27,7 +27,7 @@
 
 #include "scene.h"
 
-namespace ld2016 {
+namespace at3 {
   Scene::Scene() {
     // TODO
   }
@@ -63,8 +63,8 @@ namespace ld2016 {
     TransformStack modelWorld;
 
     // Obtain transforms from the camera
-    auto worldView = camera.worldView(alpha);
-    auto projection = camera.projection(aspect, alpha);
+    auto worldView = camera.worldView();
+    auto projection = camera.projection(aspect);
 
     // TODO: Draw the skybox first
 
