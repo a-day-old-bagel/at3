@@ -100,6 +100,13 @@ namespace {
   };
   EZECS_COMPONENT_DEPENDENCIES(Physics, Placement)
 
+  struct Kalman : public Component<Kalman> {
+    glm::vec3 believedPos;
+    glm::vec3 believedVel;
+    Kalman(glm::vec3 pos = {0.f, 0.f, 0.f}, glm::vec3 vel = {0.f, 0.f, 0.f});
+  };
+  EZECS_COMPONENT_DEPENDENCIES(Kalman, Placement)
+
   // END DECLARATIONS
 
   // BEGIN DEFINITIONS
@@ -121,6 +128,9 @@ namespace {
 
   Physics::Physics(float mass, void* geomData, Physics::Geometry geom)
       : geom(geom), mass(mass), geomInitData(geomData) { }
+
+  Kalman::Kalman(glm::vec3 pos, glm::vec3 vel)
+      : believedPos(pos), believedVel(vel) { }
 
   // END DEFINITIONS
 

@@ -20,22 +20,25 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-#ifndef ECSSYSTEM_MOVEMENT_H
-#define ECSSYSTEM_MOVEMENT_H
-
-#include "ezecs.hpp"
-
-using namespace ezecs;
+#include "ecsSystem_kalman.h"
 
 namespace at3 {
-  struct MovementSystem : public System<MovementSystem> {
-      std::vector<compMask> requiredComponents = {
-          TRANSFORMFUNCTION
-      };
-      MovementSystem(State* state);
-      bool onInit();
-      void onTick(float dt);
-  };
-}
 
-#endif //ECSSYSTEM_MOVEMENT_H
+  KalmanSystem::KalmanSystem(State *state) : System(state) {
+
+  }
+  bool KalmanSystem::onInit() {
+    return true;
+  }
+  void KalmanSystem::onTick(float dt) {
+    for (auto id : registries[0].ids) {
+
+    }
+  }
+  bool KalmanSystem::onDiscover(const entityId& id) {
+    return true;
+  }
+  bool KalmanSystem::onForget(const entityId& id) {
+    return true;
+  }
+}

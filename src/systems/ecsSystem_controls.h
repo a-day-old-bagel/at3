@@ -24,7 +24,7 @@
 #define ECSSYSTEM_WASDCONTROLS_H
 
 #include <SDL.h>
-#include "ecsSystem.hpp"
+#include "ezecs.hpp"
 
 using namespace ezecs;
 
