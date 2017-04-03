@@ -173,7 +173,7 @@ class PyramidGame : public Game {
       m_pyrBottom = std::shared_ptr<MeshObject> (
           new MeshObject(state, "assets/models/pyramid_bottom.dae", "assets/textures/pyramid_bottom.png", pyrBotMat));
       m_pyrTop = std::shared_ptr<MeshObject> (
-          new MeshObject(state, "assets/models/pyramid_top.dae", "assets/textures/pyramid_top.png", ident));
+          new MeshObject(state, "assets/models/pyramid_top.dae", "assets/textures/pyramid_top_new.png", ident));
       m_pyrThrusters = std::shared_ptr<MeshObject> (
           new MeshObject(state, "assets/models/pyramid_thrusters.dae", "assets/textures/thrusters.png", ident));
       m_pyrFire = std::shared_ptr<MeshObject> (
