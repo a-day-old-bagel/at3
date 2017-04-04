@@ -1,5 +1,6 @@
 add_library( at3_systems STATIC
     ecsSystem_controls.cpp
+    ecsSystem_kalman.cpp
     ecsSystem_movement.cpp
     ecsSystem_physics.cpp
     bulletDebug.cpp

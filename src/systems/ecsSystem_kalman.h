@@ -23,20 +23,28 @@
 #ifndef ECSSYSTEM_KALMAN_H
 #define ECSSYSTEM_KALMAN_H
 
+#include <random>
 #include "ezecs.hpp"
 
 using namespace ezecs;
 
 namespace at3 {
   struct KalmanSystem : public System<KalmanSystem> {
-    std::vector<compMask> requiredComponents = {
-        KALMAN
-    };
-    KalmanSystem(State* state);
-    bool onInit();
-    void onTick(float dt);
-    bool onDiscover(const entityId& id);
-    bool onForget(const entityId& id);
+      std::vector<compMask> requiredComponents = {
+          KALMAN | PHYSICS
+      };
+      KalmanSystem(State* state);
+      bool onInit();
+      void onTick(float dt);
+      bool onDiscover(const entityId& id);
+      bool onForget(const entityId& id);
+      bool handleEvent(SDL_Event &event);
+    private:
+      uint32_t lastTime;
+      bool isRunning = false;
+      std::default_random_engine gen;
+      std::normal_distribution<float> distr;
+      void beginKalman(const entityId& id);
   };
 }
 

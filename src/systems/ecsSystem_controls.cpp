@@ -27,6 +27,8 @@
 #include "glm/gtx/matrix_decompose.hpp"
 
 #define WASD_ACCELERATION 0.25f //1000.f
+#define SIDE_ACCEL 0.25f
+#define UP_ACCEL 0.4f
 #define MOUSE_SENSITIVITY 0.1f
 
 namespace at3 {
@@ -145,7 +147,11 @@ namespace at3 {
             break;
         }
         // Rotate the movement axis to the correct orientation
-        pyramidControls->force = WASD_ACCELERATION * glm::normalize(rotMat * pyramidControls->accel);
+        pyramidControls->force = glm::mat3 {
+            SIDE_ACCEL, 0, 0,
+            0, SIDE_ACCEL, 0,
+            0, 0, UP_ACCEL
+        } * glm::normalize(rotMat * pyramidControls->accel);
       }
     }
     queuedEvents.clear();
