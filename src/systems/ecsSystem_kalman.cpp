@@ -27,7 +27,7 @@
 
 namespace at3 {
 
-  KalmanSystem::KalmanSystem(State *state) : System(state), distr(0.f, 5.f) {
+  KalmanSystem::KalmanSystem(State *state) : System(state), distr(0.f, 10.f) {
 
   }
   bool KalmanSystem::onInit() {
