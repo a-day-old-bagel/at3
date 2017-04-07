@@ -1,12 +1,18 @@
 
 cmake_minimum_required( VERSION 3.3 )
-set( CMAKE_DISABLE_SOURCE_CHANGES ON )
 set( CMAKE_DISABLE_IN_SOURCE_BUILD ON )
 set( CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 
 project( at3 )
 
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast")
+
+# ARMADILLO
+add_subdirectory( "./extern/armadillo-code" )
+
+# None of the BELOW libs are stupid enough to modify their own source.
+# This would have gone at the top, but armadillo had to be a jerk.
+set( CMAKE_DISABLE_SOURCE_CHANGES ON )
 
 # GLM
 add_subdirectory( "./extern/glm" )

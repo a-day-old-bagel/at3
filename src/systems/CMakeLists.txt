@@ -9,6 +9,7 @@ target_link_libraries( at3_systems
     ecs_static
     common
     BulletDynamics BulletCollision LinearMath
+    armadillo
     )
 target_include_directories( at3_systems PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}

@@ -23,6 +23,7 @@
 #include <SDL_timer.h>
 #include "debug.h"
 #include "ecsSystem_kalman.h"
+#include <armadillo>
 
 namespace at3 {
 
@@ -70,6 +71,10 @@ namespace at3 {
       
       btVector3 realAccel = (realVel - kalman->realVel) / elapsed;
       btVector3 measuredAccel = realAccel + elapsed * btVector3(noiseX, noiseY, noiseZ);
+      
+      arma::vec state0(6);
+      arma::vec state1(6);
+      arma::mat prediction(6, 6);
       
       btVector3 newBelievedVel = kalman->believedVel + elapsed * measuredAccel;
       
