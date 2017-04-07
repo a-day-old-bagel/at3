@@ -8,11 +8,6 @@ project( at3 )
 
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast")
 
-# EZECS
-set( EZECS_CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/ecsConfig.hpp" )
-set( EZECS_LINK_TO_LIBS "glm" )
-add_subdirectory( "./extern/ezecs" )
-
 # GLM
 add_subdirectory( "./extern/glm" )
 
@@ -49,5 +44,10 @@ include_directories( SYSTEM epoxy_INCLUDE_DIR )
 # SDL2
 find_package( SDL2 REQUIRED )
 include_directories( SYSTEM ${SDL2_INCLUDE_DIR} )
+
+# EZECS
+set( EZECS_CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/ecsConfig.hpp" )
+set( EZECS_LINK_TO_LIBS "glm" )
+add_subdirectory( "./extern/ezecs" )
 
 add_subdirectory( "./src" )

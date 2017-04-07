@@ -23,7 +23,6 @@
 #include <SDL_timer.h>
 #include "debug.h"
 #include "ecsSystem_kalman.h"
-#include <btBulletDynamicsCommon.h>
 
 namespace at3 {
 
@@ -62,17 +61,33 @@ namespace at3 {
       };
       
       float elapsed = (deltaTime * 0.001f);
-      // Add a little bit of random acceleration to the correct velocity
-      btVector3 vel = physics->rigidBody->getLinearVelocity() + elapsed * btVector3(distr(gen), distr(gen), distr(gen));
-      // Add the erroneous velocity into the believed position
-      glm::vec3 newBelievedPosition = kalman->believedPos + elapsed * kalman->believedVel;
-      kalman->believedVel = glm::vec3(vel.x(), vel.y(), vel.z());
+      float noiseX = distr(gen);
+      float noiseY = distr(gen);
+      float noiseZ = distr(gen);
+      
+      btVector3 realVel = physics->rigidBody->getLinearVelocity();
+//      btVector3 newBelievedVel = realVel + elapsed * btVector3(noiseX, noiseY, noiseZ);
+      
+      btVector3 realAccel = (realVel - kalman->realVel) / elapsed;
+      btVector3 measuredAccel = realAccel + elapsed * btVector3(noiseX, noiseY, noiseZ);
+      
+      btVector3 newBelievedVel = kalman->believedVel + elapsed * measuredAccel;
+      
+//      btVector3 believedTranslation = elapsed * kalman->believedVel;
+      btVector3 believedTranslation = elapsed * ((kalman->believedVel + newBelievedVel) * 0.5);
+  
+      btVector3 newBelievedPosition = kalman->believedPos + believedTranslation;
       
       Debug::drawLine(*state, initPos, currentPos, {1.f, 1.f, 0.f});
-      Debug::drawLine(*state, kalman->believedPos, newBelievedPosition, {0.f, 1.f, 1.f});
+      Debug::drawLine(*state,
+                      {kalman->believedPos.x(), kalman->believedPos.y(), kalman->believedPos.z()},
+                      {newBelievedPosition.x(), newBelievedPosition.y(), newBelievedPosition.z()},
+                      {0.f, 1.f, 1.f});
       
       kalman->previousTransform = placement->mat;
       kalman->believedPos = newBelievedPosition;
+      kalman->believedVel = newBelievedVel;
+      kalman->realVel = realVel;
     }
   }
   bool KalmanSystem::onDiscover(const entityId& id) {
@@ -112,9 +127,9 @@ namespace at3 {
     Physics* physics;
     state->get_Physics(id, &physics);
     kalman->previousTransform = placement->mat;
-    kalman->believedPos = glm::vec3{placement->mat[3][0], placement->mat[3][1], placement->mat[3][2]};
-    btVector3 vel = physics->rigidBody->getLinearVelocity();
-    kalman->believedVel = glm::vec3(vel.x(), vel.y(), vel.z());
+    kalman->believedPos = btVector3{placement->mat[3][0], placement->mat[3][1], placement->mat[3][2]};
+    kalman->realVel = physics->rigidBody->getLinearVelocity();
+    kalman->believedVel = kalman->realVel;
     lastTime = SDL_GetTicks();
   }
 }

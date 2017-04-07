@@ -30,9 +30,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
-class btCollisionShape;
-class btDefaultMotionState;
-class btRigidBody;
+#include <btBulletDynamicsCommon.h>
 
 // END INCLUDES
 
@@ -102,7 +100,7 @@ namespace {
 
   struct Kalman : public Component<Kalman> {
     glm::mat4 previousTransform;
-    glm::vec3 believedPos, believedVel;
+    btVector3 believedPos, believedVel, realVel;
     Kalman();
   };
   EZECS_COMPONENT_DEPENDENCIES(Kalman, Placement)
