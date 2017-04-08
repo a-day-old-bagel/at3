@@ -30,13 +30,13 @@ using namespace ezecs;
 
 namespace at3 {
   class ControlSystem : public System<ControlSystem> {
-      friend class System;
-      std::vector<compMask> requiredComponents = {
-          MOUSECONTROLS,
-          PYRAMIDCONTROLS
-      };
       std::vector<SDL_Event> queuedEvents;
+
     public:
+      std::vector<compMask> requiredComponents = {
+              MOUSECONTROLS,
+              PYRAMIDCONTROLS
+      };
       ControlSystem(State* state);
       bool onInit();
       void onTick(float dt);

@@ -6,7 +6,8 @@ set( CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 project( at3 )
 
 if(MSVC)
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP12" )
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP8 /Gm /std:c++14" ) # /Gm not good with /MP ?
+  set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /incremental /debug:fastlink" )
 else(MSVC)
   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" )
 endif(MSVC)
@@ -60,14 +61,14 @@ include_directories( "${CMAKE_CURRENT_BINARY_DIR}/extern/libepoxy/include" )
 find_package( SDL2 REQUIRED )
 include_directories( SYSTEM ${SDL2_INCLUDE_DIR} )
 
-# EZECS
-set( EZECS_CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/ecsConfig.hpp" )
-set( EZECS_LINK_TO_LIBS "glm" )
-add_subdirectory( "./extern/ezecs" )
-
 # XXD
 option( XXD_STATIC_LIB "Build a static lib of xxd" ON )
 option( XXD_EXECUTABLE "Build xxd as an executable" OFF )
 add_subdirectory( "./extern/xxd" )
+
+# EZECS
+set( EZECS_CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/ecsConfig.hpp" )
+set( EZECS_LINK_TO_LIBS glm BulletDynamics )
+add_subdirectory( "./extern/ezecs" )
 
 add_subdirectory( "./src" )

@@ -29,7 +29,14 @@
 using namespace ezecs;
 
 namespace at3 {
-  struct KalmanSystem : public System<KalmanSystem> {
+  class KalmanSystem : public System<KalmanSystem> {
+      uint32_t lastTime;
+      bool isRunning = false;
+      std::default_random_engine gen;
+      std::normal_distribution<float> distr;
+      void beginKalman(const entityId& id);
+
+    public:
       std::vector<compMask> requiredComponents = {
           KALMAN | PHYSICS
       };
@@ -39,12 +46,6 @@ namespace at3 {
       bool onDiscover(const entityId& id);
       bool onForget(const entityId& id);
       bool handleEvent(SDL_Event &event);
-    private:
-      uint32_t lastTime;
-      bool isRunning = false;
-      std::default_random_engine gen;
-      std::normal_distribution<float> distr;
-      void beginKalman(const entityId& id);
   };
 }
 

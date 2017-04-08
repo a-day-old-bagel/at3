@@ -39,11 +39,6 @@ namespace at3 {
    * The physics system
    */
   class PhysicsSystem : public System<PhysicsSystem> {
-      friend class System;
-      std::vector<compMask> requiredComponents = {
-          PHYSICS,
-          PHYSICS | PYRAMIDCONTROLS
-      };
       /* Global physics data structures */
       btDispatcher *dispatcher;
       btBroadphaseInterface *broadphase;
@@ -52,11 +47,14 @@ namespace at3 {
       btDynamicsWorld *dynamicsWorld;
       btCollisionShape* planeShape;
       bool debugDrawMode = false;
-
       btDefaultMotionState* groundMotionState;
       btRigidBody* groundRigidBody;
 
     public:
+      std::vector<compMask> requiredComponents = {
+              PHYSICS,
+              PHYSICS | PYRAMIDCONTROLS
+      };
       PhysicsSystem(State* state);
       bool onInit();
       void onTick(float dt);

@@ -28,7 +28,8 @@
 using namespace ezecs;
 
 namespace at3 {
-  struct MovementSystem : public System<MovementSystem> {
+  class MovementSystem : public System<MovementSystem> {
+    public:
       std::vector<compMask> requiredComponents = {
           TRANSFORMFUNCTION
       };
