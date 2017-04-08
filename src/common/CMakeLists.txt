@@ -24,8 +24,6 @@ target_link_libraries(common
     assimp
     ${SDL2_LIBRARY}
     epoxy_static
-#    ${epoxy_LIBRARY}
-    epoxy_static
     ${OPENGL_LIBRARIES}
     )
 target_include_directories( common PUBLIC
@@ -45,13 +43,13 @@ foreach(shader ${shaders})
   string(REPLACE "/" "_" shader_target "${shader_rel}.c")
   get_filename_component(shader_dir "${shader_rel}" DIRECTORY)
   message(STATUS "${CMAKE_CURRENT_SOURCE_DIR}/${shader_rel} ${CMAKE_CURRENT_BINARY_DIR}/${shader_target}")
-  configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/${shader_rel}" "${CMAKE_CURRENT_BINARY_DIR}/${shader_target}" COPYONLY )
-#  add_custom_target("s_${shader_target}"
-#      COMMAND xxd -include ${shader_rel} > "${CMAKE_CURRENT_BINARY_DIR}/${shader_target}"
-#      DEPENDS "${shader}"
-#      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-#      )
-#  add_dependencies(common
-#      "s_${shader_target}"
-#      )
+#  configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/${shader_rel}" "${CMAKE_CURRENT_BINARY_DIR}/${shader_target}" COPYONLY )
+  add_custom_target("s_${shader_target}"
+      COMMAND xxd -include ${shader_rel} > "${CMAKE_CURRENT_BINARY_DIR}/${shader_target}"
+      DEPENDS "${shader}" xxd_static
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+      )
+  add_dependencies(common
+      "s_${shader_target}"
+      )
 endforeach()

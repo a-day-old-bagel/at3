@@ -65,4 +65,9 @@ set( EZECS_CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/ecsConfig.hpp" )
 set( EZECS_LINK_TO_LIBS "glm" )
 add_subdirectory( "./extern/ezecs" )
 
+# XXD
+option( XXD_STATIC_LIB "Build a static lib of xxd" ON )
+option( XXD_EXECUTABLE "Build xxd as an executable" OFF )
+add_subdirectory( "./extern/xxd" )
+
 add_subdirectory( "./src" )
