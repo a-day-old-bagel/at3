@@ -5,7 +5,11 @@ set( CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 
 project( at3 )
 
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast")
+if(MSVC)
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP12" )
+else(MSVC)
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" )
+endif(MSVC)
 
 # ARMADILLO
 add_subdirectory( "./extern/armadillo-code" )
@@ -30,6 +34,7 @@ option( ASSIMP_BUILD_TESTS "If the test suite for Assimp is built in addition to
 option( ASSIMP_COVERALLS "Eańable this to measure test coverage." OFF )
 add_subdirectory( "./extern/assimp" )
 include_directories( "./extern/assimp/include" )
+include_directories( "${CMAKE_CURRENT_BINARY_DIR}/extern/assimp/include" )
 
 # BULLET
 add_subdirectory( "./extern/bullet3" )
@@ -44,8 +49,12 @@ find_package( OpenGL REQUIRED )
 include_directories( SYSTEM ${OPENGL_INCLUDE_DIR} )
 
 # EPOXY
-find_package( Epoxy REQUIRED )
-include_directories( SYSTEM epoxy_INCLUDE_DIR )
+add_subdirectory( "./extern/libepoxy" )
+include_directories( "./extern/libepoxy/include" )
+include_directories( "./extern/libepoxy/registry" )
+include_directories( "${CMAKE_CURRENT_BINARY_DIR}/extern/libepoxy/include" )
+#find_package( Epoxy REQUIRED )
+#include_directories( SYSTEM epoxy_INCLUDE_DIR )
 
 # SDL2
 find_package( SDL2 REQUIRED )
