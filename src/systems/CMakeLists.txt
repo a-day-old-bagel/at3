@@ -8,7 +8,7 @@ add_library( at3_systems STATIC
 target_link_libraries( at3_systems
     ecs_static
     common
-    BulletDynamics BulletCollision LinearMath
+    ${BULLET_LIBRARIES}
     armadillo
     )
 target_include_directories( at3_systems PUBLIC

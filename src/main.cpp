@@ -41,9 +41,9 @@
 #include "ecsSystem_physics.h"
 #include "ecsSystem_kalman.h"
 
-#define GET_TIME std::chrono::high_resolution_clock::now();
-#define DURATION std::chrono::duration<double, std::milli>
-#define CHECK(compOpReturn) EZECS_CHECK_PRINT(EZECS_ERR(compOpReturn))
+//#define GET_TIME std::chrono::high_resolution_clock::now();
+//#define DURATION std::chrono::duration<double, std::milli>
+//#define CHECK(compOpReturn) EZECS_CHECK_PRINT(EZECS_ERR(compOpReturn))
 
 using namespace at3;
 using namespace ezecs;
@@ -170,7 +170,7 @@ class PyramidGame : public Game {
       glm::mat4 ident(1.0); // explicitly identity matrix
       glm::mat4 cameraMat = glm::rotate(glm::translate(ident, {0.f, -4.f, 0.5f}),
                                         (float) M_PI * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f));
-      glm::mat4 pyrBotMat = glm::translate(ident, { 0.f, 0.f, 100.f });
+      glm::mat4 pyrBotMat = glm::translate(ident, { 0.f, 0.f, 5.f });
       glm::mat4 pyrFirMat = glm::scale(glm::rotate(glm::translate(ident, {0.f, 0.f, -0.4f}),
                                                    (float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f)), {0.105f, 0.105f, 0.15f});
       // Populate the graphics scene

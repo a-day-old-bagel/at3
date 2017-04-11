@@ -31,6 +31,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <btBulletDynamicsCommon.h>
+#include <armadillo>
 
 // END INCLUDES
 
@@ -101,6 +102,7 @@ namespace {
   struct Kalman : public Component<Kalman> {
     glm::mat4 previousTransform;
     btVector3 believedPos, believedVel, realVel;
+    arma::mat66 covariance;
     Kalman();
   };
   EZECS_COMPONENT_DEPENDENCIES(Kalman, Placement)
@@ -127,7 +129,9 @@ namespace {
   Physics::Physics(float mass, void* geomData, Physics::Geometry geom)
       : geom(geom), mass(mass), geomInitData(geomData) { }
 
-  Kalman::Kalman() { }
+  Kalman::Kalman() {
+    covariance.eye();
+  }
 
   // END DEFINITIONS
 

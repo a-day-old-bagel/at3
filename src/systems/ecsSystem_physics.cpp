@@ -29,6 +29,7 @@ namespace at3 {
   PhysicsSystem::PhysicsSystem(State *state) : System(state) {
 
   }
+
   bool PhysicsSystem::onInit() {
     registries[0].discoverHandler = DELEGATE(&PhysicsSystem::onDiscover, this);
     registries[0].forgetHandler = DELEGATE(&PhysicsSystem::onForget, this);
@@ -53,6 +54,7 @@ namespace at3 {
     //endregion
     return true;
   }
+
   void PhysicsSystem::onTick(float dt) {
     for (auto id : registries[1].ids) {
       PyramidControls *controls;
@@ -62,12 +64,12 @@ namespace at3 {
       physics->rigidBody->applyImpulse({controls->force.x, controls->force.y, controls->force.z},
                                        btVector3(controls->up.x, controls->up.y, controls->up.z) * 0.05f);
 
-      // Custom constraint to keep the pyramid up FixMe: this sometimes gets it stuck in a horizontal position
-      glm::vec3 up {0.f, 0.f, 1.f};
+      // Custom constraint to keep the pyramid up FixMe: this sometimes gets it stuck in a horizontal position?
+      glm::vec3 up{0.f, 0.f, 1.f};
       float tip = glm::dot(controls->up, up);
       glm::vec3 rotAxis = glm::cross(controls->up, up);
-      physics->rigidBody->applyTorque (
-        btVector3(rotAxis.x, rotAxis.y, rotAxis.z) * tip * (controls->up.z < 0 ? -10.f : 10.f)
+      physics->rigidBody->applyTorque(
+          btVector3(rotAxis.x, rotAxis.y, rotAxis.z) * tip * (controls->up.z < 0 ? -10.f : 10.f)
       );
     }
     dynamicsWorld->stepSimulation(dt); // time step (s), max sub-steps, sub-step length (s)
@@ -81,20 +83,28 @@ namespace at3 {
       Placement *placement;
       state->get_Placement(id, &placement);
       glm::mat4 newTransform;
-      currentTrans.getOpenGLMatrix((btScalar*)&newTransform);
+      currentTrans.getOpenGLMatrix((btScalar *) &newTransform);
       placement->mat = newTransform;
     }
   }
+
   void PhysicsSystem::deInit() {
-    for (auto id : registries[0].ids) {
-      state->deleteEntity(id); // onForget will be called for each id
+	  // onForget will be called for each id
+    std::vector<entityId> ids = registries[1].ids;
+    for (auto id : ids) {
+      state->rem_PyramidControls((entityId) id);
     }
-    //region Delete ground
+    ids = registries[0].ids;
+    for (auto id : ids) {
+      state->rem_Physics((entityId) id);
+    }
+
+    // Delete ground
     dynamicsWorld->removeRigidBody(groundRigidBody);
     delete groundRigidBody;
     delete groundMotionState;
-    //endregion
 
+    // Delete other bullet constructs
     delete planeShape;
     delete dynamicsWorld;
     delete solver;
@@ -102,6 +112,7 @@ namespace at3 {
     delete collisionConfiguration;
     delete broadphase;
   }
+
   bool PhysicsSystem::onDiscover(const entityId &id) {
     Placement *placement;
     state->get_Placement(id, &placement);
@@ -124,7 +135,7 @@ namespace at3 {
     }
     physics->geomInitData = nullptr;
     btTransform transform;
-    transform.setFromOpenGLMatrix((btScalar*)&placement->mat);
+    transform.setFromOpenGLMatrix((btScalar *) &placement->mat);
     btDefaultMotionState *motionState = new btDefaultMotionState(transform);
     btVector3 inertia(0.f, 0.f, 0.f);
     physics->shape->calculateLocalInertia(physics->mass, inertia);
@@ -135,6 +146,7 @@ namespace at3 {
     dynamicsWorld->addRigidBody(physics->rigidBody);
     return true;
   }
+
   bool PhysicsSystem::onForget(const entityId &id) {
     Physics *physics;
     state->get_Physics(id, &physics);
@@ -144,6 +156,7 @@ namespace at3 {
     delete physics->shape;
     return true;
   }
+
   void PhysicsSystem::activateDebugDrawer(std::shared_ptr<BulletDebug> debug) {
     dynamicsWorld->setDebugDrawer(debug.get());
     debugDrawMode = true;

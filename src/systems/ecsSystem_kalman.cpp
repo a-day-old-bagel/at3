@@ -23,12 +23,14 @@
 #include <SDL_timer.h>
 #include "debug.h"
 #include "ecsSystem_kalman.h"
-#include <armadillo>
 
 namespace at3 {
 
-  KalmanSystem::KalmanSystem(State *state) : System(state), distr(0.f, 10.f) {
-
+  KalmanSystem::KalmanSystem(State *state)
+      : System(state), distr(0.f, 10.f), prediction(6, 6), predictionTranspose(6, 6)
+  {
+    prediction.eye();
+    predictionTranspose.eye();
   }
   bool KalmanSystem::onInit() {
     lastTime = SDL_GetTicks();
@@ -65,25 +67,37 @@ namespace at3 {
       float noiseX = distr(gen);
       float noiseY = distr(gen);
       float noiseZ = distr(gen);
+
+      prediction[18] = elapsed;
+      prediction[25] = elapsed;
+      prediction[32] = elapsed;
+      predictionTranspose[3] = elapsed;
+      predictionTranspose[10] = elapsed;
+      predictionTranspose[17] = elapsed;
+
+      kalman->covariance = prediction * kalman->covariance * predictionTranspose;
+      kalman->covariance.print(std::cout);
+      std::cout << std::endl;
       
       btVector3 realVel = physics->rigidBody->getLinearVelocity();
-//      btVector3 newBelievedVel = realVel + elapsed * btVector3(noiseX, noiseY, noiseZ);
-      
       btVector3 realAccel = (realVel - kalman->realVel) / elapsed;
       btVector3 measuredAccel = realAccel + elapsed * btVector3(noiseX, noiseY, noiseZ);
-      
-      arma::vec state0(6);
-      arma::vec state1(6);
-      arma::mat prediction(6, 6);
-      
+
+//      arma::vec state0 = {
+//          kalman->believedPos.x(), kalman->believedPos.y(), kalman->believedPos.z(),
+//          kalman->believedVel.x(), kalman->believedVel.y(), kalman->believedVel.z()
+//      };
+//      arma::vec state1(6);
+
       btVector3 newBelievedVel = kalman->believedVel + elapsed * measuredAccel;
-      
-//      btVector3 believedTranslation = elapsed * kalman->believedVel;
+
+      // midpoint integration approximation for position update step
       btVector3 believedTranslation = elapsed * ((kalman->believedVel + newBelievedVel) * 0.5);
-  
       btVector3 newBelievedPosition = kalman->believedPos + believedTranslation;
-      
+
+      // draw the real path
       Debug::drawLine(*state, initPos, currentPos, {1.f, 1.f, 0.f});
+      // draw the believed path
       Debug::drawLine(*state,
                       {kalman->believedPos.x(), kalman->believedPos.y(), kalman->believedPos.z()},
                       {newBelievedPosition.x(), newBelievedPosition.y(), newBelievedPosition.z()},

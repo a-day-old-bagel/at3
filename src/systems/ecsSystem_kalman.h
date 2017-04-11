@@ -24,6 +24,7 @@
 #define ECSSYSTEM_KALMAN_H
 
 #include <random>
+#include <armadillo>
 #include "ezecs.hpp"
 
 using namespace ezecs;
@@ -34,6 +35,9 @@ namespace at3 {
       bool isRunning = false;
       std::default_random_engine gen;
       std::normal_distribution<float> distr;
+      arma::mat prediction;
+      arma::mat predictionTranspose;
+
       void beginKalman(const entityId& id);
 
     public:
