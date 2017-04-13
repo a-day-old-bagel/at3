@@ -148,13 +148,13 @@ class PyramidGame : public Game {
     ControlSystem controlSystem;
     MovementSystem movementSystem;
     PhysicsSystem physicsSystem;
-    KalmanSystem kalmanSystem;
+//    KalmanSystem kalmanSystem;
     
   public:
     Delegate<bool(SDL_Event&)> systemsHandlerDlgt;
     PyramidGame(int argc, char **argv)
         : Game(argc, argv, "at3"),
-          controlSystem(&state), movementSystem(&state), physicsSystem(&state), kalmanSystem(&state)
+          controlSystem(&state), movementSystem(&state), physicsSystem(&state)//, kalmanSystem(&state)
     {
       systemsHandlerDlgt = DELEGATE(&PyramidGame::systemsHandler, this);
     }
@@ -163,7 +163,7 @@ class PyramidGame : public Game {
       initSuccess &= controlSystem.init();
       initSuccess &= physicsSystem.init();
       initSuccess &= movementSystem.init();
-      initSuccess &= kalmanSystem.init();
+//      initSuccess &= kalmanSystem.init();
       assert(initSuccess);
 
       // generate initial placement of objects
@@ -264,16 +264,16 @@ class PyramidGame : public Game {
       if (controlSystem.handleEvent(event)) {
         return true;
       }
-      if (kalmanSystem.handleEvent(event)) {
-        return true;
-      }
+//      if (kalmanSystem.handleEvent(event)) {
+//        return true;
+//      }
       return false;
     }
     void tick(float dt) {
       controlSystem.tick(dt);
       physicsSystem.tick(dt);
       movementSystem.tick(dt);
-      kalmanSystem.tick(dt);
+//      kalmanSystem.tick(dt);
 
       // make the fire look big if the pyramid is thrusting upwards
       PyramidControls* controls;

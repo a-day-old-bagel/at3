@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2016 Jonathan Glines
+ * Copyright (c) 2016 Jonathan Glines, Galen Cochrane
  * Jonathan Glines <jonathan@glines.net>
+ * Galen Cochrane <galencochrane@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -44,15 +45,17 @@ namespace at3 {
       GLint m_vertPositionLocation, m_vertNormalLocation, m_vertColorLocation,
              m_vertTexCoordLocation, m_vertVelocityLocation;
       GLint m_vertStartTimeLocation;
-      GLint m_texture0;
+      GLint m_texture0, m_terrain;
+      GLint m_screenSize, m_mvp, m_lodFactor, m_noiseTile;
 
-      static GLuint m_compileShader(
-          const char *code, int code_len, GLenum type);
+      static GLuint m_compileShader(const char *code, int code_len, GLenum type);
       static void m_linkShaderProgram(GLuint shaderProgram);
 
-      void m_init(
-          const char *vert, unsigned int vert_len,
-          const char *frag, unsigned int frag_len);
+      void m_init(const char *vert, unsigned int vert_len, const char *frag, unsigned int frag_len);
+    
+      void m_init(const char *vert, unsigned int vert_len, const char *frag, unsigned int frag_len,
+                  const char *tesc, unsigned int tesc_len, const char *tese, unsigned int tese_len);
+      
       void m_readCode(const std::string &path, char **code, unsigned int *code_len);
 
     protected:
@@ -80,12 +83,35 @@ namespace at3 {
        *
        * \param vert Source code string of the vertex shader to compile.
        * \param vert_len Length of the vertex shader source code string.
-       * \param frag Source code string of the vertex shader to compile.
-       * \param frag_len Length of the vertex shader source code string.
+       * \param frag Source code string of the fragment shader to compile.
+       * \param frag_len Length of the fragment shader source code string.
        */
-      ShaderProgram(
-          const char *vert, unsigned int vert_len,
-          const char *frag, unsigned int frag_len);
+      ShaderProgram(const char *vert, unsigned int vert_len, const char *frag, unsigned int frag_len);
+      /**
+       * Constructs an OpenGL shader program compiled and linked from the given
+       * vertex, fragment, tesselation control, and tesselation evaluation shaders.
+       *
+       * \param vert Path to the vertex shader to compile.
+       * \param frag Path to the fragment shader to compile.
+       * \param tesc Path to the tesselation control shader to compile.
+       * \param tese Path to the tesselation evaluation shader to compile.
+       */
+      ShaderProgram(const std::string &vert, const std::string &frag, const std::string &tesc, const std::string &tese);
+      /**
+       * Constructs an OpenGL shader program compiled and linked directly from
+       * string given for the vertex and fragment shader source.
+       *
+       * \param vert Source code string of the vertex shader to compile.
+       * \param vert_len Length of the vertex shader source code string.
+       * \param frag Source code string of the fragment shader to compile.
+       * \param frag_len Length of the fragment shader source code string.
+       * \param tesc Source code string of the tesselation control shader to compile.
+       * \param tesc_len Length of the vertex tesselation control source code string.
+       * \param tese Source code string of the tesselation evaluation shader to compile.
+       * \param tese_len Length of the vertex tesselation evaluation source code string.
+       */
+      ShaderProgram(const char *vert, unsigned int vert_len, const char *frag, unsigned int frag_len,
+                    const char *tesc, unsigned int tesc_len, const char *tese, unsigned int tese_len);
       /**
        * Destroy this shader program.
        *
@@ -174,6 +200,26 @@ namespace at3 {
        * \return Location of the first texture sampler uniform in the shader.
        */
       GLint texture0() const { return m_texture0; }
+      /**
+       * \return Location of the first texture sampler uniform in the shader.
+       */
+      GLint terrain() const { return m_terrain; }
+      /**
+       * \return Location of the first texture sampler uniform in the shader.
+       */
+      GLint screenSize() const { return m_screenSize; }
+      /**
+       * \return Location of the first texture sampler uniform in the shader.
+       */
+      GLint mvp() const { return m_mvp; }
+      /**
+       * \return Location of the first texture sampler uniform in the shader.
+       */
+      GLint lodFactor() const { return m_lodFactor; }
+      /**
+       * \return Location of the first texture sampler uniform in the shader.
+       */
+      GLint noiseTile() const { return m_noiseTile; }
 
       /**
        * Use this shader in the current GL state.

@@ -37,6 +37,8 @@ set_property( TARGET common PROPERTY CXX_STANDARD_REQUIRED ON )
 file(GLOB_RECURSE shaders
     "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/*.vert"
     "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/*.frag"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/*.tesc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/*.tese"
     )
 foreach(shader ${shaders})
   file(RELATIVE_PATH shader_rel "${CMAKE_CURRENT_SOURCE_DIR}" "${shader}")

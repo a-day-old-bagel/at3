@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2016 Jonathan Glines
+ * Copyright (c) 2016 Jonathan Glines, Galen Cochrane
  * Jonathan Glines <jonathan@glines.net>
+ * Galen Cochrane <galencochrane@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -55,13 +56,37 @@ namespace at3 {
     // Compile and link our shader
     m_init(vert, vert_len, frag, frag_len);
   }
+  
+  ShaderProgram::ShaderProgram(const std::string& vert, const std::string& frag, const std::string& tesc,
+                               const std::string& tese) {
+    char *vertCode, *fragCode, *tescCode, *teseCode;
+    unsigned int vertCodeLen, fragCodeLen, tescCodeLen, teseCodeLen;
+  
+    // Read the vertex and fragment shaders from file
+    m_readCode(vert, &vertCode, &vertCodeLen);
+    m_readCode(frag, &fragCode, &fragCodeLen);
+    m_readCode(tesc, &tescCode, &tescCodeLen);
+    m_readCode(tese, &teseCode, &teseCodeLen);
+  
+    // Compile and link our shader
+    m_init(vertCode, vertCodeLen, fragCode, fragCodeLen, tescCode, tescCodeLen, teseCode, teseCodeLen);
+  
+    delete[] vertCode;
+    delete[] fragCode;
+    delete[] tescCode;
+    delete[] teseCode;
+  }
+  
+  ShaderProgram::ShaderProgram(const char* vert, unsigned int vert_len, const char* frag, unsigned int frag_len,
+                               const char* tesc, unsigned int tesc_len, const char* tese, unsigned int tese_len)
+  {
+    m_init(vert, vert_len, frag, frag_len, tesc, tesc_len, tese, tese_len);
+  }
 
   ShaderProgram::~ShaderProgram() {
   }
 
-  void ShaderProgram::m_init(
-      const char *vert, unsigned int vert_len,
-      const char *frag, unsigned int frag_len)
+  void ShaderProgram::m_init(const char *vert, unsigned int vert_len, const char *frag, unsigned int frag_len)
   {
     m_shaderProgram = glCreateProgram();
 
@@ -78,6 +103,37 @@ namespace at3 {
 
     m_linkShaderProgram(m_shaderProgram);
 
+    initLocations();
+  }
+  
+  void ShaderProgram::m_init(const char* vert, unsigned int vert_len, const char* frag, unsigned int frag_len,
+                             const char* tesc, unsigned int tesc_len, const char* tese, unsigned int tese_len)
+  {
+    m_shaderProgram = glCreateProgram();
+  
+    GLuint vertexShader = -1;
+    if (vert_len != 0) {
+      vertexShader = m_compileShader(vert, vert_len, GL_VERTEX_SHADER);
+      glAttachShader(m_shaderProgram, vertexShader);
+    }
+    GLuint fragmentShader = -1;
+    if (frag_len != 0) {
+      fragmentShader = m_compileShader(frag, frag_len, GL_FRAGMENT_SHADER);
+      glAttachShader(m_shaderProgram, fragmentShader);
+    }
+    GLuint tessControlShader = -1;
+    if (tesc_len != 0) {
+      tessControlShader = m_compileShader(tesc, tesc_len, GL_TESS_CONTROL_SHADER);
+      glAttachShader(m_shaderProgram, tessControlShader);
+    }
+    GLuint TessEvalShader = -1;
+    if (tese_len != 0) {
+      TessEvalShader = m_compileShader(tese, tese_len, GL_TESS_EVALUATION_SHADER);
+      glAttachShader(m_shaderProgram, TessEvalShader);
+    }
+  
+    m_linkShaderProgram(m_shaderProgram);
+  
     initLocations();
   }
 
@@ -182,37 +238,28 @@ namespace at3 {
 
   void ShaderProgram::initLocations() {
     // Register some common uniform and attribute locations
-    m_modelViewLocation = glGetUniformLocation(
-        m_shaderProgram, "modelView");
-    m_projectionLocation = glGetUniformLocation(
-        m_shaderProgram, "projection");
-    m_modelViewProjectionLocation = glGetUniformLocation(
-        m_shaderProgram, "modelViewProjection");
-    m_normalTransformLocation = glGetUniformLocation(
-        m_shaderProgram, "normalTransform");
-    m_lightPositionLocation = glGetUniformLocation(
-        m_shaderProgram, "lightPosition");
-    m_lightIntensityLocation = glGetUniformLocation(
-        m_shaderProgram, "lightIntensity");
-    m_timeLocation = glGetUniformLocation(
-        m_shaderProgram, "time");
-    m_colorLocation = glGetUniformLocation(
-        m_shaderProgram, "color");
+    m_modelViewLocation = glGetUniformLocation(m_shaderProgram, "modelView");
+    m_projectionLocation = glGetUniformLocation(m_shaderProgram, "projection");
+    m_modelViewProjectionLocation = glGetUniformLocation(m_shaderProgram, "modelViewProjection");
+    m_normalTransformLocation = glGetUniformLocation(m_shaderProgram, "normalTransform");
+    m_lightPositionLocation = glGetUniformLocation(m_shaderProgram, "lightPosition");
+    m_lightIntensityLocation = glGetUniformLocation(m_shaderProgram, "lightIntensity");
+    m_timeLocation = glGetUniformLocation(m_shaderProgram, "time");
+    m_colorLocation = glGetUniformLocation(m_shaderProgram, "color");
 
-    m_vertPositionLocation = glGetAttribLocation(
-        m_shaderProgram, "vertPosition");
-    m_vertNormalLocation = glGetAttribLocation(
-        m_shaderProgram, "vertNormal");
-    m_vertColorLocation = glGetAttribLocation(
-        m_shaderProgram, "vertColor");
-    m_vertTexCoordLocation = glGetAttribLocation(
-        m_shaderProgram, "vertTexCoord");
-    m_vertVelocityLocation = glGetAttribLocation(
-        m_shaderProgram, "vertVelocity");
-    m_vertStartTimeLocation = glGetAttribLocation(
-        m_shaderProgram, "vertStartTime");
+    m_vertPositionLocation = glGetAttribLocation(m_shaderProgram, "vertPosition");
+    m_vertNormalLocation = glGetAttribLocation(m_shaderProgram, "vertNormal");
+    m_vertColorLocation = glGetAttribLocation(m_shaderProgram, "vertColor");
+    m_vertTexCoordLocation = glGetAttribLocation(m_shaderProgram, "vertTexCoord");
+    m_vertVelocityLocation = glGetAttribLocation(m_shaderProgram, "vertVelocity");
+    m_vertStartTimeLocation = glGetAttribLocation(m_shaderProgram, "vertStartTime");
 
-    m_texture0 = glGetUniformLocation(
-        m_shaderProgram, "texture0");
+    m_texture0 = glGetUniformLocation(m_shaderProgram, "texture0");
+    
+    m_terrain = glGetUniformLocation(m_shaderProgram, "terrain");
+    m_screenSize = glGetUniformLocation(m_shaderProgram, "screen_size");
+    m_mvp = glGetUniformLocation(m_shaderProgram, "mvp");
+    m_lodFactor = glGetUniformLocation(m_shaderProgram, "lod_factor");
+    m_noiseTile = glGetUniformLocation(m_shaderProgram, "noise_tile");
   }
 }

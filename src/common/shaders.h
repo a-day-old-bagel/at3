@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2016 Jonathan Glines
+ * Copyright (c) 2016 Jonathan Glines, Galen Cochrane
  * Jonathan Glines <jonathan@glines.net>
+ * Galen Cochrane <galencochrane@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -40,26 +41,28 @@ namespace at3 {
    */
   class Shaders {
     public:
-#define DECLARE_SHADER(shader) \
-      static std::shared_ptr<ShaderProgram> shader ## Shader()
+#define DECLARE_SHADER(shader) static std::shared_ptr<ShaderProgram> shader ## Shader()
 
-      /** Shader for drawing quad billboards. */
-      DECLARE_SHADER(billboard);
-      /** Shader for drawing points as billboards (since WebGL doesn't support
-       * point sprites). */
-      DECLARE_SHADER(billboardPoint);
+    /** Shader for drawing quad billboards. */
+    DECLARE_SHADER(billboard);
+    /** Shader for drawing points as billboards (since WebGL doesn't support
+     * point sprites). */
+    DECLARE_SHADER(billboardPoint);
 
-      /** Shader implementing Gouraud shading. */
-      DECLARE_SHADER(gouraud);
+    /** Shader implementing Gouraud shading. */
+    DECLARE_SHADER(gouraud);
 
-      /** Shader for drawing debugging lines. */
-      DECLARE_SHADER(wireframe);
+    /** Shader for drawing debugging lines. */
+    DECLARE_SHADER(wireframe);
 
-      /** Shader for drawing textures */
-      DECLARE_SHADER(texture);
+    /** Shader for drawing textures */
+    DECLARE_SHADER(texture);
 
-      /** Shader for drawing skybox */
-      DECLARE_SHADER(skyQuad);
+    /** Shader for drawing skybox */
+    DECLARE_SHADER(skyQuad);
+    
+    /** shader for drawing LOD terrain */
+    DECLARE_SHADER(terrain);
   };
 }
 

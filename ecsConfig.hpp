@@ -101,7 +101,7 @@ namespace {
 
   struct Kalman : public Component<Kalman> {
     glm::mat4 previousTransform;
-    btVector3 believedPos, believedVel, realVel;
+    btVector3 believedPos, believedVel, realVel, kPos, kVel;
     arma::mat66 covariance;
     Kalman();
   };

@@ -67,8 +67,9 @@ namespace at3 {
       float noiseX = distr(gen);
       float noiseY = distr(gen);
       float noiseZ = distr(gen);
+      btVector3 noiseVec(noiseX, noiseY, noiseZ);
 
-      prediction[18] = elapsed;
+      /*prediction[18] = elapsed;
       prediction[25] = elapsed;
       prediction[32] = elapsed;
       predictionTranspose[3] = elapsed;
@@ -77,11 +78,11 @@ namespace at3 {
 
       kalman->covariance = prediction * kalman->covariance * predictionTranspose;
       kalman->covariance.print(std::cout);
-      std::cout << std::endl;
+      std::cout << std::endl;*/
       
       btVector3 realVel = physics->rigidBody->getLinearVelocity();
       btVector3 realAccel = (realVel - kalman->realVel) / elapsed;
-      btVector3 measuredAccel = realAccel + elapsed * btVector3(noiseX, noiseY, noiseZ);
+      btVector3 measuredAccel = realAccel + elapsed * noiseVec;
 
 //      arma::vec state0 = {
 //          kalman->believedPos.x(), kalman->believedPos.y(), kalman->believedPos.z(),
@@ -94,6 +95,8 @@ namespace at3 {
       // midpoint integration approximation for position update step
       btVector3 believedTranslation = elapsed * ((kalman->believedVel + newBelievedVel) * 0.5);
       btVector3 newBelievedPosition = kalman->believedPos + believedTranslation;
+      btVector3 kTranslation = elapsed * ((kalman->kVel + realVel) * 0.5) + noiseVec * 0.001;
+      btVector3 newKPos = kalman->kPos + kTranslation;
 
       // draw the real path
       Debug::drawLine(*state, initPos, currentPos, {1.f, 1.f, 0.f});
@@ -102,6 +105,14 @@ namespace at3 {
                       {kalman->believedPos.x(), kalman->believedPos.y(), kalman->believedPos.z()},
                       {newBelievedPosition.x(), newBelievedPosition.y(), newBelievedPosition.z()},
                       {0.f, 1.f, 1.f});
+      // draw the k path
+      Debug::drawLine(*state,
+                      {kalman->kPos.x(), kalman->kPos.y(), kalman->kPos.z()},
+                      {newKPos.x(), newKPos.y(), newKPos.z()},
+                      {1.f, 1.f, 1.f});
+      
+      kalman->kPos = newKPos;
+      kalman->kVel = realVel;
       
       kalman->previousTransform = placement->mat;
       kalman->believedPos = newBelievedPosition;
@@ -149,6 +160,8 @@ namespace at3 {
     kalman->believedPos = btVector3{placement->mat[3][0], placement->mat[3][1], placement->mat[3][2]};
     kalman->realVel = physics->rigidBody->getLinearVelocity();
     kalman->believedVel = kalman->realVel;
+    kalman->kPos = kalman->believedPos;
+    kalman->kVel = kalman->believedVel;
     lastTime = SDL_GetTicks();
   }
 }

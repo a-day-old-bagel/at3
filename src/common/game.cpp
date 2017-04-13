@@ -63,6 +63,7 @@ namespace at3 {
           SDL_GetError());
       return false;
     }
+    SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
     m_window = SDL_CreateWindow(
         m_windowTitle,  // title
         SDL_WINDOWPOS_UNDEFINED,  // x

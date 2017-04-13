@@ -180,7 +180,8 @@ namespace at3 {
       const glm::mat4 &projection)
   {
     // Use a simple shader
-    auto shader = Shaders::textureShader();
+//    auto shader = Shaders::textureShader();
+    auto shader = Shaders::terrainShader();
     shader->use();
 
     // Prepare the uniform values
