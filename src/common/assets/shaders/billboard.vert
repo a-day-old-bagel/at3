@@ -1,7 +1,6 @@
-//precision mediump float;
 
-attribute vec3 vertPosition;
-attribute vec2 vertTexCoord;
+in vec3 vertPosition;
+in vec2 vertTexCoord;
 
 uniform mat4 modelView;
 uniform mat4 projection;

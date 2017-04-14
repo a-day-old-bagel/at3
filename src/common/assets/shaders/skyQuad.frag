@@ -1,7 +1,8 @@
-//precision mediump float;
+
 uniform samplerCube texture0;
-varying vec3 eyeDirection;
+in vec3 eyeDirection;
+out vec4 fragColor;
 
 void main() {
-    gl_FragColor = textureCube(texture0, eyeDirection);
+    fragColor = texture(texture0, eyeDirection);
 }

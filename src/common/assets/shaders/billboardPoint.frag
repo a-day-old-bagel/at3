@@ -1,8 +1,8 @@
-//precision mediump float;
 
 uniform vec3 color;
 
-varying vec2 texCoord;
+in vec2 texCoord;
+out vec4 fragColor;
 
 void main() {
   float radius = 0.35;
@@ -20,7 +20,7 @@ void main() {
   if (dist > radius)
     discard;
   if (dist > radius - border)
-    gl_FragColor = vec4(borderColor, 1.0f);
+    fragColor = vec4(borderColor, 1.0f);
   else
-    gl_FragColor = vec4(color, 1.0f);
+    fragColor = vec4(color, 1.0f);
 }

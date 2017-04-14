@@ -1,6 +1,6 @@
-//precision mediump float;
 
-varying vec3 color;
+in vec3 color;
+out vec4 fragColor;
 
 // TODO: Write a function for Phong lighting
 

@@ -29,6 +29,8 @@
 
 #include "shaderProgram.h"
 
+#define GLSL_VERSION "400"
+
 namespace at3 {
   ShaderProgram::ShaderProgram(
       const std::string &vert, const std::string &frag)
@@ -168,8 +170,8 @@ namespace at3 {
   {
     std::stringstream ss;
 #ifndef __EMSCRIPTEN__
-    ss << "#version 120\n";
-    code_len += strlen("#version 120\n");
+    ss << "\n#version " GLSL_VERSION "\n";
+    code_len += strlen("\n#version " GLSL_VERSION "\n");
 #endif
     ss << code;
 

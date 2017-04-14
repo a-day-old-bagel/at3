@@ -38,7 +38,7 @@
 using namespace ezecs;
 
 namespace at3 {
-  MeshObject::MeshObject(ezecs::State &state, const std::string &meshFile, const std::string &textureFile,
+  TerrainObject::TerrainObject(ezecs::State &state, const std::string &meshFile, const std::string &textureFile,
                            glm::mat4 &transform)
       : SceneObject(state)
   {
@@ -52,11 +52,11 @@ namespace at3 {
     m_loadTexture(textureFile);
   }
 
-  MeshObject::~MeshObject() {
+  TerrainObject::~MeshObject() {
   }
 
-  void MeshObject::m_loadMesh(const std::string &meshFile) {
-    Assimp::Importer importer;
+  void TerrainObject::m_loadMesh(const std::string &meshFile) {
+    /*Assimp::Importer importer;
     auto scene = importer.ReadFile(
         meshFile,
         aiProcess_Triangulate
@@ -91,7 +91,7 @@ namespace at3 {
       vertices[i].norm[2] = aim->mNormals[i].z;
       vertices[i].tex[0] = aim->mTextureCoords[0][i].x;
       vertices[i].tex[1] = aim->mTextureCoords[0][i].y;
-      /*fprintf(stderr,
+      *//*fprintf(stderr,
           "vertices[%d]:\n"
           "  pos: (%g, %g, %g)\n"
           "  norm: (%g, %g, %g)\n"
@@ -104,8 +104,16 @@ namespace at3 {
           vertices[i].norm[1],
           vertices[i].norm[2],
           vertices[i].tex[0],
-          vertices[i].tex[1]);*/
+          vertices[i].tex[1]);*//*
+    }*/
+
+    MeshVertex *vertices = new MeshVertex[aim->mNumVertices];
+    for (int x = 0; x < 100; ++x) {
+      for (int j = 0; j < 100; ++j) {
+        vertices
+      }
     }
+
     // Copy the vertices buffer to the GL
     glGenBuffers(1, &m_vertexBuffer);
     FORCE_ASSERT_GL_ERROR();
@@ -143,7 +151,7 @@ namespace at3 {
     m_numIndices = aim->mNumFaces * 3;
   }
 
-  void MeshObject::m_loadTexture(const std::string &textureFile) {
+  void TerrainObject::m_loadTexture(const std::string &textureFile) {
     int x, y, n;
     stbi_set_flip_vertically_on_load(true);
     uint8_t* data = stbi_load(textureFile.c_str(), &x, &y, &n, 0);
@@ -175,7 +183,7 @@ namespace at3 {
     stbi_image_free(data);
   }
 
-  void MeshObject::m_drawSurface(
+  void TerrainObject::m_drawSurface(
       const glm::mat4 &modelView,
       const glm::mat4 &projection)
   {
@@ -270,7 +278,7 @@ namespace at3 {
     ASSERT_GL_ERROR();
   }
 
-  void MeshObject::draw(const glm::mat4 &modelWorld,
+  void TerrainObject::draw(const glm::mat4 &modelWorld,
       const glm::mat4 &worldView, const glm::mat4 &projection,
       float alpha, bool debug)
   {
