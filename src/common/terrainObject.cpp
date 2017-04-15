@@ -107,48 +107,66 @@ namespace at3 {
           vertices[i].tex[1]);*//*
     }*/
 
-    MeshVertex *vertices = new MeshVertex[aim->mNumVertices];
-    for (int x = 0; x < 100; ++x) {
-      for (int j = 0; j < 100; ++j) {
-        vertices
+    float width = 100;
+    float height = 100;
+    size_t numPatchesX = 64;
+    size_t numPatchesY = 64;
+    size_t numVerts = (numPatchesX + 1) * (numPatchesY + 1);
+    float patchWidth = width / (float)numPatchesX;
+    float patchHeight = height / (float)numPatchesY;
+    float scaleX = patchWidth / (float)numPatchesX;
+    float scaleY = patchHeight / (float)numPatchesY;
+    size_t strideY = numPatchesX + 1;
+//    MeshVertex *vertices = new MeshVertex[numVerts];
+    std::vector<float> verts;
+    for (size_t y = 0; y < numPatchesY + 1; ++y) {
+      for (size_t x = 0; x < numPatchesX + 1; ++x) {
+        verts.push_back(x * scaleX);
+        verts.push_back(y * scaleY);
+        verts.push_back(10.f * sinf(verts.back())); // remove
+      }
+    }
+    std::vector<uint16_t> indices;
+    for (size_t y = 0; y < numPatchesY; ++y) {
+      for (size_t x = 0; x < numPatchesX; ++x) {
+        indices.push_back(strideY *  y      + x + 1);
+        indices.push_back(strideY *  y      + x    );
+        indices.push_back(strideY * (y + 1) + x    );
+        indices.push_back(strideY * (y + 1) + x    );
+        indices.push_back(strideY * (y + 1) + x + 1);
+        indices.push_back(strideY *  y      + x + 1);
       }
     }
 
     // Copy the vertices buffer to the GL
-    glGenBuffers(1, &m_vertexBuffer);
-    FORCE_ASSERT_GL_ERROR();
-    glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
-    FORCE_ASSERT_GL_ERROR();
+    glGenBuffers(1, &m_vertexBuffer);                                                           FORCE_ASSERT_GL_ERROR();
+    glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);                                              FORCE_ASSERT_GL_ERROR();
     glBufferData(
         GL_ARRAY_BUFFER,  // target
-        sizeof(MeshVertex) * aim->mNumVertices,  // size
-        vertices,  // data
+        sizeof(float) * verts.size(),  // size
+        verts.data(),  // data
         GL_STATIC_DRAW  // usage
-        );
-    FORCE_ASSERT_GL_ERROR();
-    delete[] vertices;
-    // Copy the face data into an index buffer
+        );                                                                                      FORCE_ASSERT_GL_ERROR();
+//    delete[] vertices;
+    /*// Copy the face data into an index buffer
     uint32_t *indices = new uint32_t[3 * aim->mNumFaces];
     for (int i = 0; i < aim->mNumFaces; ++i) {
       assert(aim->mFaces[i].mNumIndices == 3);
       indices[i * 3] = aim->mFaces[i].mIndices[0];
       indices[i * 3 + 1] = aim->mFaces[i].mIndices[1];
       indices[i * 3 + 2] = aim->mFaces[i].mIndices[2];
-    }
+    }*/
     // Copy the index data to the GL
-    glGenBuffers(1, &m_indexBuffer);
-    FORCE_ASSERT_GL_ERROR();
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
-    FORCE_ASSERT_GL_ERROR();
+    glGenBuffers(1, &m_indexBuffer);                                                            FORCE_ASSERT_GL_ERROR();
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);                                       FORCE_ASSERT_GL_ERROR();
     glBufferData(
         GL_ELEMENT_ARRAY_BUFFER,  // target
-        sizeof(uint32_t) * 3 * aim->mNumFaces,  // size
-        indices,  // data
+        sizeof(uint16_t) * indices.size(),  // size
+        indices.data(),  // data
         GL_STATIC_DRAW  // usage
-        );
-    FORCE_ASSERT_GL_ERROR();
-    delete[] indices;
-    m_numIndices = aim->mNumFaces * 3;
+        );                                                                                       FORCE_ASSERT_GL_ERROR();
+//    delete[] indices;
+    m_numIndices = indices.size();
   }
 
   void TerrainObject::m_loadTexture(const std::string &textureFile) {
@@ -188,7 +206,7 @@ namespace at3 {
       const glm::mat4 &projection)
   {
     // Use a simple shader
-    auto shader = Shaders::textureShader();
+    auto shader = Shaders::terrainShader();
     shader->use();
 
     // Prepare the uniform values
@@ -272,7 +290,7 @@ namespace at3 {
     glDrawElements(
         GL_TRIANGLES,  // mode
         m_numIndices,  // count
-        GL_UNSIGNED_INT,  // type
+        GL_UNSIGNED_SHORT,  // type
         0  // indices
         );
     ASSERT_GL_ERROR();
