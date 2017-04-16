@@ -52,10 +52,11 @@ namespace at3 {
       SceneObject* m_parent = NULL;
 
       /**
+       *
        * This method recursively draws this object and all of its children.
        */
-      void m_draw(Transform &modelWorld, const glm::mat4 &worldView,
-                  const glm::mat4 &projection, float alpha, bool debug);
+      void m_draw(Transform &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
+                  bool debug);
 
     protected:
       ezecs::State* state;
@@ -130,9 +131,8 @@ namespace at3 {
        * Derived classes must implement this method in order for their scene
        * objects to be visible.
        */
-      virtual void draw(const glm::mat4 &modelWorld,
-                        const glm::mat4 &worldView, const glm::mat4 &projection,
-                        float alpha, bool debug);
+      virtual void draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
+                        bool debug);
 
       void reverseTransformLookup(glm::mat4 &wv) const;
 

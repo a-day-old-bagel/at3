@@ -201,19 +201,14 @@ namespace at3 {
         );
     ASSERT_GL_ERROR();
 
-    /*
     // Prepare the texture sampler
     assert(shader->texture0() != -1);
     glUniform1i(
         shader->texture0(),  // location
         0  // value
-        );
-    ASSERT_GL_ERROR();
-    glActiveTexture(GL_TEXTURE0);
-    ASSERT_GL_ERROR();
-    glBindTexture(GL_TEXTURE_2D, m_texture);
-    ASSERT_GL_ERROR();
-    */
+    );                                                                ASSERT_GL_ERROR();
+    glActiveTexture(GL_TEXTURE0);                                     ASSERT_GL_ERROR();
+    glBindTexture(GL_TEXTURE_2D, m_texture);                          ASSERT_GL_ERROR();
 
     // Prepare the vertex attributes
     glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
@@ -230,20 +225,7 @@ namespace at3 {
         &(((MeshVertex *)0)->pos[0])  // pointer
         );
     ASSERT_GL_ERROR();
-    /*
-    assert(shader->vertNormalLocation() != -1);
-    glEnableVertexAttribArray(shader->vertNormalLocation());
-    ASSERT_GL_ERROR();
-    glVertexAttribPointer(
-        shader->vertNormalLocation(),  // index
-        3,  // size
-        GL_FLOAT,  // type
-        0,  // normalized
-        sizeof(MeshVertex),  // stride
-        &(((MeshVertex *)0)->norm[0])  // pointer
-        );
-    ASSERT_GL_ERROR();
-    */
+
     assert(shader->vertTexCoordLocation() != -1);
     glEnableVertexAttribArray(shader->vertTexCoordLocation());
     ASSERT_GL_ERROR();
@@ -259,8 +241,6 @@ namespace at3 {
 
     // Draw the surface
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
-    glBindTexture(GL_TEXTURE_2D, m_texture);
-    ASSERT_GL_ERROR();
     glDrawElements(
         GL_TRIANGLES,  // mode
         m_numIndices,  // count
@@ -270,12 +250,9 @@ namespace at3 {
     ASSERT_GL_ERROR();
   }
 
-  void MeshObject::draw(const glm::mat4 &modelWorld,
-      const glm::mat4 &worldView, const glm::mat4 &projection,
-      float alpha, bool debug)
+  void MeshObject::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
+                        bool debug)
   {
-//    ezecs::Scale* scale;
-//    state->get_Scale(id, &scale);
     glm::mat4 modelView = worldView * modelWorld;
     if (state->getComponents(id) & TRANSFORMFUNCTION) {
       TransformFunction* transformFunction;

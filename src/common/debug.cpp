@@ -220,10 +220,7 @@ namespace at3 {
     return instance;
   }
 
-  void Debug::draw(const glm::mat4 &modelWorld,
-      const glm::mat4 &worldView, const glm::mat4 &projection,
-      float alpha, bool debug)
-  {
+  void Debug::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection, bool debug) {
     if (m_linesChanged) {
       m_updateLines();
       m_linesChanged = false;

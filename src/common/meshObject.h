@@ -53,9 +53,8 @@ namespace at3 {
                        glm::mat4 &transform);
       virtual ~MeshObject();
 
-      virtual void draw(const glm::mat4 &modelWorld,
-          const glm::mat4 &worldView, const glm::mat4 &projection,
-          float alpha, bool debug);
+      virtual void draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
+                        bool debug);
   };
 }
 

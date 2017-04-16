@@ -60,29 +60,33 @@ namespace at3 {
   }
   
   ShaderProgram::ShaderProgram(const std::string& vert, const std::string& frag, const std::string& tesc,
-                               const std::string& tese) {
-    char *vertCode, *fragCode, *tescCode, *teseCode;
-    unsigned int vertCodeLen, fragCodeLen, tescCodeLen, teseCodeLen;
+                               const std::string& tese, const std::string &geom) {
+    char *vertCode, *fragCode, *tescCode, *teseCode, *geomCode;
+    unsigned int vertCodeLen, fragCodeLen, tescCodeLen, teseCodeLen, geomCodeLen;
   
     // Read the vertex and fragment shaders from file
     m_readCode(vert, &vertCode, &vertCodeLen);
     m_readCode(frag, &fragCode, &fragCodeLen);
     m_readCode(tesc, &tescCode, &tescCodeLen);
     m_readCode(tese, &teseCode, &teseCodeLen);
-  
+    m_readCode(geom, &geomCode, &geomCodeLen);
+
     // Compile and link our shader
-    m_init(vertCode, vertCodeLen, fragCode, fragCodeLen, tescCode, tescCodeLen, teseCode, teseCodeLen);
+    m_init(vertCode, vertCodeLen, fragCode, fragCodeLen,
+           tescCode, tescCodeLen, teseCode, teseCodeLen, geomCode, geomCodeLen);
   
     delete[] vertCode;
     delete[] fragCode;
     delete[] tescCode;
     delete[] teseCode;
+    delete[] geomCode;
   }
   
   ShaderProgram::ShaderProgram(const char* vert, unsigned int vert_len, const char* frag, unsigned int frag_len,
-                               const char* tesc, unsigned int tesc_len, const char* tese, unsigned int tese_len)
+                               const char* tesc, unsigned int tesc_len, const char* tese, unsigned int tese_len,
+                               const char *geom, unsigned int geom_len)
   {
-    m_init(vert, vert_len, frag, frag_len, tesc, tesc_len, tese, tese_len);
+    m_init(vert, vert_len, frag, frag_len, tesc, tesc_len, tese, tese_len, geom, geom_len);
   }
 
   ShaderProgram::~ShaderProgram() {
@@ -109,7 +113,8 @@ namespace at3 {
   }
   
   void ShaderProgram::m_init(const char* vert, unsigned int vert_len, const char* frag, unsigned int frag_len,
-                             const char* tesc, unsigned int tesc_len, const char* tese, unsigned int tese_len)
+                             const char* tesc, unsigned int tesc_len, const char* tese, unsigned int tese_len,
+                             const char *geom, unsigned int geom_len)
   {
     m_shaderProgram = glCreateProgram();
   
@@ -128,10 +133,15 @@ namespace at3 {
       tessControlShader = m_compileShader(tesc, tesc_len, GL_TESS_CONTROL_SHADER);
       glAttachShader(m_shaderProgram, tessControlShader);
     }
-    GLuint TessEvalShader = -1;
+    GLuint tessEvalShader = -1;
     if (tese_len != 0) {
-      TessEvalShader = m_compileShader(tese, tese_len, GL_TESS_EVALUATION_SHADER);
-      glAttachShader(m_shaderProgram, TessEvalShader);
+      tessEvalShader = m_compileShader(tese, tese_len, GL_TESS_EVALUATION_SHADER);
+      glAttachShader(m_shaderProgram, tessEvalShader);
+    }
+    GLuint geomShader = -1;
+    if (geom_len != 0) {
+      geomShader = m_compileShader(geom, geom_len, GL_GEOMETRY_SHADER);
+      glAttachShader(m_shaderProgram, geomShader);
     }
   
     m_linkShaderProgram(m_shaderProgram);

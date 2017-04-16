@@ -12,6 +12,7 @@ add_library(common STATIC
     shaderProgram.cpp
     shaders.cpp
     shaders.cpp
+    terrainObject.cpp
     transform.cpp
     transformRAII.cpp
     transformStack.cpp
@@ -39,6 +40,7 @@ file(GLOB_RECURSE shaders
     "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/*.frag"
     "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/*.tesc"
     "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/*.tese"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/*.geom"
     )
 foreach(shader ${shaders})
   file(RELATIVE_PATH shader_rel "${CMAKE_CURRENT_SOURCE_DIR}" "${shader}")

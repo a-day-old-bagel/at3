@@ -54,7 +54,8 @@ namespace at3 {
       void m_init(const char *vert, unsigned int vert_len, const char *frag, unsigned int frag_len);
     
       void m_init(const char *vert, unsigned int vert_len, const char *frag, unsigned int frag_len,
-                  const char *tesc, unsigned int tesc_len, const char *tese, unsigned int tese_len);
+                  const char *tesc, unsigned int tesc_len, const char *tese, unsigned int tese_len,
+                  const char *geom, unsigned int geom_len);
       
       void m_readCode(const std::string &path, char **code, unsigned int *code_len);
 
@@ -95,8 +96,10 @@ namespace at3 {
        * \param frag Path to the fragment shader to compile.
        * \param tesc Path to the tesselation control shader to compile.
        * \param tese Path to the tesselation evaluation shader to compile.
+       * \param geom Path to the geometry shader to compile.
        */
-      ShaderProgram(const std::string &vert, const std::string &frag, const std::string &tesc, const std::string &tese);
+      ShaderProgram(const std::string &vert, const std::string &frag, const std::string &tesc, const std::string &tese,
+                    const std::string &geom);
       /**
        * Constructs an OpenGL shader program compiled and linked directly from
        * string given for the vertex and fragment shader source.
@@ -106,12 +109,15 @@ namespace at3 {
        * \param frag Source code string of the fragment shader to compile.
        * \param frag_len Length of the fragment shader source code string.
        * \param tesc Source code string of the tesselation control shader to compile.
-       * \param tesc_len Length of the vertex tesselation control source code string.
+       * \param tesc_len Length of the tesselation control source code string.
        * \param tese Source code string of the tesselation evaluation shader to compile.
-       * \param tese_len Length of the vertex tesselation evaluation source code string.
+       * \param tese_len Length of the tesselation evaluation source code string.
+       * \param geom Source code string of the geometry shader to compile.
+       * \param geom_len Length of the geometry source code string.
        */
       ShaderProgram(const char *vert, unsigned int vert_len, const char *frag, unsigned int frag_len,
-                    const char *tesc, unsigned int tesc_len, const char *tese, unsigned int tese_len);
+                    const char *tesc, unsigned int tesc_len, const char *tese, unsigned int tese_len,
+                    const char *geom, unsigned int geom_len);
       /**
        * Destroy this shader program.
        *

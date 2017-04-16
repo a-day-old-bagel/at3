@@ -32,30 +32,23 @@
 namespace at3 {
   class TerrainObject : public SceneObject {
     private:
-      typedef struct {
-        float pos[3];
-        float norm[3];
-        float tex[2];
-      } MeshVertex;
+      GLuint m_vertexBuffer, m_indexBuffer,  m_diffuse, m_terrain;
+      size_t m_numIndices;
+      float lodFactor;
+      size_t numPatchesX, numPatchesY;
 
-      std::string m_meshFile;
-      GLuint m_vertexBuffer, m_indexBuffer, m_texture;
-      int m_numIndices;
-
-      void m_loadMesh(const std::string &meshFile);
-      void m_loadTexture(const std::string &textureFile);
+      void m_genMesh();
+      void m_genTextures();
 
       void m_drawSurface(
           const glm::mat4 &modelView,
           const glm::mat4 &projection);
     public:
-      TerrainObject(ezecs::State &state, const std::string &meshFile, const std::string &textureFile,
-                       glm::mat4 &transform);
-      virtual ~MeshObject();
+      TerrainObject(ezecs::State &state, const glm::mat4 &transform, float xMin, float xMax, float yMin, float yMax);
+      virtual ~TerrainObject();
 
-      virtual void draw(const glm::mat4 &modelWorld,
-          const glm::mat4 &worldView, const glm::mat4 &projection,
-          float alpha, bool debug);
+      virtual void draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
+                        bool debug);
   };
 }
 

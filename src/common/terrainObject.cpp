@@ -33,172 +33,143 @@
 #include "glError.h"
 #include "shaderProgram.h"
 #include "shaders.h"
-#include "meshObject.h"
+#include "terrainObject.h"
 
 using namespace ezecs;
 
 namespace at3 {
-  TerrainObject::TerrainObject(ezecs::State &state, const std::string &meshFile, const std::string &textureFile,
-                           glm::mat4 &transform)
+  TerrainObject::TerrainObject(ezecs::State &state, const glm::mat4 &transform,
+                               float xMin, float xMax, float yMin, float yMax)
       : SceneObject(state)
   {
     ezecs::CompOpReturn status;
     status = this->state->add_Placement(id, transform);
     assert(status == ezecs::SUCCESS);
 
+    numPatchesX = 4;
+    numPatchesY = 4;
+    lodFactor = 20.f;
+
     // Load the mesh from file using assimp
-    m_loadMesh(meshFile);
+    m_genMesh();
     // Load the texture from file using SDL2
-    m_loadTexture(textureFile);
+    m_genTextures();
   }
 
-  TerrainObject::~MeshObject() {
-  }
+  TerrainObject::~TerrainObject() { }
 
-  void TerrainObject::m_loadMesh(const std::string &meshFile) {
-    /*Assimp::Importer importer;
-    auto scene = importer.ReadFile(
-        meshFile,
-        aiProcess_Triangulate
-        );
-
-    if (!scene) {
-      fprintf(stderr, "Failed to load mesh from file: '%s'\n",
-          meshFile.c_str());
-    }
-    if (scene->mNumMeshes != 1) {
-      fprintf(stderr, "Mesh file '%s' must contain a single mesh",
-          meshFile.c_str());
-    }
-    auto aim = scene->mMeshes[0];
-    if (aim->mNormals == NULL) {
-      fprintf(stderr, "Error: No normals in mesh '%s'\n",
-          meshFile.c_str());
-    }
-    if (!aim->HasTextureCoords(0)) {
-      fprintf(stderr, "Error: No texture coordinates in mesh '%s'\n",
-          meshFile.c_str());
-    }
-
-    // Copy the mesh vertices into a buffer with the appropriate format
-    MeshVertex *vertices = new MeshVertex[aim->mNumVertices];
-    for (int i = 0; i < aim->mNumVertices; ++i) {
-      vertices[i].pos[0] = aim->mVertices[i].x;
-      vertices[i].pos[1] = aim->mVertices[i].y;
-      vertices[i].pos[2] = aim->mVertices[i].z;
-      vertices[i].norm[0] = aim->mNormals[i].x;
-      vertices[i].norm[1] = aim->mNormals[i].y;
-      vertices[i].norm[2] = aim->mNormals[i].z;
-      vertices[i].tex[0] = aim->mTextureCoords[0][i].x;
-      vertices[i].tex[1] = aim->mTextureCoords[0][i].y;
-      *//*fprintf(stderr,
-          "vertices[%d]:\n"
-          "  pos: (%g, %g, %g)\n"
-          "  norm: (%g, %g, %g)\n"
-          "  tex: (%g, %g)\n",
-          i,
-          vertices[i].pos[0],
-          vertices[i].pos[1],
-          vertices[i].pos[2],
-          vertices[i].norm[0],
-          vertices[i].norm[1],
-          vertices[i].norm[2],
-          vertices[i].tex[0],
-          vertices[i].tex[1]);*//*
-    }*/
-
-    float width = 100;
-    float height = 100;
-    size_t numPatchesX = 64;
-    size_t numPatchesY = 64;
-    size_t numVerts = (numPatchesX + 1) * (numPatchesY + 1);
-    float patchWidth = width / (float)numPatchesX;
-    float patchHeight = height / (float)numPatchesY;
-    float scaleX = patchWidth / (float)numPatchesX;
-    float scaleY = patchHeight / (float)numPatchesY;
+  void TerrainObject::m_genMesh() {
     size_t strideY = numPatchesX + 1;
-//    MeshVertex *vertices = new MeshVertex[numVerts];
     std::vector<float> verts;
     for (size_t y = 0; y < numPatchesY + 1; ++y) {
-      for (size_t x = 0; x < numPatchesX + 1; ++x) {
-        verts.push_back(x * scaleX);
-        verts.push_back(y * scaleY);
-        verts.push_back(10.f * sinf(verts.back())); // remove
+      for (size_t x = 0; x < numPatchesX + 1; ++x) { // for each vertex
+        verts.push_back((float)x / (float)(numPatchesX));
+        verts.push_back((float)y / (float)(numPatchesY));
       }
     }
     std::vector<uint16_t> indices;
     for (size_t y = 0; y < numPatchesY; ++y) {
-      for (size_t x = 0; x < numPatchesX; ++x) {
-        indices.push_back(strideY *  y      + x + 1);
-        indices.push_back(strideY *  y      + x    );
-        indices.push_back(strideY * (y + 1) + x    );
-        indices.push_back(strideY * (y + 1) + x    );
-        indices.push_back(strideY * (y + 1) + x + 1);
-        indices.push_back(strideY *  y      + x + 1);
+      for (size_t x = 0; x < numPatchesX; ++x) { // for each quad
+        indices.push_back((uint16_t)(strideY *  y      + x    ));
+        indices.push_back((uint16_t)(strideY * (y + 1) + x    ));
+        indices.push_back((uint16_t)(strideY * (y + 1) + x + 1));
+        indices.push_back((uint16_t)(strideY *  y      + x + 1));
       }
     }
 
     // Copy the vertices buffer to the GL
-    glGenBuffers(1, &m_vertexBuffer);                                                           FORCE_ASSERT_GL_ERROR();
-    glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);                                              FORCE_ASSERT_GL_ERROR();
+    glGenBuffers(1, &m_vertexBuffer);                              FORCE_ASSERT_GL_ERROR();
+    glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);                 FORCE_ASSERT_GL_ERROR();
     glBufferData(
         GL_ARRAY_BUFFER,  // target
         sizeof(float) * verts.size(),  // size
         verts.data(),  // data
         GL_STATIC_DRAW  // usage
-        );                                                                                      FORCE_ASSERT_GL_ERROR();
-//    delete[] vertices;
-    /*// Copy the face data into an index buffer
-    uint32_t *indices = new uint32_t[3 * aim->mNumFaces];
-    for (int i = 0; i < aim->mNumFaces; ++i) {
-      assert(aim->mFaces[i].mNumIndices == 3);
-      indices[i * 3] = aim->mFaces[i].mIndices[0];
-      indices[i * 3 + 1] = aim->mFaces[i].mIndices[1];
-      indices[i * 3 + 2] = aim->mFaces[i].mIndices[2];
-    }*/
+    );                                                             FORCE_ASSERT_GL_ERROR();
     // Copy the index data to the GL
-    glGenBuffers(1, &m_indexBuffer);                                                            FORCE_ASSERT_GL_ERROR();
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);                                       FORCE_ASSERT_GL_ERROR();
+    glGenBuffers(1, &m_indexBuffer);                               FORCE_ASSERT_GL_ERROR();
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);          FORCE_ASSERT_GL_ERROR();
     glBufferData(
         GL_ELEMENT_ARRAY_BUFFER,  // target
         sizeof(uint16_t) * indices.size(),  // size
         indices.data(),  // data
         GL_STATIC_DRAW  // usage
-        );                                                                                       FORCE_ASSERT_GL_ERROR();
-//    delete[] indices;
+    );                                                             FORCE_ASSERT_GL_ERROR();
     m_numIndices = indices.size();
   }
 
-  void TerrainObject::m_loadTexture(const std::string &textureFile) {
-    int x, y, n;
-    stbi_set_flip_vertically_on_load(true);
-    uint8_t* data = stbi_load(textureFile.c_str(), &x, &y, &n, 0);
-    if (!data) {
-      fprintf(stderr, "Failed to load texture file '%s'.\n", textureFile.c_str());
+  void TerrainObject::m_genTextures() {
+    std::vector<float> terrain;
+    std::vector<uint8_t> diffuse;
+    GLsizei texResX = 2048;
+    GLsizei texResY = 2048;
+    float hillFreqX = 1.f / ((float)texResX / 10.f);
+    float hillFreqY = 1.f / ((float)texResY / 12.f);
+
+    for (GLsizei y = 0; y < texResY; ++y) {
+      for (GLsizei x = 0; x < texResX; ++x) {
+        float height = 0.0625f * (
+            sin((float)x * hillFreqX) + 0.2f * cos((float)x * hillFreqX * 3.7f) +
+            sin((float)y * hillFreqY) + 0.18f * sin((float)y * hillFreqY * 2.8f)
+        );
+        glm::vec3 normal(
+            cos((float)x * hillFreqX) - 0.2f * sin((float)x * hillFreqX * 3.7f),
+            cos((float)y * hillFreqY) + 0.18f * cos((float)y * hillFreqY * 2.8f),
+            1.f
+        );
+        normal = glm::normalize(normal);
+        // fill terrain texture data
+        terrain.push_back(normal.x);
+        terrain.push_back(normal.y);
+        terrain.push_back(normal.z);
+        terrain.push_back(height);
+        // fill diffuse texture data
+        diffuse.push_back((uint8_t)((1.1f - normal.z) * 96 + 64));
+        diffuse.push_back((uint8_t)(normal.z * 96 + 64));
+        diffuse.push_back((uint8_t)((0.8f - normal.z) * 96 + 64));
+        diffuse.push_back(255);
+      }
     }
-    // Create the texture object in the GL
-    glGenTextures(1, &m_texture);
-    FORCE_ASSERT_GL_ERROR();
-    glBindTexture(GL_TEXTURE_2D, m_texture);
-    FORCE_ASSERT_GL_ERROR();
+
+    // Create the terrain texture object in the GL
+    glGenTextures(1, &m_terrain);                                            FORCE_ASSERT_GL_ERROR();
+    glBindTexture(GL_TEXTURE_2D, m_terrain);                                 FORCE_ASSERT_GL_ERROR();
+    // Copy the image to the GL
+    glTexImage2D(
+        GL_TEXTURE_2D,  // target
+        0,  // level
+        GL_RGBA32F,  // internal format
+        texResX,  // width
+        texResY,  // height
+        0,  // border
+        GL_RGBA,  // format
+        GL_FLOAT,  // type
+        terrain.data()  // data
+    );                                                                       FORCE_ASSERT_GL_ERROR();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);        FORCE_ASSERT_GL_ERROR();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);        FORCE_ASSERT_GL_ERROR();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);     FORCE_ASSERT_GL_ERROR();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);     FORCE_ASSERT_GL_ERROR();
+
+    // Create the diffuse texture object in the GL
+    glGenTextures(1, &m_diffuse);                                            FORCE_ASSERT_GL_ERROR();
+    glBindTexture(GL_TEXTURE_2D, m_diffuse);                                 FORCE_ASSERT_GL_ERROR();
     // Copy the image to the GL
     glTexImage2D(
         GL_TEXTURE_2D,  // target
         0,  // level
         GL_RGBA,  // internal format
-        x,  // width
-        y,  // height
+        texResX,  // width
+        texResY,  // height
         0,  // border
         GL_RGBA,  // format
         GL_UNSIGNED_BYTE,  // type
-        data  // data
-        );
-    FORCE_ASSERT_GL_ERROR();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    FORCE_ASSERT_GL_ERROR();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    FORCE_ASSERT_GL_ERROR();
-    stbi_image_free(data);
+        diffuse.data()  // data
+        );                                                                   FORCE_ASSERT_GL_ERROR();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);        FORCE_ASSERT_GL_ERROR();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);        FORCE_ASSERT_GL_ERROR();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);     FORCE_ASSERT_GL_ERROR();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);     FORCE_ASSERT_GL_ERROR();
   }
 
   void TerrainObject::m_drawSurface(
@@ -209,99 +180,62 @@ namespace at3 {
     auto shader = Shaders::terrainShader();
     shader->use();
 
-    // Prepare the uniform values
-    assert(shader->modelViewLocation() != -1);
+    assert(shader->mvp() != -1);
     glUniformMatrix4fv(
-        shader->modelViewLocation(),  // location
+        shader->mvp(),  // location
         1,  // count
         0,  // transpose
-        glm::value_ptr(modelView)  // value
-        );
-    ASSERT_GL_ERROR();
-    assert(shader->projectionLocation() != -1);
-    glUniformMatrix4fv(
-        shader->projectionLocation(),  // location
-        1,  // count
-        0,  // transpose
-        glm::value_ptr(projection)  // value
-        );
-    ASSERT_GL_ERROR();
+        glm::value_ptr(projection * modelView)  // value
+    );                                                                 ASSERT_GL_ERROR();
+    assert(shader->lodFactor() != -1);
+    glUniform1f(shader->lodFactor(), lodFactor);                       ASSERT_GL_ERROR();
+    // NOTE: screen size uniform is set on window size change events (game.cpp)
 
-    /*
-    // Prepare the texture sampler
+    // Prepare the diffuse texture sampler
     assert(shader->texture0() != -1);
     glUniform1i(
         shader->texture0(),  // location
         0  // value
-        );
-    ASSERT_GL_ERROR();
-    glActiveTexture(GL_TEXTURE0);
-    ASSERT_GL_ERROR();
-    glBindTexture(GL_TEXTURE_2D, m_texture);
-    ASSERT_GL_ERROR();
-    */
+        );                                                             ASSERT_GL_ERROR();
+    glActiveTexture(GL_TEXTURE0);                                      ASSERT_GL_ERROR();
+    glBindTexture(GL_TEXTURE_2D, m_diffuse);                           ASSERT_GL_ERROR();
+
+    // Prepare the terrain texture sampler
+    assert(shader->terrain() != -1);
+    glUniform1i(
+        shader->terrain(),  // location
+        1  // value
+    );                                                                 ASSERT_GL_ERROR();
+    glActiveTexture(GL_TEXTURE1);                                      ASSERT_GL_ERROR();
+    glBindTexture(GL_TEXTURE_2D, m_terrain);                           ASSERT_GL_ERROR();
 
     // Prepare the vertex attributes
-    glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
-    ASSERT_GL_ERROR();
+    glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);                     ASSERT_GL_ERROR();
     assert(shader->vertPositionLocation() != -1);
-    glEnableVertexAttribArray(shader->vertPositionLocation());
-    ASSERT_GL_ERROR();
+    glEnableVertexAttribArray(shader->vertPositionLocation());         ASSERT_GL_ERROR();
     glVertexAttribPointer(
         shader->vertPositionLocation(),  // index
-        3,  // size
-        GL_FLOAT,  // type
-        0,  // normalized
-        sizeof(MeshVertex),  // stride
-        &(((MeshVertex *)0)->pos[0])  // pointer
-        );
-    ASSERT_GL_ERROR();
-    /*
-    assert(shader->vertNormalLocation() != -1);
-    glEnableVertexAttribArray(shader->vertNormalLocation());
-    ASSERT_GL_ERROR();
-    glVertexAttribPointer(
-        shader->vertNormalLocation(),  // index
-        3,  // size
-        GL_FLOAT,  // type
-        0,  // normalized
-        sizeof(MeshVertex),  // stride
-        &(((MeshVertex *)0)->norm[0])  // pointer
-        );
-    ASSERT_GL_ERROR();
-    */
-    assert(shader->vertTexCoordLocation() != -1);
-    glEnableVertexAttribArray(shader->vertTexCoordLocation());
-    ASSERT_GL_ERROR();
-    glVertexAttribPointer(
-        shader->vertTexCoordLocation(),  // index
-        2,  // size
-        GL_FLOAT,  // type
-        0,  // normalized
-        sizeof(MeshVertex),  // stride
-        &(((MeshVertex *)0)->tex[0])  // pointer
-        );
-    ASSERT_GL_ERROR();
+        2,                 // size
+        GL_FLOAT,          // type
+        0,                 // normalize
+        sizeof(float) * 2, // stride
+        0                  // offset
+    );                                                                 ASSERT_GL_ERROR();
 
     // Draw the surface
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
-    glBindTexture(GL_TEXTURE_2D, m_texture);
-    ASSERT_GL_ERROR();
+    glPatchParameteri(GL_PATCH_VERTICES, 4);
     glDrawElements(
-        GL_TRIANGLES,  // mode
+        GL_PATCHES,  // mode
         m_numIndices,  // count
         GL_UNSIGNED_SHORT,  // type
         0  // indices
-        );
-    ASSERT_GL_ERROR();
+    );                                                                 ASSERT_GL_ERROR();
   }
 
-  void TerrainObject::draw(const glm::mat4 &modelWorld,
-      const glm::mat4 &worldView, const glm::mat4 &projection,
-      float alpha, bool debug)
+  void TerrainObject::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
+      bool debug)
   {
-//    ezecs::Scale* scale;
-//    state->get_Scale(id, &scale);
     glm::mat4 modelView = worldView * modelWorld;
     if (state->getComponents(id) & TRANSFORMFUNCTION) {
       TransformFunction* transformFunction;

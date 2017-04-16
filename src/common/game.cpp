@@ -31,6 +31,9 @@
 
 #include "debug.h"
 #include "scene.h"
+#include "shaders.h"
+#include "shaderProgram.h"
+#include "glError.h"
 
 #include "game.h"
 
@@ -42,10 +45,13 @@ namespace at3 {
     m_width(640), m_height(480)
   {
     m_lastTime = 0.0f;
-
     if (! m_initSdl() || ! m_initGl() || ! m_initScene()) {
       exit(EXIT_FAILURE);
     }
+    auto shader = Shaders::terrainShader();
+    shader->use();
+    assert(shader->screenSize() != -1);
+    glUniform2f(shader->screenSize(), m_width, m_height);              ASSERT_GL_ERROR();
   }
 
   Game::~Game() {
@@ -87,27 +93,12 @@ namespace at3 {
           SDL_GetError());
       return false;
     }
-
-    /*// Initialize GL entry points
-    GLenum error = glewInit();
-    if (error != GLEW_OK) {
-      fprintf(stderr, "Failed to initialize GLEW: %s\n",
-          glewGetErrorString(error));
-      return false;
-    }*/
-
-    // Set vSync
-    /*if (SDL_GL_SetSwapInterval(1) != 0) {
-      fprintf(stderr, "Failed to enable VSync: %s\n", SDL_GetError());
-      // TODO: decide whether or not to exit if VSync could not be set.
-    }*/
-
     // Configure the GL
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClearDepth(1.0);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
-    glDisable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
     glViewport(0, 0, m_width, m_height);
     return true;
@@ -137,11 +128,17 @@ namespace at3 {
       switch (event.type) {
         case SDL_WINDOWEVENT:
           switch (event.window.event) {
-            case SDL_WINDOWEVENT_SIZE_CHANGED:
+            case SDL_WINDOWEVENT_SIZE_CHANGED: {
               m_width = event.window.data1;
               m_height = event.window.data2;
               glViewport(0, 0, m_width, m_height);
+              auto shader = Shaders::terrainShader();
+              shader->use();
+              assert(shader->screenSize() != -1);
+              glUniform2f(shader->screenSize(), m_width, m_height);      ASSERT_GL_ERROR();
+              std::cout << "NEW SCREEN SIZE: " << m_width << ", " << m_height << std::endl;
               break;
+            }
             default:
               break;
           }

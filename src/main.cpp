@@ -32,6 +32,7 @@
 #include "debug.h"
 #include "game.h"
 #include "meshObject.h"
+#include "terrainObject.h"
 #include "scene.h"
 #include "perspectiveCamera.h"
 #include "skyBox.h"
@@ -144,6 +145,7 @@ class PyramidGame : public Game {
     std::shared_ptr<MeshObject> m_pyrBottom, m_pyrTop, m_pyrThrusters, m_pyrFire;
     std::shared_ptr<SceneObject> m_camGimbal;
     std::shared_ptr<SkyBox> m_skyBox;
+    std::shared_ptr<TerrainObject> m_terrain;
     std::shared_ptr<BulletDebug> bulletDebug;
     ControlSystem controlSystem;
     MovementSystem movementSystem;
@@ -173,6 +175,8 @@ class PyramidGame : public Game {
       glm::mat4 pyrBotMat = glm::translate(ident, { 0.f, 0.f, 5.f });
       glm::mat4 pyrFirMat = glm::scale(glm::rotate(glm::translate(ident, {0.f, 0.f, -0.4f}),
                                                    (float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f)), {0.105f, 0.105f, 0.15f});
+      glm::mat4 terrainMat = glm::scale(ident, {100.f, 100.f, 100.f});
+
       // Populate the graphics scene
       m_camera = std::shared_ptr<PerspectiveCamera> (
           new PerspectiveCamera(state, 80.0f * ((float) M_PI / 180.0f), 0.1f, 1000.0f, cameraMat));
@@ -189,9 +193,12 @@ class PyramidGame : public Game {
           new SceneObject(state));
       m_skyBox = std::shared_ptr<SkyBox> (
           new SkyBox(state));
+      m_terrain = std::shared_ptr<TerrainObject> (
+          new TerrainObject(state, terrainMat, 0, 0, 0, 0));
 
       this->scene()->addObject(m_pyrBottom);
       this->scene()->addObject(m_skyBox);
+      this->scene()->addObject(m_terrain);
       LoadResult loaded = m_skyBox->useCubeMap("nalovardo", "png");
       assert(loaded == LOAD_SUCCESS);
 

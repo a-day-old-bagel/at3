@@ -37,8 +37,7 @@ namespace at3 {
       virtual ~SkyBox();
       LoadResult useCubeMap(std::string fileName, std::string fileType);
       virtual void draw(const glm::mat4 &modelWorld,
-                        const glm::mat4 &worldView, const glm::mat4 &projection,
-                        float alpha, bool debug);
+                        const glm::mat4 &worldView, const glm::mat4 &projection, bool debug);
   };
 }
 

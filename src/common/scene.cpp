@@ -56,8 +56,7 @@ namespace at3 {
     return false;
   }
 
-  void Scene::draw(const Camera &camera, float aspect,
-      float alpha, bool debug) const
+  void Scene::draw(const Camera &camera, float aspect, bool debug) const
   {
     // Start with an empty modelWorld transform stack
     TransformStack modelWorld;
@@ -74,7 +73,6 @@ namespace at3 {
           modelWorld,
           worldView,
           projection,
-          alpha,
           debug);
     }
   }

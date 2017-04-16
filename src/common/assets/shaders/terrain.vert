@@ -1,16 +1,10 @@
 
 in vec2 vertPosition;
-
-uniform mat4 modelView;
-uniform mat4 projection;
 uniform sampler2D terrain;
 
-out vec2 texCoord;
-
 void main(void){
-    vec2 texcoord = vertPosition.xy;
+    vec2 texcoord = vertPosition;
     float height = texture(terrain, vertPosition).a;
     vec4 displaced = vec4(vertPosition, height, 1.0);
-    vec4 transformed = projection * modelView * displaced;
     gl_Position = displaced;
 }

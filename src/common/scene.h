@@ -98,8 +98,7 @@ namespace at3 {
        * particular graphics API, it is the responsibility of the derived scene
        * objects to draw using the correct API.
        */
-      void draw(const Camera &camera, float aspect,
-          float alpha = 1.0, bool debug = false) const;
+      void draw(const Camera &camera, float aspect, bool debug = false) const;
   };
 }
 

@@ -55,7 +55,7 @@ namespace at3 {
   }
 
   void SceneObject::m_draw(Transform &modelWorld, const glm::mat4 &worldView,
-      const glm::mat4 &projection, float alpha, bool debug)
+      const glm::mat4 &projection, bool debug)
   {
     TransformRAII mw(modelWorld);
 
@@ -82,11 +82,11 @@ namespace at3 {
     }*/
 
     // Delegate the actual drawing to derived classes
-    this->draw(mw.peek(), worldView, projection, alpha, debug);
+    this->draw(mw.peek(), worldView, projection, debug);
 
     // Draw our children
     for (auto child : m_children) {
-      child.second->m_draw(mw, worldView, projection, alpha, debug);
+      child.second->m_draw(mw, worldView, projection, debug);
     }
   }
 
@@ -120,7 +120,7 @@ namespace at3 {
 
   bool SceneObject::handleEvent(const SDL_Event &event) { return false; }
   void
-  SceneObject::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection, float alpha,
+  SceneObject::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
                     bool debug) { }
   ezecs::entityId SceneObject::getId() const {
     return id;

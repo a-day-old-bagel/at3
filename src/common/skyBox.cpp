@@ -65,7 +65,7 @@ namespace at3 {
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     return LOAD_SUCCESS;
   }
-  void SkyBox::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection, float alpha,
+  void SkyBox::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
                     bool debug) {
     glm::mat4 axesCorrection = glm::rotate((float)(M_PI * 0.5f), glm::vec3(1.f, 0.f, 0.f));
     glm::mat4 reverseView = axesCorrection * glm::transpose(worldView);

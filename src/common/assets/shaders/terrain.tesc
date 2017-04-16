@@ -1,9 +1,14 @@
 
 layout(vertices = 4) out;
 
+in vec3 vPosition[];
+out vec3 tcPosition[];
+
 uniform vec2 screen_size;
 uniform mat4 mvp;
 uniform float lod_factor;
+
+#define ID gl_InvocationID
 
 bool offscreen(vec4 vertex){
     if(vertex.z < -0.5){
@@ -30,7 +35,8 @@ float level(vec2 v0, vec2 v1){
 }
 
 void main(){
-    if(gl_InvocationID == 0){
+    tcPosition[ID] = vPosition[ID];
+    if(ID == 0){
         vec4 v0 = project(gl_in[0].gl_Position);
         vec4 v1 = project(gl_in[1].gl_Position);
         vec4 v2 = project(gl_in[2].gl_Position);
@@ -63,5 +69,5 @@ void main(){
             gl_TessLevelOuter[3] = e3;
         }
     }
-    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
+    gl_out[ID].gl_Position = gl_in[ID].gl_Position;
 }

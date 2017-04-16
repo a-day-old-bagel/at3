@@ -54,7 +54,9 @@ namespace at3 {
             (const char *)CAT(dir, _ ## shader ## _tesc), \
             CAT(dir, _ ## shader ## _tesc_len), \
             (const char *)CAT(dir, _ ## shader ## _tese), \
-            CAT(dir, _ ## shader ## _tese_len) \
+            CAT(dir, _ ## shader ## _tese_len), \
+            (const char *)CAT(dir, _ ## shader ## _geom), \
+            CAT(dir, _ ## shader ## _geom_len) \
             )); \
     return instance; \
   }
@@ -89,5 +91,6 @@ namespace at3 {
   #include "assets_shaders_terrain.tesc.c"
   #include "assets_shaders_terrain.tese.c"
   #include "assets_shaders_terrain.frag.c"
+  #include "assets_shaders_terrain.geom.c"
   DEFINE_SHADER_TESS(terrain)
 }
