@@ -1,4 +1,4 @@
-const bool DrawLines = false;
+const bool DrawLines = true;
 const vec4 InnerLineColor = vec4(1.0, 1.0, 1.0, 1.0);
 
 in vec3 gFacetNormal;
@@ -38,7 +38,8 @@ void main(){
         color = d2 * color + d1 * d2 * InnerLineColor;
     }
 
-//    color = mix(color, color * 0.5 + vec4(0.5, 0.5, 0.5, 1.0), gDepth * 0.005);
+    // add fog
+    //color = mix(color, color * 0.5 + vec4(0.5, 0.5, 0.5, 1.0), gDepth * 0.005);
 
     fragColor = color;
 }

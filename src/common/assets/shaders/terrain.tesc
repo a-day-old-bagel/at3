@@ -78,16 +78,6 @@ void main(){
             gl_TessLevelOuter[3] = 0;
         }
         else{
-//            vec2 ss0 = screenSpace(v0);
-//            vec2 ss1 = screenSpace(v1);
-//            vec2 ss2 = screenSpace(v2);
-//            vec2 ss3 = screenSpace(v3);
-//
-//            float e0 = screenLevel(ss1, ss2);
-//            float e1 = screenLevel(ss0, ss1);
-//            float e2 = screenLevel(ss3, ss0);
-//            float e3 = screenLevel(ss2, ss3);
-
             float e0 = level(v1, v2);
             float e1 = level(v0, v1);
             float e2 = level(v3, v0);
