@@ -6,43 +6,70 @@ out vec3 tcPosition[];
 
 uniform vec2 screen_size;
 uniform mat4 mvp;
-uniform float lod_factor;
+uniform mat4 modelView;
+uniform mat4 projection;
+uniform float lod_fidelity;
 
 #define ID gl_InvocationID
 
-bool offscreen(vec4 vertex){
-    if(vertex.z < -0.5){
+bool offscreen(vec4 screenVert){
+    if(screenVert.z < -0.5){
         return true;
     }
     return any(
-        lessThan(vertex.xy, vec2(-1.7)) ||
-        greaterThan(vertex.xy, vec2(1.7))
+        lessThan(screenVert.xy, vec2(-1.7)) ||
+        greaterThan(screenVert.xy, vec2(1.7))
     );
 }
 
-vec4 project(vec4 vertex){
-    vec4 result = mvp * vertex;
+void spherify(inout vec4 v0, inout vec4 v1) {
+    vec4 center = (v0 + v1) * 0.5;
+    float len = distance(v0, v1);
+    v0 = center;
+    v1 = center;
+    v0.x -= len;
+    v1.x += len;
+}
+
+vec4 multView(vec4 vertex){
+    return modelView * vertex;
+}
+
+vec4 multProj(vec4 vertex) {
+    vec4 result = projection * vertex;
     result /= result.w;
     return result;
 }
 
-vec2 screen_space(vec4 vertex){
-    return (clamp(vertex.xy, -1.3, 1.3)+1) * (screen_size*0.5);
+vec2 screenSpace(vec4 vertex){
+    return (clamp(vertex.xy, -1.3, 1.3) + 1) * (screen_size * 0.5);
 }
 
-float level(vec2 v0, vec2 v1){
-    return clamp(distance(v0, v1)/lod_factor, 1, 64);
+float screenLevel(vec2 v0, vec2 v1){
+    return clamp(distance(v0, v1) * lod_fidelity, 1, 64);
+}
+
+float level(vec4 v0, vec4 v1){
+    vec4 v0Sph = v0, v1Sph = v1;
+    spherify(v0Sph, v1Sph);
+    v0Sph = multProj(v0Sph);
+    v1Sph = multProj(v1Sph);
+    vec2 ss0 = screenSpace(v0Sph);
+    vec2 ss1 = screenSpace(v1Sph);
+    return screenLevel(ss0, ss1);
 }
 
 void main(){
     tcPosition[ID] = vPosition[ID];
     if(ID == 0){
-        vec4 v0 = project(gl_in[0].gl_Position);
-        vec4 v1 = project(gl_in[1].gl_Position);
-        vec4 v2 = project(gl_in[2].gl_Position);
-        vec4 v3 = project(gl_in[3].gl_Position);
+        vec4 v0 = multView(gl_in[0].gl_Position);
+        vec4 v1 = multView(gl_in[1].gl_Position);
+        vec4 v2 = multView(gl_in[2].gl_Position);
+        vec4 v3 = multView(gl_in[3].gl_Position);
 
-        if(all(bvec4(offscreen(v0), offscreen(v1), offscreen(v2), offscreen(v3)))){
+        if(all(bvec4(offscreen(multProj(v0)), offscreen(multProj(v1)),
+                     offscreen(multProj(v2)), offscreen(multProj(v3)))))
+        {
             gl_TessLevelInner[0] = 0;
             gl_TessLevelInner[1] = 0;
             gl_TessLevelOuter[0] = 0;
@@ -51,15 +78,20 @@ void main(){
             gl_TessLevelOuter[3] = 0;
         }
         else{
-            vec2 ss0 = screen_space(v0);
-            vec2 ss1 = screen_space(v1);
-            vec2 ss2 = screen_space(v2);
-            vec2 ss3 = screen_space(v3);
+//            vec2 ss0 = screenSpace(v0);
+//            vec2 ss1 = screenSpace(v1);
+//            vec2 ss2 = screenSpace(v2);
+//            vec2 ss3 = screenSpace(v3);
+//
+//            float e0 = screenLevel(ss1, ss2);
+//            float e1 = screenLevel(ss0, ss1);
+//            float e2 = screenLevel(ss3, ss0);
+//            float e3 = screenLevel(ss2, ss3);
 
-            float e0 = level(ss1, ss2);
-            float e1 = level(ss0, ss1);
-            float e2 = level(ss3, ss0);
-            float e3 = level(ss2, ss3);
+            float e0 = level(v1, v2);
+            float e1 = level(v0, v1);
+            float e2 = level(v3, v0);
+            float e3 = level(v2, v3);
 
             gl_TessLevelInner[0] = mix(e1, e2, 0.5);
             gl_TessLevelInner[1] = mix(e0, e3, 0.5);

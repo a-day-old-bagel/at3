@@ -20,6 +20,5 @@ void main(){
     teTexCoord = tePosition.xy;
     float height = texture(terrain, teTexCoord).a;
     gl_Position = mvp * vec4(teTexCoord, height, 1.0);
-//    depth = gl_Position.z;
     teDepth = length(gl_Position);
 }

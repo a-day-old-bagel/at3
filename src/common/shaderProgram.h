@@ -46,7 +46,7 @@ namespace at3 {
              m_vertTexCoordLocation, m_vertVelocityLocation;
       GLint m_vertStartTimeLocation;
       GLint m_texture0, m_terrain;
-      GLint m_screenSize, m_mvp, m_lodFactor, m_noiseTile;
+      GLint m_screenSize, m_mvp, m_lodFidelity, m_noiseTile;
 
       static GLuint m_compileShader(const char *code, int code_len, GLenum type);
       static void m_linkShaderProgram(GLuint shaderProgram);
@@ -221,7 +221,7 @@ namespace at3 {
       /**
        * \return Location of the first texture sampler uniform in the shader.
        */
-      GLint lodFactor() const { return m_lodFactor; }
+      GLint lodFidelity() const { return m_lodFidelity; }
       /**
        * \return Location of the first texture sampler uniform in the shader.
        */

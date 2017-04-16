@@ -34,7 +34,7 @@ namespace at3 {
     private:
       GLuint m_vertexBuffer, m_indexBuffer,  m_diffuse, m_terrain;
       size_t m_numIndices;
-      float lodFactor;
+      float lodFidelity;
       size_t numPatchesX, numPatchesY;
 
       void m_genMesh();

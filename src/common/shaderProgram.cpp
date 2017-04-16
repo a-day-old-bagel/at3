@@ -271,7 +271,7 @@ namespace at3 {
     m_terrain = glGetUniformLocation(m_shaderProgram, "terrain");
     m_screenSize = glGetUniformLocation(m_shaderProgram, "screen_size");
     m_mvp = glGetUniformLocation(m_shaderProgram, "mvp");
-    m_lodFactor = glGetUniformLocation(m_shaderProgram, "lod_factor");
+    m_lodFidelity = glGetUniformLocation(m_shaderProgram, "lod_fidelity");
     m_noiseTile = glGetUniformLocation(m_shaderProgram, "noise_tile");
   }
 }

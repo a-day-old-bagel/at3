@@ -48,7 +48,7 @@ namespace at3 {
 
     numPatchesX = 4;
     numPatchesY = 4;
-    lodFactor = 20.f;
+    lodFidelity = 0.04f;
 
     // Load the mesh from file using assimp
     m_genMesh();
@@ -180,6 +180,20 @@ namespace at3 {
     auto shader = Shaders::terrainShader();
     shader->use();
 
+    assert(shader->modelViewLocation() != -1);
+    glUniformMatrix4fv(
+        shader->modelViewLocation(),  // location
+        1,  // count
+        0,  // transpose
+        glm::value_ptr(modelView)  // value
+    );                                                                 ASSERT_GL_ERROR();
+    assert(shader->projectionLocation() != -1);
+    glUniformMatrix4fv(
+        shader->projectionLocation(),  // location
+        1,  // count
+        0,  // transpose
+        glm::value_ptr(projection)  // value
+    );                                                                 ASSERT_GL_ERROR();
     assert(shader->mvp() != -1);
     glUniformMatrix4fv(
         shader->mvp(),  // location
@@ -187,8 +201,8 @@ namespace at3 {
         0,  // transpose
         glm::value_ptr(projection * modelView)  // value
     );                                                                 ASSERT_GL_ERROR();
-    assert(shader->lodFactor() != -1);
-    glUniform1f(shader->lodFactor(), lodFactor);                       ASSERT_GL_ERROR();
+    assert(shader->lodFidelity() != -1);
+    glUniform1f(shader->lodFidelity(), lodFidelity);                       ASSERT_GL_ERROR();
     // NOTE: screen size uniform is set on window size change events (game.cpp)
 
     // Prepare the diffuse texture sampler
