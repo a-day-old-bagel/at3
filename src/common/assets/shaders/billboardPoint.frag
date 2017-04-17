@@ -1,5 +1,5 @@
 
-uniform vec3 color;
+uniform vec3 vertColor;
 
 in vec2 texCoord;
 out vec4 fragColor;
@@ -22,5 +22,5 @@ void main() {
   if (dist > radius - border)
     fragColor = vec4(borderColor, 1.0f);
   else
-    fragColor = vec4(color, 1.0f);
+    fragColor = vec4(vertColor, 1.0f);
 }

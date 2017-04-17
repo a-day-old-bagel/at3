@@ -141,6 +141,7 @@ namespace at3 {
       const glm::mat4 &projection) const {
     // Use the billboard point shader
     auto shader = Shaders::billboardPointShader();
+    shader->use();
 
     // Prepare the uniform values
     assert(shader->modelViewLocation() != -1);
@@ -226,9 +227,8 @@ namespace at3 {
     m_points.push_back(point);
     m_pointsChanged = true;
   }
-  void BulletDebug::draw(const glm::mat4 &modelWorld,
-                         const glm::mat4 &worldView, const glm::mat4 &projection,
-                         float alpha, bool debug)
+  void BulletDebug::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
+                         bool debug)
   {
     if (m_linesChanged || m_pointsChanged) {
       // Calculate the model-view matrix

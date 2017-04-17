@@ -42,6 +42,7 @@ namespace at3 {
       Scene *m_scene;
       std::shared_ptr<Camera> m_camera;
       float m_lastTime;
+      bool terrainShaderDebugLines = false;
 
       bool m_initSdl();
       bool m_initGl();

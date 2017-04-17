@@ -46,7 +46,7 @@ namespace at3 {
              m_vertTexCoordLocation, m_vertVelocityLocation;
       GLint m_vertStartTimeLocation;
       GLint m_texture0, m_terrain;
-      GLint m_screenSize, m_mvp, m_lodFidelity, m_noiseTile;
+      GLint m_screenSize, m_mvp, m_lodFidelity, m_debugLines;
 
       static GLuint m_compileShader(const char *code, int code_len, GLenum type);
       static void m_linkShaderProgram(GLuint shaderProgram);
@@ -223,9 +223,9 @@ namespace at3 {
        */
       GLint lodFidelity() const { return m_lodFidelity; }
       /**
-       * \return Location of the first texture sampler uniform in the shader.
+       * \return Location of the debugLines boolean in the shader.
        */
-      GLint noiseTile() const { return m_noiseTile; }
+      GLint debugLines() const { return m_debugLines; }
 
       /**
        * Use this shader in the current GL state.

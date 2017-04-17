@@ -1,4 +1,4 @@
-const bool DrawLines = true;
+uniform bool debugLines;
 const vec4 InnerLineColor = vec4(1.0, 1.0, 1.0, 1.0);
 
 in vec3 gFacetNormal;
@@ -11,7 +11,8 @@ out vec4 fragColor;
 uniform sampler2D texture0;
 uniform sampler2D terrain;
 
-const vec3 incident = normalize(vec3(1.0, 0.2, 0.5));
+//const vec3 incident = normalize(vec3(1.0, 0.2, 0.5));
+const vec3 incident = normalize(vec3(0.8, -1.0, 0.5));
 const vec4 light = vec4(1.0, 0.95, 0.9, 1.0) * 1.1;
 
 float amplify(float d, float scale, float offset) {
@@ -30,7 +31,7 @@ void main(){
 
     color = color * light * noise_factor * (max(0.1, dot_surface_incident)+0.05)*1.5;
 
-    if (DrawLines) {
+    if (debugLines) {
         float d1 = min(min(gTriDistance.x, gTriDistance.y), gTriDistance.z);
         float d2 = min(min(min(gPatchDistance.x, gPatchDistance.y), gPatchDistance.z), gPatchDistance.w);
         d1 = 1 - amplify(d1, 50, -0.5);

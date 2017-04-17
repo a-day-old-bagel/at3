@@ -35,16 +35,18 @@ namespace at3 {
       GLuint m_vertexBuffer, m_indexBuffer,  m_diffuse, m_terrain;
       size_t m_numIndices;
       float lodFidelity;
-      size_t numPatchesX, numPatchesY;
+      size_t numPatchesX, numPatchesY, resX, resY;
+      std::vector<float> heights;
 
       void m_genMesh();
-      void m_genTextures();
+      float m_genTextures(float yScale, float xScale, float zScale);
 
       void m_drawSurface(
           const glm::mat4 &modelView,
           const glm::mat4 &projection);
     public:
-      TerrainObject(ezecs::State &state, const glm::mat4 &transform, float xMin, float xMax, float yMin, float yMax);
+      TerrainObject(ezecs::State &state, const glm::mat4 &transform, float xMin, float xMax, float yMin, float yMax,
+                          float zMin, float zMax);
       virtual ~TerrainObject();
 
       virtual void draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,

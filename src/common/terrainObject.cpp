@@ -39,21 +39,44 @@ using namespace ezecs;
 
 namespace at3 {
   TerrainObject::TerrainObject(ezecs::State &state, const glm::mat4 &transform,
-                               float xMin, float xMax, float yMin, float yMax)
+                               float xMin, float xMax, float yMin, float yMax, float zMin, float zMax)
       : SceneObject(state)
   {
+    float xSize = xMax - xMin;
+    float ySize = yMax - yMin;
+    float zSize = zMax - zMin;
+    float xCenter = (xMax + xMin) * 0.5f;
+    float yCenter = (yMax + yMin) * 0.5f;
+    float zCenter = (zMax + zMin) * 0.5f;
+    numPatchesX = (size_t)xSize / 200;
+    numPatchesY = (size_t)ySize / 200;
+    lodFidelity = 0.02f;
+
+    // TODO: dynamic res picking
+    resX = 512;
+    resY = 512;
+
+    m_genMesh();
+    zSize = m_genTextures(xSize, ySize, zSize);
+
+    glm::mat4 translated = glm::translate(transform, {xCenter, yCenter, zCenter});
+
     ezecs::CompOpReturn status;
-    status = this->state->add_Placement(id, transform);
+    status = this->state->add_Placement(id, translated);
     assert(status == ezecs::SUCCESS);
 
-    numPatchesX = 4;
-    numPatchesY = 4;
-    lodFidelity = 0.04f;
+    status = this->state->add_Terrain(id, &heights, resX, resY, xSize, ySize, zSize);
+    assert(status == ezecs::SUCCESS);
 
-    // Load the mesh from file using assimp
-    m_genMesh();
-    // Load the texture from file using SDL2
-    m_genTextures();
+    status = this->state->add_Physics(id, 0.f, NULL, Physics::TERRAIN);
+    assert(status == ezecs::SUCCESS);
+
+    // at this point system callbacks have fired, and it's safe to set a scale matrix FIXME: This hack.
+    glm::mat4 scaledTransform = glm::scale(translated, {xSize, ySize, zSize});
+    Placement *placement;
+    this->state->get_Placement(id, &placement);
+    placement->mat = scaledTransform;
+
   }
 
   TerrainObject::~TerrainObject() { }
@@ -63,8 +86,8 @@ namespace at3 {
     std::vector<float> verts;
     for (size_t y = 0; y < numPatchesY + 1; ++y) {
       for (size_t x = 0; x < numPatchesX + 1; ++x) { // for each vertex
-        verts.push_back((float)x / (float)(numPatchesX));
-        verts.push_back((float)y / (float)(numPatchesY));
+        verts.push_back( (float)x / (float)numPatchesX - 0.5f);
+        verts.push_back( (float)y / (float)numPatchesY - 0.5f);
       }
     }
     std::vector<uint16_t> indices;
@@ -98,23 +121,23 @@ namespace at3 {
     m_numIndices = indices.size();
   }
 
-  void TerrainObject::m_genTextures() {
+  float TerrainObject::m_genTextures(float yScale, float xScale, float zScale) {
     std::vector<float> terrain;
     std::vector<uint8_t> diffuse;
-    GLsizei texResX = 2048;
-    GLsizei texResY = 2048;
-    float hillFreqX = 1.f / ((float)texResX / 10.f);
-    float hillFreqY = 1.f / ((float)texResY / 12.f);
+    float hillFreqX = 1.f / ((float)resX / 10.f);
+    float hillFreqY = 1.f / ((float)resY / 12.f);
+    float hNormalizer = 1 / (1 + 1 + 0.2f + 0.18f);
+    float newZScale = hNormalizer * (0.5f * zScale);
 
-    for (GLsizei y = 0; y < texResY; ++y) {
-      for (GLsizei x = 0; x < texResX; ++x) {
-        float height = 0.0625f * (
+    for (GLsizei y = 0; y < resY; ++y) {
+      for (GLsizei x = 0; x < resX; ++x) {
+        float height = hNormalizer * ( // 0.0625f
             sin((float)x * hillFreqX) + 0.2f * cos((float)x * hillFreqX * 3.7f) +
             sin((float)y * hillFreqY) + 0.18f * sin((float)y * hillFreqY * 2.8f)
         );
-        glm::vec3 normal(
-            cos((float)x * hillFreqX) - 0.2f * sin((float)x * hillFreqX * 3.7f),
-            cos((float)y * hillFreqY) + 0.18f * cos((float)y * hillFreqY * 2.8f),
+        glm::vec3 normal( // FIXME: fix this normal to scale
+            (zScale / xScale) * (cos((float)x * hillFreqX) - 3.7f * 0.2f * sin((float)x * hillFreqX * 3.7f)),
+            (zScale / yScale) * (cos((float)y * hillFreqY) + 2.8f * 0.18f * cos((float)y * hillFreqY * 2.8f)),
             1.f
         );
         normal = glm::normalize(normal);
@@ -124,10 +147,12 @@ namespace at3 {
         terrain.push_back(normal.z);
         terrain.push_back(height);
         // fill diffuse texture data
-        diffuse.push_back((uint8_t)((1.1f - normal.z) * 96 + 64));
-        diffuse.push_back((uint8_t)(normal.z * 96 + 64));
-        diffuse.push_back((uint8_t)((0.8f - normal.z) * 96 + 64));
+        diffuse.push_back((uint8_t)((1.f - normal.z) * 96 + 32));
+        diffuse.push_back((uint8_t)(normal.z * 32 + 96));
+        diffuse.push_back((uint8_t)((1.f - normal.z) * 64 + 32));
         diffuse.push_back(255);
+        // keep the terrain heights around for physics
+        heights.push_back(height);
       }
     }
 
@@ -139,8 +164,8 @@ namespace at3 {
         GL_TEXTURE_2D,  // target
         0,  // level
         GL_RGBA32F,  // internal format
-        texResX,  // width
-        texResY,  // height
+        (GLsizei)resX,  // width
+        (GLsizei)resY,  // height
         0,  // border
         GL_RGBA,  // format
         GL_FLOAT,  // type
@@ -159,8 +184,8 @@ namespace at3 {
         GL_TEXTURE_2D,  // target
         0,  // level
         GL_RGBA,  // internal format
-        texResX,  // width
-        texResY,  // height
+        (GLsizei)resX,  // width
+        (GLsizei)resY,  // height
         0,  // border
         GL_RGBA,  // format
         GL_UNSIGNED_BYTE,  // type
@@ -170,6 +195,8 @@ namespace at3 {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);        FORCE_ASSERT_GL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);     FORCE_ASSERT_GL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);     FORCE_ASSERT_GL_ERROR();
+
+    return newZScale;
   }
 
   void TerrainObject::m_drawSurface(

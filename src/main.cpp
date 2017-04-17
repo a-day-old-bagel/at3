@@ -169,17 +169,16 @@ class PyramidGame : public Game {
       assert(initSuccess);
 
       // generate initial placement of objects
-      glm::mat4 ident(1.0); // explicitly identity matrix
+      glm::mat4 ident;  // identity matrix
       glm::mat4 cameraMat = glm::rotate(glm::translate(ident, {0.f, -4.f, 0.5f}),
                                         (float) M_PI * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f));
       glm::mat4 pyrBotMat = glm::translate(ident, { 0.f, 0.f, 5.f });
       glm::mat4 pyrFirMat = glm::scale(glm::rotate(glm::translate(ident, {0.f, 0.f, -0.4f}),
                                                    (float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f)), {0.105f, 0.105f, 0.15f});
-      glm::mat4 terrainMat = glm::scale(ident, {100.f, 100.f, 100.f});
 
       // Populate the graphics scene
       m_camera = std::shared_ptr<PerspectiveCamera> (
-          new PerspectiveCamera(state, 80.0f * ((float) M_PI / 180.0f), 1.0f, 1000.0f, cameraMat));
+          new PerspectiveCamera(state, 80.0f * ((float) M_PI / 180.0f), 1.0f, 10000.0f, cameraMat));
       m_pyrBottom = std::shared_ptr<MeshObject> (
           new MeshObject(state, "assets/models/pyramid_bottom.dae", "assets/textures/pyramid_bottom.png", pyrBotMat));
       m_pyrTop = std::shared_ptr<MeshObject> (
@@ -194,7 +193,7 @@ class PyramidGame : public Game {
       m_skyBox = std::shared_ptr<SkyBox> (
           new SkyBox(state));
       m_terrain = std::shared_ptr<TerrainObject> (
-          new TerrainObject(state, terrainMat, 0, 0, 0, 0));
+          new TerrainObject(state, ident, -450, 550, -350, 650, -320, 680));
 
       this->scene()->addObject(m_pyrBottom);
       this->scene()->addObject(m_skyBox);
@@ -257,10 +256,10 @@ class PyramidGame : public Game {
       // a virus
       debugGenerateVirus(state);
       // a bullet physics debug-drawing thing
-      /*bulletDebug = std::shared_ptr<BulletDebug> ( new BulletDebug(&state) );
-      bulletDebug->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
-      physicsSystem.activateDebugDrawer(bulletDebug);
-      this->scene()->addObject(bulletDebug);*/
+      bulletDebug = std::shared_ptr<BulletDebug> ( new BulletDebug(&state) );
+      bulletDebug->setDebugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb);
+      physicsSystem.setDebugDrawer(bulletDebug);
+      this->scene()->addObject(bulletDebug);
 
       return EZECS_SUCCESS;
     }
@@ -269,6 +268,9 @@ class PyramidGame : public Game {
     }
     bool systemsHandler(SDL_Event& event) {
       if (controlSystem.handleEvent(event)) {
+        return true;
+      }
+      if (physicsSystem.handleEvent(event)) {
         return true;
       }
 //      if (kalmanSystem.handleEvent(event)) {

@@ -135,18 +135,27 @@ namespace at3 {
               auto shader = Shaders::terrainShader();
               shader->use();
               assert(shader->screenSize() != -1);
-              glUniform2f(shader->screenSize(), m_width, m_height);      ASSERT_GL_ERROR();
+              glUniform2f(shader->screenSize(), m_width, m_height);             ASSERT_GL_ERROR();
               std::cout << "NEW SCREEN SIZE: " << m_width << ", " << m_height << std::endl;
               break;
             }
-            default:
+            default: break;
+          } break;
+        case SDL_KEYDOWN:
+          switch (event.key.keysym.scancode) {
+            case SDL_SCANCODE_V: {
+              terrainShaderDebugLines = !terrainShaderDebugLines;
+              auto shader = Shaders::terrainShader();
+              shader->use();
+              assert(shader->debugLines() != -1);
+              glUniform1i(shader->debugLines(), terrainShaderDebugLines);       ASSERT_GL_ERROR();
               break;
-          }
-          break;
+            }
+            default: break;
+          } break;
         case SDL_QUIT:
           return false;
-        default:
-          break;
+        default: break;
       }
     }
 

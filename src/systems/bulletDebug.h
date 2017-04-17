@@ -55,9 +55,8 @@ namespace at3 {
       virtual void draw3dText(const btVector3& location,const char* textString);
       virtual void setDebugMode(int debugMode);
       virtual inline int getDebugMode() const;
-      void draw(const glm::mat4 &modelWorld,
-                const glm::mat4 &worldView, const glm::mat4 &projection,
-                float alpha, bool debug);
+      void draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
+                bool debug);
   };
 }
 

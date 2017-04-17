@@ -17,8 +17,8 @@ void main(){
     vec4 b = mix(gl_in[2].gl_Position, gl_in[3].gl_Position, u);
     vec3 tePosition = mix(a, b, v).xyz;
     tePatchDistance = vec4(u, v, 1-u, 1-v);
-    teTexCoord = tePosition.xy;
+    teTexCoord = tePosition.xy + 0.5;
     float height = texture(terrain, teTexCoord).a;
-    gl_Position = mvp * vec4(teTexCoord, height, 1.0);
+    gl_Position = mvp * vec4(tePosition.xy, height, 1.0);
     teDepth = length(gl_Position);
 }

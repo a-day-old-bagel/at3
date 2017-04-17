@@ -45,15 +45,13 @@ namespace at3 {
       btConstraintSolver *solver;
       btCollisionConfiguration *collisionConfiguration;
       btDynamicsWorld *dynamicsWorld;
-      btCollisionShape* planeShape;
       bool debugDrawMode = false;
-      btDefaultMotionState* groundMotionState;
-      btRigidBody* groundRigidBody;
 
     public:
       std::vector<compMask> requiredComponents = {
               PHYSICS,
-              PHYSICS | PYRAMIDCONTROLS
+              PHYSICS | PYRAMIDCONTROLS,
+              PHYSICS | TERRAIN
       };
       PhysicsSystem(State* state);
       bool onInit();
@@ -61,7 +59,9 @@ namespace at3 {
       void deInit();
       bool onDiscover(const entityId& id);
       bool onForget(const entityId& id);
-      void activateDebugDrawer(std::shared_ptr<BulletDebug> debug);
+      bool onDiscoverTerrain(const entityId& id);
+      bool handleEvent(SDL_Event& event);
+      void setDebugDrawer(std::shared_ptr<BulletDebug> debug);
   };
 }
 

@@ -272,6 +272,6 @@ namespace at3 {
     m_screenSize = glGetUniformLocation(m_shaderProgram, "screen_size");
     m_mvp = glGetUniformLocation(m_shaderProgram, "mvp");
     m_lodFidelity = glGetUniformLocation(m_shaderProgram, "lod_fidelity");
-    m_noiseTile = glGetUniformLocation(m_shaderProgram, "noise_tile");
+    m_debugLines = glGetUniformLocation(m_shaderProgram, "debugLines");
   }
 }

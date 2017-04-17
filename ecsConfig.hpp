@@ -42,6 +42,7 @@ namespace {
   // BEGIN DECLARATIONS
 
   typedef Delegate<glm::mat4(const glm::mat4&, uint32_t time)> transformFunc;
+  typedef std::vector<float>* floatVecPtr;
 
   struct Placement : public Component<Placement> {
     glm::mat4 mat {
@@ -88,7 +89,7 @@ namespace {
 
   struct Physics : public Component<Physics> {
     enum Geometry {
-      NONE, PLANE, SPHERE, MESH
+      NONE, PLANE, SPHERE, MESH, TERRAIN
     };
     int geom;
     float mass;
@@ -98,6 +99,14 @@ namespace {
     Physics(float mass, void* geomData, Geometry geom);
   };
   EZECS_COMPONENT_DEPENDENCIES(Physics, Placement)
+
+  struct Terrain : public Component<Terrain> {
+    floatVecPtr heights;
+    size_t resX, resY;
+    float sclX, sclY, sclZ;
+    Terrain(floatVecPtr heights, size_t resX, size_t resY, float sclX, float sclY, float sclZ);
+  };
+  EZECS_COMPONENT_DEPENDENCIES(Terrain, Placement)
 
   struct Kalman : public Component<Kalman> {
     glm::mat4 previousTransform;
@@ -128,6 +137,9 @@ namespace {
 
   Physics::Physics(float mass, void* geomData, Physics::Geometry geom)
       : geom(geom), mass(mass), geomInitData(geomData) { }
+
+  Terrain::Terrain(floatVecPtr heights, size_t resX, size_t resY, float sclX, float sclY, float sclZ)
+      : heights(heights), resX(resX), resY(resY), sclX(sclX), sclY(sclY), sclZ(sclZ) { }
 
   Kalman::Kalman() {
     covariance.eye();

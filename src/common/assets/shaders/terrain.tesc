@@ -17,8 +17,8 @@ bool offscreen(vec4 screenVert){
         return true;
     }
     return any(
-        lessThan(screenVert.xy, vec2(-1.7)) ||
-        greaterThan(screenVert.xy, vec2(1.7))
+        lessThan(screenVert.xy, vec2(-8.0)) || // -1.7
+        greaterThan(screenVert.xy, vec2(8.0))  //  1.7
     );
 }
 

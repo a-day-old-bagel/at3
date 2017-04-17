@@ -21,6 +21,7 @@
  * IN THE SOFTWARE.
  */
 #include "ecsSystem_physics.h"
+#include "BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
 
 using namespace ezecs;
 
@@ -33,6 +34,7 @@ namespace at3 {
   bool PhysicsSystem::onInit() {
     registries[0].discoverHandler = DELEGATE(&PhysicsSystem::onDiscover, this);
     registries[0].forgetHandler = DELEGATE(&PhysicsSystem::onForget, this);
+    registries[2].discoverHandler = DELEGATE(&PhysicsSystem::onDiscoverTerrain, this);
 
     broadphase = new btDbvtBroadphase();
     collisionConfiguration = new btDefaultCollisionConfiguration();
@@ -40,18 +42,7 @@ namespace at3 {
     solver = new btSequentialImpulseConstraintSolver();
     dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
     dynamicsWorld->setGravity(btVector3(0.0f, 0.0f, -9.81f));
-    planeShape = new btStaticPlaneShape(btVector3(0.f, 0.f, 1.f), 0.f);
 
-    //region Create ground
-    groundMotionState = new btDefaultMotionState(btTransform(
-        btQuaternion(0.f, 0.f, 0.f, 1.f),
-        btVector3(0.f, 0.f, 0.f)));
-    btRigidBody::btRigidBodyConstructionInfo groundRigidBodyCI(0, groundMotionState, planeShape, btVector3(0, 0, 0));
-    groundRigidBody = new btRigidBody(groundRigidBodyCI);
-    groundRigidBody->setRestitution(0.5f);
-    groundRigidBody->setFriction(1.f);
-    dynamicsWorld->addRigidBody(groundRigidBody);
-    //endregion
     return true;
   }
 
@@ -64,7 +55,7 @@ namespace at3 {
       physics->rigidBody->applyImpulse({controls->force.x, controls->force.y, controls->force.z},
                                        btVector3(controls->up.x, controls->up.y, controls->up.z) * 0.05f);
 
-      // Custom constraint to keep the pyramid up FixMe: this sometimes gets it stuck in a horizontal position?
+      // Custom constraint to keep the pyramid up FixMe: this sometimes gets stuck in a horizontal position?
       glm::vec3 up{0.f, 0.f, 1.f};
       float tip = glm::dot(controls->up, up);
       glm::vec3 rotAxis = glm::cross(controls->up, up);
@@ -99,13 +90,6 @@ namespace at3 {
       state->rem_Physics((entityId) id);
     }
 
-    // Delete ground
-    dynamicsWorld->removeRigidBody(groundRigidBody);
-    delete groundRigidBody;
-    delete groundMotionState;
-
-    // Delete other bullet constructs
-    delete planeShape;
     delete dynamicsWorld;
     delete solver;
     delete dispatcher;
@@ -128,8 +112,10 @@ namespace at3 {
       case Physics::MESH: {
         std::vector<float> *points = (std::vector<float> *) physics->geomInitData;
         physics->shape = new btConvexHullShape(points->data(), (int) points->size() / 3, 3 * sizeof(float));
+      } break;
+      case Physics::TERRAIN: {
+        return false; // do not track, wait for terrain component to appear
       }
-        break;
       default:
         break;
     }
@@ -157,8 +143,59 @@ namespace at3 {
     return true;
   }
 
-  void PhysicsSystem::activateDebugDrawer(std::shared_ptr<BulletDebug> debug) {
+  bool PhysicsSystem::onDiscoverTerrain(const entityId &id) {
+    Placement *placement;
+    state->get_Placement(id, &placement);
+    Physics *physics;
+    state->get_Physics(id, &physics);
+    Terrain *terrain;
+    state->get_Terrain(id, &terrain);
+
+    physics->shape = new btHeightfieldTerrainShape(
+        (int)terrain->resX,         // int heightStickWidth  (stupid name - I think it just means width
+        (int)terrain->resY,         // int heightStickLength (sutpid name - I think it just means height
+        terrain->heights->data(),   // const void *heightfieldData
+        0,                          // btScalar heightScale (doesn't matter for float data)
+        -1.f,                       // btScalar minHeight
+        1.f,                        // btScalar maxHeight
+        2,                          // int upAxis
+        PHY_FLOAT,                  // PHY_ScalarType heightDataType
+        false                       // bool flipQuadEdges
+    );
+    physics->shape->setLocalScaling({
+        terrain->sclX / (float)terrain->resX,
+        terrain->sclY / (float)terrain->resY,
+        terrain->sclZ });
+    btTransform transform;
+    transform.setFromOpenGLMatrix((btScalar *) &placement->mat);
+    btDefaultMotionState *terrainMotionState = new btDefaultMotionState(transform);
+    btRigidBody::btRigidBodyConstructionInfo terrainRBCI(0, terrainMotionState, physics->shape, btVector3(0, 0, 0));
+    physics->rigidBody = new btRigidBody(terrainRBCI);
+    physics->rigidBody->setRestitution(0.5f);
+    physics->rigidBody->setFriction(1.f);
+    dynamicsWorld->addRigidBody(physics->rigidBody);
+
+    return true;
+  }
+
+  bool PhysicsSystem::handleEvent(SDL_Event& event) {
+    switch (event.type) {
+      case SDL_KEYDOWN:
+        switch (event.key.keysym.scancode) {
+          case SDL_SCANCODE_R: {
+            debugDrawMode = !debugDrawMode;
+            break;
+          }
+          default:
+            return false; // could not handle it here
+        } break;
+      default:
+        return false; // could not handle it here
+    }
+    return true; // handled it here
+  }
+
+  void PhysicsSystem::setDebugDrawer(std::shared_ptr<BulletDebug> debug) {
     dynamicsWorld->setDebugDrawer(debug.get());
-    debugDrawMode = true;
   }
 }
