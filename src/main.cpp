@@ -193,7 +193,7 @@ class PyramidGame : public Game {
       m_skyBox = std::shared_ptr<SkyBox> (
           new SkyBox(state));
       m_terrain = std::shared_ptr<TerrainObject> (
-          new TerrainObject(state, ident, -450, 550, -350, 650, -320, 680));
+          new TerrainObject(state, ident, -4500, 5500, -3500, 6500, -3200, 6800));
 
       this->scene()->addObject(m_pyrBottom);
       this->scene()->addObject(m_skyBox);
