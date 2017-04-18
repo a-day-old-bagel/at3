@@ -42,19 +42,19 @@ namespace at3 {
                                float xMin, float xMax, float yMin, float yMax, float zMin, float zMax)
       : SceneObject(state)
   {
+    assert(xMax > xMin);
+    assert(yMax > yMin);
+    assert(zMax > zMin);
     float xSize = xMax - xMin;
     float ySize = yMax - yMin;
     float zSize = zMax - zMin;
     float xCenter = (xMax + xMin) * 0.5f;
     float yCenter = (yMax + yMin) * 0.5f;
     float zCenter = (zMax + zMin) * 0.5f;
-    numPatchesX = (size_t)xSize / 200;
-    numPatchesY = (size_t)ySize / 200;
-    lodFidelity = 0.02f;
+    numPatchesX = (size_t)(xSize / maxPatchSize);
+    numPatchesY = (size_t)(ySize / maxPatchSize);
 
-    // TODO: dynamic res picking
-    resX = 512;
-    resY = 512;
+    // TODO: dynamic res and fidelity picking?
 
     m_genMesh();
     zSize = m_genTextures(xSize, ySize, zSize);
@@ -229,7 +229,11 @@ namespace at3 {
         glm::value_ptr(projection * modelView)  // value
     );                                                                 ASSERT_GL_ERROR();
     assert(shader->lodFidelity() != -1);
-    glUniform1f(shader->lodFidelity(), lodFidelity);                       ASSERT_GL_ERROR();
+    glUniform1f(shader->lodFidelity(), lodFidelity);                   ASSERT_GL_ERROR();
+
+    assert(shader->maxPatchSize() != -1);
+    glUniform1f(shader->maxPatchSize(), maxPatchSize);                 ASSERT_GL_ERROR();
+
     // NOTE: screen size uniform is set on window size change events (game.cpp)
 
     // Prepare the diffuse texture sampler

@@ -1,7 +1,6 @@
 
 layout(vertices = 4) out;
 
-in vec3 vPosition[];
 out vec3 tcPosition[];
 
 uniform vec2 screen_size;
@@ -9,17 +8,23 @@ uniform mat4 mvp;
 uniform mat4 modelView;
 uniform mat4 projection;
 uniform float lod_fidelity;
+uniform float maxPatchSize;
+uniform float maxFieldViewDot;
 
 #define ID gl_InvocationID
 
-bool offscreen(vec4 screenVert){
+bool offscreen_scr(vec4 screenVert) {
     if(screenVert.z < -0.5){
         return true;
     }
     return any(
-        lessThan(screenVert.xy, vec2(-8.0)) || // -1.7
-        greaterThan(screenVert.xy, vec2(8.0))  //  1.7
+        bvec4(lessThan(screenVert.xy, vec2(-8.0)), // -1.7
+        greaterThan(screenVert.xy, vec2(8.0)))     //  1.7
     );
+}
+
+bool offscreen_view(vec4 viewVert) {
+    return (dot(normalize(viewVert.xyz), vec3(0.0, 0.0, -1.0)) < maxFieldViewDot) && (length(viewVert) > maxPatchSize);
 }
 
 void spherify(inout vec4 v0, inout vec4 v1) {
@@ -60,15 +65,18 @@ float level(vec4 v0, vec4 v1){
 }
 
 void main(){
-    tcPosition[ID] = vPosition[ID];
+//    tcPosition[ID] = vPosition[ID];
+    tcPosition[ID] = gl_in[ID].gl_Position.xyz;
     if(ID == 0){
         vec4 v0 = multView(gl_in[0].gl_Position);
         vec4 v1 = multView(gl_in[1].gl_Position);
         vec4 v2 = multView(gl_in[2].gl_Position);
         vec4 v3 = multView(gl_in[3].gl_Position);
 
-        if(all(bvec4(offscreen(multProj(v0)), offscreen(multProj(v1)),
-                     offscreen(multProj(v2)), offscreen(multProj(v3)))))
+//        if(all(bvec4(offscreen_scr(multProj(v0)), offscreen_scr(multProj(v1)),
+//                     offscreen_scr(multProj(v2)), offscreen_scr(multProj(v3)))))
+        if(all(bvec4(offscreen_view(v0), offscreen_view(v1),
+                     offscreen_view(v2), offscreen_view(v3))))
         {
             gl_TessLevelInner[0] = 0;
             gl_TessLevelInner[1] = 0;

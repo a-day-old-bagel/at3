@@ -39,6 +39,7 @@ namespace at3 {
       SDL_Window *m_window;
       SDL_GLContext m_glContext;
       int m_width, m_height;
+      float m_fovy;
       Scene *m_scene;
       std::shared_ptr<Camera> m_camera;
       float m_lastTime;
@@ -57,6 +58,7 @@ namespace at3 {
       int width() const { return m_width; }
       int height() const { return m_height; }
       float aspect() const { return (float)m_width / (float)m_height; }
+      float fovy() const { return m_fovy; }
       Scene *scene() { return m_scene; }
 
       void setCamera(std::shared_ptr<Camera> camera) { m_camera = camera; }

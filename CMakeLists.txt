@@ -8,7 +8,7 @@ set( CMAKE_DISABLE_IN_SOURCE_BUILD ON )
 project( at3 )
 
 if( MSVC )
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP12 /std:c++14" ) # /Gm not good with /MP ?
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MD /MP12 /std:c++14" ) # /Gm not good with /MP ?
   set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /incremental /debug:fastlink" )
   add_definitions( -DARMA_USE_CXX11 )
 else( MSVC )

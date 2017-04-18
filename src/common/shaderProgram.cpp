@@ -273,5 +273,7 @@ namespace at3 {
     m_mvp = glGetUniformLocation(m_shaderProgram, "mvp");
     m_lodFidelity = glGetUniformLocation(m_shaderProgram, "lod_fidelity");
     m_debugLines = glGetUniformLocation(m_shaderProgram, "debugLines");
+    m_maxPatchSize = glGetUniformLocation(m_shaderProgram, "maxPatchSize");
+    m_maxFieldViewDot = glGetUniformLocation(m_shaderProgram, "maxFieldViewDot");
   }
 }

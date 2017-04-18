@@ -34,8 +34,8 @@ namespace at3 {
     private:
       GLuint m_vertexBuffer, m_indexBuffer,  m_diffuse, m_terrain;
       size_t m_numIndices;
-      float lodFidelity;
-      size_t numPatchesX, numPatchesY, resX, resY;
+      float lodFidelity = 0.02f, maxPatchSize = 200;
+      size_t numPatchesX, numPatchesY, resX = 512, resY = 512;
       std::vector<float> heights;
 
       void m_genMesh();
@@ -45,8 +45,8 @@ namespace at3 {
           const glm::mat4 &modelView,
           const glm::mat4 &projection);
     public:
-      TerrainObject(ezecs::State &state, const glm::mat4 &transform, float xMin, float xMax, float yMin, float yMax,
-                          float zMin, float zMax);
+      TerrainObject(ezecs::State &state, const glm::mat4 &transform,
+                    float xMin, float xMax, float yMin, float yMax, float zMin, float zMax);
       virtual ~TerrainObject();
 
       virtual void draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,

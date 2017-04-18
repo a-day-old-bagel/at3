@@ -178,7 +178,7 @@ class PyramidGame : public Game {
 
       // Populate the graphics scene
       m_camera = std::shared_ptr<PerspectiveCamera> (
-          new PerspectiveCamera(state, 80.0f * ((float) M_PI / 180.0f), 1.0f, 10000.0f, cameraMat));
+          new PerspectiveCamera(state, fovy(), 1.0f, 10000.0f, cameraMat));
       m_pyrBottom = std::shared_ptr<MeshObject> (
           new MeshObject(state, "assets/models/pyramid_bottom.dae", "assets/textures/pyramid_bottom.png", pyrBotMat));
       m_pyrTop = std::shared_ptr<MeshObject> (
@@ -193,7 +193,7 @@ class PyramidGame : public Game {
       m_skyBox = std::shared_ptr<SkyBox> (
           new SkyBox(state));
       m_terrain = std::shared_ptr<TerrainObject> (
-          new TerrainObject(state, ident, -4500, 5500, -3500, 6500, -3200, 6800));
+              new TerrainObject(state, ident, -4500, 5500, -3500, 6500, -3200, 6800));
 
       this->scene()->addObject(m_pyrBottom);
       this->scene()->addObject(m_skyBox);

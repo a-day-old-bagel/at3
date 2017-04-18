@@ -42,7 +42,7 @@
 namespace at3 {
   Game::Game(int argc, char **argv, const char *windowTitle)
     : m_windowTitle(windowTitle), m_scene(nullptr),
-    m_width(640), m_height(480)
+    m_width(640), m_height(480), m_fovy((float)M_PI * 0.35f)
   {
     m_lastTime = 0.0f;
     if (! m_initSdl() || ! m_initGl() || ! m_initScene()) {
@@ -52,6 +52,14 @@ namespace at3 {
     shader->use();
     assert(shader->screenSize() != -1);
     glUniform2f(shader->screenSize(), m_width, m_height);              ASSERT_GL_ERROR();
+
+    // at 0 field of view, a normalized dot product of 1 must be achieved between the forward view vector and
+    // a point for it to be considered on the screen. At PI field of view, a dot product of at least zero is
+    // required.  At 2PI field of view, a dot product of at least -1 is required, meaning that everything is visible.
+    float maxFieldOfView = (aspect() > 1.f) ? m_fovy * aspect() : m_fovy;
+    float maxFieldViewDot = 0.9f - ((maxFieldOfView * 0.5f) / (float)(M_PI));  // 0.9 for extra margin
+    assert(shader->maxFieldViewDot() != -1);
+    glUniform1f(shader->maxFieldViewDot(), maxFieldViewDot);           ASSERT_GL_ERROR();
   }
 
   Game::~Game() {
@@ -135,7 +143,15 @@ namespace at3 {
               auto shader = Shaders::terrainShader();
               shader->use();
               assert(shader->screenSize() != -1);
-              glUniform2f(shader->screenSize(), m_width, m_height);             ASSERT_GL_ERROR();
+              glUniform2f(shader->screenSize(), m_width, m_height);              ASSERT_GL_ERROR();
+              // at 0 field of view, a normalized dot product of 1 must be achieved between the forward view vector and
+              // a point for it to be considered on the screen. At PI field of view, a dot product of at least zero is
+              // required.  At 2PI field of view, a dot product of at least -1 is required, meaning that everything is
+              // visible.
+              float maxFieldOfView = (aspect() > 1.f) ? m_fovy * aspect() : m_fovy;
+              float maxFieldViewDot = 0.9f - ((maxFieldOfView * 0.5f) / (float)(M_PI)); // 0.9 for extra margin
+              assert(shader->maxFieldViewDot() != -1);
+              glUniform1f(shader->maxFieldViewDot(), maxFieldViewDot);           ASSERT_GL_ERROR();
               std::cout << "NEW SCREEN SIZE: " << m_width << ", " << m_height << std::endl;
               break;
             }
