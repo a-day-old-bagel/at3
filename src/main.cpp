@@ -147,6 +147,7 @@ class PyramidGame : public Game {
     std::shared_ptr<SkyBox> m_skyBox;
     std::shared_ptr<TerrainObject> m_terrain;
     std::shared_ptr<BulletDebug> bulletDebug;
+    std::vector<std::shared_ptr<MeshObject>> m_spheres;
     ControlSystem controlSystem;
     MovementSystem movementSystem;
     PhysicsSystem physicsSystem;
@@ -198,7 +199,7 @@ class PyramidGame : public Game {
       this->scene()->addObject(m_pyrBottom);
       this->scene()->addObject(m_skyBox);
       this->scene()->addObject(m_terrain);
-      LoadResult loaded = m_skyBox->useCubeMap("nalovardo", "png");
+      LoadResult loaded = m_skyBox->useCubeMap("sea", "png");
       assert(loaded == LOAD_SUCCESS);
 
       m_pyrBottom->addChild(m_camGimbal);
@@ -268,15 +269,40 @@ class PyramidGame : public Game {
     }
     bool systemsHandler(SDL_Event& event) {
       if (controlSystem.handleEvent(event)) {
-        return true;
+        return true; // handled it here
       }
       if (physicsSystem.handleEvent(event)) {
-        return true;
+        return true; // handled it here
       }
 //      if (kalmanSystem.handleEvent(event)) {
-//        return true;
+//        return true; // handled it here
 //      }
-      return false;
+      switch (event.type) {
+        case SDL_KEYDOWN:
+          switch (event.key.keysym.scancode) {
+            case SDL_SCANCODE_E: {
+
+              Placement *source;
+              state.get_Placement(m_pyrBottom->getId(), &source);
+              glm::mat4 sourceMat = glm::translate(source->mat, {0.f, 0.f, 3.f});
+              m_spheres.push_back(std::shared_ptr<MeshObject>(
+                  new MeshObject(state,
+                                 "assets/models/pyramid_bottom.dae",
+                                 "assets/textures/pyramid_bottom.png",
+                                 sourceMat)));
+              float sphereRadius = 0.5f;
+              state.add_Physics(m_spheres.back()->getId(), 0.5f, &sphereRadius, Physics::SPHERE);
+              Physics *physics;
+              state.get_Physics(m_spheres.back()->getId(), &physics);
+              physics->rigidBody->applyCentralImpulse({0.f, 0.f, 1.f});
+              this->scene()->addObject(m_spheres.back());
+
+            } break;
+            default: return false; // could not handle it here
+        } break;
+        default: return false; // could not handle it here
+      }
+      return true; // handled it here
     }
     void tick(float dt) {
       controlSystem.tick(dt);

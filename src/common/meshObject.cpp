@@ -144,34 +144,38 @@ namespace at3 {
   }
 
   void MeshObject::m_loadTexture(const std::string &textureFile) {
+    if (textureFile.empty()) {
+      return;
+    }
     int x, y, n;
     stbi_set_flip_vertically_on_load(true);
     uint8_t* data = stbi_load(textureFile.c_str(), &x, &y, &n, 0);
-    if (!data) {
+    if (data) {
+      // Create the texture object in the GL
+      glGenTextures(1, &m_texture);
+      FORCE_ASSERT_GL_ERROR();
+      glBindTexture(GL_TEXTURE_2D, m_texture);
+      FORCE_ASSERT_GL_ERROR();
+      // Copy the image to the GL
+      glTexImage2D(
+          GL_TEXTURE_2D,  // target
+          0,  // level
+          GL_RGBA,  // internal format
+          x,  // width
+          y,  // height
+          0,  // border
+          GL_RGBA,  // format
+          GL_UNSIGNED_BYTE,  // type
+          data  // data
+      );
+      FORCE_ASSERT_GL_ERROR();
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      FORCE_ASSERT_GL_ERROR();
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      FORCE_ASSERT_GL_ERROR();
+    } else {
       fprintf(stderr, "Failed to load texture file '%s'.\n", textureFile.c_str());
     }
-    // Create the texture object in the GL
-    glGenTextures(1, &m_texture);
-    FORCE_ASSERT_GL_ERROR();
-    glBindTexture(GL_TEXTURE_2D, m_texture);
-    FORCE_ASSERT_GL_ERROR();
-    // Copy the image to the GL
-    glTexImage2D(
-        GL_TEXTURE_2D,  // target
-        0,  // level
-        GL_RGBA,  // internal format
-        x,  // width
-        y,  // height
-        0,  // border
-        GL_RGBA,  // format
-        GL_UNSIGNED_BYTE,  // type
-        data  // data
-        );
-    FORCE_ASSERT_GL_ERROR();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    FORCE_ASSERT_GL_ERROR();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    FORCE_ASSERT_GL_ERROR();
     stbi_image_free(data);
   }
 
