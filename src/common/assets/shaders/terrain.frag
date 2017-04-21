@@ -12,7 +12,7 @@ uniform sampler2D texture0;
 uniform sampler2D terrain;
 
 //const vec3 incident = normalize(vec3(1.0, 0.2, 0.5));
-const vec3 incident = normalize(vec3(0.8, -1.0, 0.5));
+const vec3 incident = normalize(vec3(1.0, 0.2, 1.0));
 const vec4 light = vec4(1.0, 0.95, 0.9, 1.0) * 1.1;
 
 float amplify(float d, float scale, float offset) {

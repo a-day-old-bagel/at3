@@ -87,4 +87,7 @@ set( EZECS_CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/ecsConfig.hpp" )
 set( EZECS_LINK_TO_LIBS glm ${BULLET_LIBRARIES} armadillo) # BulletDynamics
 add_subdirectory( "./extern/ezecs" )
 
+# FASTNOISE, ETC.
+add_subdirectory( "./extern")
+
 add_subdirectory( "./src" )

@@ -194,7 +194,7 @@ class PyramidGame : public Game {
       m_skyBox = std::shared_ptr<SkyBox> (
           new SkyBox(state));
       m_terrain = std::shared_ptr<TerrainObject> (
-              new TerrainObject(state, ident, -4500, 5500, -3500, 6500, -3200, 6800));
+              new TerrainObject(state, ident, -5000, 5000, -5000, 5000, -100, 0)); // -450, 550, -350, 650, -320, 680
 
       this->scene()->addObject(m_pyrBottom);
       this->scene()->addObject(m_skyBox);
@@ -287,10 +287,10 @@ class PyramidGame : public Game {
               glm::mat4 sourceMat = glm::translate(source->mat, {0.f, 0.f, 3.f});
               m_spheres.push_back(std::shared_ptr<MeshObject>(
                   new MeshObject(state,
-                                 "assets/models/pyramid_bottom.dae",
-                                 "assets/textures/pyramid_bottom.png",
+                                 "assets/models/sphere.dae",
+                                 "assets/textures/thrusters.png",
                                  sourceMat)));
-              float sphereRadius = 0.5f;
+              float sphereRadius = 1.0f;
               state.add_Physics(m_spheres.back()->getId(), 0.5f, &sphereRadius, Physics::SPHERE);
               Physics *physics;
               state.get_Physics(m_spheres.back()->getId(), &physics);

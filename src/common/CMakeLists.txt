@@ -26,6 +26,7 @@ target_link_libraries(common
     ${SDL2_LIBRARY}
     epoxy_static
     ${OPENGL_LIBRARIES}
+    fastnoise
     )
 target_include_directories( common PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016 Jonathan Glines
- * Jonathan Glines <jonathan@glines.net>
+ * Copyright (c) 2017 Galen Cochrane
+ * Galen Cochrane <galencochrane@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -26,6 +26,7 @@
 
 #include <epoxy/gl.h>
 #include <string>
+#include <FastNoise.h>
 
 #include "sceneObject.h"
 
@@ -34,16 +35,25 @@ namespace at3 {
     private:
       GLuint m_vertexBuffer, m_indexBuffer,  m_diffuse, m_terrain;
       size_t m_numIndices;
-      float lodFidelity = 0.02f, maxPatchSize = 200;
-      size_t numPatchesX, numPatchesY, resX = 512, resY = 512;
+      float lodFidelity = 0.02f, maxPatchSize = 150;
+      size_t numPatchesX, numPatchesY, resX = 2048, resY = 2048;
       std::vector<float> heights;
 
       void m_genMesh();
-      float m_genTextures(float yScale, float xScale, float zScale);
+      float m_genTextures(float xScale, float yScale, float zScale);
 
       void m_drawSurface(
           const glm::mat4 &modelView,
           const glm::mat4 &projection);
+
+      float m_genTrigTerrain(std::vector<uint8_t> &diffuse, std::vector<float> &terrain,
+                             float xScale, float yScale, float zScale);
+
+      FastNoise noiseGen;
+      float m_getNoise(float x, float y);
+      float m_genSimplexTerrain(std::vector<uint8_t> &diffuse, std::vector<float> &terrain,
+                                float xScale, float yScale, float zScale);
+
     public:
       TerrainObject(ezecs::State &state, const glm::mat4 &transform,
                     float xMin, float xMax, float yMin, float yMax, float zMin, float zMax);

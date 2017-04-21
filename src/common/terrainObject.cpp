@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2016 Jonathan Glines, Galen Cochrane
- * Jonathan Glines <jonathan@glines.net>
+ * Copyright (c) 2017 Galen Cochrane
  * Galen Cochrane <galencochrane@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,7 +26,7 @@
 #include <assimp/scene.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "stb_image.h"
+#include <stb_image.h>
 
 #include "ezecs.hpp"
 #include "glError.h"
@@ -121,14 +120,12 @@ namespace at3 {
     m_numIndices = indices.size();
   }
 
-  float TerrainObject::m_genTextures(float yScale, float xScale, float zScale) {
-    std::vector<float> terrain;
-    std::vector<uint8_t> diffuse;
+  float TerrainObject::m_genTrigTerrain(std::vector<uint8_t> &diffuse, std::vector<float> &terrain,
+                                        float xScale, float yScale, float zScale) {
     float hillFreqX = 1.f / ((float)resX / 10.f);
     float hillFreqY = 1.f / ((float)resY / 12.f);
     float hNormalizer = 1 / (1 + 1 + 0.2f + 0.18f);
     float newZScale = hNormalizer * (0.5f * zScale);
-
     for (GLsizei y = 0; y < resY; ++y) {
       for (GLsizei x = 0; x < resX; ++x) {
         float height = hNormalizer * ( // 0.0625f
@@ -155,6 +152,64 @@ namespace at3 {
         heights.push_back(height);
       }
     }
+    return newZScale;
+  }
+
+  float TerrainObject::m_getNoise(float x, float y) {
+    return 0.5f * (
+        noiseGen.GetNoise(x, y) * 0.5f +
+        noiseGen.GetNoise(x * 0.5f + 15000, y * 0.5f + 15000) +
+        noiseGen.GetNoise(x * 0.25f - 1500, y * 0.25f - 1500)
+    );
+  }
+
+  float TerrainObject::m_genSimplexTerrain(std::vector<uint8_t> &diffuse, std::vector<float> &terrain, float xScale,
+                                           float yScale, float zScale) {
+
+    noiseGen.SetNoiseType(FastNoise::SimplexFractal); // Set the desired noise type
+    noiseGen.SetInterp(FastNoise::Quintic);
+    noiseGen.SetCellularReturnType(FastNoise::Distance2Sub);
+    noiseGen.SetCellularDistanceFunction(FastNoise::Euclidean);
+
+    float ds = 0.5f;
+    for (GLsizei y = 0; y < resY; ++y) {
+      for (GLsizei x = 0; x < resX; ++x) {
+        float nx = x * xScale * 0.5f / resX;
+        float ny = y * yScale * 0.5f / resY;
+        float height = m_getNoise(nx,ny);
+        // FIXME: the 0.12f that scales ds is not physically based, and normals need to be debugged in general.
+        glm::vec3 normal = glm::cross(
+            glm::vec3(ds * 0.12f, 0.f, m_getNoise(nx + ds, ny) - m_getNoise(nx - ds, ny)),
+            glm::vec3(0.f, ds * 0.12f, m_getNoise(nx, ny + ds) - m_getNoise(nx, ny - ds))
+        );
+        normal = glm::normalize(normal);
+//        std::cout << normal.x << " " << normal.y << " " << normal.z << std::endl; //" : "
+//                  << (255.f * normal.x) << " "
+//                  << (255.f * normal.y) << " "
+//                  << (255.f * normal.z) << std::endl;
+        // fill terrain texture data
+        terrain.push_back(normal.x);
+        terrain.push_back(normal.y);
+        terrain.push_back(normal.z);
+        terrain.push_back(height);
+        // fill diffuse texture data
+        diffuse.push_back((uint8_t)(255.f * abs(normal.x)));
+        diffuse.push_back((uint8_t)(255.f * abs(normal.y)));
+        diffuse.push_back((uint8_t)(96.f * abs(normal.z)));
+        diffuse.push_back(255);
+        // keep the terrain heights around for physics
+        heights.push_back(height);
+      }
+    }
+    return zScale;// * 0.1f;
+  }
+
+  float TerrainObject::m_genTextures(float xScale, float yScale, float zScale) {
+    std::vector<float> terrain;
+    std::vector<uint8_t> diffuse;
+
+//    float newZScale = m_genTrigTerrain(diffuse, terrain, xScale, yScale, zScale);
+    float newZScale = m_genSimplexTerrain(diffuse, terrain, xScale, yScale, zScale);
 
     // Create the terrain texture object in the GL
     glGenTextures(1, &m_terrain);                                            FORCE_ASSERT_GL_ERROR();
