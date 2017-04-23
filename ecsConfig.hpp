@@ -103,8 +103,8 @@ namespace {
   struct Terrain : public Component<Terrain> {
     floatVecPtr heights;
     size_t resX, resY;
-    float sclX, sclY, sclZ;
-    Terrain(floatVecPtr heights, size_t resX, size_t resY, float sclX, float sclY, float sclZ);
+    float sclX, sclY, sclZ, minZ, maxZ;
+    Terrain(floatVecPtr heights, size_t resX, size_t resY, float sclX, float sclY, float sclZ, float minZ, float maxZ);
   };
   EZECS_COMPONENT_DEPENDENCIES(Terrain, Placement)
 
@@ -138,8 +138,8 @@ namespace {
   Physics::Physics(float mass, void* geomData, Physics::Geometry geom)
       : geom(geom), mass(mass), geomInitData(geomData) { }
 
-  Terrain::Terrain(floatVecPtr heights, size_t resX, size_t resY, float sclX, float sclY, float sclZ)
-      : heights(heights), resX(resX), resY(resY), sclX(sclX), sclY(sclY), sclZ(sclZ) { }
+  Terrain::Terrain(floatVecPtr heights, size_t resX, size_t resY, float sclX, float sclY, float sclZ, float minZ, float maxZ)
+      : heights(heights), resX(resX), resY(resY), sclX(sclX), sclY(sclY), sclZ(sclZ), minZ(minZ), maxZ(maxZ) { }
 
   Kalman::Kalman() {
     covariance.eye();

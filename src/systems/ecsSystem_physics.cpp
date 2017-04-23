@@ -43,6 +43,51 @@ namespace at3 {
     dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
     dynamicsWorld->setGravity(btVector3(0.0f, 0.0f, -9.81f));
 
+
+
+    
+    // PREVENT BACKFACE COLLISIONS
+    /*static bool myCustomMaterialCombinerCallback(
+        btManifoldPoint& cp,
+        const btCollisionObjectWrapper* colObj0Wrap,
+        int partId0,
+        int index0,
+        const btCollisionObjectWrapper* colObj1Wrap,
+        int partId1,
+        int index1
+    )
+    {
+      // one-sided triangles
+      if (colObj1Wrap->getCollisionShape()->getShapeType() == TRIANGLE_SHAPE_PROXYTYPE)
+      {
+        auto triShape = static_cast<const btTriangleShape*>( colObj1Wrap->getCollisionShape() );
+        const btVector3* v = triShape->m_vertices1;
+        btVector3 faceNormalLs = btCross(v[1] - v[0], v[2] - v[0]);
+        faceNormalLs.normalize();
+        btVector3 faceNormalWs = colObj1Wrap->getWorldTransform().getBasis() * faceNormalLs;
+        float nDotF = btDot( faceNormalWs, cp.m_normalWorldOnB );
+        if ( nDotF <= 0.0f )
+        {
+          // flip the contact normal to be aligned with the face normal
+          cp.m_normalWorldOnB += -2.0f * nDotF * faceNormalWs;
+        }
+      }
+
+      //this return value is currently ignored, but to be on the safe side: return false if you don't calculate friction
+      return false;
+    }
+
+    void BulletPhysics::init()
+    {
+      // somewhere in your init code you need to setup the callback
+      gContactAddedCallback = myCustomMaterialCombinerCallback;
+    }*/
+    // AND
+    /*terrain->setCollisionFlags(_floor->getCollisionFlags() | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);*/
+
+
+
+
     return true;
   }
 
@@ -156,8 +201,8 @@ namespace at3 {
         (int)terrain->resY,         // int heightStickLength (sutpid name - I think it just means height
         terrain->heights->data(),   // const void *heightfieldData
         0,                          // btScalar heightScale (doesn't matter for float data)
-        -1.f,                       // btScalar minHeight
-        1.f,                        // btScalar maxHeight
+        terrain->minZ,              // btScalar minHeight
+        terrain->maxZ,              // btScalar maxHeight
         2,                          // int upAxis
         PHY_FLOAT,                  // PHY_ScalarType heightDataType
         false                       // bool flipQuadEdges

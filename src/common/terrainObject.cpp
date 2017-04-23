@@ -27,6 +27,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <stb_image.h>
+#include <omp.h>
 
 #include "ezecs.hpp"
 #include "glError.h"
@@ -50,13 +51,18 @@ namespace at3 {
     float xCenter = (xMax + xMin) * 0.5f;
     float yCenter = (yMax + yMin) * 0.5f;
     float zCenter = (zMax + zMin) * 0.5f;
-    numPatchesX = (size_t)(xSize / maxPatchSize);
-    numPatchesY = (size_t)(ySize / maxPatchSize);
+    numPatchesX = std::max((size_t)1, (size_t)(xSize / maxPatchSize));
+    numPatchesY = std::max((size_t)1, (size_t)(ySize / maxPatchSize));
 
     // TODO: dynamic res and fidelity picking?
 
     m_genMesh();
-    zSize = m_genTextures(xSize, ySize, zSize);
+    glm::vec2 newZInfo = m_genMaps(xSize, ySize, zSize);
+    std::cout << newZInfo.x << " -> " << newZInfo.y << std::endl;
+    std::cout << (newZInfo.x + newZInfo.y) * 0.5f << ", " << newZInfo.y - newZInfo.x << std::endl;
+    float newZSize = zSize / (newZInfo.y - newZInfo.x);
+    float newZCenter = zCenter - ((newZInfo.x + newZInfo.y) * 0.5f);
+    std::cout << newZCenter << ", " << newZSize << std::endl;
 
     glm::mat4 translated = glm::translate(transform, {xCenter, yCenter, zCenter});
 
@@ -64,17 +70,20 @@ namespace at3 {
     status = this->state->add_Placement(id, translated);
     assert(status == ezecs::SUCCESS);
 
-    status = this->state->add_Terrain(id, &heights, resX, resY, xSize, ySize, zSize);
+    status = this->state->add_Terrain(id, &heights, resX, resY, xSize, ySize, newZSize, newZInfo.x, newZInfo.y);
     assert(status == ezecs::SUCCESS);
 
     status = this->state->add_Physics(id, 0.f, NULL, Physics::TERRAIN);
     assert(status == ezecs::SUCCESS);
 
     // at this point system callbacks have fired, and it's safe to set a scale matrix FIXME: This hack.
-    glm::mat4 scaledTransform = glm::scale(translated, {xSize, ySize, zSize});
+    glm::mat4 scaledTransform = glm::scale(translated, {xSize, ySize, newZSize});
+    glm::mat4 centeredTransform = glm::translate(scaledTransform, {0.f, 0.f, (newZInfo.x + newZInfo.y) * -0.5f});
+
+    std::cout << centeredTransform[3][2] << std::endl;
     Placement *placement;
     this->state->get_Placement(id, &placement);
-    placement->mat = scaledTransform;
+    placement->mat = centeredTransform;
 
   }
 
@@ -156,60 +165,101 @@ namespace at3 {
   }
 
   float TerrainObject::m_getNoise(float x, float y) {
-    return 0.5f * (
+
+    noiseGen.SetNoiseType(FastNoise::SimplexFractal);
+    noiseGen.SetFractalType(FastNoise::FBM);
+    noiseGen.SetInterp(FastNoise::Quintic);
+    float value = 2.f * (
         noiseGen.GetNoise(x, y) * 0.5f +
-        noiseGen.GetNoise(x * 0.5f + 15000, y * 0.5f + 15000) +
-        noiseGen.GetNoise(x * 0.25f - 1500, y * 0.25f - 1500)
-    );
+        noiseGen.GetNoise(x * 0.5f /*+ 15000*/, y * 0.5f /*+ 15000*/) +
+        noiseGen.GetNoise(x * 0.25f /*- 1500*/, y * 0.25f /*- 1500*/));
+    noiseGen.SetNoiseType(FastNoise::SimplexFractal);
+    noiseGen.SetFractalType(FastNoise::Billow);
+    noiseGen.SetInterp(FastNoise::Quintic);
+    value *= (1.f - noiseGen.GetNoise(x * 0.2f, y * 0.2f));
+
+//    float value = 4.f * (1.f - noiseGen.GetNoise(x * 0.2f, y * 0.2f));
+
+    return value;
+
+//    return /*0.5f **/ 2.f * (
+//        noiseGen.GetNoise(x, y) * 0.5f +
+//        noiseGen.GetNoise(x * 0.5f /*+ 15000*/, y * 0.5f /*+ 15000*/) +
+//        noiseGen.GetNoise(x * 0.25f /*- 1500*/, y * 0.25f /*- 1500*/)
+//    );
   }
 
-  float TerrainObject::m_genSimplexTerrain(std::vector<uint8_t> &diffuse, std::vector<float> &terrain, float xScale,
-                                           float yScale, float zScale) {
+  glm::vec2 TerrainObject::m_genTerrain(std::vector<uint8_t> &diffuse, std::vector<float> &terrain, float xScale,
+                                        float yScale, float zScale) {
 
-    noiseGen.SetNoiseType(FastNoise::SimplexFractal); // Set the desired noise type
-    noiseGen.SetInterp(FastNoise::Quintic);
-    noiseGen.SetCellularReturnType(FastNoise::Distance2Sub);
-    noiseGen.SetCellularDistanceFunction(FastNoise::Euclidean);
+//    noiseGen.SetNoiseType(FastNoise::SimplexFractal);
+//    noiseGen.SetFractalType(FastNoise::FBM);
+//    noiseGen.SetInterp(FastNoise::Quintic);
+//    noiseGen.SetCellularReturnType(FastNoise::Distance2Sub);
+//    noiseGen.SetCellularDistanceFunction(FastNoise::Euclidean);
 
-    float ds = 0.5f;
-    for (GLsizei y = 0; y < resY; ++y) {
-      for (GLsizei x = 0; x < resX; ++x) {
-        float nx = x * xScale * 0.5f / resX;
-        float ny = y * yScale * 0.5f / resY;
+    bool minMaxInit = false;
+    float min = 0, max = 0;
+    float ds = 1.0f;
+    GLsizei y, x;
+//    #pragma omp parallel for private(y, x)
+    for (y = 0; y < resY; ++y) {
+      for (x = 0; x < resX; ++x) {
+        float nx = x * xScale * 0.05f / resX;
+        float ny = y * yScale * 0.05f / resY;
         float height = m_getNoise(nx,ny);
-        // FIXME: the 0.12f that scales ds is not physically based, and normals need to be debugged in general.
+        // FIXME: normal calculation is not physically based (should be ds * 2 for x and y components),
+        // and normals need to be debugged in general.
         glm::vec3 normal = glm::cross(
-            glm::vec3(ds * 0.12f, 0.f, m_getNoise(nx + ds, ny) - m_getNoise(nx - ds, ny)),
-            glm::vec3(0.f, ds * 0.12f, m_getNoise(nx, ny + ds) - m_getNoise(nx, ny - ds))
+            glm::vec3(ds /** 0.12f*/, 0.f, m_getNoise(nx + ds, ny) - m_getNoise(nx - ds, ny)),
+            glm::vec3(0.f, ds /** 0.12f*/, m_getNoise(nx, ny + ds) - m_getNoise(nx, ny - ds))
         );
         normal = glm::normalize(normal);
-//        std::cout << normal.x << " " << normal.y << " " << normal.z << std::endl; //" : "
-//                  << (255.f * normal.x) << " "
-//                  << (255.f * normal.y) << " "
-//                  << (255.f * normal.z) << std::endl;
         // fill terrain texture data
-        terrain.push_back(normal.x);
+        /*terrain.push_back(normal.x);
         terrain.push_back(normal.y);
         terrain.push_back(normal.z);
-        terrain.push_back(height);
+        terrain.push_back(height);*/
+        terrain.at(((y * resX) + x) * 4 + 0) = normal.x;
+        terrain.at(((y * resX) + x) * 4 + 1) = normal.y;
+        terrain.at(((y * resX) + x) * 4 + 2) = normal.z;
+        terrain.at(((y * resX) + x) * 4 + 3) = height;
         // fill diffuse texture data
-        diffuse.push_back((uint8_t)(255.f * abs(normal.x)));
+        /*diffuse.push_back((uint8_t)(255.f * abs(normal.x)));
         diffuse.push_back((uint8_t)(255.f * abs(normal.y)));
         diffuse.push_back((uint8_t)(96.f * abs(normal.z)));
-        diffuse.push_back(255);
+        diffuse.push_back(255);*/
+        diffuse.at(((y * resX) + x) * 4 + 0) = (uint8_t)(255.f * abs(normal.x));
+        diffuse.at(((y * resX) + x) * 4 + 1) = (uint8_t)(255.f * abs(normal.y));
+        diffuse.at(((y * resX) + x) * 4 + 2) = (uint8_t)(96.f  * abs(normal.z));
+        diffuse.at(((y * resX) + x) * 4 + 3) = 255;
         // keep the terrain heights around for physics
-        heights.push_back(height);
+        /*heights.push_back(height);*/
+        heights.at((y * resX) + x) = height;
+        if (!minMaxInit) {
+          min = height;
+          max = height;
+          minMaxInit = true;
+        } else {
+          min = std::min(min, height);
+          max = std::max(max, height);
+        }
       }
     }
-    return zScale;// * 0.1f;
+//    return glm::vec2((min + max) * 0.5f, max - min);
+    return glm::vec2(min, max);
   }
 
-  float TerrainObject::m_genTextures(float xScale, float yScale, float zScale) {
+  glm::vec2 TerrainObject::m_genMaps(float xScale, float yScale, float zScale) {
+
     std::vector<float> terrain;
     std::vector<uint8_t> diffuse;
 
-//    float newZScale = m_genTrigTerrain(diffuse, terrain, xScale, yScale, zScale);
-    float newZScale = m_genSimplexTerrain(diffuse, terrain, xScale, yScale, zScale);
+    heights.resize(resY * resX);
+    terrain.resize(resY * resX * 4);
+    diffuse.resize(resY * resX * 4);
+
+    glm::vec2 newZInfo = m_genTerrain(diffuse, terrain, xScale, yScale, zScale);
 
     // Create the terrain texture object in the GL
     glGenTextures(1, &m_terrain);                                            FORCE_ASSERT_GL_ERROR();
@@ -251,7 +301,7 @@ namespace at3 {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);     FORCE_ASSERT_GL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);     FORCE_ASSERT_GL_ERROR();
 
-    return newZScale;
+    return newZInfo;
   }
 
   void TerrainObject::m_drawSurface(

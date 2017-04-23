@@ -12,7 +12,7 @@ if( MSVC )
   set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /incremental /debug:fastlink" )
   add_definitions( -DARMA_USE_CXX11 )
 else( MSVC )
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" )
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp" )
 endif( MSVC )
 
 # ARMADILLO

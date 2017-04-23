@@ -40,7 +40,7 @@ namespace at3 {
       std::vector<float> heights;
 
       void m_genMesh();
-      float m_genTextures(float xScale, float yScale, float zScale);
+      glm::vec2 m_genMaps(float xScale, float yScale, float zScale);
 
       void m_drawSurface(
           const glm::mat4 &modelView,
@@ -51,8 +51,8 @@ namespace at3 {
 
       FastNoise noiseGen;
       float m_getNoise(float x, float y);
-      float m_genSimplexTerrain(std::vector<uint8_t> &diffuse, std::vector<float> &terrain,
-                                float xScale, float yScale, float zScale);
+      glm::vec2 m_genTerrain(std::vector<uint8_t> &diffuse, std::vector<float> &terrain,
+                             float xScale, float yScale, float zScale);
 
     public:
       TerrainObject(ezecs::State &state, const glm::mat4 &transform,

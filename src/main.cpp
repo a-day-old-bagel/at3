@@ -194,7 +194,8 @@ class PyramidGame : public Game {
       m_skyBox = std::shared_ptr<SkyBox> (
           new SkyBox(state));
       m_terrain = std::shared_ptr<TerrainObject> (
-              new TerrainObject(state, ident, -5000, 5000, -5000, 5000, -100, 0)); // -450, 550, -350, 650, -320, 680
+              new TerrainObject(state, ident, -5000.f, 5000.f, -5000.f, 5000.f, -150, 350)); // -450, 550, -350, 650, -320, 680
+//              new TerrainObject(state, ident, -10.5f, 10.5f, -10.5f, 10.5f, 0, 21));
 
       this->scene()->addObject(m_pyrBottom);
       this->scene()->addObject(m_skyBox);
@@ -250,6 +251,43 @@ class PyramidGame : public Game {
       state.add_Kalman(botId);
 
 
+
+
+      // to do vehicle stuff??
+      /*vehicleRayCaster = new DefaultVehicleRaycaster(btScene);
+      tuning = new VehicleTuning();
+      vehicle = new RaycastVehicle(tuning, carBody, vehicleRayCaster);
+
+      // my coordinate system : 0 1 2
+      vehicle.setCoordinateSystem(rightIndex, upIndex, forwardIndex);
+      // to avoid car to freeze for no reason
+      carBody.setActivationState(CollisionObject.DISABLE_DEACTIVATION);
+
+      Then add wheels (for each) :
+      --------------------------------------------
+
+          WheelInfo wheel = vehicle.addWheel(connectionPoint, wheelDirection, wheelAxle, suspensionRestLength, wheel_radius, tuning, isFrontWheel);
+
+      // Wheel properties (quite touchy...)
+      wheel.suspensionStiffness = suspensionStiffness;
+      wheel.wheelsDampingRelaxation = suspensionDamping;
+      wheel.wheelsDampingCompression = suspensionCompression;
+      wheel.frictionSlip = wheelFriction;
+      wheel.rollInfluence = rollInfluence;
+
+      Default values in my program are : (but it depends on your objects size and masses...)
+
+      float wheelRadius = 0.13f;
+      float wheelWidth  = 0.1f;
+
+      float wheelFriction = 1.0f;
+      float suspensionRestLength = 0.15f;
+      float suspensionStiffness = 20.f;
+      float suspensionDamping = 0.1f;﻿*/
+
+
+
+
       // Add some debug-drawn features...
 
       // a floor grid
@@ -258,7 +296,7 @@ class PyramidGame : public Game {
       debugGenerateVirus(state);
       // a bullet physics debug-drawing thing
       bulletDebug = std::shared_ptr<BulletDebug> ( new BulletDebug(&state) );
-      bulletDebug->setDebugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb);
+      bulletDebug->setDebugMode(btIDebugDraw::DBG_DrawAabb | btIDebugDraw::DBG_DrawWireframe);
       physicsSystem.setDebugDrawer(bulletDebug);
       this->scene()->addObject(bulletDebug);
 
