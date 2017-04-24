@@ -22,3 +22,6 @@
 [submodule "extern/xxd"]
 	path = extern/xxd
 	url = https://github.com/a-day-old-bagel/xxd
+[submodule "extern/fastnoise"]
+	path = extern/fastnoise
+	url = https://github.com/auburns/fastnoise
