@@ -28,10 +28,10 @@
 
 // BEGIN INCLUDES
 
+#include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <btBulletDynamicsCommon.h>
-#include <armadillo>
 
 // END INCLUDES
 
@@ -108,14 +108,6 @@ namespace {
   };
   EZECS_COMPONENT_DEPENDENCIES(Terrain, Placement)
 
-  struct Kalman : public Component<Kalman> {
-    glm::mat4 previousTransform;
-    btVector3 believedPos, believedVel, realVel, kPos, kVel;
-    arma::mat66 covariance;
-    Kalman();
-  };
-  EZECS_COMPONENT_DEPENDENCIES(Kalman, Placement)
-
   // END DECLARATIONS
 
   // BEGIN DEFINITIONS
@@ -140,10 +132,6 @@ namespace {
 
   Terrain::Terrain(floatVecPtr heights, size_t resX, size_t resY, float sclX, float sclY, float sclZ, float minZ, float maxZ)
       : heights(heights), resX(resX), resY(resY), sclX(sclX), sclY(sclY), sclZ(sclZ), minZ(minZ), maxZ(maxZ) { }
-
-  Kalman::Kalman() {
-    covariance.eye();
-  }
 
   // END DEFINITIONS
 

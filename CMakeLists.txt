@@ -2,8 +2,7 @@
 cmake_minimum_required( VERSION 3.3 )
 set( CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 set( CMAKE_DISABLE_IN_SOURCE_BUILD ON )
-# Armadillo generates a makefile in-source, and I'm tired of dealing with crap like that, so I just disabled this.
-# set( CMAKE_DISABLE_SOURCE_CHANGES ON )
+set( CMAKE_DISABLE_SOURCE_CHANGES ON )
 project( at3 )
 
 # By default, at3 will build external dependencies (like assimp or bullet) from included source instead of hoping that
@@ -17,6 +16,8 @@ find_package( OpenGL REQUIRED )
 include_directories( SYSTEM ${OPENGL_INCLUDE_DIR} )
 find_package( SDL2 REQUIRED )
 include_directories( SYSTEM ${SDL2_INCLUDE_DIR} )
+# stb image library is header only, and will always be included like this
+include_directories( "./extern/stb" )
 
 # Some global compiler flags are set here. This may not be a great way to do this.
 if( MSVC )
@@ -27,33 +28,7 @@ else( MSVC )
   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp" )
 endif( MSVC )
 
-if (AT3_USE_INCLUDED_LIBS)
-
-  # EXTERN INCLUDES --------------------------------------------------------
-
-  # assimp
-  include_directories( "./extern/assimp/include" )
-  include_directories( "${CMAKE_CURRENT_BINARY_DIR}/extern/assimp/include" )
-  # bullet
-  include( "${CMAKE_CURRENT_BINARY_DIR}/extern/bullet3/BulletConfig.cmake" )
-  include( "./extern/bullet3/UseBullet.cmake" )
-  include_directories( "./extern/bullet3/src" )
-  # stb
-  include_directories( "./extern/stb" )
-  # epoxy
-  include_directories( "./extern/libepoxy/include" )
-  include_directories( "./extern/libepoxy/registry" )
-  include_directories( "${CMAKE_CURRENT_BINARY_DIR}/extern/libepoxy/include" )
-
-  # BUILD EXTERNS ----------------------------------------------------------
-
-  # EZECS
-  set( EZECS_CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/ecsConfig.hpp" )
-  set( EZECS_LINK_TO_LIBS glm ${BULLET_LIBRARIES} armadillo) # BulletDynamics
-  add_subdirectory( "./extern/ezecs" )
-
-  # ARMADILLO
-  add_subdirectory( "./extern/armadillo-code" )
+if (AT3_USE_INCLUDED_LIBS) # BUILD AND INCLUDE EXTERNS
 
   # ASSIMP
   option( BUILD_SHARED_LIBS "Build package with shared libraries." ON )
@@ -67,6 +42,8 @@ if (AT3_USE_INCLUDED_LIBS)
   option( ASSIMP_BUILD_TESTS "If the test suite for Assimp is built in addition to the library." OFF )
   option( ASSIMP_COVERALLS "Eańable this to measure test coverage." OFF )
   add_subdirectory( "./extern/assimp" )
+  include_directories( "./extern/assimp/include" )
+  include_directories( "${CMAKE_CURRENT_BINARY_DIR}/extern/assimp/include" )
 
   # GLM
   add_subdirectory( "./extern/glm" )
@@ -91,9 +68,15 @@ if (AT3_USE_INCLUDED_LIBS)
   OPTION( INSTALL_EXTRA_LIBS "Set when you want extra libraries installed" OFF )
   OPTION( BUILD_UNIT_TESTS "Build Unit Tests"	ON )
   add_subdirectory( "./extern/bullet3" )
+  include( "${CMAKE_CURRENT_BINARY_DIR}/extern/bullet3/BulletConfig.cmake" )
+  include( "./extern/bullet3/UseBullet.cmake" )
+  include_directories( "./extern/bullet3/src" )
 
   # EPOXY
   add_subdirectory( "./extern/libepoxy" )
+  include_directories( "./extern/libepoxy/include" )
+  include_directories( "./extern/libepoxy/registry" )
+  include_directories( "${CMAKE_CURRENT_BINARY_DIR}/extern/libepoxy/include" )
 
   # XXD
   option( XXD_STATIC_LIB "Build a static lib of xxd" ON )
@@ -102,6 +85,11 @@ if (AT3_USE_INCLUDED_LIBS)
 
   # FASTNOISE, ETC.
   add_subdirectory( "./extern")
+
+  # EZECS
+  set( EZECS_CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/ecsConfig.hpp" )
+  set( EZECS_LINK_TO_LIBS glm ${BULLET_LIBRARIES} )
+  add_subdirectory( "./extern/ezecs" )
 
 else (AT3_USE_INCLUDED_LIBS)
   message(FATAL_ERROR

@@ -249,8 +249,8 @@ class PyramidGame : public Game {
       entityId fireId = m_pyrFire->getId();
       state.add_TransformFunction(fireId, DELEGATE_NOCLASS(pyrFireWiggle));
       
-      entityId botId = m_pyrBottom->getId();
-      state.add_Kalman(botId);
+//      entityId botId = m_pyrBottom->getId();
+//      state.add_Kalman(botId);
 
 
 

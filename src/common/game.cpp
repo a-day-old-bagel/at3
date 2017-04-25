@@ -30,6 +30,8 @@
 #define STBI_ONLY_JPEG
 #include "stb_image.h"
 
+#include <iostream>
+
 #include "debug.h"
 #include "scene.h"
 #include "shaders.h"

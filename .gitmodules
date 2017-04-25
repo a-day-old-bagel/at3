@@ -13,9 +13,6 @@
 [submodule "extern/assimp"]
 	path = extern/assimp
 	url = https://github.com/a-day-old-bagel/assimp
-[submodule "extern/armadillo-code"]
-	path = extern/armadillo-code
-	url = https://github.com/conradsnicta/armadillo-code
 [submodule "extern/libepoxy"]
 	path = extern/libepoxy
 	url = https://github.com/a-day-old-bagel/libepoxy
