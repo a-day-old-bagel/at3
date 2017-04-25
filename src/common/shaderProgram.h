@@ -45,7 +45,7 @@ namespace at3 {
       GLint m_vertPositionLocation, m_vertNormalLocation, m_vertColorLocation,
              m_vertTexCoordLocation, m_vertVelocityLocation;
       GLint m_vertStartTimeLocation;
-      GLint m_texture0, m_terrain;
+      GLint m_texture0, m_terrain, m_grass0, m_cliff0, m_cliff1;
       GLint m_screenSize, m_mvp, m_lodFidelity, m_debugLines, m_maxPatchSize, m_maxFieldViewDot;
 
       static GLuint m_compileShader(const char *code, int code_len, GLenum type);
@@ -207,9 +207,21 @@ namespace at3 {
        */
       GLint texture0() const { return m_texture0; }
       /**
-       * \return Location of the first texture sampler uniform in the shader.
+       * \return Location of the terrain texture sampler uniform in the shader.
        */
       GLint terrain() const { return m_terrain; }
+      /**
+       * \return Location of the grass0 texture sampler uniform in the shader.
+       */
+      GLint grass0() const { return m_grass0; }
+      /**
+       * \return Location of the cliff0 texture sampler uniform in the shader.
+       */
+      GLint cliff0() const { return m_cliff0; }
+      /**
+       * \return Location of the cliff1 texture sampler uniform in the shader.
+       */
+      GLint cliff1() const { return m_cliff1; }
       /**
        * \return Location of the first texture sampler uniform in the shader.
        */

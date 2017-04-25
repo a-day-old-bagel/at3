@@ -267,8 +267,11 @@ namespace at3 {
     m_vertStartTimeLocation = glGetAttribLocation(m_shaderProgram, "vertStartTime");
 
     m_texture0 = glGetUniformLocation(m_shaderProgram, "texture0");
-    
     m_terrain = glGetUniformLocation(m_shaderProgram, "terrain");
+    m_grass0 = glGetUniformLocation(m_shaderProgram, "grass0");
+    m_cliff0 = glGetUniformLocation(m_shaderProgram, "cliff0");
+    m_cliff1 = glGetUniformLocation(m_shaderProgram, "cliff1");
+
     m_screenSize = glGetUniformLocation(m_shaderProgram, "screen_size");
     m_mvp = glGetUniformLocation(m_shaderProgram, "mvp");
     m_lodFidelity = glGetUniformLocation(m_shaderProgram, "lod_fidelity");

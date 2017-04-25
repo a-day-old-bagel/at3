@@ -89,7 +89,7 @@ namespace {
 
   struct Physics : public Component<Physics> {
     enum Geometry {
-      NONE, PLANE, SPHERE, MESH, TERRAIN, WHEELq
+      NONE, PLANE, SPHERE, MESH, TERRAIN, WHEEL
     };
     int geom;
     float mass;

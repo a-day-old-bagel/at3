@@ -29,6 +29,8 @@
 #include <FastNoise.h>
 
 #include "sceneObject.h"
+#include "loadedTexture.h"
+#include "../../../../../../Program Files (x86)/Microsoft Visual Studio 14.0/VC/include/cstddef"
 
 namespace at3 {
   class TerrainObject : public SceneObject {
@@ -38,6 +40,9 @@ namespace at3 {
       float lodFidelity = 0.02f, maxPatchSize = 150;
       size_t numPatchesX, numPatchesY, resX = 2048, resY = 2048;
       std::vector<float> heights;
+      static LoadedTexture grass;
+      static LoadedTexture cliff0;
+      static LoadedTexture cliff1;
 
       void m_genMesh();
       glm::vec2 m_genMaps(float xScale, float yScale, float zScale);
@@ -61,6 +66,8 @@ namespace at3 {
 
       virtual void draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
                         bool debug);
+
+      static bool initTextures();
   };
 }
 

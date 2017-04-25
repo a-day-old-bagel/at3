@@ -38,6 +38,7 @@
 using namespace ezecs;
 
 namespace at3 {
+
   TerrainObject::TerrainObject(ezecs::State &state, const glm::mat4 &transform,
                                float xMin, float xMax, float yMin, float yMax, float zMin, float zMax)
       : SceneObject(state)
@@ -359,6 +360,33 @@ namespace at3 {
     glActiveTexture(GL_TEXTURE1);                                      ASSERT_GL_ERROR();
     glBindTexture(GL_TEXTURE_2D, m_terrain);                           ASSERT_GL_ERROR();
 
+    // Prepare the diffuse texture sampler
+    assert(shader->grass0() != -1);
+    glUniform1i(
+        shader->grass0(),  // location
+        2  // value
+    );                                                                 ASSERT_GL_ERROR();
+    glActiveTexture(GL_TEXTURE2);                                      ASSERT_GL_ERROR();
+    glBindTexture(GL_TEXTURE_2D, grass.get());                         ASSERT_GL_ERROR();
+
+    // Prepare the diffuse texture sampler
+    assert(shader->cliff0() != -1);
+    glUniform1i(
+        shader->cliff0(),  // location
+        3  // value
+    );                                                                 ASSERT_GL_ERROR();
+    glActiveTexture(GL_TEXTURE3);                                      ASSERT_GL_ERROR();
+    glBindTexture(GL_TEXTURE_2D, cliff0.get());                        ASSERT_GL_ERROR();
+
+    // Prepare the diffuse texture sampler
+    assert(shader->cliff1() != -1);
+    glUniform1i(
+        shader->cliff1(),  // location
+        4  // value
+    );                                                                 ASSERT_GL_ERROR();
+    glActiveTexture(GL_TEXTURE4);                                      ASSERT_GL_ERROR();
+    glBindTexture(GL_TEXTURE_2D, cliff1.get());                        ASSERT_GL_ERROR();
+
     // Prepare the vertex attributes
     glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);                     ASSERT_GL_ERROR();
     assert(shader->vertPositionLocation() != -1);
@@ -393,5 +421,16 @@ namespace at3 {
       modelView *= transformFunction->transformed;
     }
     m_drawSurface(modelView, projection);
+  }
+
+  LoadedTexture TerrainObject::grass;
+  LoadedTexture TerrainObject::cliff0;
+  LoadedTexture TerrainObject::cliff1;
+
+  bool TerrainObject::initTextures() {
+    grass = LoadedTexture("assets/textures/grass1024_00.jpg");
+    cliff0 = LoadedTexture("assets/textures/cliff1024_00.jpg");
+    cliff1 = LoadedTexture("assets/textures/cliff1024_01.jpg");
+    return true;
   }
 }

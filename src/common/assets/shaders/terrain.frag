@@ -11,6 +11,10 @@ out vec4 fragColor;
 uniform sampler2D texture0;
 uniform sampler2D terrain;
 
+uniform sampler2D grass0;
+uniform sampler2D cliff0;
+uniform sampler2D cliff1;
+
 //const vec3 incident = normalize(vec3(1.0, 0.2, 0.5));
 const vec3 incident = normalize(vec3(1.0, 0.2, 1.0));
 const vec4 light = vec4(1.0, 0.95, 0.9, 1.0) * 1.1;
@@ -24,7 +28,18 @@ float amplify(float d, float scale, float offset) {
 
 void main(){
     vec3 normal = normalize(texture(terrain, gTexCoord).xyz);
-    vec4 color = vec4(texture(texture0, gTexCoord).rgb, 1.0);
+
+    vec4 sampler = vec4(texture(texture0, gTexCoord).rgb, 1.0);
+
+    vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
+    // TODO: change texture scaling to match terrain scaling instead of just 1000.0
+    color += sampler.r * vec4(texture(cliff1, gTexCoord * 50.0).rgb, 0.0);
+    color += sampler.g * vec4(texture(cliff0, gTexCoord * 50.0).rgb, 0.0);
+    color += sampler.b * vec4(texture(grass0, gTexCoord * 50.0).rgb, 0.0);
+
+//    vec4 color = vec4(texture(texture0, gTexCoord).rgb, 1.0);
+
+//    vec4 color = vec4(texture(texture0, gTexCoord).rgb, 1.0);
     float noise_factor = texture(texture0, gTexCoord*32).a+0.1;
 
     float dot_surface_incident = max(0, dot(normal, incident));
