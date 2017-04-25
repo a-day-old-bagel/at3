@@ -223,7 +223,6 @@ class PyramidGame : public Game {
       state.add_MouseControls(gimbalId, false, false);
 
       entityId bottomId = m_pyrBottom->getId();
-      state.add_PyramidControls(bottomId, gimbalId, PyramidControls::ROTATE_ABOUT_Z);
       std::vector<float> hullVerts = {
           1.0f,  1.0f, -0.4f,
           1.0f, -1.0f, -0.4f,
@@ -237,6 +236,7 @@ class PyramidGame : public Game {
          -1.0f, -1.0f, -0.4f,
       };
       state.add_Physics(bottomId, 1.f, &hullVerts, Physics::MESH);
+      state.add_PyramidControls(bottomId, gimbalId, PyramidControls::ROTATE_ABOUT_Z);
 
       Physics* physics;
       state.get_Physics(bottomId, &physics);

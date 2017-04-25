@@ -79,7 +79,13 @@ namespace {
     int style;
     PyramidControls(entityId gimbalId, Style style);
   };
-  EZECS_COMPONENT_DEPENDENCIES(PyramidControls, Placement)
+  EZECS_COMPONENT_DEPENDENCIES(PyramidControls, Physics)
+
+  struct TrackControls : public Component<TrackControls> {
+//    glm::vec2
+    TrackControls();
+  };
+  EZECS_COMPONENT_DEPENDENCIES(TrackControls, Physics)
 
   struct MouseControls : public Component<MouseControls> {
     bool invertedX, invertedY;
@@ -123,6 +129,8 @@ namespace {
 
   PyramidControls::PyramidControls(entityId gimbalId, PyramidControls::Style style)
       : gimbalId(gimbalId), style(style) { }
+
+  TrackControls::TrackControls() {}
 
   MouseControls::MouseControls(bool invertedX, bool invertedY)
       : invertedX(invertedX), invertedY(invertedY) { }
