@@ -82,7 +82,9 @@ namespace {
   EZECS_COMPONENT_DEPENDENCIES(PyramidControls, Physics)
 
   struct TrackControls : public Component<TrackControls> {
-//    glm::vec2
+    glm::vec2 control;
+    glm::vec2 torque;
+    std::vector<entityId> leftWheelIds, rightWheelIds;
     TrackControls();
   };
   EZECS_COMPONENT_DEPENDENCIES(TrackControls, Physics)

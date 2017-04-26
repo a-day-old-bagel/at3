@@ -26,10 +26,10 @@
 #include "glm/gtx/transform.hpp"
 #include "glm/gtx/matrix_decompose.hpp"
 
-#define WASD_ACCELERATION 0.25f //1000.f
-#define SIDE_ACCEL 25.f
-#define UP_ACCEL 40.f
 #define MOUSE_SENSITIVITY 0.1f
+#define PYR_SIDE_ACCEL 25.f
+#define PYR_UP_ACCEL 40.f
+#define TRACK_TORQUE 1.f
 
 namespace at3 {
 
@@ -56,6 +56,7 @@ namespace at3 {
     return keyStates[firstKey] || anyPressed(keyStates, keys...);
   }
   void ControlSystem::onTick(float dt) {
+    // TODO: switching this loop with the inner (event) loop might be better?
     for (auto id : registries[0].ids) {
       MouseControls* mouseControls;
       state->get_MouseControls(id, &mouseControls);
@@ -118,14 +119,14 @@ namespace at3 {
 
       // Get current keyboard state and apply actions accordingly
       const Uint8 *keyStates = SDL_GetKeyboardState(NULL);
-      #define DO_ON_KEYS(action, ...) if(anyPressed(keyStates, __VA_ARGS__)) { action; }
+#     define DO_ON_KEYS(action, ...) if(anyPressed(keyStates, __VA_ARGS__)) { action; }
       DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  1.0f,  0.0f), SDL_SCANCODE_W, SDL_SCANCODE_UP)
       DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f, -1.0f,  0.0f), SDL_SCANCODE_S, SDL_SCANCODE_DOWN)
       DO_ON_KEYS(pyramidControls->accel += glm::vec3(-1.0f,  0.0f,  0.0f), SDL_SCANCODE_A, SDL_SCANCODE_LEFT)
       DO_ON_KEYS(pyramidControls->accel += glm::vec3( 1.0f,  0.0f,  0.0f), SDL_SCANCODE_D, SDL_SCANCODE_RIGHT)
       DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  0.0f, -1.0f), SDL_SCANCODE_LCTRL, SDL_SCANCODE_LSHIFT)
       DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  0.0f,  1.0f), SDL_SCANCODE_SPACE)
-      #undef DO_ON_KEYS
+#     undef DO_ON_KEYS
 
       if (length(pyramidControls->accel) > 0.0f) {
         glm::quat quat = glm::quat_cast(transformContext);
@@ -148,11 +149,31 @@ namespace at3 {
         }
         // Rotate the movement axis to the correct orientation
         pyramidControls->force = glm::mat3 {
-            SIDE_ACCEL * dt, 0, 0,
-            0, SIDE_ACCEL * dt, 0,
-            0, 0, UP_ACCEL * dt
+            PYR_SIDE_ACCEL * dt, 0, 0,
+            0, PYR_SIDE_ACCEL * dt, 0,
+            0, 0, PYR_UP_ACCEL * dt
         } * glm::normalize(rotMat * pyramidControls->accel);
       }
+    }
+    for (auto id : (registries[1].ids)) {
+      TrackControls* trackControls;
+      state->get_TrackControls(id, &trackControls);
+
+      // zero out stuff
+      trackControls->control = glm::vec2();
+      trackControls->torque = glm::vec2();
+
+      // Get current keyboard state and apply control signals
+      const Uint8 *keyStates = SDL_GetKeyboardState(NULL);
+#     define DO_ON_KEYS(action, ...) if(anyPressed(keyStates, __VA_ARGS__)) { action; }
+      DO_ON_KEYS(trackControls->control += glm::vec2( 1.0f,  1.0f), SDL_SCANCODE_W, SDL_SCANCODE_UP)
+      DO_ON_KEYS(trackControls->control += glm::vec2(-1.0f, -1.0f), SDL_SCANCODE_S, SDL_SCANCODE_DOWN)
+      DO_ON_KEYS(trackControls->control += glm::vec2(-0.5f,  0.5f), SDL_SCANCODE_A, SDL_SCANCODE_LEFT)
+      DO_ON_KEYS(trackControls->control += glm::vec2( 0.5f, -0.5f), SDL_SCANCODE_D, SDL_SCANCODE_RIGHT)
+#     undef DO_ON_KEYS
+
+      // Calculate torque to apply
+      trackControls->torque += TRACK_TORQUE * trackControls->control;
     }
     queuedEvents.clear();
   }

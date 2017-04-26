@@ -35,7 +35,8 @@ namespace at3 {
     public:
       std::vector<compMask> requiredComponents = {
               MOUSECONTROLS,
-              PYRAMIDCONTROLS
+              PYRAMIDCONTROLS,
+              TRACKCONTROLS
       };
       ControlSystem(State* state);
       bool onInit();
