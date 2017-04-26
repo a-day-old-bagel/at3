@@ -47,3 +47,4 @@
 /build-msvs
 /.vs
 CMakeSettings.json
+/Win32
