@@ -21,7 +21,17 @@ include_directories( "./extern/stb" )
 
 # Some global compiler flags are set here. This may not be a great way to do this.
 if( MSVC )
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MD /MP12 /std:c++14" ) # /Gm not good with /MP ?
+  set( AT3_MSVC_RELEASE_FLAGS "/MD /MP12 /std:c++14" )
+  set( AT3_MSVC_DEBUG_FLAGS "/MDd /MP12 /std:c++14" )
+
+  set( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} ${AT3_MSVC_RELEASE_FLAGS}" )
+  set( CMAKE_CXX_FLAGS_RELEASE_INIT "${CMAKE_CXX_FLAGS} ${AT3_MSVC_RELEASE_FLAGS}" )
+  set( CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS} ${AT3_MSVC_RELEASE_FLAGS}" )
+  set( CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT  "${CMAKE_CXX_FLAGS} ${AT3_MSVC_RELEASE_FLAGS}" )
+
+  set( CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS} ${AT3_MSVC_DEBUG_FLAGS}" )
+  set( CMAKE_CXX_FLAGS_DEBUG_INIT "${CMAKE_CXX_FLAGS} ${AT3_MSVC_DEBUG_FLAGS}" )
+
   set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /incremental /debug:fastlink" )
   add_definitions( -DARMA_USE_CXX11 )
 else( MSVC )
@@ -31,7 +41,7 @@ endif( MSVC )
 if (AT3_USE_INCLUDED_LIBS) # BUILD AND INCLUDE EXTERNS
 
   # ASSIMP
-  option( BUILD_SHARED_LIBS "Build package with shared libraries." ON )
+  option( BUILD_SHARED_LIBS "Build package with shared libraries." OFF )
   option( ASSIMP_DOUBLE_PRECISION "Set to ON to enable double precision processing" OFF )
   option( ASSIMP_OPT_BUILD_PACKAGES "Set to ON to generate CPack configuration files and packaging targets" OFF )
   option( ASSIMP_ANDROID_JNIIOSYSTEM "Android JNI IOSystem support is active" OFF )
@@ -51,7 +61,7 @@ if (AT3_USE_INCLUDED_LIBS) # BUILD AND INCLUDE EXTERNS
   # BULLET
   option( USE_DOUBLE_PRECISION "Use double precision"	OFF )
   option( USE_GRAPHICAL_BENCHMARK "Use Graphical Benchmark" ON )
-  option( BUILD_SHARED_LIBS "Use shared libraries" ON )                                             # CHANGED
+  option( BUILD_SHARED_LIBS "Use shared libraries" OFF )                                             # CHANGED
   option( USE_SOFT_BODY_MULTI_BODY_DYNAMICS_WORLD "Use btSoftMultiBodyDynamicsWorld" OFF )
   option( BULLET2_USE_THREAD_LOCKS "Build Bullet 2 libraries with mutex locking around certain operations" OFF )
   option( USE_MSVC_INCREMENTAL_LINKING "Use MSVC Incremental Linking" OFF )
@@ -66,7 +76,7 @@ if (AT3_USE_INCLUDED_LIBS) # BUILD AND INCLUDE EXTERNS
   OPTION( BUILD_EXTRAS "Set when you want to build the extras" OFF)                                 # CHANGED
   OPTION( INSTALL_LIBS "Set when you want to install libraries" OFF )                               # CHANGED
   OPTION( INSTALL_EXTRA_LIBS "Set when you want extra libraries installed" OFF )
-  OPTION( BUILD_UNIT_TESTS "Build Unit Tests"	ON )
+  OPTION( BUILD_UNIT_TESTS "Build Unit Tests"	OFF )
   add_subdirectory( "./extern/bullet3" )
   include( "${CMAKE_CURRENT_BINARY_DIR}/extern/bullet3/BulletConfig.cmake" )
   include( "./extern/bullet3/UseBullet.cmake" )
