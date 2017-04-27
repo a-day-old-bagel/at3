@@ -142,7 +142,8 @@ void debugGenerateVirus(State& state) {
 class PyramidGame : public Game {
   private:
     std::shared_ptr<PerspectiveCamera> m_camera;
-    std::shared_ptr<MeshObject> m_pyrBottom, m_pyrTop, m_pyrThrusters, m_pyrFire;
+    std::shared_ptr<MeshObject> m_pyrBottom, m_pyrTop, m_pyrThrusters, m_pyrFire, m_tankBody;
+    std::vector<std::shared_ptr<MeshObject>> m_wheels;
     std::shared_ptr<SceneObject> m_camGimbal;
     std::shared_ptr<SkyBox> m_skyBox;
     std::shared_ptr<TerrainObject> m_terrain;
@@ -151,13 +152,12 @@ class PyramidGame : public Game {
     ControlSystem controlSystem;
     MovementSystem movementSystem;
     PhysicsSystem physicsSystem;
-//    KalmanSystem kalmanSystem;
     
   public:
     Delegate<bool(SDL_Event&)> systemsHandlerDlgt;
     PyramidGame(int argc, char **argv)
         : Game(argc, argv, "at3"),
-          controlSystem(&state), movementSystem(&state), physicsSystem(&state)//, kalmanSystem(&state)
+          controlSystem(&state), movementSystem(&state), physicsSystem(&state)
     {
       systemsHandlerDlgt = DELEGATE(&PyramidGame::systemsHandler, this);
     }
@@ -166,7 +166,6 @@ class PyramidGame : public Game {
       initSuccess &= controlSystem.init();
       initSuccess &= physicsSystem.init();
       initSuccess &= movementSystem.init();
-//      initSuccess &= kalmanSystem.init();
       assert(initSuccess);
 
       // generate initial placement of objects
@@ -174,6 +173,7 @@ class PyramidGame : public Game {
       glm::mat4 cameraMat = glm::rotate(glm::translate(ident, {0.f, -4.f, 0.5f}),
                                         (float) M_PI * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f));
       glm::mat4 pyrBotMat = glm::translate(ident, { 0.f, 0.f, 5.f });
+      glm::mat4 tankBodyMat = glm::translate(ident, { 0.f, -290.f, -80.f });
       glm::mat4 pyrFirMat = glm::scale(glm::rotate(glm::translate(ident, {0.f, 0.f, -0.4f}),
                                                    (float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f)), {0.105f, 0.105f, 0.15f});
 
@@ -189,6 +189,8 @@ class PyramidGame : public Game {
       m_pyrFire = std::shared_ptr<MeshObject> (
           new MeshObject(state, "assets/models/pyramid_thruster_flames.dae", "assets/textures/pyramid_flames.png",
                          pyrFirMat));
+      m_tankBody = std::shared_ptr<MeshObject> (
+          new MeshObject(state, "assets/models/pyramid_bottom.dae", "assets/textures/pyramid_bottom.png", tankBodyMat));
       m_camGimbal = std::shared_ptr<SceneObject> (
           new SceneObject(state));
       m_skyBox = std::shared_ptr<SkyBox> (
@@ -196,10 +198,10 @@ class PyramidGame : public Game {
 
       TerrainObject::initTextures();
       m_terrain = std::shared_ptr<TerrainObject> (
-              new TerrainObject(state, ident, -5000.f, 5000.f, -5000.f, 5000.f, -200, 300)); // -450, 550, -350, 650, -320, 680
-//              new TerrainObject(state, ident, -10.5f, 10.5f, -10.5f, 10.5f, 0, 21));
+              new TerrainObject(state, ident, -5000.f, 5000.f, -5000.f, 5000.f, -200, 300));
 
       this->scene()->addObject(m_pyrBottom);
+      this->scene()->addObject(m_tankBody);
       this->scene()->addObject(m_skyBox);
       this->scene()->addObject(m_terrain);
       LoadResult loaded = m_skyBox->useCubeMap("sea", "png");
@@ -235,7 +237,7 @@ class PyramidGame : public Game {
           1.0f, -1.0f, -0.4f,
          -1.0f, -1.0f, -0.4f,
       };
-      state.add_Physics(bottomId, 1.f, &hullVerts, Physics::MESH);
+      state.add_Physics(bottomId, 100.f, &hullVerts, Physics::MESH);
       state.add_PyramidControls(bottomId, gimbalId, PyramidControls::ROTATE_ABOUT_Z);
 
       Physics* physics;
@@ -248,46 +250,52 @@ class PyramidGame : public Game {
 
       entityId fireId = m_pyrFire->getId();
       state.add_TransformFunction(fireId, DELEGATE_NOCLASS(pyrFireWiggle));
-      
-//      entityId botId = m_pyrBottom->getId();
-//      state.add_Kalman(botId);
 
 
-
-
-      // to do vehicle stuff??
-      /*vehicleRayCaster = new DefaultVehicleRaycaster(btScene);
-      tuning = new VehicleTuning();
-      vehicle = new RaycastVehicle(tuning, carBody, vehicleRayCaster);
-
-      // my coordinate system : 0 1 2
-      vehicle.setCoordinateSystem(rightIndex, upIndex, forwardIndex);
-      // to avoid car to freeze for no reason
-      carBody.setActivationState(CollisionObject.DISABLE_DEACTIVATION);
-
-      Then add wheels (for each) :
-      --------------------------------------------
-
-          WheelInfo wheel = vehicle.addWheel(connectionPoint, wheelDirection, wheelAxle, suspensionRestLength, wheel_radius, tuning, isFrontWheel);
-
-      // Wheel properties (quite touchy...)
-      wheel.suspensionStiffness = suspensionStiffness;
-      wheel.wheelsDampingRelaxation = suspensionDamping;
-      wheel.wheelsDampingCompression = suspensionCompression;
-      wheel.frictionSlip = wheelFriction;
-      wheel.rollInfluence = rollInfluence;
-
-      Default values in my program are : (but it depends on your objects size and masses...)
-
-      float wheelRadius = 0.13f;
-      float wheelWidth  = 0.1f;
-
-      float wheelFriction = 1.0f;
-      float suspensionRestLength = 0.15f;
-      float suspensionStiffness = 20.f;
-      float suspensionDamping = 0.1f;﻿*/
-
-
+      // add the buggy
+      entityId tankBodyId = m_tankBody->getId();
+      std::vector<float> chassisVerts = {
+          2.0f,  2.0f, -0.4f,
+          2.0f, -2.0f, -0.4f,
+         -2.0f, -2.0f, -0.4f,
+         -2.0f,  2.0f, -0.4f,
+          2.0f,  2.0f,  0.4f,
+          2.0f, -2.0f,  0.4f,
+         -2.0f, -2.0f,  0.4f,
+         -2.0f,  2.0f,  0.4f,
+      };
+      state.add_Physics(tankBodyId, 50.f, &chassisVerts, Physics::MESH);
+      state.add_TrackControls(tankBodyId);
+      TrackControls *trackControls;
+      state.get_TrackControls(tankBodyId, &trackControls);
+      trackControls->tuning.m_suspensionStiffness = 16.f;     // 5.88f
+      trackControls->tuning.m_suspensionCompression = 0.8f;  // 0.83f
+      trackControls->tuning.m_suspensionDamping = 1.0f;      // 0.88f
+      trackControls->tuning.m_maxSuspensionTravelCm = 40.f;  // 500.f
+      trackControls->tuning.m_frictionSlip  = 100.f;           // 10.5f
+      trackControls->tuning.m_maxSuspensionForce  = 6000.f;    // 6000.f
+      btVector3 wheelConnectionPoints[4] {
+          {-2.f,  2.0f, -0.4f},
+          { 2.f,  2.0f, -0.4f},
+          {-2.f, -2.0f, -0.4f},
+          { 2.f, -2.0f, -0.4f}
+      };
+      for (int i = 0; i < 4; ++i) {
+        m_wheels.push_back(std::shared_ptr<MeshObject>(
+            new MeshObject(state, "assets/models/sphere.dae", "assets/textures/thrusters.png", ident)));
+        entityId wheelId = m_wheels.back()->getId();
+        WheelInitInfo wheelInitInfo{
+            {tankBodyId, -1, wheelConnectionPoints[i].x()},     // WheelInfo struct
+            wheelConnectionPoints[i],                           // connection point
+            {0.f, 0.f, -1.f},                                   // direction
+            {1.f, 0.f, 0.f},                                    // axle
+            0.3f,                                               // suspension rest length
+            1.5f,                                               // wheel radius
+            false                                               // is front wheel
+        };
+        state.add_Physics(wheelId, 10.f, &wheelInitInfo, Physics::WHEEL);
+        this->scene()->addObject(m_wheels.back());
+      }
 
 
       // Add some debug-drawn features...
@@ -314,9 +322,6 @@ class PyramidGame : public Game {
       if (physicsSystem.handleEvent(event)) {
         return true; // handled it here
       }
-//      if (kalmanSystem.handleEvent(event)) {
-//        return true; // handled it here
-//      }
       switch (event.type) {
         case SDL_KEYDOWN:
           switch (event.key.keysym.scancode) {

@@ -22,11 +22,41 @@
  */
 #include "ecsSystem_physics.h"
 #include "BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
-//#include "BulletDynamics/Vehicle/btRaycastVehicle.h"
+#include <BulletDynamics/Vehicle/btRaycastVehicle.h>
+#include <BulletCollision/CollisionShapes/btTriangleShape.h>
 
 using namespace ezecs;
 
 namespace at3 {
+
+  // A custom collision callback to prevent collisions with backfaces.
+  static bool myCustomMaterialCombinerCallback(
+      btManifoldPoint& cp,
+      const btCollisionObjectWrapper* colObj0Wrap,
+      int partId0,
+      int index0,
+      const btCollisionObjectWrapper* colObj1Wrap,
+      int partId1,
+      int index1
+  ) {
+    // one-sided triangles
+    if (colObj1Wrap->getCollisionShape()->getShapeType() == TRIANGLE_SHAPE_PROXYTYPE)
+    {
+      auto triShape = static_cast<const btTriangleShape*>( colObj1Wrap->getCollisionShape() );
+      const btVector3* v = triShape->m_vertices1;
+      btVector3 faceNormalLs = btCross(v[2] - v[0], v[1] - v[0]);
+      faceNormalLs.normalize();
+      btVector3 faceNormalWs = colObj1Wrap->getWorldTransform().getBasis() * faceNormalLs;
+      float nDotF = btDot( faceNormalWs, cp.m_normalWorldOnB );
+      if ( nDotF <= 0.0f )
+      {
+        // flip the contact normal to be aligned with the face normal
+        cp.m_normalWorldOnB += -2.0f * nDotF * faceNormalWs;
+      }
+    }
+    //this return value is currently ignored, but to be on the safe side: return false if you don't calculate friction
+    return false;
+  }
 
   PhysicsSystem::PhysicsSystem(State *state) : System(state) {
 
@@ -36,6 +66,7 @@ namespace at3 {
     registries[0].discoverHandler = DELEGATE(&PhysicsSystem::onDiscover, this);
     registries[0].forgetHandler = DELEGATE(&PhysicsSystem::onForget, this);
     registries[2].discoverHandler = DELEGATE(&PhysicsSystem::onDiscoverTerrain, this);
+    registries[3].discoverHandler = DELEGATE(&PhysicsSystem::onDiscoverTrackControls, this);
 
     broadphase = new btDbvtBroadphase();
     collisionConfiguration = new btDefaultCollisionConfiguration();
@@ -43,51 +74,10 @@ namespace at3 {
     solver = new btSequentialImpulseConstraintSolver();
     dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
     dynamicsWorld->setGravity(btVector3(0.0f, 0.0f, -9.81f));
+    vehicleRaycaster = new btDefaultVehicleRaycaster(dynamicsWorld);
 
-
-
-    
-    // PREVENT BACKFACE COLLISIONS
-    /*static bool myCustomMaterialCombinerCallback(
-        btManifoldPoint& cp,
-        const btCollisionObjectWrapper* colObj0Wrap,
-        int partId0,
-        int index0,
-        const btCollisionObjectWrapper* colObj1Wrap,
-        int partId1,
-        int index1
-    )
-    {
-      // one-sided triangles
-      if (colObj1Wrap->getCollisionShape()->getShapeType() == TRIANGLE_SHAPE_PROXYTYPE)
-      {
-        auto triShape = static_cast<const btTriangleShape*>( colObj1Wrap->getCollisionShape() );
-        const btVector3* v = triShape->m_vertices1;
-        btVector3 faceNormalLs = btCross(v[1] - v[0], v[2] - v[0]);
-        faceNormalLs.normalize();
-        btVector3 faceNormalWs = colObj1Wrap->getWorldTransform().getBasis() * faceNormalLs;
-        float nDotF = btDot( faceNormalWs, cp.m_normalWorldOnB );
-        if ( nDotF <= 0.0f )
-        {
-          // flip the contact normal to be aligned with the face normal
-          cp.m_normalWorldOnB += -2.0f * nDotF * faceNormalWs;
-        }
-      }
-
-      //this return value is currently ignored, but to be on the safe side: return false if you don't calculate friction
-      return false;
-    }
-
-    void BulletPhysics::init()
-    {
-      // somewhere in your init code you need to setup the callback
-      gContactAddedCallback = myCustomMaterialCombinerCallback;
-    }*/
-    // AND
-    /*terrain->setCollisionFlags(_floor->getCollisionFlags() | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);*/
-
-
-
+    // prevent backface collisions with anything that uses the custom collision callback (like terrain)
+    gContactAddedCallback = myCustomMaterialCombinerCallback;
 
     return true;
   }
@@ -106,21 +96,51 @@ namespace at3 {
       float tip = glm::dot(controls->up, up);
       glm::vec3 rotAxis = glm::cross(controls->up, up);
       physics->rigidBody->applyTorque(
-          btVector3(rotAxis.x, rotAxis.y, rotAxis.z) * tip * (controls->up.z < 0 ? -10.f : 10.f)
+          btVector3(rotAxis.x, rotAxis.y, rotAxis.z) * tip * (controls->up.z < 0 ? -1000.f : 1000.f)
       );
     }
+
     dynamicsWorld->stepSimulation(dt); // time step (s), max sub-steps, sub-step length (s)
     if (debugDrawMode) { dynamicsWorld->debugDrawWorld(); }
+
+    for (auto id : registries[3].ids) {
+      TrackControls *trackControls;
+      state->get_TrackControls(id, &trackControls);
+      //Todo: put engine force application *before* the sim update, with wheel update after?
+      for (int i = 0; i < trackControls->wheels.size(); ++i) {
+        if (trackControls->wheels.at(i).leftOrRight < 0) {
+          trackControls->vehicle->applyEngineForce(trackControls->torque.x, trackControls->wheels.at(i).bulletWheelId);
+        } else if (trackControls->wheels.at(i).leftOrRight > 0) {
+          trackControls->vehicle->applyEngineForce(trackControls->torque.y, trackControls->wheels.at(i).bulletWheelId);
+        }
+      }
+      for (int i = 0; i < trackControls->vehicle->getNumWheels(); ++i) {
+        trackControls->vehicle->updateWheelTransform(i, true);
+      }
+    }
+
     for (auto id : registries[0].ids) {
       Physics *physics;
       state->get_Physics(id, &physics);
-      btTransform currentTrans;
-      physics->rigidBody->getMotionState()->getWorldTransform(currentTrans);
-
       Placement *placement;
       state->get_Placement(id, &placement);
+      btTransform transform;
       glm::mat4 newTransform;
-      currentTrans.getOpenGLMatrix((btScalar *) &newTransform);
+      switch (physics->geom) {
+        case Physics::WHEEL: {
+          WheelInfo wi = *((WheelInfo*)physics->customData);
+          TrackControls *trackControls;
+          if (SUCCESS == state->get_TrackControls(wi.parentVehicle, &trackControls)) {
+            transform = trackControls->vehicle->getWheelTransformWS(((WheelInfo*)physics->customData)->bulletWheelId);
+          } else {
+            // TODO: not this
+          }
+        } break;
+        default: {
+          physics->rigidBody->getMotionState()->getWorldTransform(transform);
+        } break;
+      }
+      transform.getOpenGLMatrix((btScalar *) &newTransform);
       placement->mat = newTransform;
     }
   }
@@ -136,6 +156,7 @@ namespace at3 {
       state->rem_Physics((entityId) id);
     }
 
+    delete vehicleRaycaster;
     delete dynamicsWorld;
     delete solver;
     delete dispatcher;
@@ -161,6 +182,23 @@ namespace at3 {
       } break;
       case Physics::TERRAIN: {
         return false; // do not track, wait for terrain component to appear
+      }
+      case Physics::WHEEL: {
+        WheelInitInfo initInfo = *((WheelInitInfo*)physics->geomInitData);
+        TrackControls *trackControls;
+        CompOpReturn status = state->get_TrackControls(initInfo.wi.parentVehicle, &trackControls);
+        if (status != SUCCESS) {
+          EZECS_CHECK_PRINT(EZECS_ERR_MSG(status, "Attempted to add wheel to nonexistent vehicle!\n"));
+          return false;
+        }
+        trackControls->vehicle->addWheel(initInfo.connectionPoint, initInfo.direction, initInfo.axle,
+                                         initInfo.suspensionRestLength, initInfo.wheelRadius,
+                                         trackControls->tuning, initInfo.isFrontWheel);
+        initInfo.wi.bulletWheelId = trackControls->wheels.size();
+        physics->customData = new WheelInfo(initInfo.wi);
+        trackControls->wheels.push_back(initInfo.wi);
+        trackControls->vehicle->resetSuspension();
+        return true; // wheels do not need normal geometry/collisions (this is for the btRaycastVehicle), but do track.
       }
       default:
         break;
@@ -219,8 +257,22 @@ namespace at3 {
     physics->rigidBody = new btRigidBody(terrainRBCI);
     physics->rigidBody->setRestitution(0.5f);
     physics->rigidBody->setFriction(1.f);
+    physics->rigidBody->setCollisionFlags(physics->rigidBody->getCollisionFlags()
+                                          | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
     dynamicsWorld->addRigidBody(physics->rigidBody);
 
+    return true;
+  }
+
+  bool PhysicsSystem::onDiscoverTrackControls(const entityId &id) {
+    // onDiscover is guaranteed to have been called already, since TrackControls requires Physics.
+    Physics *physics;
+    state->get_Physics(id, &physics);
+    TrackControls *trackControls;
+    state->get_TrackControls(id, &trackControls);
+    trackControls->vehicle = new btRaycastVehicle(trackControls->tuning, physics->rigidBody, vehicleRaycaster);
+    dynamicsWorld->addVehicle(trackControls->vehicle);
+    trackControls->vehicle->setCoordinateSystem(0, 2, 1);
     return true;
   }
 

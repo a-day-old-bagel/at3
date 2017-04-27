@@ -32,6 +32,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <btBulletDynamicsCommon.h>
+#include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 
 // END INCLUDES
 
@@ -68,6 +69,32 @@ namespace {
   };
   EZECS_COMPONENT_DEPENDENCIES(Perspective, Placement)
 
+  struct WheelInfo {
+    entityId parentVehicle = 0;
+    int bulletWheelId = -1;
+    float leftOrRight = 0;
+  };
+  struct WheelInitInfo {
+    WheelInfo wi;
+    btVector3 connectionPoint, direction, axle;
+    float suspensionRestLength, wheelRadius;
+    bool isFrontWheel;
+  };
+  struct Physics : public Component<Physics> {
+    enum Geometry {
+      NONE, PLANE, SPHERE, MESH, TERRAIN, WHEEL
+    };
+    int geom;
+    float mass;
+    btCollisionShape* shape;
+    btRigidBody* rigidBody;
+    void* geomInitData;
+    void* customData = NULL;
+    Physics(float mass, void* geomData, Geometry geom);
+    ~Physics();
+  };
+  EZECS_COMPONENT_DEPENDENCIES(Physics, Placement)
+
   struct PyramidControls : public Component<PyramidControls> {
     enum Style {
       ROTATE_ALL_AXES, ROTATE_ABOUT_Z
@@ -84,7 +111,9 @@ namespace {
   struct TrackControls : public Component<TrackControls> {
     glm::vec2 control;
     glm::vec2 torque;
-    std::vector<entityId> leftWheelIds, rightWheelIds;
+    std::vector<WheelInfo> wheels;
+    btRaycastVehicle *vehicle;
+    btRaycastVehicle::btVehicleTuning tuning;
     TrackControls();
   };
   EZECS_COMPONENT_DEPENDENCIES(TrackControls, Physics)
@@ -94,19 +123,6 @@ namespace {
     MouseControls(bool invertedX, bool invertedY);
   };
   EZECS_COMPONENT_DEPENDENCIES(MouseControls, Placement)
-
-  struct Physics : public Component<Physics> {
-    enum Geometry {
-      NONE, PLANE, SPHERE, MESH, TERRAIN, WHEEL
-    };
-    int geom;
-    float mass;
-    btCollisionShape* shape;
-    btRigidBody* rigidBody;
-    void* geomInitData;
-    Physics(float mass, void* geomData, Geometry geom);
-  };
-  EZECS_COMPONENT_DEPENDENCIES(Physics, Placement)
 
   struct Terrain : public Component<Terrain> {
     floatVecPtr heights;
@@ -129,6 +145,14 @@ namespace {
   Perspective::Perspective(float fovy, float near, float far)
       : fovy(fovy), prevFovy(fovy), near(near), far(far) { }
 
+  Physics::Physics(float mass, void* geomData, Physics::Geometry geom)
+      : geom(geom), mass(mass), geomInitData(geomData) { }
+  Physics::~Physics() {
+    if (customData) {
+      delete customData;
+    }
+  }
+
   PyramidControls::PyramidControls(entityId gimbalId, PyramidControls::Style style)
       : gimbalId(gimbalId), style(style) { }
 
@@ -136,9 +160,6 @@ namespace {
 
   MouseControls::MouseControls(bool invertedX, bool invertedY)
       : invertedX(invertedX), invertedY(invertedY) { }
-
-  Physics::Physics(float mass, void* geomData, Physics::Geometry geom)
-      : geom(geom), mass(mass), geomInitData(geomData) { }
 
   Terrain::Terrain(floatVecPtr heights, size_t resX, size_t resY, float sclX, float sclY, float sclZ, float minZ, float maxZ)
       : heights(heights), resX(resX), resY(resY), sclX(sclX), sclY(sclY), sclZ(sclZ), minZ(minZ), maxZ(maxZ) { }

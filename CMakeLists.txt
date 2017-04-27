@@ -61,7 +61,7 @@ if (AT3_USE_INCLUDED_LIBS) # BUILD AND INCLUDE EXTERNS
   # BULLET
   option( USE_DOUBLE_PRECISION "Use double precision"	OFF )
   option( USE_GRAPHICAL_BENCHMARK "Use Graphical Benchmark" ON )
-  option( BUILD_SHARED_LIBS "Use shared libraries" OFF )                                             # CHANGED
+  option( BUILD_SHARED_LIBS "Use shared libraries" OFF )                                            # CHANGED
   option( USE_SOFT_BODY_MULTI_BODY_DYNAMICS_WORLD "Use btSoftMultiBodyDynamicsWorld" OFF )
   option( BULLET2_USE_THREAD_LOCKS "Build Bullet 2 libraries with mutex locking around certain operations" OFF )
   option( USE_MSVC_INCREMENTAL_LINKING "Use MSVC Incremental Linking" OFF )
@@ -69,14 +69,14 @@ if (AT3_USE_INCLUDED_LIBS) # BUILD AND INCLUDE EXTERNS
   option( USE_MSVC_RUNTIME_LIBRARY_DLL "Use MSVC Runtime Library DLL (/MD or /MDd)" ON )
   option( USE_MSVC_SSE "Use MSVC /arch:sse option"	ON )
   option( USE_MSVC_SSE2 "Compile your program with SSE2 instructions" ON )
-  OPTION( BUILD_CPU_DEMOS "Build original Bullet CPU examples" OFF )                                # CHANGED
-  OPTION( USE_GLUT "Use Glut" OFF )                                                                 # CHANGED
-  OPTION( BUILD_OPENGL3_DEMOS "Set when you want to build Bullet 3 OpenGL3+ demos" OFF )            # CHANGED
-  OPTION( BUILD_BULLET2_DEMOS "Set when you want to build the Bullet 2 demos" OFF )                 # CHANGED
-  OPTION( BUILD_EXTRAS "Set when you want to build the extras" OFF)                                 # CHANGED
-  OPTION( INSTALL_LIBS "Set when you want to install libraries" OFF )                               # CHANGED
-  OPTION( INSTALL_EXTRA_LIBS "Set when you want extra libraries installed" OFF )
-  OPTION( BUILD_UNIT_TESTS "Build Unit Tests"	OFF )
+  option( BUILD_CPU_DEMOS "Build original Bullet CPU examples" OFF )                                # CHANGED
+  option( USE_GLUT "Use Glut" OFF )                                                                 # CHANGED
+  option( BUILD_OPENGL3_DEMOS "Set when you want to build Bullet 3 OpenGL3+ demos" OFF )            # CHANGED
+  option( BUILD_BULLET2_DEMOS "Set when you want to build the Bullet 2 demos" OFF )                 # CHANGED
+  option( BUILD_EXTRAS "Set when you want to build the extras" OFF)                                 # CHANGED
+  option( INSTALL_LIBS "Set when you want to install libraries" OFF )                               # CHANGED
+  option( INSTALL_EXTRA_LIBS "Set when you want extra libraries installed" OFF )
+  option( BUILD_UNIT_TESTS "Build Unit Tests"	OFF )
   add_subdirectory( "./extern/bullet3" )
   include( "${CMAKE_CURRENT_BINARY_DIR}/extern/bullet3/BulletConfig.cmake" )
   include( "./extern/bullet3/UseBullet.cmake" )

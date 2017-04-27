@@ -45,13 +45,15 @@ namespace at3 {
       btConstraintSolver *solver;
       btCollisionConfiguration *collisionConfiguration;
       btDynamicsWorld *dynamicsWorld;
+      btVehicleRaycaster * vehicleRaycaster;
       bool debugDrawMode = false;
 
     public:
       std::vector<compMask> requiredComponents = {
               PHYSICS,
               PHYSICS | PYRAMIDCONTROLS,
-              PHYSICS | TERRAIN
+              PHYSICS | TERRAIN,
+              PHYSICS | TRACKCONTROLS
       };
       PhysicsSystem(State* state);
       bool onInit();
@@ -60,8 +62,10 @@ namespace at3 {
       bool onDiscover(const entityId& id);
       bool onForget(const entityId& id);
       bool onDiscoverTerrain(const entityId& id);
+      bool onDiscoverTrackControls(const entityId& id);
       bool handleEvent(SDL_Event& event);
       void setDebugDrawer(std::shared_ptr<BulletDebug> debug);
+      // TODO: add removal logic for vehicles and wheels
   };
 }
 

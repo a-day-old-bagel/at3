@@ -33,7 +33,7 @@
 *.swo
 
 # Build directories
-/build
+/build*
 /build-html
 /install
 /install-html
