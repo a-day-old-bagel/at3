@@ -39,9 +39,10 @@ namespace at3 {
     status = state->deleteEntity(id);
     assert(status == ezecs::SUCCESS);
   }
-  void SceneObject::addChild(std::shared_ptr<SceneObject> child) {
+  void SceneObject::addChild(std::shared_ptr<SceneObject> child, int inheritedDOF /* = ALL */) {
     m_children.insert({child.get(), child});
     child.get()->m_parent = this;
+    child.get()->m_inheritedDOF = inheritedDOF;
   }
   void SceneObject::removeChild(const SceneObject *address) {
     auto iterator = m_children.find(address);
@@ -58,6 +59,7 @@ namespace at3 {
       const glm::mat4 &projection, bool debug)
   {
     TransformRAII mw(modelWorld);
+    glm::mat4 myTransform;
 
     ezecs::compMask compsPresent = state->getComponents(id);
     assert(compsPresent);
@@ -65,32 +67,44 @@ namespace at3 {
     if (compsPresent & ezecs::PLACEMENT) {
       ezecs::Placement *placement;
       state->get_Placement(id, &placement);
-      mw *= placement->mat;
+      myTransform = placement->mat;
+      mw *= myTransform;
     }
-
-    /*if (compsPresent & ezecs::POSITION) {
-      ezecs::Position *position;
-      state->get_Position(id, &position);
-      // Translate the object into position
-      mw *= glm::translate(glm::mat4(), position->getVec(alpha));
-    }
-    if (compsPresent & ezecs::ORIENTATION) {
-      ezecs::Orientation *orientation;
-      state->get_Orientation(id, &orientation);
-      // Apply the object orientation as a rotation
-      mw *= glm::mat4_cast(orientation->getQuat(alpha));
-    }*/
 
     // Delegate the actual drawing to derived classes
     this->draw(mw.peek(), worldView, projection, debug);
 
     // Draw our children
     for (auto child : m_children) {
-      child.second->m_draw(mw, worldView, projection, debug);
+      switch (child.second->m_inheritedDOF) {
+        case TRANSLATION_ONLY: {
+          TransformRAII mw_transOnly(modelWorld);
+          mw_transOnly *= glm::mat4({
+                              1,                 0,                 0, 0,
+                              0,                 1,                 0, 0,
+                              0,                 0,                 1, 0,
+              myTransform[3][0], myTransform[3][1], myTransform[3][2], 1
+          });
+          child.second->m_draw(mw_transOnly, worldView, projection, debug);
+        } break;
+        case WITHOUT_TRANSLATION: {
+          TransformRAII mw_noTrans(modelWorld);
+          mw_noTrans *= glm::mat4({
+              myTransform[0][0], myTransform[0][1], myTransform[0][2], 0,
+              myTransform[1][0], myTransform[1][1], myTransform[1][2], 0,
+              myTransform[2][0], myTransform[2][1], myTransform[2][2], 0,
+                              0,                 0,                 0, 1
+          });
+          child.second->m_draw(mw_noTrans, worldView, projection, debug);
+        } break;
+        default: {
+          child.second->m_draw(mw, worldView, projection, debug);
+        } break;
+      }
     }
   }
 
-  void SceneObject::reverseTransformLookup(glm::mat4 &wv) const {
+  void SceneObject::reverseTransformLookup(glm::mat4 &wv, int whichDOFs /* = ALL */) const {
 
     ezecs::compMask compsPresent = state->getComponents(id);
     assert(compsPresent);
@@ -98,30 +112,43 @@ namespace at3 {
     if (compsPresent & ezecs::PLACEMENT) {
       ezecs::Placement *placement;
       state->get_Placement(id, &placement);
-      wv *= glm::inverse(placement->mat);
+      glm::mat4 fullTransform = placement->mat;
+      switch (whichDOFs) {
+        case TRANSLATION_ONLY: {
+          wv *= glm::inverse(glm::mat4({
+                                1,                   0,                   0, 0,
+                                0,                   1,                   0, 0,
+                                0,                   0,                   1, 0,
+              fullTransform[3][0], fullTransform[3][1], fullTransform[3][2], 1
+          }));
+        } break;
+        case WITHOUT_TRANSLATION: {
+          wv *= glm::inverse(glm::mat4({
+              fullTransform[0][0], fullTransform[0][1], fullTransform[0][2], 0,
+              fullTransform[1][0], fullTransform[1][1], fullTransform[1][2], 0,
+              fullTransform[2][0], fullTransform[2][1], fullTransform[2][2], 0,
+                                0,                   0,                   0, 1
+          }));
+        } break;
+        default: {
+          wv *= glm::inverse(fullTransform);
+        } break;
+      }
     }
-
-    /*if (compsPresent & ezecs::ORIENTATION) {
-      ezecs::Orientation *orientation;
-      state->get_Orientation(id, &orientation);
-      wv *= glm::mat4_cast(glm::inverse(orientation->getQuat(alpha)));
-    }
-    if (compsPresent & ezecs::POSITION) {
-      ezecs::Position *position;
-      state->get_Position(id, &position);
-      wv *= glm::translate(glm::mat4(), -1.f * position->getVec(alpha));
-    }*/
 
     if (m_parent != NULL) {
-      m_parent->reverseTransformLookup(wv);
+      m_parent->reverseTransformLookup(wv, m_inheritedDOF);
     }
 
   }
 
-  bool SceneObject::handleEvent(const SDL_Event &event) { return false; }
-  void
-  SceneObject::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
+  bool SceneObject::handleEvent(const SDL_Event &event) {
+    return false;
+  }
+
+  void SceneObject::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
                     bool debug) { }
+
   ezecs::entityId SceneObject::getId() const {
     return id;
   }

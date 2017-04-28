@@ -95,20 +95,8 @@ namespace at3 {
     for (auto id : (registries[1].ids)) {
       PyramidControls* pyramidControls;
       state->get_PyramidControls(id, &pyramidControls);
-      glm::mat4 transformContext;
       Placement* placement;
       state->get_Placement(id, &placement);
-      if (pyramidControls->gimbalId == 0) {
-        transformContext = placement->mat;
-      } else {
-        Placement* childPlacement;
-        CompOpReturn status = state->get_Placement(pyramidControls->gimbalId, &childPlacement);
-        if (status != SUCCESS) {
-          assert(false);
-          continue;
-        }
-        transformContext = placement->mat * childPlacement->mat;
-      }
 
       // provide the up vector
       pyramidControls->up = glm::quat_cast(placement->mat) * glm::vec3(0.f, 0.f, 1.f);
@@ -120,25 +108,23 @@ namespace at3 {
       // Get current keyboard state and apply actions accordingly
       const Uint8 *keyStates = SDL_GetKeyboardState(NULL);
 #     define DO_ON_KEYS(action, ...) if(anyPressed(keyStates, __VA_ARGS__)) { action; }
-      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  1.0f,  0.0f), SDL_SCANCODE_W)//, SDL_SCANCODE_UP)
-      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f, -1.0f,  0.0f), SDL_SCANCODE_S)//, SDL_SCANCODE_DOWN)
-      DO_ON_KEYS(pyramidControls->accel += glm::vec3(-1.0f,  0.0f,  0.0f), SDL_SCANCODE_A)//, SDL_SCANCODE_LEFT)
-      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 1.0f,  0.0f,  0.0f), SDL_SCANCODE_D)//, SDL_SCANCODE_RIGHT)
+      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  1.0f,  0.0f), SDL_SCANCODE_W)
+      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f, -1.0f,  0.0f), SDL_SCANCODE_S)
+      DO_ON_KEYS(pyramidControls->accel += glm::vec3(-1.0f,  0.0f,  0.0f), SDL_SCANCODE_A)
+      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 1.0f,  0.0f,  0.0f), SDL_SCANCODE_D)
       DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  0.0f, -1.0f), SDL_SCANCODE_LCTRL, SDL_SCANCODE_LSHIFT)
       DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  0.0f,  1.0f), SDL_SCANCODE_SPACE)
 #     undef DO_ON_KEYS
 
       if (length(pyramidControls->accel) > 0.0f) {
-        glm::quat quat = glm::quat_cast(transformContext);
+        glm::quat quat = glm::quat_cast(lastKnownWorldView);
         glm::mat3 rotMat;
         switch (pyramidControls->style) {
           case PyramidControls::ROTATE_ABOUT_Z: {
-            glm::vec3 axis = glm::vec3(0.f, 0.f, 1.f);
-            glm::vec3 orth0 = glm::vec3(0.f, 1.0, 0.f);
-            glm::vec3 transformed = quat * orth0;
-            glm::vec3 projected = transformed - (glm::dot(transformed, axis) * axis);
+            glm::vec3 transformed = quat * glm::vec3(0.f, 1.0, 0.f);
+            glm::vec3 projected (transformed.x, 0.f, transformed.z);
             projected = glm::normalize(projected);
-            float rotZ = acosf(glm::dot(orth0, projected)) * (transformed.x < 0.f ? 1.f : -1.f);
+            float rotZ = acosf(glm::dot({0.f, 0.f, -1.f}, projected)) * (transformed.x < 0.f ? -1.f : 1.f);
             rotMat = glm::mat3(glm::rotate(rotZ, glm::vec3(0.f, 0.f, 1.f)));
             break;
           }
@@ -168,8 +154,8 @@ namespace at3 {
 #     define DO_ON_KEYS(action, ...) if(anyPressed(keyStates, __VA_ARGS__)) { action; }
       DO_ON_KEYS(trackControls->control += glm::vec2( 1.0f,  1.0f), SDL_SCANCODE_UP)
       DO_ON_KEYS(trackControls->control += glm::vec2(-1.0f, -1.0f), SDL_SCANCODE_DOWN)
-      DO_ON_KEYS(trackControls->control += glm::vec2(-0.5f,  0.5f), SDL_SCANCODE_LEFT)
-      DO_ON_KEYS(trackControls->control += glm::vec2( 0.5f, -0.5f), SDL_SCANCODE_RIGHT)
+      DO_ON_KEYS(trackControls->control += glm::vec2(-2.0f,  2.0f), SDL_SCANCODE_LEFT)
+      DO_ON_KEYS(trackControls->control += glm::vec2( 2.0f, -2.0f), SDL_SCANCODE_RIGHT)
 #     undef DO_ON_KEYS
 
       // Calculate torque to apply
@@ -221,5 +207,9 @@ namespace at3 {
         return false; // could not handle it here
     }
     return true; // handled it here
+  }
+
+  void ControlSystem::updateWorldView(glm::mat4 &wv) {
+    lastKnownWorldView = wv;
   }
 }

@@ -63,6 +63,7 @@ namespace at3 {
       bool onForget(const entityId& id);
       bool onDiscoverTerrain(const entityId& id);
       bool onDiscoverTrackControls(const entityId& id);
+      bool onForgetTrackControls(const entityId& id);
       bool handleEvent(SDL_Event& event);
       void setDebugDrawer(std::shared_ptr<BulletDebug> debug);
       // TODO: add removal logic for vehicles and wheels

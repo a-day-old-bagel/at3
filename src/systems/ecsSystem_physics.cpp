@@ -25,11 +25,14 @@
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 #include <BulletCollision/CollisionShapes/btTriangleShape.h>
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "IncompatibleTypes"
+#pragma ide diagnostic ignored "TemplateArgumentsIssues"
 using namespace ezecs;
 
 namespace at3 {
 
-  // A custom collision callback to prevent collisions with backfaces.
+  // A custom bullet collision callback to prevent collisions with backfaces (created for use with terrain).
   static bool myCustomMaterialCombinerCallback(
       btManifoldPoint& cp,
       const btCollisionObjectWrapper* colObj0Wrap,
@@ -67,6 +70,7 @@ namespace at3 {
     registries[0].forgetHandler = DELEGATE(&PhysicsSystem::onForget, this);
     registries[2].discoverHandler = DELEGATE(&PhysicsSystem::onDiscoverTerrain, this);
     registries[3].discoverHandler = DELEGATE(&PhysicsSystem::onDiscoverTrackControls, this);
+    registries[4].forgetHandler = DELEGATE(&PhysicsSystem::onForgetTrackControls, this);
 
     broadphase = new btDbvtBroadphase();
     collisionConfiguration = new btDefaultCollisionConfiguration();
@@ -133,7 +137,9 @@ namespace at3 {
           if (SUCCESS == state->get_TrackControls(wi.parentVehicle, &trackControls)) {
             transform = trackControls->vehicle->getWheelTransformWS(((WheelInfo*)physics->customData)->bulletWheelId);
           } else {
-            // TODO: not this
+            // TODO: handle an orphan wheel
+            // TODO: instead of deleting all wheels in onForgetTrackControls, do the following here:
+            // replace the wheel's physics component with a normal physics component at the same location
           }
         } break;
         default: {
@@ -194,14 +200,13 @@ namespace at3 {
         trackControls->vehicle->addWheel(initInfo.connectionPoint, initInfo.direction, initInfo.axle,
                                          initInfo.suspensionRestLength, initInfo.wheelRadius,
                                          trackControls->tuning, initInfo.isFrontWheel);
-        initInfo.wi.bulletWheelId = trackControls->wheels.size();
+        initInfo.wi.bulletWheelId = (int)trackControls->wheels.size();
         physics->customData = new WheelInfo(initInfo.wi);
         trackControls->wheels.push_back(initInfo.wi);
         trackControls->vehicle->resetSuspension();
         return true; // wheels do not need normal geometry/collisions (this is for the btRaycastVehicle), but do track.
       }
-      default:
-        break;
+      default: break;
     }
     physics->geomInitData = nullptr;
     btTransform transform;
@@ -220,10 +225,25 @@ namespace at3 {
   bool PhysicsSystem::onForget(const entityId &id) {
     Physics *physics;
     state->get_Physics(id, &physics);
-    dynamicsWorld->removeRigidBody(physics->rigidBody);
-    delete physics->rigidBody->getMotionState();
-    delete physics->rigidBody;
-    delete physics->shape;
+    switch (physics->geom) {
+      case Physics::WHEEL: {
+        // TODO: delete wheel from vehicle somehow? also remove from trackControl's vector?
+        /*WheelInfo *wheelInfo = ((WheelInfo*)physics->customData);
+        TrackControls *trackControls;
+        CompOpReturn status = state->get_TrackControls(wheelInfo->parentVehicle, &trackControls);
+        if (status != SUCCESS) {
+          EZECS_CHECK_PRINT(EZECS_ERR_MSG(status, "Attempted to access wheel of nonexistent vehicle!\n"));
+          return false;
+        }
+        btWheelInfo& wheelInfoBt = trackControls->vehicle->getWheelInfo(wheelInfo->bulletWheelId);*/
+      } break;
+      default: {
+        dynamicsWorld->removeRigidBody(physics->rigidBody);
+        delete physics->rigidBody->getMotionState();
+        delete physics->rigidBody;
+        delete physics->shape;
+      } break;
+    }
     return true;
   }
 
@@ -275,6 +295,17 @@ namespace at3 {
     trackControls->vehicle->setCoordinateSystem(0, 2, 1);
     return true;
   }
+  bool PhysicsSystem::onForgetTrackControls(const entityId &id) {
+    // fixme: investigate the order of deletion if both this and the normal onForget are called on a chassis
+    TrackControls *trackControls;
+    state->get_TrackControls(id, &trackControls);
+    for (auto wheel : trackControls->wheels) {
+      state->rem_Physics(wheel.myId);
+    }
+    dynamicsWorld->removeVehicle(trackControls->vehicle);
+    delete trackControls->vehicle;
+    return true;
+  }
 
   bool PhysicsSystem::handleEvent(SDL_Event& event) {
     switch (event.type) {
@@ -297,3 +328,5 @@ namespace at3 {
     dynamicsWorld->setDebugDrawer(debug.get());
   }
 }
+
+#pragma clang diagnostic pop

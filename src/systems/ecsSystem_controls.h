@@ -31,6 +31,7 @@ using namespace ezecs;
 namespace at3 {
   class ControlSystem : public System<ControlSystem> {
       std::vector<SDL_Event> queuedEvents;
+      glm::mat4 lastKnownWorldView;
 
     public:
       std::vector<compMask> requiredComponents = {
@@ -42,6 +43,7 @@ namespace at3 {
       bool onInit();
       void onTick(float dt);
       bool handleEvent(SDL_Event& event);
+      void updateWorldView(glm::mat4 &wv);
   };
 }
 

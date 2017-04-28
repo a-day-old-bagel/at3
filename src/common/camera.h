@@ -65,7 +65,8 @@ namespace at3 {
        * \return The world-space to view-space matrix transform for this
        * camera.
        */
-      virtual glm::mat4 worldView() const;
+      virtual glm::mat4 worldView();
+      glm::mat4 lastWorldViewQueried; // set every time worldView is called (for cache)
 
       /**
        * Derived camera classes must implement this method to return a

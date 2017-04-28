@@ -37,10 +37,10 @@ namespace at3 {
   Camera::~Camera() {
   }
 
-  glm::mat4 Camera::worldView() const {
+  glm::mat4 Camera::worldView() {
     glm::mat4 wv;
     reverseTransformLookup(wv);
-
+    lastWorldViewQueried = wv;
     return wv;
   }
 }

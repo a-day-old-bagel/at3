@@ -50,6 +50,7 @@ namespace at3 {
         std::shared_ptr<SceneObject>
         > m_children;
       SceneObject* m_parent = NULL;
+      int m_inheritedDOF = ALL;
 
       /**
        *
@@ -77,13 +78,24 @@ namespace at3 {
       virtual ~SceneObject();
 
       /**
+       * When an object is a child of another object, it inherits certain transform information
+       * from its parent, up to the full 6 Degrees Of Freedom, but via this enumerator it is
+       * possible to only inherit a parent's translation, or everything BUT its translation. You can do this by
+       * passing in one of these enumerators when you call addChild (it will be applied to the child)
+       * NOTE: setting this is ineffective for top-level scene objects.
+       */
+      enum InheritedDOF {
+        ALL, TRANSLATION_ONLY, WITHOUT_TRANSLATION
+      };
+
+      /**
        * Adds a scene object as a child of this scene object.
        *
        * \param child Child scene object to add.
        *
        * \sa removeChild()
        */
-      void addChild(std::shared_ptr<SceneObject> child);
+      void addChild(std::shared_ptr<SceneObject> child, int inheritedDOF = ALL);
 
       /**
        * \param The address of the child scene object to look for.
@@ -134,7 +146,7 @@ namespace at3 {
       virtual void draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
                         bool debug);
 
-      void reverseTransformLookup(glm::mat4 &wv) const;
+      void reverseTransformLookup(glm::mat4 &wv, int whichDOFs = ALL) const;
 
       /**
        * Get ID

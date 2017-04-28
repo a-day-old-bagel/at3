@@ -2,9 +2,11 @@ add_subdirectory("./common")
 add_subdirectory("./systems")
 add_executable( at3
     main.cpp
+    duneBuggy.cpp
     )
 target_link_libraries( at3
     at3_systems
+    ${BULLET_LIBRARIES}
     )
 set_property( TARGET at3 PROPERTY CXX_STANDARD 11 )
 set_property( TARGET at3 PROPERTY CXX_STANDARD_REQUIRED ON )

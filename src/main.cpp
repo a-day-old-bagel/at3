@@ -36,6 +36,7 @@
 #include "scene.h"
 #include "perspectiveCamera.h"
 #include "skyBox.h"
+#include "duneBuggy.h"
 
 #include "ecsSystem_movement.h"
 #include "ecsSystem_controls.h"
@@ -45,6 +46,9 @@
 //#define GET_TIME std::chrono::high_resolution_clock::now();
 //#define DURATION std::chrono::duration<double, std::milli>
 //#define CHECK(compOpReturn) EZECS_CHECK_PRINT(EZECS_ERR(compOpReturn))
+
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "TemplateArgumentsIssues"
 
 using namespace at3;
 using namespace ezecs;
@@ -142,13 +146,13 @@ void debugGenerateVirus(State& state) {
 class PyramidGame : public Game {
   private:
     std::shared_ptr<PerspectiveCamera> m_camera;
-    std::shared_ptr<MeshObject> m_pyrBottom, m_pyrTop, m_pyrThrusters, m_pyrFire, m_tankBody;
-    std::vector<std::shared_ptr<MeshObject>> m_wheels;
+    std::shared_ptr<MeshObject> m_pyrBottom, m_pyrTop, m_pyrThrusters, m_pyrFire;
     std::shared_ptr<SceneObject> m_camGimbal;
     std::shared_ptr<SkyBox> m_skyBox;
     std::shared_ptr<TerrainObject> m_terrain;
     std::shared_ptr<BulletDebug> bulletDebug;
     std::vector<std::shared_ptr<MeshObject>> m_spheres;
+    std::shared_ptr<DuneBuggy> duneBuggy;
     ControlSystem controlSystem;
     MovementSystem movementSystem;
     PhysicsSystem physicsSystem;
@@ -170,10 +174,10 @@ class PyramidGame : public Game {
 
       // generate initial placement of objects
       glm::mat4 ident;  // identity matrix
-      glm::mat4 cameraMat = glm::rotate(glm::translate(ident, {0.f, -4.f, 0.5f}),
+      glm::mat4 cameraMat = glm::rotate(glm::translate(ident, {0.f, -6.f, 1.0f}),
                                         (float) M_PI * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f));
       glm::mat4 pyrBotMat = glm::translate(ident, { 0.f, 0.f, 5.f });
-      glm::mat4 tankBodyMat = glm::translate(ident, { 0.f, -290.f, -80.f });
+      glm::mat4 buggyMat = glm::translate(ident, { 0.f, -290.f, 0.f });
       glm::mat4 pyrFirMat = glm::scale(glm::rotate(glm::translate(ident, {0.f, 0.f, -0.4f}),
                                                    (float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f)), {0.105f, 0.105f, 0.15f});
 
@@ -189,8 +193,6 @@ class PyramidGame : public Game {
       m_pyrFire = std::shared_ptr<MeshObject> (
           new MeshObject(state, "assets/models/pyramid_thruster_flames.dae", "assets/textures/pyramid_flames.png",
                          pyrFirMat));
-      m_tankBody = std::shared_ptr<MeshObject> (
-          new MeshObject(state, "assets/models/pyramid_bottom.dae", "assets/textures/pyramid_bottom.png", tankBodyMat));
       m_camGimbal = std::shared_ptr<SceneObject> (
           new SceneObject(state));
       m_skyBox = std::shared_ptr<SkyBox> (
@@ -201,13 +203,12 @@ class PyramidGame : public Game {
               new TerrainObject(state, ident, -5000.f, 5000.f, -5000.f, 5000.f, -200, 300));
 
       this->scene()->addObject(m_pyrBottom);
-      this->scene()->addObject(m_tankBody);
       this->scene()->addObject(m_skyBox);
       this->scene()->addObject(m_terrain);
       LoadResult loaded = m_skyBox->useCubeMap("sea", "png");
       assert(loaded == LOAD_SUCCESS);
 
-      m_pyrBottom->addChild(m_camGimbal);
+      m_pyrBottom->addChild(m_camGimbal, SceneObject::TRANSLATION_ONLY);
       m_pyrBottom->addChild(m_pyrTop);
       m_pyrBottom->addChild(m_pyrThrusters);
       m_pyrBottom->addChild(m_pyrFire);
@@ -238,7 +239,7 @@ class PyramidGame : public Game {
          -1.0f, -1.0f, -0.4f,
       };
       state.add_Physics(bottomId, 100.f, &hullVerts, Physics::MESH);
-      state.add_PyramidControls(bottomId, gimbalId, PyramidControls::ROTATE_ABOUT_Z);
+      state.add_PyramidControls(bottomId, PyramidControls::ROTATE_ABOUT_Z);
 
       Physics* physics;
       state.get_Physics(bottomId, &physics);
@@ -251,52 +252,9 @@ class PyramidGame : public Game {
       entityId fireId = m_pyrFire->getId();
       state.add_TransformFunction(fireId, DELEGATE_NOCLASS(pyrFireWiggle));
 
-
       // add the buggy
-      entityId tankBodyId = m_tankBody->getId();
-      std::vector<float> chassisVerts = {
-          2.0f,  2.0f, -0.4f,
-          2.0f, -2.0f, -0.4f,
-         -2.0f, -2.0f, -0.4f,
-         -2.0f,  2.0f, -0.4f,
-          2.0f,  2.0f,  0.4f,
-          2.0f, -2.0f,  0.4f,
-         -2.0f, -2.0f,  0.4f,
-         -2.0f,  2.0f,  0.4f,
-      };
-      state.add_Physics(tankBodyId, 50.f, &chassisVerts, Physics::MESH);
-      state.add_TrackControls(tankBodyId);
-      TrackControls *trackControls;
-      state.get_TrackControls(tankBodyId, &trackControls);
-      trackControls->tuning.m_suspensionStiffness = 16.f;     // 5.88f
-      trackControls->tuning.m_suspensionCompression = 0.8f;  // 0.83f
-      trackControls->tuning.m_suspensionDamping = 1.0f;      // 0.88f
-      trackControls->tuning.m_maxSuspensionTravelCm = 40.f;  // 500.f
-      trackControls->tuning.m_frictionSlip  = 100.f;           // 10.5f
-      trackControls->tuning.m_maxSuspensionForce  = 6000.f;    // 6000.f
-      btVector3 wheelConnectionPoints[4] {
-          {-2.f,  2.0f, -0.4f},
-          { 2.f,  2.0f, -0.4f},
-          {-2.f, -2.0f, -0.4f},
-          { 2.f, -2.0f, -0.4f}
-      };
-      for (int i = 0; i < 4; ++i) {
-        m_wheels.push_back(std::shared_ptr<MeshObject>(
-            new MeshObject(state, "assets/models/sphere.dae", "assets/textures/thrusters.png", ident)));
-        entityId wheelId = m_wheels.back()->getId();
-        WheelInitInfo wheelInitInfo{
-            {tankBodyId, -1, wheelConnectionPoints[i].x()},     // WheelInfo struct
-            wheelConnectionPoints[i],                           // connection point
-            {0.f, 0.f, -1.f},                                   // direction
-            {1.f, 0.f, 0.f},                                    // axle
-            0.3f,                                               // suspension rest length
-            1.5f,                                               // wheel radius
-            false                                               // is front wheel
-        };
-        state.add_Physics(wheelId, 10.f, &wheelInitInfo, Physics::WHEEL);
-        this->scene()->addObject(m_wheels.back());
-      }
-
+      duneBuggy = std::shared_ptr<DuneBuggy> (
+          new DuneBuggy(state, scene(), buggyMat));
 
       // Add some debug-drawn features...
 
@@ -336,12 +294,24 @@ class PyramidGame : public Game {
                                  "assets/textures/thrusters.png",
                                  sourceMat)));
               float sphereRadius = 1.0f;
-              state.add_Physics(m_spheres.back()->getId(), 0.5f, &sphereRadius, Physics::SPHERE);
+              state.add_Physics(m_spheres.back()->getId(), 5.f, &sphereRadius, Physics::SPHERE);
               Physics *physics;
               state.get_Physics(m_spheres.back()->getId(), &physics);
               physics->rigidBody->applyCentralImpulse({0.f, 0.f, 1.f});
               this->scene()->addObject(m_spheres.back());
 
+            } break;
+            case SDL_SCANCODE_C: {
+              if (m_pyrBottom->hasChild(m_camGimbal.get())) {
+                m_pyrBottom->removeChild(m_camGimbal.get());
+                duneBuggy->chassis->addChild(m_camGimbal, SceneObject::TRANSLATION_ONLY);
+              } else {
+                duneBuggy->chassis->removeChild(m_camGimbal.get());
+                m_pyrBottom->addChild(m_camGimbal, SceneObject::TRANSLATION_ONLY);
+              }
+            } break;
+            case SDL_SCANCODE_RCTRL: {
+              duneBuggy->tip();
             } break;
             default: return false; // could not handle it here
         } break;
@@ -350,10 +320,10 @@ class PyramidGame : public Game {
       return true; // handled it here
     }
     void tick(float dt) {
+      controlSystem.updateWorldView(m_camera->lastWorldViewQueried);
       controlSystem.tick(dt);
       physicsSystem.tick(dt);
       movementSystem.tick(dt);
-//      kalmanSystem.tick(dt);
 
       // make the fire look big if the pyramid is thrusting upwards
       PyramidControls* controls;
@@ -451,3 +421,5 @@ int main(int argc, char **argv) {
     main_loop(&game);
   }
 }
+
+#pragma clang diagnostic pop

@@ -70,9 +70,9 @@ namespace {
   EZECS_COMPONENT_DEPENDENCIES(Perspective, Placement)
 
   struct WheelInfo {
-    entityId parentVehicle = 0;
-    int bulletWheelId = -1;
-    float leftOrRight = 0;
+    entityId parentVehicle, myId;
+    int bulletWheelId;
+    float leftOrRight;
   };
   struct WheelInitInfo {
     WheelInfo wi;
@@ -102,9 +102,8 @@ namespace {
     glm::vec3 accel;
     glm::vec3 force;
     glm::vec3 up;
-    entityId gimbalId;
     int style;
-    PyramidControls(entityId gimbalId, Style style);
+    PyramidControls(Style style);
   };
   EZECS_COMPONENT_DEPENDENCIES(PyramidControls, Physics)
 
@@ -119,6 +118,7 @@ namespace {
   EZECS_COMPONENT_DEPENDENCIES(TrackControls, Physics)
 
   struct MouseControls : public Component<MouseControls> {
+    float sinOfVertTolerance = 0.5;
     bool invertedX, invertedY;
     MouseControls(bool invertedX, bool invertedY);
   };
@@ -153,8 +153,8 @@ namespace {
     }
   }
 
-  PyramidControls::PyramidControls(entityId gimbalId, PyramidControls::Style style)
-      : gimbalId(gimbalId), style(style) { }
+  PyramidControls::PyramidControls(PyramidControls::Style style)
+      : style(style) { }
 
   TrackControls::TrackControls() {}
 
