@@ -1,41 +1,31 @@
 
-cmake_minimum_required( VERSION 3.3 )
+cmake_minimum_required( VERSION 3.7 FATAL_ERROR)
 set( CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 set( CMAKE_DISABLE_IN_SOURCE_BUILD ON )
 set( CMAKE_DISABLE_SOURCE_CHANGES ON )
-project( at3 )
 
-# By default, at3 will build external dependencies (like assimp or bullet) from included source instead of hoping that
-# cmake can actually find them correctly on the user's system.
+# By default, at3 will build some external dependencies (like assimp or bullet) from included sources instead of
+# praying that cmake can actually find them correctly on the user's system without extra toil.
 option( AT3_USE_INCLUDED_LIBS
         "build external dependencies instead of finding them on your system (except opengl and sdl)"
         ON )
 
-# OpenGL and SDL2 are not included in source, unlike other external libraries, so they will always need to be found.
-find_package( OpenGL REQUIRED )
-include_directories( SYSTEM ${OPENGL_INCLUDE_DIR} )
-find_package( SDL2 REQUIRED )
-include_directories( SYSTEM ${SDL2_INCLUDE_DIR} )
-# stb image library is header only, and will always be included like this
-include_directories( "./extern/stb" )
-
-# Some global compiler flags are set here. This may not be a great way to do this.
+# Some global compiler flags are set here. This is not a great way to do this, but it fixes things for now.
 if( MSVC )
   set( AT3_MSVC_RELEASE_FLAGS "/MD /MP12 /std:c++14" )
   set( AT3_MSVC_DEBUG_FLAGS "/MDd /MP12 /std:c++14" )
 
-  set( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} ${AT3_MSVC_RELEASE_FLAGS}" )
-  set( CMAKE_CXX_FLAGS_RELEASE_INIT "${CMAKE_CXX_FLAGS} ${AT3_MSVC_RELEASE_FLAGS}" )
-  set( CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS} ${AT3_MSVC_RELEASE_FLAGS}" )
-  set( CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT  "${CMAKE_CXX_FLAGS} ${AT3_MSVC_RELEASE_FLAGS}" )
+  set( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${AT3_MSVC_RELEASE_FLAGS}" )
+  set( CMAKE_CXX_FLAGS_RELEASE_INIT "${CMAKE_CXX_FLAGS_RELEASE_INIT} ${AT3_MSVC_RELEASE_FLAGS}" )
+  set( CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${AT3_MSVC_RELEASE_FLAGS}" )
+  set( CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT  "${CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT} ${AT3_MSVC_RELEASE_FLAGS}" )
 
-  set( CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS} ${AT3_MSVC_DEBUG_FLAGS}" )
-  set( CMAKE_CXX_FLAGS_DEBUG_INIT "${CMAKE_CXX_FLAGS} ${AT3_MSVC_DEBUG_FLAGS}" )
+  set( CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} ${AT3_MSVC_DEBUG_FLAGS}" )
+  set( CMAKE_CXX_FLAGS_DEBUG_INIT "${CMAKE_CXX_FLAGS_DEBUG_INIT} ${AT3_MSVC_DEBUG_FLAGS}" )
 
   set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /incremental /debug:fastlink" )
-  add_definitions( -DARMA_USE_CXX11 )
 else( MSVC )
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp" )
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" )
 endif( MSVC )
 
 if (AT3_USE_INCLUDED_LIBS) # BUILD AND INCLUDE EXTERNS
@@ -88,23 +78,31 @@ if (AT3_USE_INCLUDED_LIBS) # BUILD AND INCLUDE EXTERNS
   include_directories( "./extern/libepoxy/registry" )
   include_directories( "${CMAKE_CURRENT_BINARY_DIR}/extern/libepoxy/include" )
 
-  # XXD
-  option( XXD_STATIC_LIB "Build a static lib of xxd" ON )
-  option( XXD_EXECUTABLE "Build xxd as an executable" OFF )
-  add_subdirectory( "./extern/xxd" )
-
-  # FASTNOISE, ETC.
-  add_subdirectory( "./extern")
-
-  # EZECS
-  set( EZECS_CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/ecsConfig.hpp" )
-  set( EZECS_LINK_TO_LIBS glm ${BULLET_LIBRARIES} )
-  add_subdirectory( "./extern/ezecs" )
-
 else (AT3_USE_INCLUDED_LIBS)
   message(FATAL_ERROR
           "Use of system libraries (instead of building the included ones) is not yet supported.\
           Set option AT3_USE_INCLUDED_LIBS to ON.")
 endif (AT3_USE_INCLUDED_LIBS)
+
+# This is way down here in order to suppress CMP0048 warnings by the above included external sources.
+# I dare you to find a better way to fix this that doesn't require suppressing ALL dev warnings (-Wno-dev)
+# The warnings are generated because I use "VERSION <number>" in the project command, and the above projects don't.
+project( at3 VERSION 0.01.01.01 LANGUAGES CXX)
+
+# These libraries will need to be built from source in all cases
+  # XXD
+  option( XXD_STATIC_LIB "Build a static lib of xxd" ON )
+  option( XXD_EXECUTABLE "Build xxd as an executable" OFF )
+  add_subdirectory( "./extern/xxd" )
+  # FASTNOISE, ETC.
+  add_subdirectory( "./extern")
+
+# OpenGL and SDL2 are not included in source, unlike other external libraries, so they will always need to be found.
+  find_package( OpenGL REQUIRED )
+  include_directories( SYSTEM ${OPENGL_INCLUDE_DIR} )
+  find_package( SDL2 REQUIRED )
+  include_directories( SYSTEM ${SDL2_INCLUDE_DIR} )
+  # stb image library is header only, and will always be included like this
+  include_directories( "./extern/stb" )
 
 add_subdirectory( "./src" )

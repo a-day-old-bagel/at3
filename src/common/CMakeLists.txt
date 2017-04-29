@@ -38,11 +38,11 @@ set_property( TARGET common PROPERTY CXX_STANDARD_REQUIRED ON )
 
 # Convert all of our shaders to C header files
 file(GLOB_RECURSE shaders
-    "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/*.vert"
-    "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/*.frag"
-    "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/*.tesc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/*.tese"
-    "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/*.geom"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.vert"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.frag"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.tesc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.tese"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.geom"
     )
 foreach(shader ${shaders})
   file(RELATIVE_PATH shader_rel "${CMAKE_CURRENT_SOURCE_DIR}" "${shader}")

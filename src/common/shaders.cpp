@@ -26,7 +26,7 @@
 #include "shaders.h"
 
 namespace at3 {
-  #define SHADER_DIR assets_shaders
+  #define SHADER_DIR shaders
   
   #define CAT(a, b) a ## b
   
@@ -63,34 +63,34 @@ namespace at3 {
   #define DEFINE_SHADER(shader) DEFINE_SHADER_BASE(shader, SHADER_DIR)
   #define DEFINE_SHADER_TESS(shader) DEFINE_SHADER_BASE_TESS(shader, SHADER_DIR)
   
-  #include "assets_shaders_billboard.vert.c"
-  #include "assets_shaders_billboard.frag.c"
+  #include "shaders_billboard.vert.c"
+  #include "shaders_billboard.frag.c"
   DEFINE_SHADER(billboard)
   
-  #include "assets_shaders_billboardPoint.vert.c"
-  #include "assets_shaders_billboardPoint.frag.c"
+  #include "shaders_billboardPoint.vert.c"
+  #include "shaders_billboardPoint.frag.c"
   DEFINE_SHADER(billboardPoint)
   
-  #include "assets_shaders_gouraud.vert.c"
-  #include "assets_shaders_gouraud.frag.c"
+  #include "shaders_gouraud.vert.c"
+  #include "shaders_gouraud.frag.c"
   DEFINE_SHADER(gouraud)
   
-  #include "assets_shaders_wireframe.vert.c"
-  #include "assets_shaders_wireframe.frag.c"
+  #include "shaders_wireframe.vert.c"
+  #include "shaders_wireframe.frag.c"
   DEFINE_SHADER(wireframe)
   
-  #include "assets_shaders_texture.vert.c"
-  #include "assets_shaders_texture.frag.c"
+  #include "shaders_texture.vert.c"
+  #include "shaders_texture.frag.c"
   DEFINE_SHADER(texture)
   
-  #include "assets_shaders_skyQuad.vert.c"
-  #include "assets_shaders_skyQuad.frag.c"
+  #include "shaders_skyQuad.vert.c"
+  #include "shaders_skyQuad.frag.c"
   DEFINE_SHADER(skyQuad)
   
-  #include "assets_shaders_terrain.vert.c"
-  #include "assets_shaders_terrain.tesc.c"
-  #include "assets_shaders_terrain.tese.c"
-  #include "assets_shaders_terrain.frag.c"
-  #include "assets_shaders_terrain.geom.c"
+  #include "shaders_terrain.vert.c"
+  #include "shaders_terrain.tesc.c"
+  #include "shaders_terrain.tese.c"
+  #include "shaders_terrain.frag.c"
+  #include "shaders_terrain.geom.c"
   DEFINE_SHADER_TESS(terrain)
 }
