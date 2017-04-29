@@ -70,7 +70,7 @@ namespace at3 {
     registries[0].forgetHandler = DELEGATE(&PhysicsSystem::onForget, this);
     registries[2].discoverHandler = DELEGATE(&PhysicsSystem::onDiscoverTerrain, this);
     registries[3].discoverHandler = DELEGATE(&PhysicsSystem::onDiscoverTrackControls, this);
-    registries[4].forgetHandler = DELEGATE(&PhysicsSystem::onForgetTrackControls, this);
+    registries[3].forgetHandler = DELEGATE(&PhysicsSystem::onForgetTrackControls, this);
 
     broadphase = new btDbvtBroadphase();
     collisionConfiguration = new btDefaultCollisionConfiguration();
