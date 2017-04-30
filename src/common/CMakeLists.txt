@@ -21,7 +21,7 @@ add_library(common STATIC
     loadedTexture.cpp
     )
 target_link_libraries(common
-    ecs_static
+    ${EZECS_TARGET_PREFIX}ecs_static
     glm
     assimp
     ${SDL2_LIBRARY}
