@@ -33,6 +33,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <btBulletDynamicsCommon.h>
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
+#include "CNeuralNet.h"
 
 // END INCLUDES
 
@@ -132,6 +133,15 @@ namespace {
   };
   EZECS_COMPONENT_DEPENDENCIES(Terrain, Placement)
 
+  struct SweeperAi : public Component<SweeperAi> {
+    CNeuralNet net;
+    float fitness = 0.f;
+    int closestTarget = 0;
+    SweeperAi();
+    void reset();
+  };
+  EZECS_COMPONENT_DEPENDENCIES(SweeperAi, TrackControls)
+
   // END DECLARATIONS
 
   // BEGIN DEFINITIONS
@@ -148,8 +158,13 @@ namespace {
   Physics::Physics(float mass, void* geomData, Physics::Geometry geom)
       : geom(geom), mass(mass), geomInitData(geomData) { }
   Physics::~Physics() {
-    if (customData) {
-      delete customData;
+    if (customData && geom == WHEEL) {
+      switch (geom) {
+        case WHEEL: {
+          delete ((WheelInfo*)customData);
+        } break;
+        default: break; // TODO: Make this deconstructor safer, or do deallocation elsewhere
+      }
     }
   }
 
@@ -163,6 +178,11 @@ namespace {
 
   Terrain::Terrain(floatVecPtr heights, size_t resX, size_t resY, float sclX, float sclY, float sclZ, float minZ, float maxZ)
       : heights(heights), resX(resX), resY(resY), sclX(sclX), sclY(sclY), sclZ(sclZ), minZ(minZ), maxZ(maxZ) { }
+
+  SweeperAi::SweeperAi() {}
+  void SweeperAi::reset() {
+    fitness = 0.f;
+  }
 
   // END DEFINITIONS
 

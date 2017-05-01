@@ -324,7 +324,7 @@ namespace at3 {
     return true; // handled it here
   }
 
-  void PhysicsSystem::setDebugDrawer(std::shared_ptr<BulletDebug> debug) {
+  void PhysicsSystem::setDebugDrawer(std::shared_ptr<BulletDebug_> debug) {
     dynamicsWorld->setDebugDrawer(debug.get());
   }
 }

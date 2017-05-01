@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2016 Jonathan Glines, Galen Cochrane
- * Jonathan Glines <jonathan@glines.net>
+ * Copyright (c) 2016 Galen Cochrane
  * Galen Cochrane <galencochrane@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,14 +20,29 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
+#include "ecsSystem_ai.h"
 
-#include "wasdCamera.h"
+#define TRACK_TORQUE 100.f
 
 namespace at3 {
-  WasdCamera::WasdCamera(ezecs::State &state, float fovy, float near, float far, glm::mat4 &transform)
-      : PerspectiveCamera(state, fovy, near, far, transform)
-  {
-    ezecs::CompOpReturn status = state.add_MouseControls(id, false, false);
-    assert(status == ezecs::SUCCESS);
+
+  AiSystem::AiSystem(State *state) : System(state) {
+
+  }
+  bool AiSystem::onInit() {
+    return true;
+  }
+  void AiSystem::onTick(float dt) {
+
+  }
+  bool AiSystem::handleEvent(SDL_Event &event) {
+    switch (event.type) {
+      case SDL_KEYDOWN:
+        switch (event.key.keysym.scancode) {
+          default: return false; // could not handle it here
+        } break;
+      default: return false; // could not handle it here
+    }
+    return true; // handled it here
   }
 }

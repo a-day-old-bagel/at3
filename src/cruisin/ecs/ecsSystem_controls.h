@@ -43,7 +43,7 @@ namespace at3 {
       bool onInit();
       void onTick(float dt);
       bool handleEvent(SDL_Event& event);
-      void updateWorldView(glm::mat4 &wv);
+      void setWorldView(glm::mat4 &wv);
   };
 }
 

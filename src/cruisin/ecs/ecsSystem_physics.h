@@ -29,6 +29,7 @@
 #include "ezecs.hpp"
 #include "sceneObject.h"
 #include "bulletDebug.h"
+#include "dualityInterface.h"
 
 using namespace ezecs;
 
@@ -65,7 +66,7 @@ namespace at3 {
       bool onDiscoverTrackControls(const entityId& id);
       bool onForgetTrackControls(const entityId& id);
       bool handleEvent(SDL_Event& event);
-      void setDebugDrawer(std::shared_ptr<BulletDebug> debug);
+      void setDebugDrawer(std::shared_ptr<BulletDebug_> debug);
       // TODO: add removal logic for vehicles and wheels
   };
 }

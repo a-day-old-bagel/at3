@@ -26,7 +26,7 @@
 #define LD2016_COMMON_CAMERA_H_
 
 #include <glm/glm.hpp>
-
+#include <glm/gtc/matrix_transform.hpp>
 #include "sceneObject.h"
 
 namespace at3 {
@@ -38,7 +38,8 @@ namespace at3 {
    * Derived classes are to generate an appropriate projection matrix
    * transform.
    */
-  class Camera : public SceneObject {
+  template <typename EcsInterface>
+  class Camera : public SceneObject<EcsInterface> {
     public:
       /**
        * Constructs a camera object with the given position and orientation.
@@ -49,7 +50,7 @@ namespace at3 {
        * \param position The position of the camera object.
        * \param orientation The orientation of the camera object.
        */
-      Camera(ezecs::State &state, glm::mat4 &transform);
+      Camera(glm::mat4 &transform);
       /**
        * Destroys the camera object. Since Camera is a polymorphic class, this
        * destructor is virtual.
@@ -80,6 +81,22 @@ namespace at3 {
        */
       virtual glm::mat4 projection(float aspect, float alpha = 1.0f) const = 0;
   };
+
+  template <typename EcsInterface>
+  Camera<EcsInterface>::Camera(glm::mat4 &transform) {
+    SCENE_ECS->addTransform(SCENE_ID, transform);
+  }
+
+  template <typename EcsInterface>
+  Camera<EcsInterface>::~Camera() { }
+
+  template <typename EcsInterface>
+  glm::mat4 Camera<EcsInterface>::worldView() {
+    glm::mat4 wv;
+    SCENE_ reverseTransformLookup(wv);
+    lastWorldViewQueried = wv;
+    return wv;
+  }
 }
 
 #endif

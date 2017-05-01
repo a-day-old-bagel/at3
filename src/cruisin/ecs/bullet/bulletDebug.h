@@ -2,52 +2,109 @@
 // Created by volundr on 4/2/17.
 //
 
-#include "bulletDebug.h"
+#ifndef AT3_BULLETDEBUGDRAWER_H
+#define AT3_BULLETDEBUGDRAWER_H
+
+#include <epoxy/gl.h>
+#include <vector>
+#include <btBulletDynamicsCommon.h>
+#include <LinearMath/btIDebugDraw.h>
 #include <glm/gtc/type_ptr.hpp>
+
+#include "sceneObject.h"
 #include "glError.h"
 #include "shaderProgram.h"
 #include "shaders.h"
 
 namespace at3 {
-  /*
-   * Define conversion from Bullet vector structures to glm vector structures
+  /**
+   * Conversion from Bullet vector structures to glm vector structures
    */
-  glm::vec3 bulletToGlm(const btVector3 &vec) {
-    return {vec.x(), vec.y(), vec.z()};
-  }
+  glm::vec3 bulletToGlm(const btVector3& vec);
 
-  /*
-   * BULLET DEBUG SECTION
+  /**
+   * Allows bullet to draw debug stuff with our graphics backend.
    */
+  template <typename EcsInterface>
+  class BulletDebug : public btIDebugDraw, public SceneObject<EcsInterface> {
+      typedef struct { float pos[3], color[3]; } LineVertex;
+      typedef struct { LineVertex vertices[2]; } Line;
+      typedef struct { float pos[3], color[3]; } Point;
+      std::vector<Line> m_lines;
+      std::vector<Point> m_points;
+      GLuint m_lineBuffer, m_pointBuffer;
+      bool m_linesChanged = false, m_pointsChanged = false;
+      int m_debugMode;
 
-  BulletDebug::BulletDebug(ezecs::State *state) : SceneObject(*state), m_debugMode(0), state(state) {
+      void m_updateLines();
+      void m_updatePoints();
+      void m_drawLines(
+          const glm::mat4 &modelView,
+          const glm::mat4 &projection) const;
+      void m_drawPoints(
+          const glm::mat4 &modelView,
+          const glm::mat4 &projection) const;
+
+      void m_queueLine(
+          const glm::vec3 &a,
+          const glm::vec3 &b,
+          const glm::vec3 &color);
+      void m_queuePoint(
+          const glm::vec3 &pos,
+          const glm::vec3 &color);
+    public:
+      BulletDebug();
+      virtual void drawLine(const btVector3& from,const btVector3& to,const btVector3& color);
+      virtual void drawContactPoint(const btVector3& pointOnB,const btVector3& normalOnB,btScalar distance,
+                                    int lifeTime,const btVector3& color);
+      virtual void reportErrorWarning(const char* warningString);
+      virtual void draw3dText(const btVector3& location,const char* textString);
+      virtual void setDebugMode(int debugMode);
+      virtual inline int getDebugMode() const;
+      void draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
+                bool debug);
+  };
+
+  template <typename EcsInterface>
+  BulletDebug<EcsInterface>::BulletDebug() : m_debugMode(0) {
     glGenBuffers(1, &m_lineBuffer);
     FORCE_ASSERT_GL_ERROR();
     glGenBuffers(1, &m_pointBuffer);
     FORCE_ASSERT_GL_ERROR();
   }
 
-  void BulletDebug::drawLine(const btVector3 &from, const btVector3 &to, const btVector3 &color) {
+  template <typename EcsInterface>
+  void BulletDebug<EcsInterface>::drawLine(const btVector3 &from, const btVector3 &to, const btVector3 &color) {
     m_queueLine(bulletToGlm(from), bulletToGlm(to), bulletToGlm(color));
   }
-  void BulletDebug::drawContactPoint(const btVector3 &pointOnB, const btVector3 &normalOnB, btScalar distance,
-                                     int lifeTime, const btVector3 &color) {
+
+  template <typename EcsInterface>
+  void BulletDebug<EcsInterface>::drawContactPoint(const btVector3 &pointOnB, const btVector3 &normalOnB, btScalar distance,
+                                                          int lifeTime, const btVector3 &color) {
     m_queuePoint(bulletToGlm(pointOnB), bulletToGlm(normalOnB));
   }
-  void BulletDebug::reportErrorWarning(const char *warningString) {
+  template <typename EcsInterface>
+  void BulletDebug<EcsInterface>::reportErrorWarning(const char *warningString) {
     printf("%s\n", warningString);
   }
-  void BulletDebug::draw3dText(const btVector3 &location, const char *textString) {
+
+  template <typename EcsInterface>
+  void BulletDebug<EcsInterface>::draw3dText(const btVector3 &location, const char *textString) {
 
   }
-  void BulletDebug::setDebugMode(int debugMode) {
+
+  template <typename EcsInterface>
+  void BulletDebug<EcsInterface>::setDebugMode(int debugMode) {
     m_debugMode = debugMode;
   }
-  inline int BulletDebug::getDebugMode() const {
+
+  template <typename EcsInterface>
+  inline int BulletDebug<EcsInterface>::getDebugMode() const {
     return m_debugMode;
   }
 
-  void BulletDebug::m_updateLines() {
+  template <typename EcsInterface>
+  void BulletDebug<EcsInterface>::m_updateLines() {
     // Upload the lines to the GL
     glBindBuffer(GL_ARRAY_BUFFER, m_lineBuffer);
     ASSERT_GL_ERROR();
@@ -60,7 +117,8 @@ namespace at3 {
     ASSERT_GL_ERROR();
   }
 
-  void BulletDebug::m_updatePoints() {
+  template <typename EcsInterface>
+  void BulletDebug<EcsInterface>::m_updatePoints() {
     // Upload the lines to the GL
     glBindBuffer(GL_ARRAY_BUFFER, m_pointBuffer);
     ASSERT_GL_ERROR();
@@ -73,7 +131,8 @@ namespace at3 {
     ASSERT_GL_ERROR();
   }
 
-  void BulletDebug::m_drawLines(
+  template <typename EcsInterface>
+  void BulletDebug<EcsInterface>::m_drawLines(
       const glm::mat4 &modelView,
       const glm::mat4 &projection) const {
     // Use the wireframe shader
@@ -136,7 +195,8 @@ namespace at3 {
     ASSERT_GL_ERROR();
   }
 
-  void BulletDebug::m_drawPoints(
+  template <typename EcsInterface>
+  void BulletDebug<EcsInterface>::m_drawPoints(
       const glm::mat4 &modelView,
       const glm::mat4 &projection) const {
     // Use the billboard point shader
@@ -199,7 +259,8 @@ namespace at3 {
     ASSERT_GL_ERROR();
   }
 
-  void BulletDebug::m_queueLine(const glm::vec3 &a, const glm::vec3 &b, const glm::vec3 &color) {
+  template <typename EcsInterface>
+  void BulletDebug<EcsInterface>::m_queueLine(const glm::vec3 &a, const glm::vec3 &b, const glm::vec3 &color) {
     Line line;
     line.vertices[0].pos[0] = a.x;
     line.vertices[0].pos[1] = a.y;
@@ -216,7 +277,9 @@ namespace at3 {
     m_lines.push_back(line);
     m_linesChanged = true;
   }
-  void BulletDebug::m_queuePoint(const glm::vec3 &pos, const glm::vec3 &color) {
+
+  template <typename EcsInterface>
+  void BulletDebug<EcsInterface>::m_queuePoint(const glm::vec3 &pos, const glm::vec3 &color) {
     Point point;
     point.pos[0] = pos.x;
     point.pos[1] = pos.y;
@@ -227,8 +290,10 @@ namespace at3 {
     m_points.push_back(point);
     m_pointsChanged = true;
   }
-  void BulletDebug::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
-                         bool debug)
+
+  template <typename EcsInterface>
+  void BulletDebug<EcsInterface>::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
+                                              bool debug)
   {
     if (m_linesChanged || m_pointsChanged) {
       // Calculate the model-view matrix
@@ -250,3 +315,5 @@ namespace at3 {
     }
   }
 }
+
+#endif //AT3_BULLETDEBUG_H

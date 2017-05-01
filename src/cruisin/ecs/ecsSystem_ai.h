@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2016 Jonathan Glines, Galen Cochrane
- * Jonathan Glines <jonathan@glines.net>
+ * Copyright (c) 2016 Galen Cochrane
  * Galen Cochrane <galencochrane@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,26 +20,26 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
+#ifndef ECSSYSTEM_AISYSTEM_H
+#define ECSSYSTEM_AISYSTEM_H
 
-#include <glm/gtc/matrix_transform.hpp>
+#include <SDL.h>
+#include "ezecs.hpp"
+#include "sweepers.h"
 
-#include "camera.h"
+using namespace ezecs;
 
 namespace at3 {
-  Camera::Camera(ezecs::State &state, glm::mat4 &transform) : SceneObject(state)
-  {
-    ezecs::CompOpReturn status;
-    status = this->state->add_Placement(id, transform);
-    assert(status == ezecs::SUCCESS);
-  }
-
-  Camera::~Camera() {
-  }
-
-  glm::mat4 Camera::worldView() {
-    glm::mat4 wv;
-    reverseTransformLookup(wv);
-    lastWorldViewQueried = wv;
-    return wv;
-  }
+  class AiSystem : public System<AiSystem> {
+    public:
+      std::vector<compMask> requiredComponents = {
+              SWEEPERAI
+      };
+      AiSystem(State* state);
+      bool onInit();
+      void onTick(float dt);
+      bool handleEvent(SDL_Event& event);
+  };
 }
+
+#endif //ECSSYSTEM_AISYSTEM_H

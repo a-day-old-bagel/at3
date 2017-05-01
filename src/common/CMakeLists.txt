@@ -1,27 +1,16 @@
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${epoxy_DEFINITIONS}")
 add_library(common STATIC
-    camera.cpp
-    debug.cpp
-    game.cpp
     glError.cpp
     loadCubeMap.cpp
-    meshObject.cpp
-    perspectiveCamera.cpp
-    scene.cpp
-    sceneObject.cpp
+    loadedTexture.cpp
     shaderProgram.cpp
     shaders.cpp
     shaders.cpp
-    terrainObject.cpp
     transform.cpp
     transformRAII.cpp
     transformStack.cpp
-    wasdCamera.cpp
-    skyBox.cpp
-    loadedTexture.cpp
     )
 target_link_libraries(common
-    ${EZECS_TARGET_PREFIX}ecs_static
     glm
     assimp
     ${SDL2_LIBRARY}
@@ -49,12 +38,12 @@ foreach(shader ${shaders})
   string(REPLACE "/" "_" shader_target "${shader_rel}.c")
   get_filename_component(shader_dir "${shader_rel}" DIRECTORY)
   message(STATUS "${CMAKE_CURRENT_SOURCE_DIR}/${shader_rel} ${CMAKE_CURRENT_BINARY_DIR}/${shader_target}")
-  add_custom_target("s_${shader_target}"
+  add_custom_target("${shader_target}"
       COMMAND xxd -include ${shader_rel} > "${CMAKE_CURRENT_BINARY_DIR}/${shader_target}"
       DEPENDS "${shader}" xxd_static
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       )
   add_dependencies(common
-      "s_${shader_target}"
+      "${shader_target}"
       )
 endforeach()

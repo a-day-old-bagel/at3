@@ -24,15 +24,37 @@
 
 #ifndef LD2016_COMMON_GAME_H_
 #define LD2016_COMMON_GAME_H_
+
+#define TIME_MULTIPLIER_MS 0.001f
+
 #include <epoxy/gl.h>
 #include <SDL.h>
 #include <memory>
-#include "ecsState.generated.hpp"
-#include "ecsSystem.hpp"
+#include <functional>
+#include <cstdio>
+#include <cstdlib>
+#include <iostream>
+
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
+#define STBI_ONLY_JPEG
+#include "stb_image.h"
+
+#include "debug.h"
+#include "scene.h"
+#include "shaders.h"
+#include "shaderProgram.h"
+#include "glError.h"
+
+#include "game.h"
 
 namespace at3 {
-  class Camera;
-  class Scene;
+
+  typedef std::function<bool(SDL_Event &)> eventHandlerFunction;
+
+  template <typename EcsInterface> class Camera;
+  template <typename EcsInterface> class Scene;
+  template <typename EcsState, typename EcsInterface>
   class Game {
     private:
       const char *m_windowTitle;
@@ -40,8 +62,7 @@ namespace at3 {
       SDL_GLContext m_glContext;
       int m_width, m_height;
       float m_fovy;
-      Scene *m_scene;
-      std::shared_ptr<Camera> m_camera;
+      std::shared_ptr<Camera<EcsInterface>> m_camera;
       float m_lastTime;
       bool terrainShaderDebugLines = false;
 
@@ -49,7 +70,8 @@ namespace at3 {
       bool m_initGl();
       bool m_initScene();
     protected:
-      ezecs::State state;
+      EcsState state;
+      Scene<EcsInterface> scene;
 
     public:
       Game(int argc, char **argv, const char *windowTitle);
@@ -59,16 +81,171 @@ namespace at3 {
       int height() const { return m_height; }
       float aspect() const { return (float)m_width / (float)m_height; }
       float fovy() const { return m_fovy; }
-      Scene *scene() { return m_scene; }
 
-      void setCamera(std::shared_ptr<Camera> camera) { m_camera = camera; }
+      void setCamera(std::shared_ptr<Camera<EcsInterface>> camera) { m_camera = camera; }
 
       virtual bool handleEvent(const SDL_Event &event) {
         return false;
       }
 
-      bool mainLoop(ezecs::Delegate<bool(SDL_Event &)> &systemsHandler, float &dtOut);
+      bool mainLoop(eventHandlerFunction &systemsHandler, float &dtOut);
   };
+
+  template <typename EcsState, typename EcsInterface>
+  Game<EcsState, EcsInterface>::Game(int argc, char **argv, const char *windowTitle)
+      : m_windowTitle(windowTitle), /*scene(nullptr),*/
+        m_width(640), m_height(480), m_fovy((float)M_PI * 0.35f)
+  {
+    m_lastTime = 0.0f;
+    if (! m_initSdl() || ! m_initGl() || ! m_initScene()) {
+      exit(EXIT_FAILURE);
+    }
+    auto shader = Shaders::terrainShader();
+    shader->use();
+    assert(shader->screenSize() != -1);
+    glUniform2f(shader->screenSize(), m_width, m_height);              ASSERT_GL_ERROR();
+
+    // at 0 field of view, a normalized dot product of 1 must be achieved between the forward view vector and
+    // a point for it to be considered on the screen. At PI field of view, a dot product of at least zero is
+    // required.  At 2PI field of view, a dot product of at least -1 is required, meaning that everything is visible.
+    float maxFieldOfView = (aspect() > 1.f) ? m_fovy * aspect() : m_fovy;
+    float maxFieldViewDot = 0.9f - ((maxFieldOfView * 0.5f) / (float)(M_PI));  // 0.9 for extra margin
+    assert(shader->maxFieldViewDot() != -1);
+    glUniform1f(shader->maxFieldViewDot(), maxFieldViewDot);           ASSERT_GL_ERROR();
+  }
+
+  template <typename EcsState, typename EcsInterface>
+  Game<EcsState, EcsInterface>::~Game() {
+    // TODO: Free GL resources
+    // TODO: Free SDL resources
+  }
+
+  template <typename EcsState, typename EcsInterface>
+  bool Game<EcsState, EcsInterface>::m_initSdl() {
+    // Initialize SDL
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
+      fprintf(stderr, "Failed to initialize SDL: %s\n",
+              SDL_GetError());
+      return false;
+    }
+    SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
+    m_window = SDL_CreateWindow(
+        m_windowTitle,  // title
+        SDL_WINDOWPOS_UNDEFINED,  // x
+        SDL_WINDOWPOS_UNDEFINED,  // y
+        m_width, m_height,  // w, h
+        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE  // flags
+    );
+    if (m_window == nullptr) {
+      fprintf(stderr, "Failed to create SDL window: %s\n",
+              SDL_GetError());
+      return false;
+    }
+    return true;
+  }
+
+  template <typename EcsState, typename EcsInterface>
+  bool Game<EcsState, EcsInterface>::m_initGl() {
+    // Create an OpenGL context for our window
+    m_glContext = SDL_GL_CreateContext(m_window);
+    if (m_glContext == nullptr) {
+      fprintf(stderr, "Failed to initialize OpenGL context: %s\n",
+              SDL_GetError());
+      return false;
+    }
+    // Configure the GL
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClearDepth(1.0);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CCW);
+    glViewport(0, 0, m_width, m_height);
+    return true;
+  }
+
+  template <typename EcsState, typename EcsInterface>
+  bool Game<EcsState, EcsInterface>::m_initScene() {
+    return true;
+  }
+
+  template <typename EcsState, typename EcsInterface>
+  bool Game<EcsState, EcsInterface>::mainLoop(eventHandlerFunction &systemsHandler, float &dtOut) {
+    SDL_GL_SwapWindow(m_window);
+    if (m_lastTime == 0.0f) {
+      // FIXME: Try to make sure this doesn't ever produce a dt of 0.
+      m_lastTime = (float)(std::min((Uint32)0, SDL_GetTicks() - 1)) * TIME_MULTIPLIER_MS;
+    }
+    // Check for SDL events (user input, etc.)
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+      if (systemsHandler(event))
+        continue;   // The systems have handled this event
+      if (this->handleEvent(event))
+        continue;  // Our derived class handled this event
+      if (scene.handleEvent(event))
+        continue;  // One of the scene objects handled this event
+      switch (event.type) {
+        case SDL_WINDOWEVENT:
+          switch (event.window.event) {
+            case SDL_WINDOWEVENT_SIZE_CHANGED: {
+              m_width = event.window.data1;
+              m_height = event.window.data2;
+              glViewport(0, 0, m_width, m_height);
+              auto shader = Shaders::terrainShader();
+              shader->use();
+              assert(shader->screenSize() != -1);
+              glUniform2f(shader->screenSize(), m_width, m_height);              ASSERT_GL_ERROR();
+              // at 0 field of view, a normalized dot product of 1 must be achieved between the forward view vector and
+              // a point for it to be considered on the screen. At PI field of view, a dot product of at least zero is
+              // required.  At 2PI field of view, a dot product of at least -1 is required, meaning that everything is
+              // visible.
+              float maxFieldOfView = (aspect() > 1.f) ? m_fovy * aspect() : m_fovy;
+              float maxFieldViewDot = 0.9f - ((maxFieldOfView * 0.5f) / (float)(M_PI)); // 0.9 for extra margin
+              assert(shader->maxFieldViewDot() != -1);
+              glUniform1f(shader->maxFieldViewDot(), maxFieldViewDot);           ASSERT_GL_ERROR();
+              std::cout << "NEW SCREEN SIZE: " << m_width << ", " << m_height << std::endl;
+              break;
+            }
+            default: break;
+          } break;
+        case SDL_KEYDOWN:
+          switch (event.key.keysym.scancode) {
+            case SDL_SCANCODE_V: {
+              terrainShaderDebugLines = !terrainShaderDebugLines;
+              auto shader = Shaders::terrainShader();
+              shader->use();
+              assert(shader->debugLines() != -1);
+              glUniform1i(shader->debugLines(), terrainShaderDebugLines);       ASSERT_GL_ERROR();
+              break;
+            }
+            default: break;
+          } break;
+        case SDL_QUIT:
+          return false;
+        default: break;
+      }
+    }
+
+    // Calculate the time since the last frame was drawn TODO: SDL_GetTicks may be too granular
+    float currentTime = (float)SDL_GetTicks() * TIME_MULTIPLIER_MS;
+    float dt = currentTime - m_lastTime;
+    m_lastTime = currentTime;
+
+    // Draw the window
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    if (!m_camera) {
+      fprintf(stderr, "The scene camera was not set\n");
+    } else {
+      // Draw the scene
+      float aspect = (float)m_width / (float)m_height;
+      scene.draw(*m_camera, aspect);
+    }
+
+    dtOut = dt;
+    return true;
+  }
 }
 
 #endif

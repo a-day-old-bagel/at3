@@ -29,20 +29,26 @@
 #include <unordered_map>
 #include <vector>
 
+#include "camera.h"
+#include "sceneObject.h"
+#include "transformStack.h"
+
 namespace at3 {
-  class Camera;
-  class SceneObject;
+
+  template <typename EcsInterface> class Camera;
+  template <typename EcsInterface> class SceneObject;
   /**
    * This class implements a simple graphics scene.
    *
    * OpenGL is typically used under the hood, but nothing about this scene
    * class requires the use of any specific graphics library.
    */
+  template <typename EcsInterface>
   class Scene {
     private:
       std::unordered_map<
-        const SceneObject *,
-        std::shared_ptr<SceneObject>> m_objects;
+        const SceneObject<EcsInterface> *,
+        std::shared_ptr<SceneObject<EcsInterface>>> m_objects;
 
     public:
       /**
@@ -58,7 +64,7 @@ namespace at3 {
       /**
        * Adds the given scene object to the top level of this graphics scene.
        */
-      void addObject(std::shared_ptr<SceneObject> object);
+      void addObject(std::shared_ptr<SceneObject<EcsInterface>> object);
 
       /**
        * Locates the scene object with the given memory address and removes
@@ -66,7 +72,7 @@ namespace at3 {
        *
        * \param address The memory address of the scene object to remove.
        */
-      void removeObject(const SceneObject *address);
+      void removeObject(const SceneObject<EcsInterface> *address);
 
       /**
        * Allow objects in the scene to handle the given event. All SDL
@@ -98,8 +104,61 @@ namespace at3 {
        * particular graphics API, it is the responsibility of the derived scene
        * objects to draw using the correct API.
        */
-      void draw(Camera &camera, float aspect, bool debug = false) const;
+      void draw(Camera<EcsInterface> &camera, float aspect, bool debug = false) const;
   };
+
+  template <typename EcsInterface>
+  Scene<EcsInterface>::Scene() {
+    // TODO
+  }
+
+  template <typename EcsInterface>
+  Scene<EcsInterface>::~Scene() {
+    // TODO
+  }
+
+  template <typename EcsInterface>
+  void Scene<EcsInterface>::addObject(std::shared_ptr<SceneObject<EcsInterface>> object) {
+    this->m_objects.insert({object.get(), object});
+  }
+
+  template <typename EcsInterface>
+  void Scene<EcsInterface>::removeObject(const SceneObject<EcsInterface> *address) {
+    auto iterator = m_objects.find(address);
+    assert(iterator != m_objects.end());
+    // FIXME: Remove this node from its parent
+//    iterator->parent()->removeChild(address);
+    m_objects.erase(address);
+  }
+
+  template <typename EcsInterface>
+  bool Scene<EcsInterface>::handleEvent(const SDL_Event &event) {
+    for (auto object : m_objects) {
+      if (object.second->handleEvent(event))
+        return true;
+    }
+    return false;
+  }
+
+  template <typename EcsInterface>
+  void Scene<EcsInterface>::draw(Camera<EcsInterface> &camera, float aspect, bool debug) const
+  {
+    // Start with an empty modelWorld transform stack
+    TransformStack modelWorld;
+
+    // Obtain transforms from the camera
+    auto worldView = camera.worldView();
+    auto projection = camera.projection(aspect);
+
+    // Iterate through all top-level scene objects and draw them
+    for (auto object : this->m_objects) {
+      object.second->m_draw(
+          modelWorld,
+          worldView,
+          projection,
+          debug);
+    }
+  }
 }
 
 #endif

@@ -21,9 +21,9 @@ namespace at3 {
     return glm::scale(glm::mat4(), {1.8f, 2.8f, 1.f});
   }
 
-  DuneBuggy::DuneBuggy(ezecs::State &state, Scene *scene, glm::mat4 &transform) : state(&state), scene(scene) {
-    chassis = std::shared_ptr<MeshObject> (
-        new MeshObject(state, "assets/models/pyramid_bottom.dae", "assets/textures/pyramid_bottom.png", transform));
+  DuneBuggy::DuneBuggy(ezecs::State &state, Scene_ &scene, glm::mat4 &transform) : state(&state), scene(&scene) {
+    chassis = std::shared_ptr<MeshObject_> (
+        new MeshObject_("assets/models/pyramid_bottom.dae", "assets/textures/pyramid_bottom.png", transform));
     chassisId = chassis->getId();
 
     glm::mat4 ident;
@@ -58,8 +58,8 @@ namespace at3 {
         { 2.f, -2.0f, -0.4f}
     };
     for (int i = 0; i < 4; ++i) {
-      wheels.push_back(std::shared_ptr<MeshObject>(
-          new MeshObject(state, "assets/models/sphere.dae", "assets/textures/thrusters.png", ident)));
+      wheels.push_back(std::shared_ptr<MeshObject_>(
+          new MeshObject_("assets/models/sphere.dae", "assets/textures/thrusters.png", ident)));
       entityId wheelId = wheels.back()->getId();
       WheelInitInfo wheelInitInfo{
           {                         // WheelInfo struct - this part of the wheelInitInfo will persist.

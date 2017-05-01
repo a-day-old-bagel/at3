@@ -1,0 +1,10 @@
+add_library( ${TARGET_NAME}_systems_bullet STATIC
+    bulletDebug.cpp
+    )
+target_link_libraries( ${TARGET_NAME}_systems_bullet
+    common
+    ${BULLET_LIBRARIES}
+    )
+target_include_directories( ${TARGET_NAME}_systems_bullet PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    )

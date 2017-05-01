@@ -209,7 +209,7 @@ namespace at3 {
     return true; // handled it here
   }
 
-  void ControlSystem::updateWorldView(glm::mat4 &wv) {
+  void ControlSystem::setWorldView(glm::mat4 &wv) {
     lastKnownWorldView = wv;
   }
 }
