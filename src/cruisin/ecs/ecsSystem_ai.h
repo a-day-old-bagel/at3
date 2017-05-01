@@ -24,6 +24,7 @@
 #define ECSSYSTEM_AISYSTEM_H
 
 #include <SDL.h>
+#include "dualityInterface.h"
 #include "ezecs.hpp"
 #include "sweepers.h"
 
@@ -31,14 +32,29 @@ using namespace ezecs;
 
 namespace at3 {
   class AiSystem : public System<AiSystem> {
+      std::vector<entityId> participants;
+      std::vector<entityId> lateComers;
+      std::vector<SGenome> population;
+      std::vector<std::shared_ptr<MeshObject_>>* targets;
+      std::vector<SVector2D> vecTargets;
+      bool simulationStarted = false;
+      CParams params;
+      CGenAlg* geneticAlgorithm = NULL;
+      int numWeightsInNN;
+      int ticks = 0;
+
     public:
       std::vector<compMask> requiredComponents = {
               SWEEPERAI
       };
       AiSystem(State* state);
+      ~AiSystem();
       bool onInit();
       void onTick(float dt);
       bool handleEvent(SDL_Event& event);
+      void beginSimulation(std::vector<std::shared_ptr<MeshObject_>> *targets);
+      bool onDiscover(const entityId &id);
+      bool onForget(const entityId &id);
   };
 }
 

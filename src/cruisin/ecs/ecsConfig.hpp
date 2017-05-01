@@ -134,6 +134,7 @@ namespace {
   EZECS_COMPONENT_DEPENDENCIES(Terrain, Placement)
 
   struct SweeperAi : public Component<SweeperAi> {
+//    static int numInputs, numOutputs, numHiddenLayers, numNeuronsPerHiddenLayer;
     CNeuralNet net;
     float fitness = 0.f;
     int closestTarget = 0;
@@ -179,6 +180,10 @@ namespace {
   Terrain::Terrain(floatVecPtr heights, size_t resX, size_t resY, float sclX, float sclY, float sclZ, float minZ, float maxZ)
       : heights(heights), resX(resX), resY(resY), sclX(sclX), sclY(sclY), sclZ(sclZ), minZ(minZ), maxZ(maxZ) { }
 
+//  int SweeperAi::numInputs = 4;
+//  int SweeperAi::numOutputs = 2;
+//  int SweeperAi::numHiddenLayers = 1;
+//  int SweeperAi::numNeuronsPerHiddenLayer = 6;
   SweeperAi::SweeperAi() {}
   void SweeperAi::reset() {
     fitness = 0.f;

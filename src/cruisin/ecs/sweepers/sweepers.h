@@ -1,6 +1,3 @@
-//
-// Created by volundr on 4/29/17.
-//
 
 #ifndef AT3_SWEEPERS_H
 #define AT3_SWEEPERS_H

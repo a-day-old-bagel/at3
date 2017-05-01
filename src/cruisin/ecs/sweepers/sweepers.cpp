@@ -1,6 +1,3 @@
-//
-// Created by volundr on 4/29/17.
-//
 
 #include "sweepers.h"
 
