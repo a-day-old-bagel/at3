@@ -216,6 +216,7 @@ int main(int argc, char **argv) {
   while (!game.quit) {
     mainLoop(&game);
   }
+  return 0;
 }
 
 #pragma clang diagnostic pop
