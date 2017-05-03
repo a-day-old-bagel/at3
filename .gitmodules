@@ -10,9 +10,6 @@
 [submodule "extern/bullet3"]
 	path = extern/bullet3
 	url = https://github.com/bulletphysics/bullet3
-[submodule "extern/assimp"]
-	path = extern/assimp
-	url = https://github.com/a-day-old-bagel/assimp
 [submodule "extern/libepoxy"]
 	path = extern/libepoxy
 	url = https://github.com/a-day-old-bagel/libepoxy
