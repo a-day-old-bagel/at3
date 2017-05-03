@@ -19,3 +19,6 @@
 [submodule "extern/fastnoise"]
 	path = extern/fastnoise
 	url = https://github.com/auburns/fastnoise
+[submodule "extern/assimp"]
+	path = extern/assimp
+	url = https://github.com/assimp/assimp
