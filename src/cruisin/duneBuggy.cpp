@@ -18,7 +18,7 @@ namespace at3 {
     return glm::scale(glm::mat4(), {0.5f, WHEEL_RADIUS, WHEEL_RADIUS});
   }
   static glm::mat4 chassisScalar(const glm::mat4& transformIn, uint32_t time) {
-    return glm::scale(glm::mat4(), {1.8f, 2.8f, 1.f});
+    return glm::rotate(glm::scale(glm::mat4(), {1.8f, 2.8f, 1.f}), (float)M_PI, glm::vec3(1.f, 0.f, 0.f));
   }
 
   DuneBuggy::DuneBuggy(ezecs::State &state, Scene_ &scene, glm::mat4 &transform) : state(&state), scene(&scene) {
@@ -28,34 +28,35 @@ namespace at3 {
 
     glm::mat4 ident;
     std::vector<float> chassisVerts = {
-        2.0f,  2.0f, -0.4f,
-        2.0f, -2.0f, -0.4f,
-        -2.0f, -2.0f, -0.4f,
-        -2.0f,  2.0f, -0.4f,
-        2.0f,  2.0f,  0.4f,
-        2.0f, -2.0f,  0.4f,
-        -2.0f, -2.0f,  0.4f,
-        -2.0f,  2.0f,  0.4f,
+        1.7f,  1.7f, -0.4f,
+        1.7f, -1.7f, -0.4f,
+        -1.7f, -1.7f, -0.4f,
+        -1.7f,  1.7f, -0.4f,
+        2.1f,  2.1f,  0.4f,
+        2.1f, -2.1f,  0.4f,
+        -2.1f, -2.1f,  0.4f,
+        -2.1f,  2.1f,  0.4f,
     };
     state.add_TransformFunction(chassisId, DELEGATE_NOCLASS(chassisScalar));
     state.add_Physics(chassisId, 50.f, &chassisVerts, Physics::MESH);
     Physics *physics;
     state.get_Physics(chassisId, &physics);
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
+    physics->rigidBody->setFriction(0.2f);
     state.add_TrackControls(chassisId);
     TrackControls *trackControls;
     state.get_TrackControls(chassisId, &trackControls);
     trackControls->tuning.m_suspensionStiffness = 16.f;     // 5.88f
     trackControls->tuning.m_suspensionCompression = 0.8f;   // 0.83f
     trackControls->tuning.m_suspensionDamping = 1.0f;       // 0.88f
-    trackControls->tuning.m_maxSuspensionTravelCm = 60.f;   // 500.f
-    trackControls->tuning.m_frictionSlip  = 100.f;          // 10.5f
+    trackControls->tuning.m_maxSuspensionTravelCm = 80.f;   // 500.f
+    trackControls->tuning.m_frictionSlip  = 40.f;           // 10.5f
     trackControls->tuning.m_maxSuspensionForce  = 20000.f;  // 6000.f
     btVector3 wheelConnectionPoints[4] {
-        {-2.f,  2.0f, -0.4f},
-        { 2.f,  2.0f, -0.4f},
-        {-2.f, -2.0f, -0.4f},
-        { 2.f, -2.0f, -0.4f}
+        {-1.9f,  1.9f, 0.f},
+        { 1.9f,  1.9f, 0.f},
+        {-1.9f, -1.9f, 0.f},
+        { 1.9f, -1.9f, 0.f}
     };
     for (int i = 0; i < 4; ++i) {
       wheels.push_back(std::shared_ptr<MeshObject_>(
@@ -71,7 +72,7 @@ namespace at3 {
           wheelConnectionPoints[i], // connection point
           {0.f, 0.f, -1.f},         // direction
           {1.f, 0.f, 0.f},          // axle
-          0.3f,                     // suspension rest length
+          0.4f,                     // suspension rest length
           WHEEL_RADIUS,             // wheel radius
           false                     // is front wheel
       };
