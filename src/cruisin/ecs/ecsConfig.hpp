@@ -54,6 +54,8 @@ namespace {
         0, 0, 0, 1
     };
     Placement(glm::mat4 mat);
+    glm::vec3 getTranslation();
+    glm::vec3 getLookAt();
   };
 
   struct TransformFunction : public Component<TransformFunction> {
@@ -153,6 +155,15 @@ namespace {
 
   Placement::Placement(glm::mat4 mat)
       : mat(mat) { }
+
+  glm::vec3 Placement::getTranslation() {
+    return glm::vec3(mat[3][0], mat[3][1], mat[3][2]);
+  }
+
+  glm::vec3 Placement::getLookAt() {
+    glm::vec4 lookAt = mat * glm::vec4(0.f, 1.f, 0.f, 0.f);
+    return glm::vec3(lookAt.x, lookAt.y, lookAt.z);
+  }
 
   TransformFunction::TransformFunction(transformFunc func)
       : func(func) { }

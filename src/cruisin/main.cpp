@@ -53,7 +53,8 @@ class CruisinGame : public Game<State, DualityInterface> {
     std::shared_ptr<SceneObject_> m_camGimbal;
     std::shared_ptr<SkyBox_> m_skyBox;
     std::shared_ptr<TerrainObject_> m_terrain;
-    std::shared_ptr<DuneBuggy> duneBuggy;
+    std::vector<std::shared_ptr<MeshObject_>> sweeperTargets;
+    std::shared_ptr<DuneBuggy> duneBuggy, sweeper;
     std::shared_ptr<Pyramid> pyramid;
 
     DualityInterface dualityInterface;
@@ -101,6 +102,34 @@ class CruisinGame : public Game<State, DualityInterface> {
       glm::mat4 buggyMat = glm::translate(ident, { 0.f, -290.f, 0.f });
       duneBuggy = std::shared_ptr<DuneBuggy> (
           new DuneBuggy(state, scene, buggyMat));
+
+      // a sweeper buggy
+      glm::mat4 sweeperMat = glm::translate(ident, { 0.f, -240.f, 0.f });
+      sweeper = std::shared_ptr<DuneBuggy> (
+          new DuneBuggy(state, scene, sweeperMat));
+      entityId sweeperId = sweeper->chassis->getId();
+      state.add_SweeperAi(sweeperId);
+
+      // some targets for the sweeper buggy
+//      glm::mat4 targetLocs[4] {
+//          glm::translate(ident, { 0.f, -220.f, 0.f }),
+//          glm::translate(ident, { 0.f, -210.f, 0.f }),
+//          glm::translate(ident, { 0.f, -200.f, 0.f }),
+//          glm::translate(ident, { 0.f, -190.f, 0.f })
+//      };
+      for (int i = 0; i < 6; ++i) {
+        sweeperTargets.push_back(std::shared_ptr<MeshObject_>(
+            new MeshObject_("assets/models/sphere.dae", "assets/textures/pyramid_flames.png", ident)));
+        entityId targetId = sweeperTargets.back()->getId();
+        state.add_SweeperTarget(targetId);
+        float sphereRadius = 1.0f;
+        state.add_Physics(sweeperTargets.back()->getId(), 5.f, &sphereRadius, Physics::SPHERE);
+        Physics *physics;
+        state.get_Physics(sweeperTargets.back()->getId(), &physics);
+        physics->rigidBody->applyCentralImpulse({0.f, 0.f, 1.f});
+        scene.addObject(sweeperTargets.back());
+      }
+      aiSystem.beginSimulation();
 
       // a flying pyramid
       glm::mat4 pyramidMat = glm::translate(ident, { 0.f, 0.f, 5.f });

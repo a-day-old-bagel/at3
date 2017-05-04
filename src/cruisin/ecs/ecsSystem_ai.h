@@ -51,7 +51,7 @@ namespace at3 {
       bool onInit();
       void onTick(float dt);
       bool handleEvent(SDL_Event& event);
-      void beginSimulation(std::vector<std::shared_ptr<MeshObject_>> *targets);
+      void beginSimulation();
       bool onDiscover(const entityId &id);
       bool onForget(const entityId &id);
   };

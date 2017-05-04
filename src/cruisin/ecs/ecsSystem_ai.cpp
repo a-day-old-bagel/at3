@@ -26,7 +26,7 @@
 #pragma ide diagnostic ignored "IncompatibleTypes"
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"
 
-#define TRACK_TORQUE 100.f
+#define TRACK_TORQUE 50.f
 
 namespace at3 {
 
@@ -46,49 +46,70 @@ namespace at3 {
   void AiSystem::onTick(float dt) {
     if (!simulationStarted) { return; }
 
-//    Placement* placement;
-//    for (int i = 0; i < vecTargets.size(); ++i) {
-//      state->get_Placement(targets->at((size_t)i)->getId(), &placement);
-//      vecTargets[i] = SVector2D(placement->mat[3][0], placement->mat[3][1]);
-//    }
-//    //    std::vector<double>& vecTargets_dbl = (std::vector<double>&)&vecTargets;
-//    std::vector<double> vecTargets_dbl;
-//    vecTargets_dbl.resize(vecTargets.size() * 2);
-//    memcpy(vecTargets_dbl.data(), vecTargets.data(), vecTargets_dbl.size() * sizeof(double));
-
-    std::vector<double> vecTargets_dbl(registries[1].ids.size() * 2);
+    std::vector<SVector2D> vecTargets(registries[1].ids.size());
     Placement* placement;
     for (int i = 0; i < registries[1].ids.size(); ++i) {
       state->get_Placement(registries[1].ids.at((size_t)i), &placement);
-      vecTargets_dbl[i * 2 + 0] = placement->mat[3][0];
-      vecTargets_dbl[i * 2 + 1] = placement->mat[3][1];
+      vecTargets.push_back(SVector2D(placement->mat[3][0], placement->mat[3][1]));
     }
 
     SweeperAi *sweeperAi;
 
-    //run the sweepers through CParams::iNumTicks amount of cycles. During
-    //this loop each sweepers NN is constantly updated with the appropriate
-    //information from its surroundings. The output from the NN is obtained
-    //and the sweeper is moved. If it encounters a mine its fitness is
-    //updated appropriately,
-//    if (ticks++ < CParams::iNumTicks)
-//    {
-//      for (int i = 0; i < participants.size(); ++i)
-//      {
-//        state->get_SweeperAi(participants[i], &sweeperAi);
-//
-//        //update the NN and position
-//        std::vector<double> outputs = (sweeperAi->net.Update(vecTargets_dbl));
-//        if (!outputs.size()) {
-//          //error in processing the neural net
-//          printf("\"Wrong amount of NN inputs!\"\n");
-//          return;
+    if (ticks++ < CParams::iNumTicks)
+    {
+      for (int i = 0; i < participants.size(); ++i)
+      {
+        state->get_SweeperAi(participants[i], &sweeperAi);
+        state->get_Placement(participants[i], &placement);
+
+        double      closest_so_far = 99999;
+        glm::vec2   closestTarget(0, 0);
+        //cycle through mines to find closest
+        for (auto target : registries[1].ids) {
+          Placement *targetPlacement;
+          state->get_Placement(target, &targetPlacement);
+          glm::vec3 toTarget3 = targetPlacement->getTranslation() - placement->getTranslation();
+          glm::vec2 toTarget = glm::vec2(toTarget3.x, toTarget3.y);
+          double len_to_object = glm::length(toTarget);
+          if (len_to_object < closest_so_far) {
+            closest_so_far	= len_to_object;
+            closestTarget	= glm::normalize(toTarget);
+          }
+        }
+
+        //this will store all the inputs for the NN
+        vector<double> inputs;
+        //add in vector to closest mine
+        inputs.push_back(closestTarget.x);
+        inputs.push_back(closestTarget.y);
+        //add in sweepers look at vector
+        glm::vec3 lookAt = placement->getLookAt();
+        glm::vec2 horizLookAt = glm::normalize(glm::vec2(lookAt.x, lookAt.y));
+        inputs.push_back(horizLookAt.x);
+        inputs.push_back(horizLookAt.y);
+
+        //update the NN and position
+        std::vector<double> outputs = (sweeperAi->net.Update(inputs));
+        if (outputs.size() != CParams::iNumOutputs) {
+          std::cout << "NN produced wrong number of outputs!\n";
+          return;
+        }
+
+        TrackControls *trackControls;
+        state->get_TrackControls(participants.at((size_t)i), &trackControls);
+        trackControls->torque.x = (float)outputs.at(0) * TRACK_TORQUE;
+        trackControls->torque.y = (float)outputs.at(1) * TRACK_TORQUE;
+
+//        for (auto val : outputs) {
+//          std::cout << val << ", ";
 //        }
-//
+//        std::cout << std::endl;
+
+
 //        //see if it's found a mine
 //        int GrabHit = m_vecSweepers[i].CheckForMine(m_vecMines,
 //                                                    CParams::dMineScale);
-//
+
 //        if (GrabHit >= 0)
 //        {
 //          //we have discovered a mine so increase fitness
@@ -102,15 +123,10 @@ namespace at3 {
 //
 //        //update the chromos fitness score
 //        m_vecThePopulation[i].dFitness = m_vecSweepers[i].Fitness();
-//
-//      }
-//    }
-
-      //Another generation has been completed.
-
-      //Time to run the GA and update the sweepers with their new NNs
-//    else
-//    {
+      }
+    } else {
+//      // Another generation has been completed.
+//      // Time to run the GA and update the sweepers with their new NNs
 //      //update the stats to be used in our stat window
 //      m_vecAvFitness.push_back(m_pGA->AverageFitness());
 //      m_vecBestFitness.push_back(m_pGA->BestFitness());
@@ -118,8 +134,18 @@ namespace at3 {
 //      //increment the generation counter
 //      ++m_iGenerations;
 //
-//      //reset cycles
-//      ticks = 0;
+      //reset cycles
+      ticks = 0;
+
+      Physics *physics;
+      for (auto id : registries[0].ids) {
+        state->get_Physics(id, &physics);
+        btTransform transform = physics->rigidBody->getCenterOfMassTransform();
+        transform.setOrigin({0.f, -150.f, 0.f});
+        transform.setRotation(btQuaternion());
+        physics->rigidBody->setCenterOfMassTransform(transform);
+        physics->rigidBody->setLinearVelocity({0.f, 0.f, -1.f});
+      }
 //
 //      //run the GA to create a new population
 //      m_vecThePopulation = m_pGA->Epoch(m_vecThePopulation);
@@ -132,7 +158,7 @@ namespace at3 {
 //
 //        m_vecSweepers[i].Reset();
 //      }
-//    }
+    }
   }
   bool AiSystem::handleEvent(SDL_Event &event) {
     switch (event.type) {
@@ -145,14 +171,14 @@ namespace at3 {
     return true; // handled it here
   }
 
-  void AiSystem::beginSimulation(std::vector<std::shared_ptr<MeshObject_>> *targets) {
+  void AiSystem::beginSimulation() {
     assert(participants.size() && "AI SIMULATION MUST HAVE PARTICIPANTS");
     simulationStarted = true;
     SweeperAi *sweeperAi;
     state->get_SweeperAi(participants[0], &sweeperAi);
     numWeightsInNN = sweeperAi->net.GetNumberOfWeights();
     geneticAlgorithm = new CGenAlg(
-        participants.size(),
+        (int)participants.size(),
         CParams::dMutationRate,
         CParams::dCrossoverRate,
         numWeightsInNN

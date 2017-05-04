@@ -183,6 +183,7 @@ vector<double> CNeuralNet::Update(vector<double> &inputs)
 	//first check that we have the correct amount of inputs
 	if (inputs.size() != m_NumInputs)
   {
+		printf("NN expected %i inputs but received %lu\n", m_NumInputs, inputs.size());
 		//just return an empty vector if incorrect.
 		return outputs;
   }

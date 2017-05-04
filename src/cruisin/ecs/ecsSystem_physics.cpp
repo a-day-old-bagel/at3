@@ -278,7 +278,8 @@ namespace at3 {
     physics->rigidBody->setRestitution(0.5f);
     physics->rigidBody->setFriction(1.f);
     physics->rigidBody->setCollisionFlags(physics->rigidBody->getCollisionFlags()
-                                          | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
+                                          | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK
+                                          | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
     dynamicsWorld->addRigidBody(physics->rigidBody);
 
     return true;
