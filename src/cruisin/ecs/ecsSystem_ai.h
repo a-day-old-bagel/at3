@@ -35,8 +35,6 @@ namespace at3 {
       std::vector<entityId> participants;
       std::vector<entityId> lateComers;
       std::vector<SGenome> population;
-      std::vector<std::shared_ptr<MeshObject_>>* targets;
-      std::vector<SVector2D> vecTargets;
       bool simulationStarted = false;
       CParams params;
       CGenAlg* geneticAlgorithm = NULL;
@@ -45,7 +43,8 @@ namespace at3 {
 
     public:
       std::vector<compMask> requiredComponents = {
-              SWEEPERAI
+              SWEEPERAI,
+              SWEEPERTARGET
       };
       AiSystem(State* state);
       ~AiSystem();

@@ -46,15 +46,23 @@ namespace at3 {
   void AiSystem::onTick(float dt) {
     if (!simulationStarted) { return; }
 
+//    Placement* placement;
+//    for (int i = 0; i < vecTargets.size(); ++i) {
+//      state->get_Placement(targets->at((size_t)i)->getId(), &placement);
+//      vecTargets[i] = SVector2D(placement->mat[3][0], placement->mat[3][1]);
+//    }
+//    //    std::vector<double>& vecTargets_dbl = (std::vector<double>&)&vecTargets;
+//    std::vector<double> vecTargets_dbl;
+//    vecTargets_dbl.resize(vecTargets.size() * 2);
+//    memcpy(vecTargets_dbl.data(), vecTargets.data(), vecTargets_dbl.size() * sizeof(double));
+
+    std::vector<double> vecTargets_dbl(registries[1].ids.size() * 2);
     Placement* placement;
-    for (int i = 0; i < vecTargets.size(); ++i) {
-      state->get_Placement(targets->at((size_t)i)->getId(), &placement);
-      vecTargets[i] = SVector2D(placement->mat[3][0], placement->mat[3][1]);
+    for (int i = 0; i < registries[1].ids.size(); ++i) {
+      state->get_Placement(registries[1].ids.at((size_t)i), &placement);
+      vecTargets_dbl[i * 2 + 0] = placement->mat[3][0];
+      vecTargets_dbl[i * 2 + 1] = placement->mat[3][1];
     }
-    //    std::vector<double>& vecTargets_dbl = (std::vector<double>&)&vecTargets;
-    std::vector<double> vecTargets_dbl;
-    vecTargets_dbl.resize(vecTargets.size() * 2);
-    memcpy(vecTargets_dbl.data(), vecTargets.data(), vecTargets_dbl.size() * sizeof(double));
 
     SweeperAi *sweeperAi;
 
@@ -63,20 +71,20 @@ namespace at3 {
     //information from its surroundings. The output from the NN is obtained
     //and the sweeper is moved. If it encounters a mine its fitness is
     //updated appropriately,
-    if (ticks++ < CParams::iNumTicks)
-    {
-      for (int i = 0; i < participants.size(); ++i)
-      {
-        state->get_SweeperAi(participants[i], &sweeperAi);
-
-        //update the NN and position
-        std::vector<double> outputs = (sweeperAi->net.Update(vecTargets_dbl));
-        if (!outputs.size()) {
-          //error in processing the neural net
-          printf("\"Wrong amount of NN inputs!\"\n");
-          return;
-        }
-
+//    if (ticks++ < CParams::iNumTicks)
+//    {
+//      for (int i = 0; i < participants.size(); ++i)
+//      {
+//        state->get_SweeperAi(participants[i], &sweeperAi);
+//
+//        //update the NN and position
+//        std::vector<double> outputs = (sweeperAi->net.Update(vecTargets_dbl));
+//        if (!outputs.size()) {
+//          //error in processing the neural net
+//          printf("\"Wrong amount of NN inputs!\"\n");
+//          return;
+//        }
+//
 //        //see if it's found a mine
 //        int GrabHit = m_vecSweepers[i].CheckForMine(m_vecMines,
 //                                                    CParams::dMineScale);
@@ -94,9 +102,9 @@ namespace at3 {
 //
 //        //update the chromos fitness score
 //        m_vecThePopulation[i].dFitness = m_vecSweepers[i].Fitness();
-
-      }
-    }
+//
+//      }
+//    }
 
       //Another generation has been completed.
 
@@ -154,8 +162,6 @@ namespace at3 {
       state->get_SweeperAi(participants[i], &sweeperAi);
       sweeperAi->net.PutWeights(population[i].vecWeights);
     }
-    this->targets = targets;
-    vecTargets.resize(targets->size());
   }
 
   bool AiSystem::onDiscover(const entityId &id) {

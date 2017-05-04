@@ -12,4 +12,4 @@ target_include_directories( ${TARGET_NAME}_systems_sweepers PUBLIC
     )
 
 #Copy ini to the build folder.
-configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/ecsDelegate.hpp ${EZECS_OUTPUT_DIR}/ecsDelegate.hpp COPYONLY )
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/params.ini ${TARGET_BIN_DIR}/params.ini COPYONLY )
