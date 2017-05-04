@@ -93,6 +93,7 @@ namespace at3 {
     Physics *physics;
     state->get_Physics(spheres.back()->getId(), &physics);
     physics->rigidBody->applyCentralImpulse({0.f, 0.f, 1.f});
+    state->add_SweeperTarget(spheres.back()->getId());
     scene->addObject(spheres.back());
   }
 }

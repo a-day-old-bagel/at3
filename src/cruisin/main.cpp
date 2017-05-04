@@ -122,11 +122,13 @@ class CruisinGame : public Game<State, DualityInterface> {
             new MeshObject_("assets/models/sphere.dae", "assets/textures/pyramid_flames.png", ident)));
         entityId targetId = sweeperTargets.back()->getId();
         state.add_SweeperTarget(targetId);
-        float sphereRadius = 1.0f;
-        state.add_Physics(sweeperTargets.back()->getId(), 5.f, &sphereRadius, Physics::SPHERE);
+        btVector3 boxDims(1.f, 1.f, 1.f);
+        state.add_Physics(sweeperTargets.back()->getId(), 10.f, &boxDims, Physics::BOX);
         Physics *physics;
         state.get_Physics(sweeperTargets.back()->getId(), &physics);
         physics->rigidBody->applyCentralImpulse({0.f, 0.f, 1.f});
+        physics->rigidBody->setDamping(physics->rigidBody->getLinearDamping(), 0.9f);
+        physics->rigidBody->setFriction(0.8f);
         scene.addObject(sweeperTargets.back());
       }
       aiSystem.beginSimulation();

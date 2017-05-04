@@ -24,7 +24,7 @@
 #define EZECS_ECSCONFIG_HPP
 
 // This doesn't really matter - it's just so IDE parsers can see the Component base class and stuff (for editing only).
-#include "../extern/ezecs/source/ecsComponents.hpp"
+#include "../../../extern/ezecs/source/ecsComponents.hpp"
 
 // BEGIN INCLUDES
 
@@ -33,6 +33,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <btBulletDynamicsCommon.h>
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
+#include <BulletCollision/CollisionDispatch/btGhostObject.h>
 #include "CNeuralNet.h"
 
 // END INCLUDES
@@ -85,7 +86,7 @@ namespace {
   };
   struct Physics : public Component<Physics> {
     enum Geometry {
-      NONE, PLANE, SPHERE, MESH, TERRAIN, WHEEL
+      NONE, PLANE, SPHERE, BOX, MESH, TERRAIN, WHEEL
     };
     int geom;
     float mass;
@@ -137,8 +138,9 @@ namespace {
 
   struct SweeperAi : public Component<SweeperAi> {
     CNeuralNet net;
+    btCollisionShape* ghostShape;
+    btGhostObject *ghostObject;
     float fitness = 0.f;
-    int closestTarget = 0;
     SweeperAi();
     void reset();
   };

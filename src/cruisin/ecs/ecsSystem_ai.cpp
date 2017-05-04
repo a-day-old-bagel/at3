@@ -46,24 +46,31 @@ namespace at3 {
   void AiSystem::onTick(float dt) {
     if (!simulationStarted) { return; }
 
+    Placement *placement;
+    SweeperAi *sweeperAi;
+
+//    std::vector<SVector2D> vecTargets(registries[1].ids.size());
+//    for (int i = 0; i < registries[1].ids.size(); ++i) {
+//      state->get_Placement(registries[1].ids.at((size_t) i), &placement);
+//      vecTargets.push_back(SVector2D(placement->mat[3][0], placement->mat[3][1]));
+//    }
+
     std::vector<SVector2D> vecTargets(registries[1].ids.size());
-    Placement* placement;
-    for (int i = 0; i < registries[1].ids.size(); ++i) {
-      state->get_Placement(registries[1].ids.at((size_t)i), &placement);
+    for (auto target : registries[1].ids) {
+      state->get_Placement(target, &placement);
       vecTargets.push_back(SVector2D(placement->mat[3][0], placement->mat[3][1]));
     }
 
-    SweeperAi *sweeperAi;
+    if (ticks++ < CParams::iNumTicks) {
+//      for (int i = 0; i < participants.size(); ++i)
+      for (auto participant : participants) {
+//        state->get_SweeperAi(participants[i], &sweeperAi);
+//        state->get_Placement(participants[i], &placement);
+        state->get_SweeperAi(participant, &sweeperAi);
+        state->get_Placement(participant, &placement);
 
-    if (ticks++ < CParams::iNumTicks)
-    {
-      for (int i = 0; i < participants.size(); ++i)
-      {
-        state->get_SweeperAi(participants[i], &sweeperAi);
-        state->get_Placement(participants[i], &placement);
-
-        double      closest_so_far = 99999;
-        glm::vec2   closestTarget(0, 0);
+        double closest_so_far = 99999;
+        glm::vec2 closestTarget(0, 0);
         //cycle through mines to find closest
         for (auto target : registries[1].ids) {
           Placement *targetPlacement;
@@ -72,13 +79,13 @@ namespace at3 {
           glm::vec2 toTarget = glm::vec2(toTarget3.x, toTarget3.y);
           double len_to_object = glm::length(toTarget);
           if (len_to_object < closest_so_far) {
-            closest_so_far	= len_to_object;
-            closestTarget	= glm::normalize(toTarget);
+            closest_so_far = len_to_object;
+            closestTarget = glm::normalize(toTarget);
           }
         }
 
         //this will store all the inputs for the NN
-        vector<double> inputs;
+        std::vector<double> inputs;
         //add in vector to closest mine
         inputs.push_back(closestTarget.x);
         inputs.push_back(closestTarget.y);
@@ -96,9 +103,27 @@ namespace at3 {
         }
 
         TrackControls *trackControls;
-        state->get_TrackControls(participants.at((size_t)i), &trackControls);
-        trackControls->torque.x = (float)outputs.at(0) * TRACK_TORQUE;
-        trackControls->torque.y = (float)outputs.at(1) * TRACK_TORQUE;
+        state->get_TrackControls(participant, &trackControls);
+        trackControls->torque.x = (float) outputs.at(0) * TRACK_TORQUE;
+        trackControls->torque.y = (float) outputs.at(1) * TRACK_TORQUE;
+
+        auto &pairs = sweeperAi->ghostObject->getOverlappingPairs();
+        int numPairs = sweeperAi->ghostObject->getNumOverlappingObjects();
+        if (numPairs > 2) {
+          std::cout << "TOUCHED (" << numPairs - 2 << "): ";
+          for (int i = 2; i < numPairs; ++i) {
+            entityId touched = (entityId) pairs.at(i)->getUserIndex();
+            compMask compsPresent = state->getComponents(touched);
+            if (compsPresent & SWEEPERTARGET) {
+//              state->deleteEntity(touched);
+              std::cout << " TARGET_";
+            }
+            std::cout << touched << ", ";
+          }
+          std::cout << std::endl;
+
+
+        }
 
 //        for (auto val : outputs) {
 //          std::cout << val << ", ";
@@ -141,8 +166,8 @@ namespace at3 {
       for (auto id : registries[0].ids) {
         state->get_Physics(id, &physics);
         btTransform transform = physics->rigidBody->getCenterOfMassTransform();
-        transform.setOrigin({0.f, -150.f, 0.f});
-        transform.setRotation(btQuaternion());
+        glm::mat4 newTransformMat = glm::translate(glm::mat4(), {0.f, -50.f, 0.f});
+        transform.setFromOpenGLMatrix((btScalar *)&newTransformMat);
         physics->rigidBody->setCenterOfMassTransform(transform);
         physics->rigidBody->setLinearVelocity({0.f, 0.f, -1.f});
       }
@@ -164,9 +189,12 @@ namespace at3 {
     switch (event.type) {
       case SDL_KEYDOWN:
         switch (event.key.keysym.scancode) {
-          default: return false; // could not handle it here
-        } break;
-      default: return false; // could not handle it here
+          default:
+            return false; // could not handle it here
+        }
+        break;
+      default:
+        return false; // could not handle it here
     }
     return true; // handled it here
   }
@@ -178,7 +206,7 @@ namespace at3 {
     state->get_SweeperAi(participants[0], &sweeperAi);
     numWeightsInNN = sweeperAi->net.GetNumberOfWeights();
     geneticAlgorithm = new CGenAlg(
-        (int)participants.size(),
+        (int) participants.size(),
         CParams::dMutationRate,
         CParams::dCrossoverRate,
         numWeightsInNN

@@ -15,24 +15,19 @@
 #include "utils.h"
 #include "CParams.h"
 
-using namespace std;
-
-
-
 //-------------------------------------------------------------------
 //	define neuron struct
 //-------------------------------------------------------------------
-struct SNeuron
-{
-	//the number of inputs into the neuron
-	int				      m_NumInputs;
+struct SNeuron {
+  //the number of inputs into the neuron
+  int m_NumInputs;
 
-	//the weights for each input
-	vector<double>	m_vecWeight;
+  //the weights for each input
+  std::vector<double> m_vecWeight;
 
 
-	//ctor
-	SNeuron(int NumInputs);
+  //ctor
+  SNeuron(int NumInputs);
 };
 
 
@@ -40,16 +35,15 @@ struct SNeuron
 //	struct to hold a layer of neurons.
 //---------------------------------------------------------------------
 
-struct SNeuronLayer
-{
-	//the number of neurons in this layer
-	int					      m_NumNeurons;
+struct SNeuronLayer {
+  //the number of neurons in this layer
+  int m_NumNeurons;
 
-	//the layer of neurons
-	vector<SNeuron>		m_vecNeurons;
+  //the layer of neurons
+  std::vector<SNeuron> m_vecNeurons;
 
-	SNeuronLayer(int NumNeurons, 
-				       int NumInputsPerNeuron);
+  SNeuronLayer(int NumNeurons,
+               int NumInputsPerNeuron);
 };
 
 
@@ -57,46 +51,43 @@ struct SNeuronLayer
 //	neural net class
 //----------------------------------------------------------------------
 
-class CNeuralNet
-{
-	
-private:
-	
-	int					m_NumInputs;
+class CNeuralNet {
 
-	int					m_NumOutputs;
+  private:
 
-	int					m_NumHiddenLayers;
+    int m_NumInputs;
 
-	int					m_NeuronsPerHiddenLyr;
+    int m_NumOutputs;
 
-	//storage for each layer of neurons including the output layer
-	vector<SNeuronLayer>	m_vecLayers;
+    int m_NumHiddenLayers;
 
-public:
+    int m_NeuronsPerHiddenLyr;
 
-	CNeuralNet();
+    //storage for each layer of neurons including the output layer
+    std::vector<SNeuronLayer> m_vecLayers;
 
-	void			      CreateNet();
+  public:
 
-	//gets the weights from the NN
-	vector<double>	GetWeights()const;
+    CNeuralNet();
 
-	//returns total number of weights in net
-	int				      GetNumberOfWeights()const;
+    void CreateNet();
 
-	//replaces the weights with new ones
-	void			      PutWeights(vector<double> &weights);
+    //gets the weights from the NN
+    std::vector<double> GetWeights() const;
 
-	//calculates the outputs from a set of inputs
-	vector<double>	Update(vector<double> &inputs);
+    //returns total number of weights in net
+    int GetNumberOfWeights() const;
 
-	//sigmoid response curve
-	inline double	  Sigmoid(double activation, double response);
+    //replaces the weights with new ones
+    void PutWeights(std::vector<double> &weights);
+
+    //calculates the outputs from a set of inputs
+    std::vector<double> Update(std::vector<double> &inputs);
+
+    //sigmoid response curve
+    inline double Sigmoid(double activation, double response);
 
 };
-				
-
 
 
 #endif

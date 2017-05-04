@@ -15,8 +15,6 @@
 #include <fstream>
 #include <string>
 
-using namespace std;
-
 class CParams {
   public:
     //------------------------------------general parameters

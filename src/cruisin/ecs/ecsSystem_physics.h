@@ -54,7 +54,8 @@ namespace at3 {
               PHYSICS,
               PHYSICS | PYRAMIDCONTROLS,
               PHYSICS | TERRAIN,
-              PHYSICS | TRACKCONTROLS
+              PHYSICS | TRACKCONTROLS,
+              PHYSICS | SWEEPERAI
       };
       PhysicsSystem(State* state);
       bool onInit();
@@ -65,6 +66,8 @@ namespace at3 {
       bool onDiscoverTerrain(const entityId& id);
       bool onDiscoverTrackControls(const entityId& id);
       bool onForgetTrackControls(const entityId& id);
+      bool onDiscoverSweeperAi(const entityId &id);
+      bool onForgetSweeperAi(const entityId &id);
       bool handleEvent(SDL_Event& event);
       void setDebugDrawer(std::shared_ptr<BulletDebug_> debug);
       // TODO: add removal logic for vehicles and wheels

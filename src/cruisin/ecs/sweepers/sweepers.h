@@ -14,49 +14,47 @@
 #include "SVector2D.h"
 #include "CParams.h"
 
-
 namespace at3 {
 
-  class CController
-  {
+  class CController {
     private:
 
       //storage for the population of genomes
-      vector<SGenome>	     m_vecThePopulation;
+      std::vector<SGenome> m_vecThePopulation;
 
       //and the minesweepers
-      vector<CMinesweeper> m_vecSweepers;
+      std::vector<CMinesweeper> m_vecSweepers;
 
       //and the mines
-      vector<SVector2D>	   m_vecMines;
+      std::vector<SVector2D> m_vecMines;
 
       //pointer to the GA
-      CGenAlg*		         m_pGA;
+      CGenAlg *m_pGA;
 
-      int					         m_NumSweepers;
+      int m_NumSweepers;
 
-      int					         m_NumMines;
+      int m_NumMines;
 
-      int					         m_NumWeightsInNN;
+      int m_NumWeightsInNN;
 
       //stores the average fitness per generation for use
       //in graphing.
-      vector<double>		   m_vecAvFitness;
+      std::vector<double> m_vecAvFitness;
 
       //stores the best fitness per generation
-      vector<double>		   m_vecBestFitness;
+      std::vector<double> m_vecBestFitness;
 
       //toggles the speed at which the simulation runs
-      bool				m_bFastRender;
+      bool m_bFastRender;
 
       //cycles per generation
-      int					m_iTicks;
+      int m_iTicks;
 
       //generation counter
-      int					m_iGenerations;
+      int m_iGenerations;
 
       //window dimensions
-      int         cxClient, cyClient;
+      int cxClient, cyClient;
 
     public:
 
@@ -64,10 +62,10 @@ namespace at3 {
 
       ~CController();
 
-      void		WorldTransform(vector<SPoint> &VBuffer,
-                             SVector2D      vPos);
+      void WorldTransform(std::vector<SPoint> &VBuffer,
+                          SVector2D vPos);
 
-      bool		Update();
+      bool Update();
   };
 
 }

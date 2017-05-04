@@ -22,6 +22,7 @@
  */
 #include "ecsSystem_physics.h"
 #include "BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
+#include <BulletCollision/CollisionDispatch/btGhostObject.h>
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 #include <BulletCollision/CollisionShapes/btTriangleShape.h>
 
@@ -71,6 +72,8 @@ namespace at3 {
     registries[2].discoverHandler = DELEGATE(&PhysicsSystem::onDiscoverTerrain, this);
     registries[3].discoverHandler = DELEGATE(&PhysicsSystem::onDiscoverTrackControls, this);
     registries[3].forgetHandler = DELEGATE(&PhysicsSystem::onForgetTrackControls, this);
+    registries[4].discoverHandler = DELEGATE(&PhysicsSystem::onDiscoverSweeperAi, this);
+    registries[4].forgetHandler = DELEGATE(&PhysicsSystem::onForgetSweeperAi, this);
 
     broadphase = new btDbvtBroadphase();
     collisionConfiguration = new btDefaultCollisionConfiguration();
@@ -82,6 +85,10 @@ namespace at3 {
 
     // prevent backface collisions with anything that uses the custom collision callback (like terrain)
     gContactAddedCallback = myCustomMaterialCombinerCallback;
+
+    // set up ghost object collision detection
+    dynamicsWorld->getPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
+//    dynamicsWorld->getBroadphase()->getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
 
     return true;
   }
@@ -149,6 +156,15 @@ namespace at3 {
       transform.getOpenGLMatrix((btScalar *) &newTransform);
       placement->mat = newTransform;
     }
+
+    // Make ghost objects follow their owners
+    for (auto id : registries[4].ids) {
+      SweeperAi *sweeperAi;
+      Physics *physics;
+      state->get_Physics(id, &physics);
+      state->get_SweeperAi(id, &sweeperAi);
+      sweeperAi->ghostObject->setWorldTransform(physics->rigidBody->getWorldTransform());
+    }
   }
 
   void PhysicsSystem::deInit() {
@@ -176,12 +192,15 @@ namespace at3 {
     Physics *physics;
     state->get_Physics(id, &physics);
     switch (physics->geom) {
-      case Physics::SPHERE:
+      case Physics::SPHERE: {
         physics->shape = new btSphereShape(*((float *) physics->geomInitData));
-        break;
-      case Physics::PLANE:
+      } break;
+      case Physics::PLANE: {
         assert("missing plane collision implementation" == nullptr);
-        break;
+      } break;
+      case Physics::BOX: {
+        physics->shape = new btBoxShape(*((btVector3*) physics->geomInitData));
+      } break;
       case Physics::MESH: {
         std::vector<float> *points = (std::vector<float> *) physics->geomInitData;
         physics->shape = new btConvexHullShape(points->data(), (int) points->size() / 3, 3 * sizeof(float));
@@ -218,6 +237,7 @@ namespace at3 {
     physics->rigidBody = new btRigidBody(ci);
     physics->rigidBody->setRestitution(0.5f);
     physics->rigidBody->setFriction(1.f);
+    physics->rigidBody->setUserIndex((int)id);
     dynamicsWorld->addRigidBody(physics->rigidBody);
     return true;
   }
@@ -280,6 +300,7 @@ namespace at3 {
     physics->rigidBody->setCollisionFlags(physics->rigidBody->getCollisionFlags()
                                           | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK
                                           | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
+    physics->rigidBody->setUserIndex((int) -id); // negative numbers for static objects, let's say.
     dynamicsWorld->addRigidBody(physics->rigidBody);
 
     return true;
@@ -305,6 +326,32 @@ namespace at3 {
     }
     dynamicsWorld->removeVehicle(trackControls->vehicle);
     delete trackControls->vehicle;
+    return true;
+  }
+
+  bool PhysicsSystem::onDiscoverSweeperAi(const entityId &id) {
+    SweeperAi *sweeperAi;
+    state->get_SweeperAi(id, &sweeperAi);
+    sweeperAi->ghostObject = new btGhostObject();
+    btVector3 boxDims(2.f, 2.f, 2.f);
+    sweeperAi->ghostShape = new btBoxShape(boxDims);
+    sweeperAi->ghostObject->setCollisionShape(sweeperAi->ghostShape);
+    sweeperAi->ghostObject->setCollisionFlags(
+        sweeperAi->ghostObject->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE
+    );
+    dynamicsWorld->addCollisionObject(sweeperAi->ghostObject);
+    Physics *physics;
+    state->get_Physics(id, &physics);
+    btTransform ident();
+
+    return true;
+  }
+  bool PhysicsSystem::onForgetSweeperAi(const entityId &id) {
+    SweeperAi *sweeperAi;
+    state->get_SweeperAi(id, &sweeperAi);
+    dynamicsWorld->removeCollisionObject(sweeperAi->ghostObject);
+    delete sweeperAi->ghostObject;
+    delete sweeperAi->ghostShape;
     return true;
   }
 

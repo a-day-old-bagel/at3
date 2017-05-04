@@ -7,18 +7,16 @@ namespace at3 {
 //	initilaize the sweepers, their brains and the GA factory
 //
 //-----------------------------------------------------------------------
-  CController::CController(): m_NumSweepers(CParams::iNumSweepers),
-                              m_pGA(NULL),
-                              m_bFastRender(false),
-                              m_iTicks(0),
-                              m_NumMines(CParams::iNumMines),
-                              m_iGenerations(0),
-                              cxClient(CParams::WindowWidth),
-                              cyClient(CParams::WindowHeight)
-  {
+  CController::CController() : m_NumSweepers(CParams::iNumSweepers),
+                               m_pGA(NULL),
+                               m_bFastRender(false),
+                               m_iTicks(0),
+                               m_NumMines(CParams::iNumMines),
+                               m_iGenerations(0),
+                               cxClient(CParams::WindowWidth),
+                               cyClient(CParams::WindowHeight) {
     //let's create the mine sweepers
-    for (int i=0; i<m_NumSweepers; ++i)
-    {
+    for (int i = 0; i < m_NumSweepers; ++i) {
       m_vecSweepers.push_back(CMinesweeper());
     }
 
@@ -35,13 +33,12 @@ namespace at3 {
     //Get the weights from the GA and insert into the sweepers brains
     m_vecThePopulation = m_pGA->GetChromos();
 
-    for (int i=0; i<m_NumSweepers; i++)
+    for (int i = 0; i < m_NumSweepers; i++)
 
       m_vecSweepers[i].PutWeights(m_vecThePopulation[i].vecWeights);
 
     //initialize mines in random positions within the application window
-    for (int i=0; i<m_NumMines; ++i)
-    {
+    for (int i = 0; i < m_NumMines; ++i) {
       m_vecMines.push_back(SVector2D(RandFloat() * cxClient,
                                      RandFloat() * cyClient));
     }
@@ -51,11 +48,9 @@ namespace at3 {
 //--------------------------------------destructor-------------------------------------
 //
 //--------------------------------------------------------------------------------------
-  CController::~CController()
-  {
-    if(m_pGA)
-    {
-      delete		m_pGA;
+  CController::~CController() {
+    if (m_pGA) {
+      delete m_pGA;
     }
   }
 
@@ -66,8 +61,7 @@ namespace at3 {
 //	world transform to each vertex in the vertex buffer passed to this
 //	method.
 //-------------------------------------------------------------------
-  void CController::WorldTransform(vector<SPoint> &VBuffer, SVector2D vPos)
-  {
+  void CController::WorldTransform(std::vector<SPoint> &VBuffer, SVector2D vPos) {
     //create the world transformation matrix
     C2DMatrix matTransform;
 
@@ -88,20 +82,16 @@ namespace at3 {
 //
 //	The comments should explain what is going on adequately.
 //-------------------------------------------------------------------------
-  bool CController::Update()
-  {
+  bool CController::Update() {
     //run the sweepers through CParams::iNumTicks amount of cycles. During
     //this loop each sweepers NN is constantly updated with the appropriate
     //information from its surroundings. The output from the NN is obtained
     //and the sweeper is moved. If it encounters a mine its fitness is
     //updated appropriately,
-    if (m_iTicks++ < CParams::iNumTicks)
-    {
-      for (int i=0; i<m_NumSweepers; ++i)
-      {
+    if (m_iTicks++ < CParams::iNumTicks) {
+      for (int i = 0; i < m_NumSweepers; ++i) {
         //update the NN and position
-        if (!m_vecSweepers[i].Update(m_vecMines))
-        {
+        if (!m_vecSweepers[i].Update(m_vecMines)) {
           //error in processing the neural net
           printf("\"Wrong amount of NN inputs!\"\n");
 
@@ -112,8 +102,7 @@ namespace at3 {
         int GrabHit = m_vecSweepers[i].CheckForMine(m_vecMines,
                                                     CParams::dMineScale);
 
-        if (GrabHit >= 0)
-        {
+        if (GrabHit >= 0) {
           //we have discovered a mine so increase fitness
           m_vecSweepers[i].IncrementFitness();
 
@@ -129,11 +118,10 @@ namespace at3 {
       }
     }
 
-    //Another generation has been completed.
+      //Another generation has been completed.
 
-    //Time to run the GA and update the sweepers with their new NNs
-    else
-    {
+      //Time to run the GA and update the sweepers with their new NNs
+    else {
       //update the stats to be used in our stat window
       m_vecAvFitness.push_back(m_pGA->AverageFitness());
       m_vecBestFitness.push_back(m_pGA->BestFitness());
@@ -149,8 +137,7 @@ namespace at3 {
 
       //insert the new (hopefully)improved brains back into the sweepers
       //and reset their positions etc
-      for (int i=0; i<m_NumSweepers; ++i)
-      {
+      for (int i = 0; i < m_NumSweepers; ++i) {
         m_vecSweepers[i].PutWeights(m_vecThePopulation[i].vecWeights);
 
         m_vecSweepers[i].Reset();
