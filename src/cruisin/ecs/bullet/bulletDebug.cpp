@@ -10,4 +10,8 @@ namespace at3 {
   glm::vec3 bulletToGlm(const btVector3 &vec) {
     return {vec.x(), vec.y(), vec.z()};
   }
+
+  btVector3 glmToBullet(const glm::vec3& vec) {
+    return btVector3(vec.x, vec.y, vec.z);
+  }
 }

@@ -26,34 +26,32 @@
 #pragma ide diagnostic ignored "IncompatibleTypes"
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"
 
-#define TRACK_TORQUE 50.f
+#define TRACK_TORQUE 100.f
 
 namespace at3 {
 
-  AiSystem::AiSystem(State *state) : System(state) {
+  AiSystem::AiSystem(State *state, float minX, float maxX, float minY, float maxY, float spawnHeight)
+      : System(state), minX(minX), maxX(maxX), minY(minY), maxY(maxY), spawnHeight(spawnHeight) {
 
   }
+
   AiSystem::~AiSystem() {
     if (geneticAlgorithm) {
       delete geneticAlgorithm;
     }
   }
+
   bool AiSystem::onInit() {
     registries[0].discoverHandler = DELEGATE(&AiSystem::onDiscover, this);
     registries[0].forgetHandler = DELEGATE(&AiSystem::onForget, this);
     return true;
   }
+
   void AiSystem::onTick(float dt) {
     if (!simulationStarted) { return; }
 
     Placement *placement;
     SweeperAi *sweeperAi;
-
-//    std::vector<SVector2D> vecTargets(registries[1].ids.size());
-//    for (int i = 0; i < registries[1].ids.size(); ++i) {
-//      state->get_Placement(registries[1].ids.at((size_t) i), &placement);
-//      vecTargets.push_back(SVector2D(placement->mat[3][0], placement->mat[3][1]));
-//    }
 
     std::vector<SVector2D> vecTargets(registries[1].ids.size());
     for (auto target : registries[1].ids) {
@@ -61,41 +59,44 @@ namespace at3 {
       vecTargets.push_back(SVector2D(placement->mat[3][0], placement->mat[3][1]));
     }
 
-    if (ticks++ < CParams::iNumTicks) {
-//      for (int i = 0; i < participants.size(); ++i)
-      for (auto participant : participants) {
-//        state->get_SweeperAi(participants[i], &sweeperAi);
-//        state->get_Placement(participants[i], &placement);
-        state->get_SweeperAi(participant, &sweeperAi);
-        state->get_Placement(participant, &placement);
+    uint32_t nowTime = SDL_GetTicks();
+    uint32_t deltaTime = nowTime - lastTime;
+
+    if (deltaTime < CParams::iNumTicks) {
+      std::vector<entityId> countedTargets;
+      for (int i = 0; i < participants.size(); ++i) {
+        state->get_SweeperAi(participants[i], &sweeperAi);
+        state->get_Placement(participants[i], &placement);
 
         double closest_so_far = 99999;
-        glm::vec2 closestTarget(0, 0);
-        //cycle through mines to find closest
+        float distanceToTarget;
+        glm::vec2 toTargetNormalized(0, 0);
+        // cycle through mines to find closest
         for (auto target : registries[1].ids) {
           Placement *targetPlacement;
           state->get_Placement(target, &targetPlacement);
           glm::vec3 toTarget3 = targetPlacement->getTranslation() - placement->getTranslation();
           glm::vec2 toTarget = glm::vec2(toTarget3.x, toTarget3.y);
-          double len_to_object = glm::length(toTarget);
-          if (len_to_object < closest_so_far) {
-            closest_so_far = len_to_object;
-            closestTarget = glm::normalize(toTarget);
+          distanceToTarget = glm::length(toTarget);
+          if (distanceToTarget < closest_so_far) {
+            closest_so_far = distanceToTarget;
+            toTargetNormalized = glm::normalize(toTarget);
           }
         }
+        sweeperAi->distance = distanceToTarget;
 
-        //this will store all the inputs for the NN
+        // this will store all the inputs for the NN
         std::vector<double> inputs;
-        //add in vector to closest mine
-        inputs.push_back(closestTarget.x);
-        inputs.push_back(closestTarget.y);
-        //add in sweepers look at vector
+        // add in vector to closest mine
+        inputs.push_back(toTargetNormalized.x);
+        inputs.push_back(toTargetNormalized.y);
+        // add in sweepers look at vector
         glm::vec3 lookAt = placement->getLookAt();
         glm::vec2 horizLookAt = glm::normalize(glm::vec2(lookAt.x, lookAt.y));
         inputs.push_back(horizLookAt.x);
         inputs.push_back(horizLookAt.y);
 
-        //update the NN and position
+        // update the NN and position
         std::vector<double> outputs = (sweeperAi->net.Update(inputs));
         if (outputs.size() != CParams::iNumOutputs) {
           std::cout << "NN produced wrong number of outputs!\n";
@@ -103,88 +104,70 @@ namespace at3 {
         }
 
         TrackControls *trackControls;
-        state->get_TrackControls(participant, &trackControls);
-        trackControls->torque.x = (float) outputs.at(0) * TRACK_TORQUE;
-        trackControls->torque.y = (float) outputs.at(1) * TRACK_TORQUE;
+        state->get_TrackControls(participants.at(i), &trackControls);
+        trackControls->torque.x = (float) (outputs.at(0) * 2.f - 1.f) * TRACK_TORQUE;
+        trackControls->torque.y = (float) (outputs.at(1) * 2.f - 1.f) * TRACK_TORQUE;
 
         auto &pairs = sweeperAi->ghostObject->getOverlappingPairs();
         int numPairs = sweeperAi->ghostObject->getNumOverlappingObjects();
         if (numPairs > 2) {
-          std::cout << "TOUCHED (" << numPairs - 2 << "): ";
-          for (int i = 2; i < numPairs; ++i) {
-            entityId touched = (entityId) pairs.at(i)->getUserIndex();
+          for (int j = 2; j < numPairs; ++j) {
+            entityId touched = (entityId) pairs.at(j)->getUserIndex();
             compMask compsPresent = state->getComponents(touched);
             if (compsPresent & SWEEPERTARGET) {
-//              state->deleteEntity(touched);
-              std::cout << " TARGET_";
+//              if (std::find(countedTargets.begin(), countedTargets.end(), touched) == countedTargets.end()) {
+              if (true) {
+                for (auto id : countedTargets) {
+                  std::cout << id << " ";
+                }
+                std::cout << "(" << countedTargets.size() << ") " << std::endl;
+                countedTargets.push_back(touched);
+                ++sweeperAi->fitness;
+                Physics *physics;
+                state->get_Physics(touched, &physics);
+                physics->setTransform(randTransformWithinDomain(rayFunc, 20.f, 2.5f));
+                physics->beStill();
+                physics->rigidBody->activate();
+                physics->rigidBody->applyCentralImpulse({0.f, 0.f, 1.f});
+                std::cout << i << " counted " << touched << std::endl;
+              } else {
+                std::cout << i << " ALREADY COUNTED " << touched << "!" << std::endl;
+              }
             }
-            std::cout << touched << ", ";
           }
-          std::cout << std::endl;
-
-
         }
-
-//        for (auto val : outputs) {
-//          std::cout << val << ", ";
-//        }
-//        std::cout << std::endl;
-
-
-//        //see if it's found a mine
-//        int GrabHit = m_vecSweepers[i].CheckForMine(m_vecMines,
-//                                                    CParams::dMineScale);
-
-//        if (GrabHit >= 0)
-//        {
-//          //we have discovered a mine so increase fitness
-//          m_vecSweepers[i].IncrementFitness();
-//
-//          //mine found so replace the mine with another at a random
-//          //position
-//          m_vecMines[GrabHit] = SVector2D(RandFloat() * cxClient,
-//                                          RandFloat() * cyClient);
-//        }
-//
-//        //update the chromos fitness score
-//        m_vecThePopulation[i].dFitness = m_vecSweepers[i].Fitness();
       }
     } else {
-//      // Another generation has been completed.
-//      // Time to run the GA and update the sweepers with their new NNs
-//      //update the stats to be used in our stat window
-//      m_vecAvFitness.push_back(m_pGA->AverageFitness());
-//      m_vecBestFitness.push_back(m_pGA->BestFitness());
-//
-//      //increment the generation counter
-//      ++m_iGenerations;
-//
-      //reset cycles
-      ticks = 0;
+
+      //increment the generation counter
+      ++generationCount;
+      std::cout << "--== GENERATION " << generationCount << " ==--" << std::endl;
+
+      lastTime = nowTime;
 
       Physics *physics;
-      for (auto id : registries[0].ids) {
-        state->get_Physics(id, &physics);
-        btTransform transform = physics->rigidBody->getCenterOfMassTransform();
-        glm::mat4 newTransformMat = glm::translate(glm::mat4(), {0.f, -50.f, 0.f});
-        transform.setFromOpenGLMatrix((btScalar *)&newTransformMat);
-        physics->rigidBody->setCenterOfMassTransform(transform);
-        physics->rigidBody->setLinearVelocity({0.f, 0.f, -1.f});
+      for (int i = 0; i < registries[0].ids.size(); ++i) {
+        state->get_Physics(registries[0].ids.at(i), &physics);
+        state->get_SweeperAi(registries[0].ids.at(i), &sweeperAi);
+        population.at(i).dFitness = std::min(sweeperAi->fitness, sweeperAi->fitness / (sweeperAi->distance * 0.1f));
+        if (i == 0) {
+          std::cout << "0's FIT: " << sweeperAi->fitness << " -> " << population.at(i).dFitness << std::endl;
+        }
+        sweeperAi->fitness = 0;
+        physics->setTransform(randTransformWithinDomain(rayFunc, 20.f, 5.f));
+        physics->beStill();
       }
-//
-//      //run the GA to create a new population
-//      m_vecThePopulation = m_pGA->Epoch(m_vecThePopulation);
-//
-//      //insert the new (hopefully)improved brains back into the sweepers
-//      //and reset their positions etc
-//      for (int i=0; i<m_NumSweepers; ++i)
-//      {
-//        m_vecSweepers[i].PutWeights(m_vecThePopulation[i].vecWeights);
-//
-//        m_vecSweepers[i].Reset();
-//      }
+
+      //run the GA to create a new population
+      population = geneticAlgorithm->Epoch(population);
+
+      for (int i = 0; i < registries[0].ids.size(); ++i) {
+        state->get_SweeperAi(registries[0].ids.at(i), &sweeperAi);
+        sweeperAi->net.PutWeights(population.at(i).vecWeights);
+      }
     }
   }
+
   bool AiSystem::handleEvent(SDL_Event &event) {
     switch (event.type) {
       case SDL_KEYDOWN:
@@ -199,9 +182,17 @@ namespace at3 {
     return true; // handled it here
   }
 
-  void AiSystem::beginSimulation() {
-    assert(participants.size() && "AI SIMULATION MUST HAVE PARTICIPANTS");
+  void AiSystem::beginSimulation(rayFuncType &rayFunc) {
+    assert((participants.size() > CParams::iNumElite) && "INSUFFICIENT NUMBER OF AI SIMULATION PARTICIPANTS");
     simulationStarted = true;
+
+    this->rayFunc = rayFunc;
+    this->minX = minX;
+    this->maxX = maxX;
+    this->minY = minY;
+    this->maxY = maxY;
+    this->spawnHeight = spawnHeight;
+
     SweeperAi *sweeperAi;
     state->get_SweeperAi(participants[0], &sweeperAi);
     numWeightsInNN = sweeperAi->net.GetNumberOfWeights();
@@ -216,6 +207,8 @@ namespace at3 {
       state->get_SweeperAi(participants[i], &sweeperAi);
       sweeperAi->net.PutWeights(population[i].vecWeights);
     }
+
+    lastTime = SDL_GetTicks();
   }
 
   bool AiSystem::onDiscover(const entityId &id) {
@@ -238,6 +231,37 @@ namespace at3 {
       participants.erase(it);
     }
     return true;
+  }
+
+  glm::vec2 AiSystem::randVec2WithinDomain() {
+    glm::vec2 result(minX + RandFloat() * (maxX - minX), minY + RandFloat() * (maxY - minY));
+    return result;
+  }
+
+  glm::vec2 AiSystem::randVec2WithinDomain(float scale) {
+    float spanX = (maxX - minX) * scale;
+    float spanY = (maxY - minY) * scale;
+    float lowX = minX + ((maxX - minX) - spanX) * 0.5f;
+    float lowY = minY + ((maxY - minY) - spanY) * 0.5f;
+    glm::vec2 result(lowX + RandFloat() * spanX, lowY + RandFloat() * spanY);
+    return result;
+  }
+
+  glm::mat4 AiSystem::randTransformWithinDomain(rayFuncType& rayFunc, float rayLen, float offsetHeight,
+                                                float scale /*= 1.f*/) {
+    glm::vec2 loc = randVec2WithinDomain(scale);
+    btCollisionWorld::ClosestRayResultCallback ray = rayFunc(
+        btVector3(loc.x, loc.y, spawnHeight),
+        btVector3(loc.x, loc.y, spawnHeight - rayLen)
+    );
+    glm::mat4 result;
+    if (ray.hasHit()) {
+      result = glm::translate(result, {loc.x, loc.y, ray.m_hitPointWorld.z() + offsetHeight});
+    } else {
+      result = glm::translate(result, {loc.x, loc.y, spawnHeight});
+    }
+    result = glm::rotate(result, (float)RandFloat() * (float)M_PI * 2.f, glm::vec3(0.f, 0.f, 1.f));
+    return result;
   }
 }
 

@@ -96,6 +96,8 @@ namespace {
     void* customData = NULL;
     Physics(float mass, void* geomData, Geometry geom);
     ~Physics();
+    void setTransform(glm::mat4 &newTrans);
+    void beStill();
   };
   EZECS_COMPONENT_DEPENDENCIES(Physics, Placement)
 
@@ -141,6 +143,7 @@ namespace {
     btCollisionShape* ghostShape;
     btGhostObject *ghostObject;
     float fitness = 0.f;
+    float distance = 0.f;
     SweeperAi();
     void reset();
   };
@@ -184,6 +187,15 @@ namespace {
         default: break; // TODO: Make this deconstructor safer, or do deallocation elsewhere
       }
     }
+  }
+  void Physics::setTransform(glm::mat4 &newTrans) {
+    btTransform transform = rigidBody->getCenterOfMassTransform();
+    transform.setFromOpenGLMatrix((btScalar *)&newTrans);
+    rigidBody->setCenterOfMassTransform(transform);
+  }
+  void Physics::beStill() {
+    rigidBody->setLinearVelocity( {0.f, 0.f, 0.f} );
+    rigidBody->setAngularVelocity( {0.f, 0.f, 0.f} );
   }
 
   PyramidControls::PyramidControls(PyramidControls::Style style)

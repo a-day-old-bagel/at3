@@ -137,7 +137,6 @@ std::vector<SGenome> CGenAlg::Epoch(std::vector<SGenome> &old_pop) {
     GrabNBest(CParams::iNumElite, CParams::iNumCopiesElite, vecNewPop);
   }
 
-
   //now we enter the GA loop
 
   //repeat until a new population is generated

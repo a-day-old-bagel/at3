@@ -70,6 +70,7 @@ namespace at3 {
       bool onForgetSweeperAi(const entityId &id);
       bool handleEvent(SDL_Event& event);
       void setDebugDrawer(std::shared_ptr<BulletDebug_> debug);
+      btCollisionWorld::ClosestRayResultCallback rayTest(const btVector3 &start, const btVector3 &end);
       // TODO: add removal logic for vehicles and wheels
   };
 }

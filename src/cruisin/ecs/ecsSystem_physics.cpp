@@ -375,6 +375,12 @@ namespace at3 {
   void PhysicsSystem::setDebugDrawer(std::shared_ptr<BulletDebug_> debug) {
     dynamicsWorld->setDebugDrawer(debug.get());
   }
+
+  btCollisionWorld::ClosestRayResultCallback PhysicsSystem::rayTest(const btVector3 &start, const btVector3 &end) {
+    btCollisionWorld::ClosestRayResultCallback rayCallback(start, end);
+    dynamicsWorld->rayTest(start, end, rayCallback);
+    return rayCallback;
+  }
 }
 
 #pragma clang diagnostic pop

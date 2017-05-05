@@ -53,8 +53,9 @@ class CruisinGame : public Game<State, DualityInterface> {
     std::shared_ptr<SceneObject_> m_camGimbal;
     std::shared_ptr<SkyBox_> m_skyBox;
     std::shared_ptr<TerrainObject_> m_terrain;
+    std::vector<std::shared_ptr<DuneBuggy>> sweepers;
     std::vector<std::shared_ptr<MeshObject_>> sweeperTargets;
-    std::shared_ptr<DuneBuggy> duneBuggy, sweeper;
+//    std::shared_ptr<DuneBuggy> duneBuggy;
     std::shared_ptr<Pyramid> pyramid;
 
     DualityInterface dualityInterface;
@@ -73,7 +74,7 @@ class CruisinGame : public Game<State, DualityInterface> {
           controlSystem(&state),
           movementSystem(&state),
           physicsSystem(&state),
-          aiSystem(&state) {
+          aiSystem(&state, -200.f, 200.f, -200.f, 200.f, 0.f) {
       // link the ecs and the scene graph together
       SceneObject_::linkEcs(dualityInterface);
       // assign the systems' event handler function
@@ -81,6 +82,10 @@ class CruisinGame : public Game<State, DualityInterface> {
     }
 
     EzecsResult init() {
+
+      rayFuncType rayFunc = std::bind( &PhysicsSystem::rayTest, &physicsSystem,
+                                       std::placeholders::_1, std::placeholders::_2 );
+
       // Initialize the systems
       bool initSuccess = true;
       initSuccess &= controlSystem.init();
@@ -95,31 +100,26 @@ class CruisinGame : public Game<State, DualityInterface> {
       // a terrain
       TerrainObject_::initTextures();
       m_terrain = std::shared_ptr<TerrainObject_> (
-          new TerrainObject_(ident, -5000.f, 5000.f, -5000.f, 5000.f, -200, 300));
+          new TerrainObject_(ident, -5000.f, 5000.f, -5000.f, 5000.f, -20, 0));
       this->scene.addObject(m_terrain);
 
-      // a buggy
-      glm::mat4 buggyMat = glm::translate(ident, { 0.f, -290.f, 0.f });
-      duneBuggy = std::shared_ptr<DuneBuggy> (
-          new DuneBuggy(state, scene, buggyMat));
+//      // a buggy
+//      glm::mat4 buggyMat = glm::translate(ident, { 0.f, -290.f, 0.f });
+//      duneBuggy = std::shared_ptr<DuneBuggy> (
+//          new DuneBuggy(state, scene, buggyMat));
 
-      // a sweeper buggy
-      glm::mat4 sweeperMat = glm::translate(ident, { 0.f, -240.f, 0.f });
-      sweeper = std::shared_ptr<DuneBuggy> (
-          new DuneBuggy(state, scene, sweeperMat));
-      entityId sweeperId = sweeper->chassis->getId();
-      state.add_SweeperAi(sweeperId);
-
-      // some targets for the sweeper buggy
-//      glm::mat4 targetLocs[4] {
-//          glm::translate(ident, { 0.f, -220.f, 0.f }),
-//          glm::translate(ident, { 0.f, -210.f, 0.f }),
-//          glm::translate(ident, { 0.f, -200.f, 0.f }),
-//          glm::translate(ident, { 0.f, -190.f, 0.f })
-//      };
-      for (int i = 0; i < 6; ++i) {
+      // some sweeper buggies
+      for (int i = 0; i < CParams::iNumSweepers; ++i) {
+        sweepers.push_back(std::shared_ptr<DuneBuggy>(
+            new DuneBuggy(state, scene, aiSystem.randTransformWithinDomain(rayFunc, 20.f, 5.f))));
+        entityId sweeperId = sweepers.back()->chassis->getId();
+        state.add_SweeperAi(sweeperId);
+      }
+      // some targets for the sweeper buggies
+      for (int i = 0; i < CParams::iNumMines; ++i) {
         sweeperTargets.push_back(std::shared_ptr<MeshObject_>(
-            new MeshObject_("assets/models/sphere.dae", "assets/textures/pyramid_flames.png", ident)));
+            new MeshObject_("assets/models/sphere.dae", "assets/textures/pyramid_flames.png",
+                            aiSystem.randTransformWithinDomain(rayFunc, 20.f, 5.f))));
         entityId targetId = sweeperTargets.back()->getId();
         state.add_SweeperTarget(targetId);
         btVector3 boxDims(1.f, 1.f, 1.f);
@@ -131,7 +131,7 @@ class CruisinGame : public Game<State, DualityInterface> {
         physics->rigidBody->setFriction(0.8f);
         scene.addObject(sweeperTargets.back());
       }
-      aiSystem.beginSimulation();
+      aiSystem.beginSimulation(rayFunc);
 
       // a flying pyramid
       glm::mat4 pyramidMat = glm::translate(ident, { 0.f, 0.f, 5.f });
@@ -198,14 +198,16 @@ class CruisinGame : public Game<State, DualityInterface> {
             case SDL_SCANCODE_C: {
               if (pyramid->base->hasChild(m_camGimbal.get())) {
                 pyramid->base->removeChild(m_camGimbal.get());
-                duneBuggy->chassis->addChild(m_camGimbal, SceneObject_::TRANSLATION_ONLY);
+//                duneBuggy->chassis->addChild(m_camGimbal, SceneObject_::TRANSLATION_ONLY);
+                sweepers.at(0)->chassis->addChild(m_camGimbal, SceneObject_::TRANSLATION_ONLY);
               } else {
-                duneBuggy->chassis->removeChild(m_camGimbal.get());
+//                duneBuggy->chassis->removeChild(m_camGimbal.get());
+                sweepers.at(0)->chassis->removeChild(m_camGimbal.get());
                 pyramid->base->addChild(m_camGimbal, SceneObject_::TRANSLATION_ONLY);
               }
             } break;
             case SDL_SCANCODE_RCTRL: {
-              duneBuggy->tip();
+//              duneBuggy->tip();
             } break;
             default: return false; // could not handle it here
         } break;

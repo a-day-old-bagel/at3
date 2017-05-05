@@ -21,6 +21,7 @@ namespace at3 {
    * Conversion from Bullet vector structures to glm vector structures
    */
   glm::vec3 bulletToGlm(const btVector3& vec);
+  btVector3 glmToBullet(const glm::vec3& vec);
 
   /**
    * Allows bullet to draw debug stuff with our graphics backend.

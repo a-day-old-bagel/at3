@@ -23,6 +23,7 @@
 #ifndef ECSSYSTEM_AISYSTEM_H
 #define ECSSYSTEM_AISYSTEM_H
 
+#include <functional>
 #include <SDL.h>
 #include "dualityInterface.h"
 #include "ezecs.hpp"
@@ -31,29 +32,35 @@
 using namespace ezecs;
 
 namespace at3 {
+  typedef std::function<btCollisionWorld::ClosestRayResultCallback(btVector3 &, btVector3 &)> rayFuncType;
   class AiSystem : public System<AiSystem> {
       std::vector<entityId> participants;
       std::vector<entityId> lateComers;
       std::vector<SGenome> population;
-      bool simulationStarted = false;
       CParams params;
       CGenAlg* geneticAlgorithm = NULL;
-      int numWeightsInNN;
-      int ticks = 0;
+      rayFuncType rayFunc;
+      uint32_t lastTime;
+      float minX, maxX, minY, maxY, spawnHeight;
+      int numWeightsInNN, generationCount = 0;
+      bool simulationStarted = false;
 
     public:
       std::vector<compMask> requiredComponents = {
               SWEEPERAI,
               SWEEPERTARGET
       };
-      AiSystem(State* state);
+      AiSystem(State* state, float minX, float maxX, float minY, float maxY, float spawnHeight);
       ~AiSystem();
       bool onInit();
       void onTick(float dt);
       bool handleEvent(SDL_Event& event);
-      void beginSimulation();
+      void beginSimulation(rayFuncType &rayFunc);
       bool onDiscover(const entityId &id);
       bool onForget(const entityId &id);
+      glm::vec2 randVec2WithinDomain();
+      glm::vec2 randVec2WithinDomain(float scale);
+      glm::mat4 randTransformWithinDomain(rayFuncType& rayFunc, float rayLen, float offsetHeight, float scale = 1.f);
   };
 }
 
