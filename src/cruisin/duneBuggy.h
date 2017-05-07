@@ -14,13 +14,14 @@
 namespace at3 {
   class DuneBuggy {
     private:
-      ezecs::entityId chassisId;
-      std::vector<std::shared_ptr<MeshObject_>> wheels;
-      ezecs::State* state;
-      Scene_* scene;
+      std::vector<std::shared_ptr<MeshObject_>> mvpWheels;
+      ezecs::State* mpState;
+      Scene_* mpScene;
       void addToScene();
     public:
-      std::shared_ptr<MeshObject_> chassis;
+      std::shared_ptr<MeshObject_> mpChassis;
+      std::shared_ptr<ThirdPersonCamera_> mpCamera;
+
       DuneBuggy(ezecs::State &state, Scene_ &scene, glm::mat4 &transform);
       void tip();
   };

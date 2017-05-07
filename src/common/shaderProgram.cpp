@@ -250,6 +250,7 @@ namespace at3 {
 
   void ShaderProgram::initLocations() {
     // Register some common uniform and attribute locations
+    m_modelLocation = glGetUniformLocation(m_shaderProgram, "model");
     m_modelViewLocation = glGetUniformLocation(m_shaderProgram, "modelView");
     m_projectionLocation = glGetUniformLocation(m_shaderProgram, "projection");
     m_modelViewProjectionLocation = glGetUniformLocation(m_shaderProgram, "modelViewProjection");

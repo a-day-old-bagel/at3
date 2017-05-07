@@ -21,10 +21,11 @@ namespace at3 {
     return glm::rotate(glm::scale(glm::mat4(), {1.8f, 2.8f, 1.f}), (float)M_PI, glm::vec3(1.f, 0.f, 0.f));
   }
 
-  DuneBuggy::DuneBuggy(ezecs::State &state, Scene_ &scene, glm::mat4 &transform) : state(&state), scene(&scene) {
-    chassis = std::shared_ptr<MeshObject_> (
-        new MeshObject_("assets/models/pyramid_bottom.dae", "assets/textures/pyramid_bottom.png", transform));
-    chassisId = chassis->getId();
+  DuneBuggy::DuneBuggy(ezecs::State &state, Scene_ &scene, glm::mat4 &transform) : mpState(&state), mpScene(&scene) {
+    mpChassis = std::shared_ptr<MeshObject_> (
+        new MeshObject_("assets/models/pyramid_bottom.dae", "assets/textures/pyramid_bottom.png",
+                        transform, MeshObject_::SUNNY));
+    ezecs::entityId chassisId = mpChassis->getId();
 
     glm::mat4 ident;
     std::vector<float> chassisVerts = {
@@ -59,9 +60,10 @@ namespace at3 {
         { 1.9f, -1.9f, 0.f}
     };
     for (int i = 0; i < 4; ++i) {
-      wheels.push_back(std::shared_ptr<MeshObject_>(
-          new MeshObject_("assets/models/sphere.dae", "assets/textures/thrusters.png", ident)));
-      entityId wheelId = wheels.back()->getId();
+      mvpWheels.push_back(std::shared_ptr<MeshObject_>(
+          new MeshObject_("assets/models/sphere.dae", "assets/textures/thrusters.png",
+                          ident, MeshObject_::SUNNY)));
+      entityId wheelId = mvpWheels.back()->getId();
       WheelInitInfo wheelInitInfo{
           {                         // WheelInfo struct - this part of the wheelInitInfo will persist.
               chassisId,                    // id of wheel's parent entity (chassis)
@@ -79,17 +81,22 @@ namespace at3 {
       state.add_Physics(wheelId, 10.f, &wheelInitInfo, Physics::WHEEL);
       state.add_TransformFunction(wheelId, DELEGATE_NOCLASS(wheelScaler));
     }
+
+    mpCamera = std::shared_ptr<ThirdPersonCamera_> (
+        new ThirdPersonCamera_((float)M_PI * 0.35f, 1.0f, 10000.0f, 2.f, 6.f, (float)M_PI * 0.5f));
+    mpChassis->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
+
     addToScene();
   }
   void DuneBuggy::addToScene() {
-    scene->addObject(chassis);
-    for (auto wheel : wheels) {
-      scene->addObject(wheel);
+    mpScene->addObject(mpChassis);
+    for (auto wheel : mvpWheels) {
+      mpScene->addObject(wheel);
     }
   }
   void DuneBuggy::tip() {
     Physics *physics;
-    state->get_Physics(chassis->getId(), &physics);
+    mpState->get_Physics(mpChassis->getId(), &physics);
     physics->rigidBody->applyImpulse({0.f, 0.f, 100.f}, {1.f, 0.f, 0.f});
   }
 }

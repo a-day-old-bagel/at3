@@ -11,6 +11,7 @@
 #include "scene.h"
 #include "sceneObject.h"
 #include "perspectiveCamera.h"
+#include "thirdPersonCamera.h"
 #include "skyBox.h"
 #include "meshObject.h"
 #include "terrainObject.h"
@@ -46,11 +47,14 @@ namespace at3 {
       void addTerrain(const ezecs::entityId &id, const glm::mat4 &transform, ezecs::floatVecPtr const heights,
                       const size_t resX, const size_t resY, const float sclX, const float sclY, const float sclZ,
                       const float minZ, const float maxZ);
+
+      void addMouseControl(const ezecs::entityId& id);
   };
 
   typedef Scene<DualityInterface> Scene_;
   typedef SceneObject<DualityInterface> SceneObject_;
   typedef PerspectiveCamera<DualityInterface> PerspectiveCamera_;
+  typedef ThirdPersonCamera<DualityInterface> ThirdPersonCamera_;
   typedef SkyBox<DualityInterface> SkyBox_;
   typedef MeshObject<DualityInterface> MeshObject_;
   typedef TerrainObject<DualityInterface> TerrainObject_;

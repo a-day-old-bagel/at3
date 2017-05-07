@@ -59,11 +59,11 @@ namespace at3 {
       SceneObject<EcsInterface>* m_parent = NULL;
       int m_inheritedDOF = ALL;
 
-    protected:
+    public:
+
       static EcsInterface *ecs;
       typename EcsInterface::EcsId id;
 
-    public:
       /**
        * Constructs a scene object with the given position and orientation.
        *

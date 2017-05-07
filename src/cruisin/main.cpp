@@ -49,49 +49,49 @@ using namespace ezecs;
 
 class CruisinGame : public Game<State, DualityInterface> {
   private:
-    std::shared_ptr<PerspectiveCamera_> m_camera;
-    std::shared_ptr<SceneObject_> m_camGimbal;
-    std::shared_ptr<SkyBox_> m_skyBox;
-    std::shared_ptr<TerrainObject_> m_terrain;
-    std::vector<std::shared_ptr<DuneBuggy>> sweepers;
-    std::vector<std::shared_ptr<MeshObject_>> sweeperTargets;
-//    std::shared_ptr<DuneBuggy> duneBuggy;
-    std::shared_ptr<Pyramid> pyramid;
+    std::shared_ptr<SkyBox_>                  mpSkybox;
+    std::shared_ptr<TerrainObject_>           mpTerrain;
+    std::shared_ptr<Pyramid>                  mpPyramid;
+    std::shared_ptr<DuneBuggy>                mpDuneBuggy;
+    std::vector<std::shared_ptr<DuneBuggy>>   mvpSweepers;
+    std::vector<std::shared_ptr<MeshObject_>> mvpSweeperTargets;
 
-    DualityInterface dualityInterface;
-    ControlSystem controlSystem;
-    MovementSystem movementSystem;
-    PhysicsSystem physicsSystem;
-    AiSystem aiSystem;
+    DualityInterface  mDualityInterface;
+    ControlSystem     mControlSystem;
+    MovementSystem    mMovementSystem;
+    PhysicsSystem     mPhysicsSystem;
+    AiSystem          mAiSystem;
     
   public:
-    std::shared_ptr<DebugStuff> debugStuff;
-    eventHandlerFunction systemsHandlerDlgt;
-    bool quit = false;
+
+    std::shared_ptr<DebugStuff> mpDebugStuff;
+    eventHandlerFunction mSystemsHandlerDlgt;
+    bool mQuit = false;
+
     CruisinGame(int argc, char **argv)
         : Game(argc, argv, "at3"),
-          dualityInterface(&state),
-          controlSystem(&state),
-          movementSystem(&state),
-          physicsSystem(&state),
-          aiSystem(&state, -200.f, 200.f, -200.f, 200.f, 0.f) {
+          mDualityInterface(&state),
+          mControlSystem(&state),
+          mMovementSystem(&state),
+          mPhysicsSystem(&state),
+          mAiSystem(&state, -200.f, 200.f, -200.f, 200.f, 0.f) {
       // link the ecs and the scene graph together
-      SceneObject_::linkEcs(dualityInterface);
+      SceneObject_::linkEcs(mDualityInterface);
       // assign the systems' event handler function
-      systemsHandlerDlgt = std::bind( &CruisinGame::systemsHandler, this, std::placeholders::_1 );
+      mSystemsHandlerDlgt = std::bind( &CruisinGame::systemsHandler, this, std::placeholders::_1 );
     }
 
     EzecsResult init() {
 
-      rayFuncType rayFunc = std::bind( &PhysicsSystem::rayTest, &physicsSystem,
+      rayFuncType rayFunc = std::bind( &PhysicsSystem::rayTest, &mPhysicsSystem,
                                        std::placeholders::_1, std::placeholders::_2 );
 
       // Initialize the systems
       bool initSuccess = true;
-      initSuccess &= controlSystem.init();
-      initSuccess &= physicsSystem.init();
-      initSuccess &= movementSystem.init();
-      initSuccess &= aiSystem.init();
+      initSuccess &= mControlSystem.init();
+      initSuccess &= mPhysicsSystem.init();
+      initSuccess &= mMovementSystem.init();
+      initSuccess &= mAiSystem.init();
       assert(initSuccess);
 
       // an identity matrix
@@ -99,115 +99,96 @@ class CruisinGame : public Game<State, DualityInterface> {
 
       // a terrain
       TerrainObject_::initTextures();
-      m_terrain = std::shared_ptr<TerrainObject_> (
-          new TerrainObject_(ident, -5000.f, 5000.f, -5000.f, 5000.f, -20, 0));
-      this->scene.addObject(m_terrain);
+      mpTerrain = std::shared_ptr<TerrainObject_> (
+          new TerrainObject_(ident, -5000.f, 5000.f, -5000.f, 5000.f, -200, 0));
+      this->scene.addObject(mpTerrain);
 
-//      // a buggy
-//      glm::mat4 buggyMat = glm::translate(ident, { 0.f, -290.f, 0.f });
-//      duneBuggy = std::shared_ptr<DuneBuggy> (
-//          new DuneBuggy(state, scene, buggyMat));
+      // a buggy
+      glm::mat4 buggyMat = glm::translate(ident, { 0.f, -290.f, 0.f });
+      mpDuneBuggy = std::shared_ptr<DuneBuggy> (
+          new DuneBuggy(state, scene, buggyMat));
 
       // some sweeper buggies
       for (int i = 0; i < CParams::iNumSweepers; ++i) {
-        sweepers.push_back(std::shared_ptr<DuneBuggy>(
-            new DuneBuggy(state, scene, aiSystem.randTransformWithinDomain(rayFunc, 20.f, 5.f))));
-        entityId sweeperId = sweepers.back()->chassis->getId();
+        glm::mat4 transform = mAiSystem.randTransformWithinDomain(rayFunc, 200.f, 5.f);
+        mvpSweepers.push_back(std::shared_ptr<DuneBuggy>(
+            new DuneBuggy(state, scene, transform)));
+        entityId sweeperId = mvpSweepers.back()->mpChassis->getId();
         state.add_SweeperAi(sweeperId);
       }
       // some targets for the sweeper buggies
       for (int i = 0; i < CParams::iNumMines; ++i) {
-        sweeperTargets.push_back(std::shared_ptr<MeshObject_>(
+        glm::mat4 transform = mAiSystem.randTransformWithinDomain(rayFunc, 200.f, 5.f);
+        mvpSweeperTargets.push_back(std::shared_ptr<MeshObject_>(
             new MeshObject_("assets/models/sphere.dae", "assets/textures/pyramid_flames.png",
-                            aiSystem.randTransformWithinDomain(rayFunc, 20.f, 5.f))));
-        entityId targetId = sweeperTargets.back()->getId();
+                            transform, MeshObject_::FULLBRIGHT)));
+        entityId targetId = mvpSweeperTargets.back()->getId();
         state.add_SweeperTarget(targetId);
         btVector3 boxDims(1.f, 1.f, 1.f);
-        state.add_Physics(sweeperTargets.back()->getId(), 10.f, &boxDims, Physics::BOX);
+        state.add_Physics(mvpSweeperTargets.back()->getId(), 10.f, &boxDims, Physics::BOX);
         Physics *physics;
-        state.get_Physics(sweeperTargets.back()->getId(), &physics);
+        state.get_Physics(mvpSweeperTargets.back()->getId(), &physics);
         physics->rigidBody->applyCentralImpulse({0.f, 0.f, 1.f});
         physics->rigidBody->setDamping(physics->rigidBody->getLinearDamping(), 0.9f);
         physics->rigidBody->setFriction(0.8f);
-        scene.addObject(sweeperTargets.back());
+        scene.addObject(mvpSweeperTargets.back());
       }
-      aiSystem.beginSimulation(rayFunc);
+      mAiSystem.beginSimulation(rayFunc);
 
       // a flying pyramid
       glm::mat4 pyramidMat = glm::translate(ident, { 0.f, 0.f, 5.f });
-      pyramid = std::shared_ptr<Pyramid> (
+      mpPyramid = std::shared_ptr<Pyramid> (
           new Pyramid(state, scene, pyramidMat));
 
       // a skybox-like background (but better than a literal sky box)
-      m_skyBox = std::shared_ptr<SkyBox_> (
+      mpSkybox = std::shared_ptr<SkyBox_> (
           new SkyBox_());
-      this->scene.addObject(m_skyBox);
-      LoadResult loaded = m_skyBox->useCubeMap("sea", "png");
+      this->scene.addObject(mpSkybox);
+      LoadResult loaded = mpSkybox->useCubeMap("sea", "png");
       assert(loaded == LOAD_SUCCESS);
 
-      // a camera with a gimbal for a third-person camera setup
-      glm::mat4 cameraMat =
-          glm::rotate(glm::translate(ident, {0.f, -6.f, 1.0f}), (float) M_PI * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f));
-      m_camera = std::shared_ptr<PerspectiveCamera_> (
-          new PerspectiveCamera_(fovy(), 1.0f, 10000.0f, cameraMat));
-      m_camGimbal = std::shared_ptr<SceneObject_> (
-          new SceneObject_());
-
-      // add mouse controls to the camera gimbal so that it rotates with the mouse
-      entityId gimbalId = m_camGimbal->getId();
-      state.add_Placement(gimbalId, {
-          1, 0, 0, 0,
-          0, 1, 0, 0,
-          0, 0, 1, 0,
-          0, 0, 1, 1  // at (0, 0, 1)
-      });
-      state.add_MouseControls(gimbalId, false, false);
-
-      // attach the camera to the camera gimbal
-      m_camGimbal->addChild(m_camera);
-
-      // tell the scene to use the camera
-      this->setCamera(m_camera);
-
-      // the third-person camera gimbal will be attached to the pyramid initially
-      pyramid->base->addChild(m_camGimbal, SceneObject_::TRANSLATION_ONLY);
+      this->setCamera(mpPyramid->mpCamera->mpCamera);
 
       // some debug-draw features...
-      debugStuff = std::shared_ptr<DebugStuff> (
-          new DebugStuff(scene, &physicsSystem));
+      mpDebugStuff = std::shared_ptr<DebugStuff> (
+          new DebugStuff(scene, &mPhysicsSystem));
 
       return EZECS_SUCCESS;
     }
     void deInit() {
-      physicsSystem.deInit();
+      mPhysicsSystem.deInit();
     }
     bool systemsHandler(SDL_Event& event) {
-      if (controlSystem.handleEvent(event)) {
+      if (mControlSystem.handleEvent(event)) {
         return true; // handled it here
       }
-      if (physicsSystem.handleEvent(event)) {
+      if (mPhysicsSystem.handleEvent(event)) {
         return true; // handled it here
       }
       switch (event.type) {
         case SDL_KEYDOWN:
           switch (event.key.keysym.scancode) {
             case SDL_SCANCODE_E: {
-              pyramid->spawnSphere();
-
+              mpPyramid->spawnSphere();
             } break;
-            case SDL_SCANCODE_C: {
-              if (pyramid->base->hasChild(m_camGimbal.get())) {
-                pyramid->base->removeChild(m_camGimbal.get());
-//                duneBuggy->chassis->addChild(m_camGimbal, SceneObject_::TRANSLATION_ONLY);
-                sweepers.at(0)->chassis->addChild(m_camGimbal, SceneObject_::TRANSLATION_ONLY);
-              } else {
-//                duneBuggy->chassis->removeChild(m_camGimbal.get());
-                sweepers.at(0)->chassis->removeChild(m_camGimbal.get());
-                pyramid->base->addChild(m_camGimbal, SceneObject_::TRANSLATION_ONLY);
-              }
+            case SDL_SCANCODE_1: {
+              setCamera(mpPyramid->mpCamera->mpCamera);
+            } break;
+            case SDL_SCANCODE_2: {
+              setCamera(mpDuneBuggy->mpCamera->mpCamera);
+            } break;
+            case SDL_SCANCODE_3:
+            case SDL_SCANCODE_4:
+            case SDL_SCANCODE_5:
+            case SDL_SCANCODE_6:
+            case SDL_SCANCODE_7:
+            case SDL_SCANCODE_8:
+            case SDL_SCANCODE_9:
+            case SDL_SCANCODE_0: {
+              setCamera(mvpSweepers[event.key.keysym.scancode - SDL_SCANCODE_3]->mpCamera->mpCamera);
             } break;
             case SDL_SCANCODE_RCTRL: {
-//              duneBuggy->tip();
+              mpDuneBuggy->tip();
             } break;
             default: return false; // could not handle it here
         } break;
@@ -216,23 +197,23 @@ class CruisinGame : public Game<State, DualityInterface> {
       return true; // handled it here
     }
     void tick(float dt) {
-      controlSystem.setWorldView(m_camera->lastWorldViewQueried);
-      controlSystem.tick(dt);
-      aiSystem.tick(dt);
-      physicsSystem.tick(dt);
-      movementSystem.tick(dt);
+      mControlSystem.setWorldView(getCamera()->lastWorldViewQueried);
+      mControlSystem.tick(dt);
+      mAiSystem.tick(dt);
+      mPhysicsSystem.tick(dt);
+      mMovementSystem.tick(dt);
 
-      pyramid->resizeFire();
+      mpPyramid->resizeFire();
     }
 };
 
 void mainLoop(void *instance) {
   CruisinGame *game = (CruisinGame *) instance;
   float dt;
-  bool keepGoing = game->mainLoop(game->systemsHandlerDlgt, dt);
+  bool keepGoing = game->mainLoop(game->mSystemsHandlerDlgt, dt);
   if (!keepGoing) {
     game->deInit();
-    game->quit = true;
+    game->mQuit = true;
     exit(0);  // For future compatibility with Emscripten
   }
   game->tick(dt);
@@ -246,7 +227,7 @@ int main(int argc, char **argv) {
   // snazzy tunes
 //  game.debugStuff->queueMusic();
 
-  while (!game.quit) {
+  while (!game.mQuit) {
     mainLoop(&game);
   }
   return 0;

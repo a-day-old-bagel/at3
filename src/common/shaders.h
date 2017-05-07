@@ -55,8 +55,11 @@ namespace at3 {
     /** Shader for drawing debugging lines. */
     DECLARE_SHADER(wireframe);
 
-    /** Shader for drawing textures */
-    DECLARE_SHADER(texture);
+    /** Shader for drawing textures in full-bright lighting */
+    DECLARE_SHADER(textureFullbright);
+
+    /** Shader for drawing textures in sunny-looking weather */
+    DECLARE_SHADER(textureSunny);
 
     /** Shader for drawing skybox */
     DECLARE_SHADER(skyQuad);

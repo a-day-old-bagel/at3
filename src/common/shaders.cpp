@@ -78,10 +78,14 @@ namespace at3 {
   #include "shaders_wireframe.vert.c"
   #include "shaders_wireframe.frag.c"
   DEFINE_SHADER(wireframe)
-  
-  #include "shaders_texture.vert.c"
-  #include "shaders_texture.frag.c"
-  DEFINE_SHADER(texture)
+
+  #include "shaders_textureFullbright.vert.c"
+  #include "shaders_textureFullbright.frag.c"
+  DEFINE_SHADER(textureFullbright)
+
+  #include "shaders_textureSunny.vert.c"
+  #include "shaders_textureSunny.frag.c"
+  DEFINE_SHADER(textureSunny)
   
   #include "shaders_skyQuad.vert.c"
   #include "shaders_skyQuad.frag.c"

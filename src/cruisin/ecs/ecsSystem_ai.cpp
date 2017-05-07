@@ -125,7 +125,8 @@ namespace at3 {
                 ++sweeperAi->fitness;
                 Physics *physics;
                 state->get_Physics(touched, &physics);
-                physics->setTransform(randTransformWithinDomain(rayFunc, 20.f, 2.5f));
+                glm::mat4 newTransform = randTransformWithinDomain(rayFunc, 200.f, 5.f);
+                physics->setTransform(newTransform);
                 physics->beStill();
                 physics->rigidBody->activate();
                 physics->rigidBody->applyCentralImpulse({0.f, 0.f, 1.f});
@@ -154,7 +155,8 @@ namespace at3 {
           std::cout << "0's FIT: " << sweeperAi->fitness << " -> " << population.at(i).dFitness << std::endl;
         }
         sweeperAi->fitness = 0;
-        physics->setTransform(randTransformWithinDomain(rayFunc, 20.f, 5.f));
+        glm::mat4 newTransform = randTransformWithinDomain(rayFunc, 200.f, 5.f);
+        physics->setTransform(newTransform);
         physics->beStill();
       }
 
@@ -250,10 +252,9 @@ namespace at3 {
   glm::mat4 AiSystem::randTransformWithinDomain(rayFuncType& rayFunc, float rayLen, float offsetHeight,
                                                 float scale /*= 1.f*/) {
     glm::vec2 loc = randVec2WithinDomain(scale);
-    btCollisionWorld::ClosestRayResultCallback ray = rayFunc(
-        btVector3(loc.x, loc.y, spawnHeight),
-        btVector3(loc.x, loc.y, spawnHeight - rayLen)
-    );
+    btVector3 startPoint (loc.x, loc.y, spawnHeight);
+    btVector3 endPoint (loc.x, loc.y, spawnHeight - rayLen);
+    btCollisionWorld::ClosestRayResultCallback ray = rayFunc(startPoint, endPoint);
     glm::mat4 result;
     if (ray.hasHit()) {
       result = glm::translate(result, {loc.x, loc.y, ray.m_hitPointWorld.z() + offsetHeight});

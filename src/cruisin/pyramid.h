@@ -14,13 +14,15 @@
 namespace at3 {
   class Pyramid {
     private:
-      ezecs::State* state;
-      Scene_* scene;
-      std::shared_ptr<MeshObject_> top, thrusters, fire;
-      std::vector<std::shared_ptr<MeshObject_>> spheres;
+      std::shared_ptr<MeshObject_> mpTop, mpThrusters, mpFire;
+      std::vector<std::shared_ptr<MeshObject_>> mvpSpheres;
+      ezecs::State* mpState;
+      Scene_* mpScene;
       void addToScene();
     public:
-      std::shared_ptr<MeshObject_> base;
+      std::shared_ptr<MeshObject_> mpBase;
+      std::shared_ptr<ThirdPersonCamera_> mpCamera;
+
       Pyramid(ezecs::State &state, Scene_ &scene, glm::mat4 &transform);
       void resizeFire();
       void spawnSphere();

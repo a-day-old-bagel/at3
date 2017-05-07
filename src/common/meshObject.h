@@ -49,6 +49,8 @@ namespace at3 {
         float tex[2];
       } MeshVertex;
 
+      int shaderStyle;
+
       std::string m_meshFile;
       GLuint m_vertexBuffer, m_indexBuffer, m_texture;
       int m_numIndices;
@@ -57,10 +59,14 @@ namespace at3 {
       void m_loadTexture(const std::string &textureFile);
 
       void m_drawSurface(
+          const glm::mat4 &model,
           const glm::mat4 &modelView,
           const glm::mat4 &projection);
     public:
-      MeshObject(const std::string &meshFile, const std::string &textureFile, glm::mat4 &transform);
+      enum ShaderStyle {
+        FULLBRIGHT, SUNNY
+      };
+      MeshObject(const std::string &meshFile, const std::string &textureFile, glm::mat4 &transform, int style);
       virtual ~MeshObject();
 
       virtual void draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &proj, bool debug);
@@ -68,7 +74,7 @@ namespace at3 {
 
   template <typename EcsInterface>
   MeshObject<EcsInterface>::MeshObject(const std::string &meshFile, const std::string &textureFile,
-                                              glm::mat4 &transform) {
+                                              glm::mat4 &transform, int style) : shaderStyle(style) {
     SCENE_ECS->addTransform(SCENE_ID, transform);
 
     // Load the mesh from file using assimp
@@ -209,14 +215,35 @@ namespace at3 {
 
   template <typename EcsInterface>
   void MeshObject<EcsInterface>::m_drawSurface(
+      const glm::mat4 &model,
       const glm::mat4 &modelView,
       const glm::mat4 &projection)
   {
     // Use a simple shader
-    auto shader = Shaders::textureShader();
-    shader->use();
+    std::shared_ptr<ShaderProgram> shader;
+    switch (shaderStyle) {
+      case SUNNY: {
+        shader = Shaders::textureSunnyShader();
+        shader->use();
+      } break;
+      default: { // FULLBRIGHT
+        shader = Shaders::textureFullbrightShader();
+        shader->use();
+      } break;
+    }
+//    auto shader = Shaders::textureSunnyShader();
+//    shader->use();
 
     // Prepare the uniform values
+    if (shaderStyle == SUNNY) {
+      assert(shader->modelLocation() != -1);
+      glUniformMatrix4fv(
+          shader->modelLocation(),  // location
+          1,  // count
+          0,  // transpose
+          glm::value_ptr(model)  // value
+      );
+    }
     assert(shader->modelViewLocation() != -1);
     glUniformMatrix4fv(
         shader->modelViewLocation(),  // location
@@ -259,6 +286,21 @@ namespace at3 {
     );
     ASSERT_GL_ERROR();
 
+    if (shaderStyle == SUNNY) {
+      assert(shader->vertNormalLocation() != -1);
+      glEnableVertexAttribArray(shader->vertNormalLocation());
+      ASSERT_GL_ERROR();
+      glVertexAttribPointer(
+          shader->vertNormalLocation(),  // index
+          3,  // size
+          GL_FLOAT,  // type
+          0,  // normalized
+          sizeof(MeshVertex),  // stride
+          &(((MeshVertex *) 0)->norm[0])  // pointer
+      );
+      ASSERT_GL_ERROR();
+    }
+
     assert(shader->vertTexCoordLocation() != -1);
     glEnableVertexAttribArray(shader->vertTexCoordLocation());
     ASSERT_GL_ERROR();
@@ -287,11 +329,12 @@ namespace at3 {
   void MeshObject<EcsInterface>::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView,
                                              const glm::mat4 &proj, bool debug)
   {
-    glm::mat4 modelView = worldView * modelWorld;
+    glm::mat4 completeModelWorld = modelWorld;
     if (SCENE_ECS->hasTransformFunction(SCENE_ID)) {
-      modelView *= SCENE_ECS->getTransformFunction(SCENE_ID);
+      completeModelWorld *= SCENE_ECS->getTransformFunction(SCENE_ID);
     }
-    m_drawSurface(modelView, proj);
+    glm::mat4 modelView = worldView * completeModelWorld;
+    m_drawSurface(completeModelWorld, modelView, proj);
   }
 }
 

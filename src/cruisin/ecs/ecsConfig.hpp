@@ -115,6 +115,7 @@ namespace {
 
   struct TrackControls : public Component<TrackControls> {
     glm::vec2 control;
+    glm::vec2 brakes;
     glm::vec2 torque;
     std::vector<WheelInfo> wheels;
     btRaycastVehicle *vehicle;

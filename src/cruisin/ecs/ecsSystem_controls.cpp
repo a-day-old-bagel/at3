@@ -148,14 +148,17 @@ namespace at3 {
       // zero out stuff
       trackControls->control = glm::vec2();
       trackControls->torque = glm::vec2();
+      trackControls->brakes = glm::vec2();
 
       // Get current keyboard state and apply control signals
       const Uint8 *keyStates = SDL_GetKeyboardState(NULL);
 #     define DO_ON_KEYS(action, ...) if(anyPressed(keyStates, __VA_ARGS__)) { action; }
-      DO_ON_KEYS(trackControls->control += glm::vec2( 1.0f,  1.0f), SDL_SCANCODE_UP)
-      DO_ON_KEYS(trackControls->control += glm::vec2(-1.0f, -1.0f), SDL_SCANCODE_DOWN)
-      DO_ON_KEYS(trackControls->control += glm::vec2(-2.0f,  2.0f), SDL_SCANCODE_LEFT)
-      DO_ON_KEYS(trackControls->control += glm::vec2( 2.0f, -2.0f), SDL_SCANCODE_RIGHT)
+      DO_ON_KEYS(trackControls->control += glm::vec2( 1.0f,  1.0f), SDL_SCANCODE_UP, SDL_SCANCODE_KP_8)
+      DO_ON_KEYS(trackControls->control += glm::vec2(-1.0f, -1.0f), SDL_SCANCODE_DOWN, SDL_SCANCODE_KP_5)
+      DO_ON_KEYS(trackControls->control += glm::vec2(-2.0f,  2.0f), SDL_SCANCODE_LEFT, SDL_SCANCODE_KP_4)
+      DO_ON_KEYS(trackControls->control += glm::vec2( 2.0f, -2.0f), SDL_SCANCODE_RIGHT, SDL_SCANCODE_KP_6)
+      DO_ON_KEYS(trackControls->brakes  += glm::vec2( 0.5f,  0.0f), SDL_SCANCODE_KP_4)
+      DO_ON_KEYS(trackControls->control += glm::vec2( 0.0f,  0.5f), SDL_SCANCODE_KP_6)
 #     undef DO_ON_KEYS
 
       // Calculate torque to apply

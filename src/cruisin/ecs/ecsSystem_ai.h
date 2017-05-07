@@ -27,7 +27,12 @@
 #include <SDL.h>
 #include "dualityInterface.h"
 #include "ezecs.hpp"
-#include "sweepers.h"
+
+#include "CGenAlg.h"
+#include "CNeuralNet.h"
+#include "CParams.h"
+#include "SVector2D.h"
+#include "utils.h"
 
 using namespace ezecs;
 

@@ -83,6 +83,7 @@ namespace at3 {
       float fovy() const { return m_fovy; }
 
       void setCamera(std::shared_ptr<Camera<EcsInterface>> camera) { m_camera = camera; }
+      std::shared_ptr<Camera<EcsInterface>> getCamera() { return m_camera; }
 
       virtual bool handleEvent(const SDL_Event &event) {
         return false;

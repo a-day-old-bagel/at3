@@ -121,8 +121,10 @@ namespace at3 {
       for (int i = 0; i < trackControls->wheels.size(); ++i) {
         if (trackControls->wheels.at(i).leftOrRight < 0) {
           trackControls->vehicle->applyEngineForce(trackControls->torque.x, trackControls->wheels.at(i).bulletWheelId);
+          trackControls->vehicle->setBrake(trackControls->brakes.x, trackControls->wheels.at(i).bulletWheelId);
         } else if (trackControls->wheels.at(i).leftOrRight > 0) {
           trackControls->vehicle->applyEngineForce(trackControls->torque.y, trackControls->wheels.at(i).bulletWheelId);
+          trackControls->vehicle->setBrake(trackControls->brakes.y, trackControls->wheels.at(i).bulletWheelId);
         }
       }
       for (int i = 0; i < trackControls->vehicle->getNumWheels(); ++i) {

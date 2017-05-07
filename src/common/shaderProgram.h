@@ -38,7 +38,7 @@ namespace at3 {
       // FIXME: Clean these up with a couple macros
       // FIXME: Remove "Location" from all of these variables
       GLuint m_shaderProgram;
-      GLint m_modelViewLocation, m_projectionLocation,
+      GLint m_modelLocation, m_modelViewLocation, m_projectionLocation,
              m_modelViewProjectionLocation, m_normalTransformLocation,
              m_lightPositionLocation, m_lightIntensityLocation,
              m_timeLocation, m_colorLocation;
@@ -126,6 +126,11 @@ namespace at3 {
        */
       virtual ~ShaderProgram();
 
+      /**
+       * \return Location of the model transform matrix uniform in the
+       * shader.
+       */
+      GLint modelLocation() const { return m_modelLocation; }
       /**
        * \return Location of the model-view transform matrix uniform in the
        * shader.

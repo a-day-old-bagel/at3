@@ -23,9 +23,9 @@ SNeuron::SNeuron(int NumInputs) : m_NumInputs(NumInputs + 1) {
 //-----------------------------------------------------------------------
 SNeuronLayer::SNeuronLayer(int NumNeurons,
                            int NumInputsPerNeuron) : m_NumNeurons(NumNeurons) {
-  for (int i = 0; i < NumNeurons; ++i)
-
+  for (int i = 0; i < NumNeurons; ++i) {
     m_vecNeurons.push_back(SNeuron(NumInputsPerNeuron));
+  }
 }
 
 
@@ -42,9 +42,7 @@ CNeuralNet::CNeuralNet() {
   m_NumOutputs = CParams::iNumOutputs;
   m_NumHiddenLayers = CParams::iNumHidden;
   m_NeuronsPerHiddenLyr = CParams::iNeuronsPerHiddenLayer;
-
   CreateNet();
-
 }
 
 //------------------------------createNet()------------------------------
@@ -126,19 +124,15 @@ void CNeuralNet::PutWeights(std::vector<double> &weights) {
 //
 //------------------------------------------------------------------------
 int CNeuralNet::GetNumberOfWeights() const {
-
   int weights = 0;
 
   //for each layer
   for (int i = 0; i < m_NumHiddenLayers + 1; ++i) {
-
     //for each neuron
     for (int j = 0; j < m_vecLayers[i].m_NumNeurons; ++j) {
       //for each weight
       for (int k = 0; k < m_vecLayers[i].m_vecNeurons[j].m_NumInputs; ++k)
-
         weights++;
-
     }
   }
 

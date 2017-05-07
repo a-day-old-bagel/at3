@@ -127,4 +127,10 @@ namespace at3 {
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
   }
+
+  void DualityInterface::addMouseControl(const ezecs::entityId &id) {
+    CompOpReturn status = state->add_MouseControls(id, false, false);
+    EZECS_CHECK_PRINT(EZECS_ERR(status));
+    assert(status == SUCCESS);
+  }
 };
