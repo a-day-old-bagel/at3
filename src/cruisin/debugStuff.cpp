@@ -170,5 +170,11 @@ namespace at3 {
       SDL_PauseAudioDevice(dev, 0);  // start audio
     }
   }
+  lineDrawFuncType DebugStuff::getLineDrawFunc() {
+    return std::bind(&BulletDebug_::drawLineGlm, bulletDebug,
+                     std::placeholders::_1,
+                     std::placeholders::_2,
+                     std::placeholders::_3);
+  }
 }
 #pragma clang diagnostic pop

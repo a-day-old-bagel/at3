@@ -30,9 +30,13 @@
 
 namespace at3 {
 
+  void nullDraw(glm::vec3&, glm::vec3&, glm::vec3&) {
+    return;
+  }
+
   AiSystem::AiSystem(State *state, float minX, float maxX, float minY, float maxY, float spawnHeight)
       : System(state), minX(minX), maxX(maxX), minY(minY), maxY(maxY), spawnHeight(spawnHeight) {
-
+    srand(133701337);
   }
 
   AiSystem::~AiSystem() {
@@ -63,7 +67,6 @@ namespace at3 {
     uint32_t deltaTime = nowTime - lastTime;
 
     if (deltaTime < CParams::iNumTicks) {
-      std::vector<entityId> countedTargets;
       for (int i = 0; i < participants.size(); ++i) {
         state->get_SweeperAi(participants[i], &sweeperAi);
         state->get_Placement(participants[i], &placement);
@@ -96,6 +99,17 @@ namespace at3 {
         inputs.push_back(horizLookAt.x);
         inputs.push_back(horizLookAt.y);
 
+        glm::vec3 lineColor(1.f, 1.f, 0.f);
+        glm::vec3 startPoint = placement->getTranslation() + glm::vec3(0.f, 0.f, 3.f);
+        glm::vec3 endPoint = placement->getTranslation() + glm::vec3(horizLookAt.x, horizLookAt.y, 0.f) * 3.f
+                             + glm::vec3(0.f, 0.f, 3.f);
+        lineDrawFunc(startPoint, endPoint, lineColor);
+        lineColor = glm::vec3(0.f, 1.f, 1.f);
+        startPoint = placement->getTranslation() + glm::vec3(0.f, 0.f, 3.f);
+        endPoint = placement->getTranslation() + glm::vec3(toTargetNormalized.x, toTargetNormalized.y, 0.f) * 3.f
+                   + glm::vec3(0.f, 0.f, 3.f);
+        lineDrawFunc(startPoint, endPoint, lineColor);
+
         // update the NN and position
         std::vector<double> outputs = (sweeperAi->net.Update(inputs));
         if (outputs.size() != CParams::iNumOutputs) {
@@ -108,6 +122,47 @@ namespace at3 {
         trackControls->torque.x = (float) (outputs.at(0) * 2.f - 1.f) * TRACK_TORQUE;
         trackControls->torque.y = (float) (outputs.at(1) * 2.f - 1.f) * TRACK_TORQUE;
 
+        trackControls->brakes.x = std::max(0.f, TRACK_TORQUE - TRACK_TORQUE * abs(trackControls->torque.x));
+        trackControls->brakes.y = std::max(0.f, TRACK_TORQUE - TRACK_TORQUE * abs(trackControls->torque.y));
+
+//          trackControls->torque.x = (float)(+outputs[0] /*+ outputs[1]*/);
+//          trackControls->torque.y = (float)(-outputs[0] /*+ outputs[1]*/);
+//        trackControls->brakes.x = (float)(+outputs[1] /*+ outputs[1]*/);
+//        trackControls->brakes.y = (float)(-outputs[1] /*+ outputs[1]*/);
+
+        /*trackControls->torque = glm::vec2();
+        trackControls->brakes = glm::vec2();
+        int numLeftWheels = 0, numRightWheels = 0;
+        for (int j = 0; j < trackControls->vehicle->getNumWheels(); ++j) {
+          WheelInfo wi = trackControls->wheels.at(j);
+          btWheelInfo btwi = trackControls->vehicle->getWheelInfo(wi.bulletWheelId);
+          float currentRot = btwi.m_deltaRotation * btwi.m_wheelsRadius;
+          float desiredRot = wi.leftOrRight * (float)(wi.leftOrRight < 0 ? outputs[0] : outputs[1]);
+          float appliedRot = desiredRot - currentRot;
+          if (wi.leftOrRight < 0) {
+            ++numLeftWheels;
+            trackControls->torque.x += appliedRot * appliedRot * appliedRot;
+          } else {
+            ++numRightWheels;
+            trackControls->torque.y += appliedRot * appliedRot * appliedRot;
+          }
+        }
+        if (numLeftWheels) {
+          trackControls->torque.x /= numLeftWheels;
+          trackControls->brakes.x /= numLeftWheels;
+        }
+        if (numRightWheels) {
+          trackControls->torque.y /= numRightWheels;
+          trackControls->brakes.y /= numRightWheels;
+        }*/
+
+        // TURNINESS
+        if (trackControls->torque.x) {
+          float turnSlope = trackControls->torque.y / trackControls->torque.x;
+          sweeperAi->turniness += abs(sweeperAi->lastTurnSlope - turnSlope) / (dt * 100000.f);
+          sweeperAi->lastTurnSlope = turnSlope;
+        }
+
         auto &pairs = sweeperAi->ghostObject->getOverlappingPairs();
         int numPairs = sweeperAi->ghostObject->getNumOverlappingObjects();
         if (numPairs > 2) {
@@ -115,24 +170,23 @@ namespace at3 {
             entityId touched = (entityId) pairs.at(j)->getUserIndex();
             compMask compsPresent = state->getComponents(touched);
             if (compsPresent & SWEEPERTARGET) {
-//              if (std::find(countedTargets.begin(), countedTargets.end(), touched) == countedTargets.end()) {
-              if (true) {
-                for (auto id : countedTargets) {
-                  std::cout << id << " ";
-                }
-                std::cout << "(" << countedTargets.size() << ") " << std::endl;
-                countedTargets.push_back(touched);
+              SweeperTarget *target;
+              state->get_SweeperTarget(touched, &target);
+              if (!target->coolDown) {
                 ++sweeperAi->fitness;
+                target->coolDown = true;
+                target->lastTime = SDL_GetTicks();
                 Physics *physics;
                 state->get_Physics(touched, &physics);
-                glm::mat4 newTransform = randTransformWithinDomain(rayFunc, 200.f, 5.f);
+                glm::mat4 newTransform = randTransformWithinDomain(rayFunc, 200.f, 20.f);
                 physics->setTransform(newTransform);
                 physics->beStill();
                 physics->rigidBody->activate();
                 physics->rigidBody->applyCentralImpulse({0.f, 0.f, 1.f});
-                std::cout << i << " counted " << touched << std::endl;
               } else {
-                std::cout << i << " ALREADY COUNTED " << touched << "!" << std::endl;
+                if (SDL_GetTicks() - target->lastTime >= 1000) { // 1 second
+                  target->coolDown = false;
+                }
               }
             }
           }
@@ -146,19 +200,33 @@ namespace at3 {
 
       lastTime = nowTime;
 
+      float bestFitness = 0;
+      float turninessOfBest = 0;
+      float baseFitnessOfBest = 0;
+      int indexOfBest = 0;
+      entityId idOfBest = 0;
       Physics *physics;
       for (int i = 0; i < registries[0].ids.size(); ++i) {
         state->get_Physics(registries[0].ids.at(i), &physics);
         state->get_SweeperAi(registries[0].ids.at(i), &sweeperAi);
-        population.at(i).dFitness = std::min(sweeperAi->fitness, sweeperAi->fitness / (sweeperAi->distance * 0.1f));
-        if (i == 0) {
-          std::cout << "0's FIT: " << sweeperAi->fitness << " -> " << population.at(i).dFitness << std::endl;
+        float fitness2 = sweeperAi->fitness * sweeperAi->fitness;
+        float trueFitness = sweeperAi->turniness *
+                            std::min(fitness2, fitness2 / (sweeperAi->distance * 0.1f));
+        population.at(i).dFitness = trueFitness;
+        if (trueFitness > bestFitness) {
+          bestFitness = trueFitness;
+          turninessOfBest = sweeperAi->turniness;
+          baseFitnessOfBest = sweeperAi->fitness;
+          idOfBest = registries[0].ids.at(i);
+          indexOfBest = i;
         }
         sweeperAi->fitness = 0;
         glm::mat4 newTransform = randTransformWithinDomain(rayFunc, 200.f, 5.f);
         physics->setTransform(newTransform);
         physics->beStill();
       }
+      std::cout << "BEST FIT (#" << indexOfBest << " ID" << idOfBest << "): " << baseFitnessOfBest
+                << ", " << turninessOfBest << " -> " << bestFitness << std::endl;
 
       //run the GA to create a new population
       population = geneticAlgorithm->Epoch(population);
@@ -263,6 +331,9 @@ namespace at3 {
     }
     result = glm::rotate(result, (float)RandFloat() * (float)M_PI * 2.f, glm::vec3(0.f, 0.f, 1.f));
     return result;
+  }
+  void AiSystem::setLineDrawFunc(lineDrawFuncType &&func) {
+    lineDrawFunc = func;
   }
 }
 

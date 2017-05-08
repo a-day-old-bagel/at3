@@ -38,6 +38,10 @@ using namespace ezecs;
 
 namespace at3 {
   typedef std::function<btCollisionWorld::ClosestRayResultCallback(btVector3 &, btVector3 &)> rayFuncType;
+  typedef std::function<void(glm::vec3&, glm::vec3&, glm::vec3&)> lineDrawFuncType;
+
+  void nullDraw(glm::vec3&, glm::vec3&, glm::vec3&);
+
   class AiSystem : public System<AiSystem> {
       std::vector<entityId> participants;
       std::vector<entityId> lateComers;
@@ -45,6 +49,7 @@ namespace at3 {
       CParams params;
       CGenAlg* geneticAlgorithm = NULL;
       rayFuncType rayFunc;
+      lineDrawFuncType lineDrawFunc = &nullDraw;
       uint32_t lastTime;
       float minX, maxX, minY, maxY, spawnHeight;
       int numWeightsInNN, generationCount = 0;
@@ -66,6 +71,7 @@ namespace at3 {
       glm::vec2 randVec2WithinDomain();
       glm::vec2 randVec2WithinDomain(float scale);
       glm::mat4 randTransformWithinDomain(rayFuncType& rayFunc, float rayLen, float offsetHeight, float scale = 1.f);
+      void setLineDrawFunc(lineDrawFuncType &&func);
   };
 }
 

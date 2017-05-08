@@ -145,12 +145,16 @@ namespace {
     btGhostObject *ghostObject;
     float fitness = 0.f;
     float distance = 0.f;
+    float lastTurnSlope = 1.f;
+    float turniness = 0.f;
     SweeperAi();
     void reset();
   };
   EZECS_COMPONENT_DEPENDENCIES(SweeperAi, TrackControls)
 
   struct SweeperTarget : public Component<SweeperTarget> {
+    bool coolDown = false;
+    uint32_t lastTime;
     SweeperTarget();
   };
   EZECS_COMPONENT_DEPENDENCIES(SweeperTarget, Placement)

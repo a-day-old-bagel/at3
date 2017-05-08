@@ -10,6 +10,7 @@
 #include "scene.h"
 #include "debug.h"
 #include "ecsSystem_physics.h"
+#include "ecsSystem_ai.h"
 
 namespace at3 {
   class DebugStuff {
@@ -20,6 +21,7 @@ namespace at3 {
     public:
       DebugStuff(Scene_ &scene, PhysicsSystem* physicsSystem);
       void queueMusic();
+      lineDrawFuncType getLineDrawFunc();
   };
 }
 

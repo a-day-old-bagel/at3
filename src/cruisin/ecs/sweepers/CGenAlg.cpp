@@ -127,7 +127,7 @@ std::vector<SGenome> CGenAlg::Epoch(std::vector<SGenome> &old_pop) {
   //calculate best, worst, average and total fitness
   CalculateBestWorstAvTot();
 
-  //create a temporary vector to store new chromosones
+  //create a temporary vector to store new chromosomes
   std::vector<SGenome> vecNewPop;
 
   //Now to add a little elitism we shall add in some copies of the

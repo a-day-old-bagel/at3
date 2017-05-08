@@ -157,12 +157,14 @@ namespace at3 {
       DO_ON_KEYS(trackControls->control += glm::vec2(-1.0f, -1.0f), SDL_SCANCODE_DOWN, SDL_SCANCODE_KP_5)
       DO_ON_KEYS(trackControls->control += glm::vec2(-2.0f,  2.0f), SDL_SCANCODE_LEFT, SDL_SCANCODE_KP_4)
       DO_ON_KEYS(trackControls->control += glm::vec2( 2.0f, -2.0f), SDL_SCANCODE_RIGHT, SDL_SCANCODE_KP_6)
-      DO_ON_KEYS(trackControls->brakes  += glm::vec2( 0.5f,  0.0f), SDL_SCANCODE_KP_4)
-      DO_ON_KEYS(trackControls->control += glm::vec2( 0.0f,  0.5f), SDL_SCANCODE_KP_6)
+      DO_ON_KEYS(trackControls->brakes  += glm::vec2( 5.0f,  0.0f), SDL_SCANCODE_KP_7)
+      DO_ON_KEYS(trackControls->brakes  += glm::vec2( 0.0f,  5.0f), SDL_SCANCODE_KP_9)
 #     undef DO_ON_KEYS
 
       // Calculate torque to apply
       trackControls->torque += TRACK_TORQUE * trackControls->control;
+//      trackControls->brakes = glm::vec2(std::max(0.f, 3.f - 3.f * abs(trackControls->torque.x)),
+//                                        std::max(0.f, 3.f - 3.f * abs(trackControls->torque.x)));
     }
     queuedEvents.clear();
   }

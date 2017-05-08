@@ -118,18 +118,17 @@ class CruisinGame : public Game<State, DualityInterface> {
       }
       // some targets for the sweeper buggies
       for (int i = 0; i < CParams::iNumMines; ++i) {
-        glm::mat4 transform = mAiSystem.randTransformWithinDomain(rayFunc, 200.f, 5.f);
+        glm::mat4 transform = mAiSystem.randTransformWithinDomain(rayFunc, 200.f, 20.f);
         mvpSweeperTargets.push_back(std::shared_ptr<MeshObject_>(
             new MeshObject_("assets/models/sphere.dae", "assets/textures/pyramid_flames.png",
                             transform, MeshObject_::FULLBRIGHT)));
         entityId targetId = mvpSweeperTargets.back()->getId();
         state.add_SweeperTarget(targetId);
-        btVector3 boxDims(1.f, 1.f, 1.f);
+        btVector3 boxDims(1.f, 1.f, 0.5f);
         state.add_Physics(mvpSweeperTargets.back()->getId(), 10.f, &boxDims, Physics::BOX);
         Physics *physics;
         state.get_Physics(mvpSweeperTargets.back()->getId(), &physics);
         physics->rigidBody->applyCentralImpulse({0.f, 0.f, 1.f});
-        physics->rigidBody->setDamping(physics->rigidBody->getLinearDamping(), 0.9f);
         physics->rigidBody->setFriction(0.8f);
         scene.addObject(mvpSweeperTargets.back());
       }
@@ -152,6 +151,7 @@ class CruisinGame : public Game<State, DualityInterface> {
       // some debug-draw features...
       mpDebugStuff = std::shared_ptr<DebugStuff> (
           new DebugStuff(scene, &mPhysicsSystem));
+      mAiSystem.setLineDrawFunc(mpDebugStuff->getLineDrawFunc());
 
       return EZECS_SUCCESS;
     }
