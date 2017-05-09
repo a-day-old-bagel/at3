@@ -48,3 +48,6 @@
 /.vs
 CMakeSettings.json
 /Win32
+
+# sketchup backup files
+*.skb

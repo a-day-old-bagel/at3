@@ -342,9 +342,9 @@ namespace at3 {
         sweeperAi->ghostObject->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE
     );
     dynamicsWorld->addCollisionObject(sweeperAi->ghostObject);
-    Physics *physics;
-    state->get_Physics(id, &physics);
-    btTransform ident();
+//    Physics *physics;
+//    state->get_Physics(id, &physics);
+//    btTransform ident();
 
     return true;
   }
