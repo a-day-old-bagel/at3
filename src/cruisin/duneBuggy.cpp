@@ -23,8 +23,14 @@ namespace at3 {
 
   DuneBuggy::DuneBuggy(ezecs::State &state, Scene_ &scene, glm::mat4 &transform) : mpState(&state), mpScene(&scene) {
     mpChassis = std::shared_ptr<MeshObject_> (
-        new MeshObject_("assets/models/pyramid_bottom.dae", "assets/textures/pyramid_bottom.png",
-                        transform, MeshObject_::SUNNY));
+
+        new MeshObject_("assets/models/pyramid_bottom.dae", transform));
+
+//        new MeshObject_("assets/models/jeep.dae", transform));
+
+//        new MeshObject_("assets/models/pyramid_bottom.dae", "assets/textures/pyramid_bottom.png",
+//                        transform, MeshObject_::SUNNY));
+
     ezecs::entityId chassisId = mpChassis->getId();
 
     glm::mat4 ident;

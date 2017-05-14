@@ -61,6 +61,9 @@ namespace at3 {
     /** Shader for drawing textures in sunny-looking weather */
     DECLARE_SHADER(textureSunny);
 
+    /** Shader for drawing meshes without textures */
+    DECLARE_SHADER(noTextureSunny);
+
     /** Shader for drawing skybox */
     DECLARE_SHADER(skyQuad);
     
