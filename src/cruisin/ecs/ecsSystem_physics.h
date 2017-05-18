@@ -36,6 +36,8 @@ using namespace ezecs;
 // TODO: figure out how to use bullet to simulate objects without collision components
 namespace at3 {
 
+  typedef std::function<btCollisionWorld::ClosestRayResultCallback(btVector3 &, btVector3 &)> rayFuncType;
+
   /*
    * The physics system
    */
@@ -55,7 +57,6 @@ namespace at3 {
               PHYSICS | PYRAMIDCONTROLS,
               PHYSICS | TERRAIN,
               PHYSICS | TRACKCONTROLS,
-              PHYSICS | SWEEPERAI
       };
       PhysicsSystem(State* state);
       bool onInit();
@@ -66,11 +67,10 @@ namespace at3 {
       bool onDiscoverTerrain(const entityId& id);
       bool onDiscoverTrackControls(const entityId& id);
       bool onForgetTrackControls(const entityId& id);
-      bool onDiscoverSweeperAi(const entityId &id);
-      bool onForgetSweeperAi(const entityId &id);
       bool handleEvent(SDL_Event& event);
       void setDebugDrawer(std::shared_ptr<BulletDebug_> debug);
       btCollisionWorld::ClosestRayResultCallback rayTest(const btVector3 &start, const btVector3 &end);
+      rayFuncType getRayFunc();
       // TODO: add removal logic for vehicles and wheels
   };
 }

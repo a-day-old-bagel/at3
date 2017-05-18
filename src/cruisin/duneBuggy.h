@@ -23,6 +23,7 @@ namespace at3 {
       std::shared_ptr<ThirdPersonCamera_> mpCamera;
 
       DuneBuggy(ezecs::State &state, Scene_ &scene, glm::mat4 &transform);
+      std::shared_ptr<PerspectiveCamera_> getCamPtr();
       void tip();
   };
 }

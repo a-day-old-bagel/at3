@@ -100,11 +100,8 @@ namespace at3 {
 
     m_genMesh();
     glm::vec2 newZInfo = m_genMaps(xSize, ySize, zSize);
-    std::cout << newZInfo.x << " -> " << newZInfo.y << std::endl;
-    std::cout << (newZInfo.x + newZInfo.y) * 0.5f << ", " << newZInfo.y - newZInfo.x << std::endl;
     float newZSize = zSize / (newZInfo.y - newZInfo.x);
     float newZCenter = zCenter - ((newZInfo.x + newZInfo.y) * 0.5f);
-    std::cout << newZCenter << ", " << newZSize << std::endl;
 
     glm::mat4 translated = glm::translate(transform, {xCenter, yCenter, zCenter});
 
@@ -114,7 +111,6 @@ namespace at3 {
     glm::mat4 scaledTransform = glm::scale(translated, {xSize, ySize, newZSize});
     glm::mat4 centeredTransform = glm::translate(scaledTransform, {0.f, 0.f, (newZInfo.x + newZInfo.y) * -0.5f});
 
-    std::cout << centeredTransform[3][2] << std::endl;
     SCENE_ECS->setTransform(SCENE_ID, centeredTransform);
 
   }

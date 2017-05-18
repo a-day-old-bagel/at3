@@ -102,8 +102,11 @@ namespace at3 {
     Physics *physics;
     mpState->get_Physics(mvpSpheres.back()->getId(), &physics);
     physics->rigidBody->applyCentralImpulse({0.f, 0.f, 1.f});
-    mpState->add_SweeperTarget(mvpSpheres.back()->getId());
     mpScene->addObject(mvpSpheres.back());
+  }
+
+  std::shared_ptr<PerspectiveCamera_> Pyramid::getCamPtr() {
+    return mpCamera->mpCamera;
   }
 }
 #pragma clang diagnostic pop

@@ -35,7 +35,6 @@
 #include "ecsSystem_movement.h"
 #include "ecsSystem_controls.h"
 #include "ecsSystem_physics.h"
-#include "ecsSystem_ai.h"
 
 #include "duneBuggy.h"
 #include "pyramid.h"
@@ -49,18 +48,15 @@ using namespace ezecs;
 
 class CruisinGame : public Game<State, DualityInterface> {
   private:
-    std::shared_ptr<SkyBox_>                  mpSkybox;
-    std::shared_ptr<TerrainObject_>           mpTerrain;
-    std::shared_ptr<Pyramid>                  mpPyramid;
-    std::shared_ptr<DuneBuggy>                mpDuneBuggy;
-    std::vector<std::shared_ptr<DuneBuggy>>   mvpSweepers;
-    std::vector<std::shared_ptr<MeshObject_>> mvpSweeperTargets;
+    std::shared_ptr<SkyBox_>         mpSkybox;
+    std::shared_ptr<TerrainObject_>  mpTerrain;
+    std::shared_ptr<Pyramid>         mpPyramid;
+    std::shared_ptr<DuneBuggy>       mpDuneBuggy;
 
     DualityInterface  mDualityInterface;
     ControlSystem     mControlSystem;
     MovementSystem    mMovementSystem;
     PhysicsSystem     mPhysicsSystem;
-    AiSystem          mAiSystem;
     
   public:
 
@@ -73,8 +69,7 @@ class CruisinGame : public Game<State, DualityInterface> {
           mDualityInterface(&state),
           mControlSystem(&state),
           mMovementSystem(&state),
-          mPhysicsSystem(&state),
-          mAiSystem(&state, -200.f, 200.f, -200.f, 200.f, 0.f) {
+          mPhysicsSystem(&state) {
       // link the ecs and the scene graph together
       SceneObject_::linkEcs(mDualityInterface);
       // assign the systems' event handler function
@@ -83,15 +78,13 @@ class CruisinGame : public Game<State, DualityInterface> {
 
     EzecsResult init() {
 
-      rayFuncType rayFunc = std::bind( &PhysicsSystem::rayTest, &mPhysicsSystem,
-                                       std::placeholders::_1, std::placeholders::_2 );
+      std::cout << "Game is initializing...\n" << std::endl;
 
       // Initialize the systems
       bool initSuccess = true;
       initSuccess &= mControlSystem.init();
       initSuccess &= mPhysicsSystem.init();
       initSuccess &= mMovementSystem.init();
-      initSuccess &= mAiSystem.init();
       assert(initSuccess);
 
       // an identity matrix
@@ -100,39 +93,13 @@ class CruisinGame : public Game<State, DualityInterface> {
       // a terrain
       TerrainObject_::initTextures();
       mpTerrain = std::shared_ptr<TerrainObject_> (
-          new TerrainObject_(ident, -5000.f, 5000.f, -5000.f, 5000.f, -200, 0));
+          new TerrainObject_(ident, -5000.f, 5000.f, -5000.f, 5000.f, -200, 200));
       this->scene.addObject(mpTerrain);
 
       // a buggy
       glm::mat4 buggyMat = glm::translate(ident, { 0.f, -290.f, 0.f });
       mpDuneBuggy = std::shared_ptr<DuneBuggy> (
           new DuneBuggy(state, scene, buggyMat));
-
-      // some sweeper buggies
-      for (int i = 0; i < CParams::iNumSweepers; ++i) {
-        glm::mat4 transform = mAiSystem.randTransformWithinDomain(rayFunc, 200.f, 5.f);
-        mvpSweepers.push_back(std::shared_ptr<DuneBuggy>(
-            new DuneBuggy(state, scene, transform)));
-        entityId sweeperId = mvpSweepers.back()->mpChassis->getId();
-        state.add_SweeperAi(sweeperId);
-      }
-      // some targets for the sweeper buggies
-      for (int i = 0; i < CParams::iNumMines; ++i) {
-        glm::mat4 transform = mAiSystem.randTransformWithinDomain(rayFunc, 200.f, 20.f);
-        mvpSweeperTargets.push_back(std::shared_ptr<MeshObject_>(
-            new MeshObject_("assets/models/sphere.dae", "assets/textures/pyramid_flames.png",
-                            transform, MeshObject_::FULLBRIGHT)));
-        entityId targetId = mvpSweeperTargets.back()->getId();
-        state.add_SweeperTarget(targetId);
-        btVector3 boxDims(1.f, 1.f, 0.5f);
-        state.add_Physics(mvpSweeperTargets.back()->getId(), 10.f, &boxDims, Physics::BOX);
-        Physics *physics;
-        state.get_Physics(mvpSweeperTargets.back()->getId(), &physics);
-        physics->rigidBody->applyCentralImpulse({0.f, 0.f, 1.f});
-        physics->rigidBody->setFriction(0.8f);
-        scene.addObject(mvpSweeperTargets.back());
-      }
-      mAiSystem.beginSimulation(rayFunc);
 
       // a flying pyramid
       glm::mat4 pyramidMat = glm::translate(ident, { 0.f, 0.f, 5.f });
@@ -146,12 +113,14 @@ class CruisinGame : public Game<State, DualityInterface> {
       LoadResult loaded = mpSkybox->useCubeMap("sea", "png");
       assert(loaded == LOAD_SUCCESS);
 
-      this->setCamera(mpPyramid->mpCamera->mpCamera);
+      // start with the camera focused on the pyramid
+      this->setCamera(mpPyramid->getCamPtr());
 
       // some debug-draw features...
       mpDebugStuff = std::shared_ptr<DebugStuff> (
           new DebugStuff(scene, &mPhysicsSystem));
-      mAiSystem.setLineDrawFunc(mpDebugStuff->getLineDrawFunc());
+
+      std::cout << "Game has started.\n" << std::endl;
 
       return EZECS_SUCCESS;
     }
@@ -172,10 +141,10 @@ class CruisinGame : public Game<State, DualityInterface> {
               mpPyramid->spawnSphere();
             } break;
             case SDL_SCANCODE_1: {
-              setCamera(mpPyramid->mpCamera->mpCamera);
+              setCamera(mpPyramid->getCamPtr());
             } break;
             case SDL_SCANCODE_2: {
-              setCamera(mpDuneBuggy->mpCamera->mpCamera);
+              setCamera(mpDuneBuggy->getCamPtr());
             } break;
             case SDL_SCANCODE_3:
             case SDL_SCANCODE_4:
@@ -185,7 +154,7 @@ class CruisinGame : public Game<State, DualityInterface> {
             case SDL_SCANCODE_8:
             case SDL_SCANCODE_9:
             case SDL_SCANCODE_0: {
-              setCamera(mvpSweepers[event.key.keysym.scancode - SDL_SCANCODE_3]->mpCamera->mpCamera);
+
             } break;
             case SDL_SCANCODE_RCTRL: {
               mpDuneBuggy->tip();
@@ -199,7 +168,6 @@ class CruisinGame : public Game<State, DualityInterface> {
     void tick(float dt) {
       mControlSystem.setWorldView(getCamera()->lastWorldViewQueried);
       mControlSystem.tick(dt);
-      mAiSystem.tick(dt);
       mPhysicsSystem.tick(dt);
       mMovementSystem.tick(dt);
 

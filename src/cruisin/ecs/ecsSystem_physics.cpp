@@ -72,8 +72,6 @@ namespace at3 {
     registries[2].discoverHandler = DELEGATE(&PhysicsSystem::onDiscoverTerrain, this);
     registries[3].discoverHandler = DELEGATE(&PhysicsSystem::onDiscoverTrackControls, this);
     registries[3].forgetHandler = DELEGATE(&PhysicsSystem::onForgetTrackControls, this);
-    registries[4].discoverHandler = DELEGATE(&PhysicsSystem::onDiscoverSweeperAi, this);
-    registries[4].forgetHandler = DELEGATE(&PhysicsSystem::onForgetSweeperAi, this);
 
     broadphase = new btDbvtBroadphase();
     collisionConfiguration = new btDefaultCollisionConfiguration();
@@ -157,15 +155,6 @@ namespace at3 {
       }
       transform.getOpenGLMatrix((btScalar *) &newTransform);
       placement->mat = newTransform;
-    }
-
-    // Make ghost objects follow their owners
-    for (auto id : registries[4].ids) {
-      SweeperAi *sweeperAi;
-      Physics *physics;
-      state->get_Physics(id, &physics);
-      state->get_SweeperAi(id, &sweeperAi);
-      sweeperAi->ghostObject->setWorldTransform(physics->rigidBody->getWorldTransform());
     }
   }
 
@@ -331,32 +320,6 @@ namespace at3 {
     return true;
   }
 
-  bool PhysicsSystem::onDiscoverSweeperAi(const entityId &id) {
-    SweeperAi *sweeperAi;
-    state->get_SweeperAi(id, &sweeperAi);
-    sweeperAi->ghostObject = new btGhostObject();
-    btVector3 boxDims(2.f, 2.f, 2.f);
-    sweeperAi->ghostShape = new btBoxShape(boxDims);
-    sweeperAi->ghostObject->setCollisionShape(sweeperAi->ghostShape);
-    sweeperAi->ghostObject->setCollisionFlags(
-        sweeperAi->ghostObject->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE
-    );
-    dynamicsWorld->addCollisionObject(sweeperAi->ghostObject);
-//    Physics *physics;
-//    state->get_Physics(id, &physics);
-//    btTransform ident();
-
-    return true;
-  }
-  bool PhysicsSystem::onForgetSweeperAi(const entityId &id) {
-    SweeperAi *sweeperAi;
-    state->get_SweeperAi(id, &sweeperAi);
-    dynamicsWorld->removeCollisionObject(sweeperAi->ghostObject);
-    delete sweeperAi->ghostObject;
-    delete sweeperAi->ghostShape;
-    return true;
-  }
-
   bool PhysicsSystem::handleEvent(SDL_Event& event) {
     switch (event.type) {
       case SDL_KEYDOWN:
@@ -382,6 +345,10 @@ namespace at3 {
     btCollisionWorld::ClosestRayResultCallback rayCallback(start, end);
     dynamicsWorld->rayTest(start, end, rayCallback);
     return rayCallback;
+  }
+
+  rayFuncType PhysicsSystem::getRayFunc() {
+    return std::bind( &PhysicsSystem::rayTest, this, std::placeholders::_1, std::placeholders::_2 );
   }
 }
 

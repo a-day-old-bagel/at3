@@ -10,9 +10,9 @@
 #include "scene.h"
 #include "debug.h"
 #include "ecsSystem_physics.h"
-#include "ecsSystem_ai.h"
 
 namespace at3 {
+  typedef std::function<void(glm::vec3&, glm::vec3&, glm::vec3&)> lineDrawFuncType;
   class DebugStuff {
     private:
       Scene_* scene;

@@ -105,5 +105,9 @@ namespace at3 {
     mpState->get_Physics(mpChassis->getId(), &physics);
     physics->rigidBody->applyImpulse({0.f, 0.f, 100.f}, {1.f, 0.f, 0.f});
   }
+
+  std::shared_ptr<PerspectiveCamera_> DuneBuggy::getCamPtr() {
+    return mpCamera->mpCamera;
+  }
 }
 #pragma clang diagnostic pop

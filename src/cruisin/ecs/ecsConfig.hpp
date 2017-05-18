@@ -34,7 +34,6 @@
 #include <btBulletDynamicsCommon.h>
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
-#include "CNeuralNet.h"
 
 // END INCLUDES
 
@@ -139,26 +138,6 @@ namespace {
   };
   EZECS_COMPONENT_DEPENDENCIES(Terrain, Placement)
 
-  struct SweeperAi : public Component<SweeperAi> {
-    CNeuralNet net;
-    btCollisionShape* ghostShape;
-    btGhostObject *ghostObject;
-    float fitness = 0.f;
-    float distance = 0.f;
-    float lastTurnSlope = 1.f;
-    float turniness = 0.f;
-    SweeperAi();
-    void reset();
-  };
-  EZECS_COMPONENT_DEPENDENCIES(SweeperAi, TrackControls)
-
-  struct SweeperTarget : public Component<SweeperTarget> {
-    bool coolDown = false;
-    uint32_t lastTime;
-    SweeperTarget();
-  };
-  EZECS_COMPONENT_DEPENDENCIES(SweeperTarget, Placement)
-
   // END DECLARATIONS
 
   // BEGIN DEFINITIONS
@@ -213,13 +192,6 @@ namespace {
 
   Terrain::Terrain(floatVecPtr heights, size_t resX, size_t resY, float sclX, float sclY, float sclZ, float minZ, float maxZ)
       : heights(heights), resX(resX), resY(resY), sclX(sclX), sclY(sclY), sclZ(sclZ), minZ(minZ), maxZ(maxZ) { }
-
-  SweeperAi::SweeperAi() { }
-  void SweeperAi::reset() {
-    fitness = 0.f;
-  }
-
-  SweeperTarget::SweeperTarget() { }
 
   // END DEFINITIONS
 

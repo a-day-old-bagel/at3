@@ -26,6 +26,7 @@ namespace at3 {
       Pyramid(ezecs::State &state, Scene_ &scene, glm::mat4 &transform);
       void resizeFire();
       void spawnSphere();
+      std::shared_ptr<PerspectiveCamera_> getCamPtr();
   };
 }
 

@@ -31,7 +31,7 @@
 
 namespace at3 {
   /**
-   * A camera object with perspective projection.
+   * A camera object that orbits and looks at some target entity (third-person style)
    */
   template <typename EcsInterface>
   class ThirdPersonCamera {
