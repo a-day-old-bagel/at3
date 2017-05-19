@@ -93,20 +93,20 @@ namespace at3 {
         glm::vec3(0.f, 1.f, 0.f));
   }
 
-  DebugStuff::DebugStuff(Scene_ &scene, PhysicsSystem* physicsSystem) : scene(&scene) {
+  DebugStuff::DebugStuff(Scene_ &scene, PhysicsSystem* physicsSystem) : mpScene(&scene) {
     // a floor grid
     debugGenerateFloorGrid(-10.5f, 10.5f, 21, -10.5f, 10.5f, 21);
     // a virus
     debugGenerateVirus();
     // a bullet physics debug-drawing thing
-    bulletDebug = std::shared_ptr<BulletDebug_> ( new BulletDebug_() );
-    bulletDebug->setDebugMode(btIDebugDraw::DBG_DrawAabb | btIDebugDraw::DBG_DrawWireframe);
-    physicsSystem->setDebugDrawer(bulletDebug);
+    mpBulletDebug = std::shared_ptr<BulletDebug_> ( new BulletDebug_() );
+    mpBulletDebug->setDebugMode(btIDebugDraw::DBG_DrawAabb | btIDebugDraw::DBG_DrawWireframe);
+    physicsSystem->setDebugDrawer(mpBulletDebug);
     addToScene();
   }
   void DebugStuff::addToScene() {
-    scene->addObject(bulletDebug);
-    scene->addObject(Debug_::instance());
+    mpScene->addObject(mpBulletDebug);
+    mpScene->addObject(Debug_::instance());
   }
   void DebugStuff::queueMusic() {
     Uint8 *gameMusic[4];
@@ -171,7 +171,7 @@ namespace at3 {
     }
   }
   lineDrawFuncType DebugStuff::getLineDrawFunc() {
-    return std::bind(&BulletDebug_::drawLineGlm, bulletDebug,
+    return std::bind(&BulletDebug_::drawLineGlm, mpBulletDebug,
                      std::placeholders::_1,
                      std::placeholders::_2,
                      std::placeholders::_3);

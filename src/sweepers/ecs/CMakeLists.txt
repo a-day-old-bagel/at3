@@ -14,7 +14,7 @@ add_library( ${TARGET_NAME}_systems STATIC
     ecsSystem_ai.cpp
     )
 target_link_libraries( ${TARGET_NAME}_systems
-    ${EZECS_TARGET_PREFIX}ecs_static
+    ${EZECS_TARGET_PREFIX}ecs
     ${TARGET_NAME}_systems_sweepers
     ${TARGET_NAME}_systems_bullet
     )

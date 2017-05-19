@@ -21,8 +21,7 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef LD2016_COMMON_TRANSFORM_STACK_H_
-#define LD2016_COMMON_TRANSFORM_STACK_H_
+#pragma once
 
 #include <stack>
 
@@ -58,5 +57,3 @@ namespace at3 {
       void unwind(size_t size);
   };
 }
-
-#endif

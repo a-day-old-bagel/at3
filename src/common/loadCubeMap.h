@@ -1,13 +1,6 @@
-/* 
- * File:   loadCubeMap.h
- * Author: adayoldbagel
- *
- */
+#pragma once
 
 #include <epoxy/gl.h>
-
-#ifndef LOADCUBEMAP_H
-#define  LOADCUBEMAP_H
 
 namespace at3 {
 
@@ -26,6 +19,3 @@ namespace at3 {
   LoadResult loadCubeMapSide(GLuint texture, GLenum side_target, const char *file_name);
 
 }
-
-#endif	/* LOADCUBEMAP_H */
-

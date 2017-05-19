@@ -15,8 +15,8 @@
 namespace at3 {
   class DebugStuff {
     private:
-      Scene_* scene;
-      std::shared_ptr<BulletDebug_> bulletDebug;
+      Scene_* mpScene;
+      std::shared_ptr<BulletDebug_> mpBulletDebug;
       void addToScene();
     public:
       DebugStuff(Scene_ &scene, PhysicsSystem* physicsSystem);

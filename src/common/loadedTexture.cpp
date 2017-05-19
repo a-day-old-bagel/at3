@@ -1,6 +1,3 @@
-//
-// Created by volundr on 4/24/2017.
-//
 
 #include <stb_image.h>
 #include "loadedTexture.h"

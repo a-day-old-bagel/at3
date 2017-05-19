@@ -21,8 +21,7 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef LD2016_COMMON_TRANSFORM_H_
-#define LD2016_COMMON_TRANSFORM_H_
+#pragma once
 
 #include <string>
 
@@ -107,5 +106,3 @@ namespace at3 {
       virtual void unwind(size_t index) = 0;
   };
 }
-
-#endif

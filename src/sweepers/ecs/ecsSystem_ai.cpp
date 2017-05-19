@@ -67,7 +67,7 @@ namespace at3 {
     uint32_t deltaTime = nowTime - lastTime;
 
     if (deltaTime < CParams::iNumTicks) {
-      for (int i = 0; i < participants.size(); ++i) {
+      for (size_t i = 0; i < participants.size(); ++i) {
         state->get_SweeperAi(participants[i], &sweeperAi);
         state->get_Placement(participants[i], &placement);
 
@@ -206,7 +206,7 @@ namespace at3 {
       int indexOfBest = 0;
       entityId idOfBest = 0;
       Physics *physics;
-      for (int i = 0; i < registries[0].ids.size(); ++i) {
+      for (size_t i = 0; i < registries[0].ids.size(); ++i) {
         state->get_Physics(registries[0].ids.at(i), &physics);
         state->get_SweeperAi(registries[0].ids.at(i), &sweeperAi);
         float fitness2 = sweeperAi->fitness * sweeperAi->fitness;
@@ -231,7 +231,7 @@ namespace at3 {
       //run the GA to create a new population
       population = geneticAlgorithm->Epoch(population);
 
-      for (int i = 0; i < registries[0].ids.size(); ++i) {
+      for (size_t i = 0; i < registries[0].ids.size(); ++i) {
         state->get_SweeperAi(registries[0].ids.at(i), &sweeperAi);
         sweeperAi->net.PutWeights(population.at(i).vecWeights);
       }
@@ -242,8 +242,7 @@ namespace at3 {
     switch (event.type) {
       case SDL_KEYDOWN:
         switch (event.key.keysym.scancode) {
-          default:
-            return false; // could not handle it here
+          default: return false; // could not handle it here
         }
         break;
       default:
@@ -273,7 +272,7 @@ namespace at3 {
         numWeightsInNN
     );
     population = geneticAlgorithm->GetChromos();
-    for (int i = 0; i < participants.size(); ++i) {
+    for (size_t i = 0; i < participants.size(); ++i) {
       state->get_SweeperAi(participants[i], &sweeperAi);
       sweeperAi->net.PutWeights(population[i].vecWeights);
     }

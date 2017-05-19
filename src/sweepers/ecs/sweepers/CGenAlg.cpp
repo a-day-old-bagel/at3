@@ -36,7 +36,7 @@ CGenAlg::CGenAlg(int popsize,
 void CGenAlg::Mutate(std::vector<double> &chromo) {
   //traverse the chromosome and mutate each weight dependent
   //on the mutation rate
-  for (int i = 0; i < chromo.size(); ++i) {
+  for (size_t i = 0; i < chromo.size(); ++i) {
     //do we perturb this weight?
     if (RandFloat() < m_dMutationRate) {
       //add or subtract a small value to the weight
@@ -100,7 +100,7 @@ void CGenAlg::Crossover(const std::vector<double> &mum,
     baby2.push_back(dad[i]);
   }
 
-  for (int i = cp; i < mum.size(); ++i) {
+  for (size_t i = cp; i < mum.size(); ++i) {
     baby1.push_back(dad[i]);
     baby2.push_back(mum[i]);
   }

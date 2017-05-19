@@ -50,8 +50,8 @@ class CruisinGame : public Game<State, DualityInterface> {
   private:
     std::shared_ptr<SkyBox_>         mpSkybox;
     std::shared_ptr<TerrainObject_>  mpTerrain;
-    std::shared_ptr<Pyramid>         mpPyramid;
-    std::shared_ptr<DuneBuggy>       mpDuneBuggy;
+    std::unique_ptr<Pyramid>         mpPyramid;
+    std::unique_ptr<DuneBuggy>       mpDuneBuggy;
 
     DualityInterface  mDualityInterface;
     ControlSystem     mControlSystem;
@@ -92,23 +92,19 @@ class CruisinGame : public Game<State, DualityInterface> {
 
       // a terrain
       TerrainObject_::initTextures();
-      mpTerrain = std::shared_ptr<TerrainObject_> (
-          new TerrainObject_(ident, -5000.f, 5000.f, -5000.f, 5000.f, -200, 200));
+      mpTerrain = std::make_shared<TerrainObject_> (ident, -5000.f, 5000.f, -5000.f, 5000.f, -200, 200);
       this->scene.addObject(mpTerrain);
 
       // a buggy
       glm::mat4 buggyMat = glm::translate(ident, { 0.f, -290.f, 0.f });
-      mpDuneBuggy = std::shared_ptr<DuneBuggy> (
-          new DuneBuggy(state, scene, buggyMat));
+      mpDuneBuggy = std::make_unique<DuneBuggy> (state, scene, buggyMat);
 
       // a flying pyramid
       glm::mat4 pyramidMat = glm::translate(ident, { 0.f, 0.f, 5.f });
-      mpPyramid = std::shared_ptr<Pyramid> (
-          new Pyramid(state, scene, pyramidMat));
+      mpPyramid = std::make_unique<Pyramid> (state, scene, pyramidMat);
 
       // a skybox-like background (but better than a literal sky box)
-      mpSkybox = std::shared_ptr<SkyBox_> (
-          new SkyBox_());
+      mpSkybox = std::make_shared<SkyBox_> ( );
       this->scene.addObject(mpSkybox);
       LoadResult loaded = mpSkybox->useCubeMap("sea", "png");
       assert(loaded == LOAD_SUCCESS);
@@ -117,8 +113,7 @@ class CruisinGame : public Game<State, DualityInterface> {
       this->setCamera(mpPyramid->getCamPtr());
 
       // some debug-draw features...
-      mpDebugStuff = std::shared_ptr<DebugStuff> (
-          new DebugStuff(scene, &mPhysicsSystem));
+      mpDebugStuff = std::make_shared<DebugStuff> (scene, &mPhysicsSystem);
 
       std::cout << "Game has started.\n" << std::endl;
 

@@ -48,7 +48,7 @@ class CGenAlg {
     std::vector<SGenome> m_vecPop;
 
     //size of population
-    int m_iPopSize;
+    size_t m_iPopSize;
 
     //amount of weights per chromo
     int m_iChromoLength;

@@ -1,29 +1,4 @@
-/*
- * Copyright (c) 2016 Jonathan Glines, Galen Cochrane
- * Jonathan Glines <jonathan@glines.net>
- * Galen Cochrane <galencochrane@gmail.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to
- * deal in the Software without restriction, including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
- * sell copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
- * IN THE SOFTWARE.
- */
-
-#ifndef LD2016_COMMON_GAME_H_
-#define LD2016_COMMON_GAME_H_
+#pragma once
 
 #define TIME_MULTIPLIER_MS 0.001f
 
@@ -85,6 +60,11 @@ namespace at3 {
       void setCamera(std::shared_ptr<Camera<EcsInterface>> camera) { m_camera = camera; }
       std::shared_ptr<Camera<EcsInterface>> getCamera() { return m_camera; }
 
+      /**
+       * @return True if window is fullscreen after change, else false.
+       */
+      bool toggleFullscreen();
+
       virtual bool handleEvent(const SDL_Event &event) {
         return false;
       }
@@ -104,7 +84,7 @@ namespace at3 {
     auto shader = Shaders::terrainShader();
     shader->use();
     assert(shader->screenSize() != -1);
-    glUniform2f(shader->screenSize(), m_width, m_height);              ASSERT_GL_ERROR();
+    glUniform2f(shader->screenSize(), (GLfloat)m_width, (GLfloat)m_height);              ASSERT_GL_ERROR();
 
     // at 0 field of view, a normalized dot product of 1 must be achieved between the forward view vector and
     // a point for it to be considered on the screen. At PI field of view, a dot product of at least zero is
@@ -123,7 +103,6 @@ namespace at3 {
 
   template <typename EcsState, typename EcsInterface>
   bool Game<EcsState, EcsInterface>::m_initSdl() {
-    // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
       fprintf(stderr, "Failed to initialize SDL: %s\n",
               SDL_GetError());
@@ -131,10 +110,10 @@ namespace at3 {
     }
     SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
     m_window = SDL_CreateWindow(
-        m_windowTitle,  // title
+        m_windowTitle,            // title
         SDL_WINDOWPOS_UNDEFINED,  // x
         SDL_WINDOWPOS_UNDEFINED,  // y
-        m_width, m_height,  // w, h
+        m_width, m_height,        // w, h
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE  // flags
     );
     if (m_window == nullptr) {
@@ -171,6 +150,14 @@ namespace at3 {
   }
 
   template <typename EcsState, typename EcsInterface>
+  bool Game<EcsState, EcsInterface>::toggleFullscreen() {
+    bool isFullScreen = SDL_GetWindowFlags(m_window) & SDL_WINDOW_FULLSCREEN;
+    SDL_SetWindowFullscreen(m_window, isFullScreen ? 0 : SDL_WINDOW_FULLSCREEN);
+//    SDL_ShowCursor(isFullScreen);
+    return !isFullScreen;
+  }
+
+  template <typename EcsState, typename EcsInterface>
   bool Game<EcsState, EcsInterface>::mainLoop(eventHandlerFunction &systemsHandler, float &dtOut) {
     SDL_GL_SwapWindow(m_window);
     if (m_lastTime == 0.0f) {
@@ -196,7 +183,7 @@ namespace at3 {
               auto shader = Shaders::terrainShader();
               shader->use();
               assert(shader->screenSize() != -1);
-              glUniform2f(shader->screenSize(), m_width, m_height);              ASSERT_GL_ERROR();
+              glUniform2f(shader->screenSize(), (GLfloat)m_width, (GLfloat)m_height);              ASSERT_GL_ERROR();
               // at 0 field of view, a normalized dot product of 1 must be achieved between the forward view vector and
               // a point for it to be considered on the screen. At PI field of view, a dot product of at least zero is
               // required.  At 2PI field of view, a dot product of at least -1 is required, meaning that everything is
@@ -212,14 +199,20 @@ namespace at3 {
           } break;
         case SDL_KEYDOWN:
           switch (event.key.keysym.scancode) {
+            case SDL_SCANCODE_F: {
+              if (toggleFullscreen()) {
+                std::cout << "Fullscreen ON." << std::endl;
+              } else {
+                std::cout << "Fullscreen OFF." << std::endl;
+              }
+            } break;
             case SDL_SCANCODE_V: {
               terrainShaderDebugLines = !terrainShaderDebugLines;
               auto shader = Shaders::terrainShader();
               shader->use();
               assert(shader->debugLines() != -1);
               glUniform1i(shader->debugLines(), terrainShaderDebugLines);       ASSERT_GL_ERROR();
-              break;
-            }
+            } break;
             default: break;
           } break;
         case SDL_QUIT:
@@ -233,13 +226,11 @@ namespace at3 {
     float dt = currentTime - m_lastTime;
     m_lastTime = currentTime;
 
-    // Draw the window
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (!m_camera) {
       fprintf(stderr, "The scene camera was not set\n");
     } else {
-      // Draw the scene
       float aspect = (float)m_width / (float)m_height;
       scene.draw(*m_camera, aspect);
     }
@@ -248,5 +239,3 @@ namespace at3 {
     return true;
   }
 }
-
-#endif

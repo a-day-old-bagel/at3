@@ -1,28 +1,4 @@
-/*
- * Copyright (c) 2016 Jonathan Glines
- * Jonathan Glines <jonathan@glines.net>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to
- * deal in the Software without restriction, including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
- * sell copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
- * IN THE SOFTWARE.
- */
-
-#ifndef LD2016_COMMON_SCENE_H_
-#define LD2016_COMMON_SCENE_H_
+#pragma once
 
 #include <SDL.h>
 #include <memory>
@@ -38,83 +14,59 @@ namespace at3 {
   template <typename EcsInterface> class Camera;
   template <typename EcsInterface> class SceneObject;
   /**
-   * This class implements a simple graphics scene.
-   *
-   * OpenGL is typically used under the hood, but nothing about this scene
-   * class requires the use of any specific graphics library.
+   * This class implements a scene graph.
    */
   template <typename EcsInterface>
   class Scene {
     private:
-      std::unordered_map<
-        const SceneObject<EcsInterface> *,
-        std::shared_ptr<SceneObject<EcsInterface>>> m_objects;
+      std::unordered_map<const SceneObject<EcsInterface> *, std::shared_ptr<SceneObject<EcsInterface>>> m_objects;
 
     public:
-      /**
-       * Constructs a graphics scene. The default scene is empty.
-       */
+
       Scene();
-      /**
-       * Destroys this graphics scene. All shared pointers to scene objects
-       * held by the scene are released.
-       */
       ~Scene();
 
       /**
-       * Adds the given scene object to the top level of this graphics scene.
+       * Adds a top level object to the scene graph
        */
       void addObject(std::shared_ptr<SceneObject<EcsInterface>> object);
 
       /**
-       * Locates the scene object with the given memory address and removes
-       * that object from the scene.
+       * Removes a top level object from the scene graph. This will not
+       * remove that objects children from it, however.
        *
-       * \param address The memory address of the scene object to remove.
+       * \param address The memory address of the object.
        */
       void removeObject(const SceneObject<EcsInterface> *address);
 
       /**
-       * Allow objects in the scene to handle the given event. All SDL
-       * events are passed to each of the top-level scene objects in the scene.
-       * If a scene object decides to handle the given event, this method
-       * returns true.
+       * An event percolates through the scene graph. If any object handles
+       * it, this function returns true.
        *
-       * \param event The SDL event to be considered by objects in the scene.
-       * \return True if the given event was handled by a scene object, false
-       * otherwise.
+       * \param event An SDL event.
+       * \return True if handled, false if not.
        */
       bool handleEvent(const SDL_Event &event);
 
       /**
-       * Draws the scene by recursively drawing all of its scene objects.
+       * Draws the scene graph recursively
        *
-       * \param camera The camera that dictates the world-view and projection
-       * transforms to use when drawing the scene.
-       * \param aspect The aspect ratio of the viewport being drawn. Passing
-       * this value ensures that the aspect ratio will be preserved by the
-       * projection transform.
-       * \param alpha A keyframe weight that controls interpolation between
-       * ticks.  Scene objects should strive to interpolate between the values
-       * of the last tick and the current tick wherever possible.
-       * \param debug A hint given to scene objects so that they can
-       * toggle the drawing of debug information.
-       *
-       * Since the scene class makes no provisions for supporting any
-       * particular graphics API, it is the responsibility of the derived scene
-       * objects to draw using the correct API.
+       * \param camera A Camera object
+       * \param aspect The aspect ratio
+       * \param alpha Currently unused, since Bullet does its own interpolation
+       * \param debug Indicates that object should draw with debug information
        */
       void draw(Camera<EcsInterface> &camera, float aspect, bool debug = false) const;
   };
 
   template <typename EcsInterface>
   Scene<EcsInterface>::Scene() {
-    // TODO
+
   }
 
   template <typename EcsInterface>
   Scene<EcsInterface>::~Scene() {
-    // TODO
+
   }
 
   template <typename EcsInterface>
@@ -125,10 +77,9 @@ namespace at3 {
   template <typename EcsInterface>
   void Scene<EcsInterface>::removeObject(const SceneObject<EcsInterface> *address) {
     auto iterator = m_objects.find(address);
-    assert(iterator != m_objects.end());
-    // FIXME: Remove this node from its parent
-//    iterator->parent()->removeChild(address);
-    m_objects.erase(address);
+    if (iterator != m_objects.end()) {
+      m_objects.erase(iterator);
+    }
   }
 
   template <typename EcsInterface>
@@ -143,14 +94,14 @@ namespace at3 {
   template <typename EcsInterface>
   void Scene<EcsInterface>::draw(Camera<EcsInterface> &camera, float aspect, bool debug) const
   {
-    // Start with an empty modelWorld transform stack
+    // Transform stack starts out empty
     TransformStack modelWorld;
 
-    // Obtain transforms from the camera
+    // Get camera transforms
     auto worldView = camera.worldView();
     auto projection = camera.projection(aspect);
 
-    // Iterate through all top-level scene objects and draw them
+    // draw each top level object
     for (auto object : this->m_objects) {
       object.second->m_draw(
           modelWorld,
@@ -160,5 +111,3 @@ namespace at3 {
     }
   }
 }
-
-#endif

@@ -118,7 +118,7 @@ namespace at3 {
       TrackControls *trackControls;
       state->get_TrackControls(id, &trackControls);
       //Todo: put engine force application *before* the sim update, with wheel update after?
-      for (int i = 0; i < trackControls->wheels.size(); ++i) {
+      for (size_t i = 0; i < trackControls->wheels.size(); ++i) {
         if (trackControls->wheels.at(i).leftOrRight < 0) {
           trackControls->vehicle->applyEngineForce(trackControls->torque.x, trackControls->wheels.at(i).bulletWheelId);
           trackControls->vehicle->setBrake(trackControls->brakes.x, trackControls->wheels.at(i).bulletWheelId);

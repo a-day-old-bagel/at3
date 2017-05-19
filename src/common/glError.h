@@ -21,8 +21,7 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef LD2016_COMMON_GL_ERROR_H_
-#define LD2016_COMMON_GL_ERROR_H_
+#pragma once
 
 #include <cassert>
 
@@ -61,5 +60,3 @@
 bool checkGlError(const char *file, int line);
 // FIXME: Rename this function?
 const char *glErrorToString(GLenum error);
-
-#endif
