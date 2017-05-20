@@ -161,7 +161,20 @@ namespace at3 {
         GL_STATIC_DRAW  // usage
     );
     FORCE_ASSERT_GL_ERROR();
-    delete[] pVertices;
+
+    // Delete the local vertex information
+    switch(shaderStyle) {
+      case FULLBRIGHT: {
+        delete[] (MeshVertex_NoNorm*) pVertices;
+      } break;
+      case NOTEXTURE: {
+        delete[] (MeshVertex_NoTex*) pVertices;
+      } break;
+      default: {
+        delete[] (MeshVertex*) pVertices;
+      }
+    }
+
     // Copy the face data into an index buffer
     uint32_t *indices = new uint32_t[3 * aim->mNumFaces];
     for (size_t i = 0; i < aim->mNumFaces; ++i) {
