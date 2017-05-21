@@ -22,3 +22,6 @@
 [submodule "extern/assimp"]
 	path = extern/assimp
 	url = https://github.com/assimp/assimp
+[submodule "extern/RunTimeCompiledCPlusPlus"]
+	path = extern/RunTimeCompiledCPlusPlus
+	url = git@github.com:dtmoodie/RunTimeCompiledCPlusPlus
