@@ -105,4 +105,7 @@ project( at3 VERSION 0.01.01.01 LANGUAGES CXX)
   # stb image library is header only, and will always be included like this
   include_directories( "./extern/stb" )
 
+# Runtime Compiled C++ stuff
+  add_subdirectory( "./extern/RunTimeCompiledCPlusPlus" )
+
 add_subdirectory( "./source" )
