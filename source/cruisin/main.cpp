@@ -106,8 +106,9 @@ class CruisinGame : public Game<State, DualityInterface> {
       // a skybox-like background (but better than a literal sky box)
       mpSkybox = std::make_shared<SkyBox_> ( );
       this->scene.addObject(mpSkybox);
-      LoadResult loaded = mpSkybox->useCubeMap("sea", "png");
-      assert(loaded == LOAD_SUCCESS);
+//      LoadResult loaded = mpSkybox->useCubeMap("sea", "png");
+//      assert(loaded == LOAD_SUCCESS);
+      mpSkybox->useCubeMap("sea.png");
 
       // start with the camera focused on the pyramid
       this->setCamera(mpPyramid->getCamPtr());
@@ -141,7 +142,9 @@ class CruisinGame : public Game<State, DualityInterface> {
             case SDL_SCANCODE_2: {
               setCamera(mpDuneBuggy->getCamPtr());
             } break;
-            case SDL_SCANCODE_3:
+            case SDL_SCANCODE_3: {
+              assert(false);
+            } break;
             case SDL_SCANCODE_4:
             case SDL_SCANCODE_5:
             case SDL_SCANCODE_6:

@@ -12,7 +12,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "sceneObject.h"
-#include "glError.h"
+#include "glUtil.h"
 #include "shaderProgram.h"
 #include "shaders.h"
 

@@ -7,7 +7,7 @@
 
 #include "sceneObject.h"
 #include "debug.h"
-#include "glError.h"
+#include "glUtil.h"
 #include "shaderProgram.h"
 #include "shaders.h"
 
@@ -17,13 +17,10 @@ namespace at3 {
     private:
       typedef struct {
         float pos[3], color[3];
-      } LineVertex;
-      typedef struct {
-        LineVertex vertices[2];
-      } Line;
-      typedef struct {
-        float pos[3], color[3];
       } Point;
+      typedef struct {
+        Point vertices[2];
+      } Line;
       std::vector<Line> m_lines;
       std::vector<Point> m_points;
       bool m_linesChanged;
@@ -143,8 +140,8 @@ namespace at3 {
         3,                              // size
         GL_FLOAT,                       // type
         0,                              // normalized
-        sizeof(LineVertex),             // stride
-        &(((LineVertex *) 0)->pos[0])   // pointer
+        sizeof(Point),             // stride
+        &(((Point *) 0)->pos[0])   // pointer
     );
     ASSERT_GL_ERROR();
     assert(shader->vertColorLocation() != -1);
@@ -155,8 +152,8 @@ namespace at3 {
         3,                              // size
         GL_FLOAT,                       // type
         0,                              // normalized
-        sizeof(LineVertex),             // stride
-        &(((LineVertex *) 0)->color[0]) // pointer
+        sizeof(Point),             // stride
+        &(((Point *) 0)->color[0]) // pointer
     );
     ASSERT_GL_ERROR();
 

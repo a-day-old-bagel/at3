@@ -10,7 +10,7 @@
 #include "stb_image.h"
 
 #include "sceneObject.h"
-#include "glError.h"
+#include "glUtil.h"
 #include "shaderProgram.h"
 #include "shaders.h"
 #include "meshObject.h"

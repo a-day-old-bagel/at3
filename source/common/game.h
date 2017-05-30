@@ -19,7 +19,7 @@
 #include "scene.h"
 #include "shaders.h"
 #include "shaderProgram.h"
-#include "glError.h"
+#include "glUtil.h"
 
 #include "game.h"
 

@@ -1,8 +1,7 @@
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${epoxy_DEFINITIONS}")
 add_library(common STATIC
-    glError.cpp
-    loadCubeMap.cpp
-    loadedTexture.cpp
+        glUtil.cpp
+        loadedTexture.cpp
     shaderProgram.cpp
     shaders.cpp
     shaders.cpp

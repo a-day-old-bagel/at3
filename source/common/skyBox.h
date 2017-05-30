@@ -10,17 +10,22 @@
 #include "loadCubeMap.h"
 #include "shaderProgram.h"
 #include "shaders.h"
-#include "glError.h"
+#include "glUtil.h"
+
+#include "loadedTexture.h"
 
 namespace at3 {
   template <typename EcsInterface>
   class SkyBox : public SceneObject<EcsInterface> {
-      GLuint vertices, texture;
+      GLuint vertices;//, texture;
       void m_drawSurface( const glm::mat4 &modelView, const glm::mat4 &projection);
+
+      std::shared_ptr<LoadedTexture> currentTexture;
+
     public:
       SkyBox();
       virtual ~SkyBox();
-      LoadResult useCubeMap(std::string fileName, std::string fileType);
+      void useCubeMap(const std::string baseName);
       virtual void draw(const glm::mat4 &modelWorld,
                         const glm::mat4 &worldView, const glm::mat4 &projection, bool debug);
   };
@@ -35,8 +40,6 @@ namespace at3 {
     glGenBuffers(1, &vertices);
     glBindBuffer(GL_ARRAY_BUFFER, vertices);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 9, corners, GL_STATIC_DRAW);
-    // generate texture
-    glGenTextures(1, &texture);
   }
 
   template <typename EcsInterface>
@@ -45,25 +48,9 @@ namespace at3 {
   }
 
   template <typename EcsInterface>
-  LoadResult SkyBox<EcsInterface>::useCubeMap(std::string fileName, std::string fileType) {
-    LoadResult result = readAndBufferCubeMap(
-        std::string("assets/cubeMaps/" + fileName + "/negz." + fileType).c_str(),
-        std::string("assets/cubeMaps/" + fileName + "/posz." + fileType).c_str(),
-        std::string("assets/cubeMaps/" + fileName + "/negy." + fileType).c_str(),
-        std::string("assets/cubeMaps/" + fileName + "/posy." + fileType).c_str(),
-        std::string("assets/cubeMaps/" + fileName + "/negx." + fileType).c_str(),
-        std::string("assets/cubeMaps/" + fileName + "/posx." + fileType).c_str(),
-        &texture);
-    if (result != LOAD_SUCCESS) {
-      return result;
-    }
-    // format texture
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    return LOAD_SUCCESS;
+  void SkyBox<EcsInterface>::useCubeMap(const std::string baseName) {
+    currentTexture.reset();
+    currentTexture = std::make_shared<LoadedTexture>(baseName, LoadedTexture::CUBE);
   }
 
   template <typename EcsInterface>
@@ -100,7 +87,7 @@ namespace at3 {
     ASSERT_GL_ERROR();
     glActiveTexture(GL_TEXTURE0);
     ASSERT_GL_ERROR();
-    glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, currentTexture->get());
     ASSERT_GL_ERROR();
 
     glDrawArrays(GL_TRIANGLES, 0, 3);

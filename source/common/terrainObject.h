@@ -12,7 +12,7 @@
 
 #include "sceneObject.h"
 #include "loadedTexture.h"
-#include "glError.h"
+#include "glUtil.h"
 #include "shaderProgram.h"
 #include "shaders.h"
 
@@ -27,9 +27,9 @@ namespace at3 {
       std::vector<float> heights;
 
       // TODO: move these into some kind of texture repo.
-      static LoadedTexture grass;
-      static LoadedTexture cliff0;
-      static LoadedTexture cliff1;
+      static std::shared_ptr<LoadedTexture> grass;
+      static std::shared_ptr<LoadedTexture> cliff0;
+      static std::shared_ptr<LoadedTexture> cliff1;
 
       void m_genMesh();
       glm::vec2 m_genMaps(float xScale, float yScale, float zScale);
@@ -281,7 +281,7 @@ namespace at3 {
         GL_RGBA,  // format
         GL_UNSIGNED_BYTE,  // type
         diffuse.data()  // data
-    );                                                                   FORCE_ASSERT_GL_ERROR();
+    );                                                                       FORCE_ASSERT_GL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);        FORCE_ASSERT_GL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);        FORCE_ASSERT_GL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);     FORCE_ASSERT_GL_ERROR();
@@ -333,7 +333,7 @@ namespace at3 {
     glUniform1i(
         shader->texture0(),  // location
         0  // value
-    );                                                             ASSERT_GL_ERROR();
+    );                                                                 ASSERT_GL_ERROR();
     glActiveTexture(GL_TEXTURE0);                                      ASSERT_GL_ERROR();
     glBindTexture(GL_TEXTURE_2D, m_diffuse);                           ASSERT_GL_ERROR();
 
@@ -353,7 +353,7 @@ namespace at3 {
         2  // value
     );                                                                 ASSERT_GL_ERROR();
     glActiveTexture(GL_TEXTURE2);                                      ASSERT_GL_ERROR();
-    glBindTexture(GL_TEXTURE_2D, grass.get());                         ASSERT_GL_ERROR();
+    glBindTexture(GL_TEXTURE_2D, grass->get());                        ASSERT_GL_ERROR();
 
     // Prepare the diffuse texture sampler
     assert(shader->cliff0() != -1);
@@ -362,7 +362,7 @@ namespace at3 {
         3  // value
     );                                                                 ASSERT_GL_ERROR();
     glActiveTexture(GL_TEXTURE3);                                      ASSERT_GL_ERROR();
-    glBindTexture(GL_TEXTURE_2D, cliff0.get());                        ASSERT_GL_ERROR();
+    glBindTexture(GL_TEXTURE_2D, cliff0->get());                       ASSERT_GL_ERROR();
 
     // Prepare the diffuse texture sampler
     assert(shader->cliff1() != -1);
@@ -371,7 +371,7 @@ namespace at3 {
         4  // value
     );                                                                 ASSERT_GL_ERROR();
     glActiveTexture(GL_TEXTURE4);                                      ASSERT_GL_ERROR();
-    glBindTexture(GL_TEXTURE_2D, cliff1.get());                        ASSERT_GL_ERROR();
+    glBindTexture(GL_TEXTURE_2D, cliff1->get());                       ASSERT_GL_ERROR();
 
     // Prepare the vertex attributes
     glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);                     ASSERT_GL_ERROR();
@@ -409,17 +409,17 @@ namespace at3 {
   }
 
   template <typename EcsInterface>
-  LoadedTexture TerrainObject<EcsInterface>::grass;
+  std::shared_ptr<LoadedTexture> TerrainObject<EcsInterface>::grass;
   template <typename EcsInterface>
-  LoadedTexture TerrainObject<EcsInterface>::cliff0;
+  std::shared_ptr<LoadedTexture> TerrainObject<EcsInterface>::cliff0;
   template <typename EcsInterface>
-  LoadedTexture TerrainObject<EcsInterface>::cliff1;
+  std::shared_ptr<LoadedTexture> TerrainObject<EcsInterface>::cliff1;
 
   template <typename EcsInterface>
   bool TerrainObject<EcsInterface>::initTextures() {
-    grass = LoadedTexture("assets/textures/grass1024_00.jpg");
-    cliff0 = LoadedTexture("assets/textures/cliff1024_00.jpg");
-    cliff1 = LoadedTexture("assets/textures/cliff1024_01.jpg");
+    grass = std::make_shared<LoadedTexture>("assets/textures/grass1024_00.jpg", LoadedTexture::SINGLE);
+    cliff0 = std::make_shared<LoadedTexture>("assets/textures/cliff1024_00.jpg", LoadedTexture::SINGLE);
+    cliff1 = std::make_shared<LoadedTexture>("assets/textures/cliff1024_01.jpg", LoadedTexture::SINGLE);
     return true;
   }
 }
