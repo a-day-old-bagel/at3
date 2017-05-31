@@ -1,6 +1,3 @@
-//
-// Created by volundr on 4/27/17.
-//
 
 #include <glm/gtc/matrix_transform.hpp>
 #include "pyramid.h"
@@ -67,7 +64,7 @@ namespace at3 {
     state.add_TransformFunction(fireId, DELEGATE_NOCLASS(pyrFireWiggle));
 
     mpCamera = std::shared_ptr<ThirdPersonCamera_> (
-        new ThirdPersonCamera_((float)M_PI * 0.35f, 1.0f, 10000.0f, 2.5f, 5.f, (float)M_PI * 0.5f));
+        new ThirdPersonCamera_(2.5f, 5.f, (float)M_PI * 0.5f));
     mpBase->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
 
     addToScene();

@@ -27,7 +27,7 @@ namespace at3 {
        * orientation should be pointed directly at the follow point with the
        * z-axis pointing up.
        */
-      PerspectiveCamera(float fovy, float near, float far, glm::mat4 &transform);
+      PerspectiveCamera(glm::mat4 &transform);
       virtual ~PerspectiveCamera();
 
       void setFar(float far);
@@ -46,13 +46,13 @@ namespace at3 {
 
       float focalLength() const;
 
-      float fovy() const;
+      virtual float getFovy() const;
   };
 
   template <typename EcsInterface>
-  PerspectiveCamera<EcsInterface>::PerspectiveCamera(float fovy, float near, float far, glm::mat4 &transform)
+  PerspectiveCamera<EcsInterface>::PerspectiveCamera(glm::mat4 &transform)
       : Camera<EcsInterface>(transform) {
-    SCENE_ECS->addPerspective(SCENE_ID, fovy, near, far);
+    SCENE_ECS->addPerspective(SCENE_ID, settings::graphics::fovy, settings::graphics::near, settings::graphics::far);
   }
 
   template <typename EcsInterface>
@@ -79,7 +79,7 @@ namespace at3 {
   }
 
   template <typename EcsInterface>
-  float PerspectiveCamera<EcsInterface>::fovy() const {
+  float PerspectiveCamera<EcsInterface>::getFovy() const {
     return SCENE_ECS->getFovy(SCENE_ID);
   }
 }

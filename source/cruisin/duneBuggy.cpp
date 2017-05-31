@@ -89,7 +89,10 @@ namespace at3 {
     }
 
     mpCamera = std::shared_ptr<ThirdPersonCamera_> (
-        new ThirdPersonCamera_((float)M_PI * 0.35f, 1.0f, 10000.0f, 2.f, 7.f, (float)M_PI * 0.5f));
+        new ThirdPersonCamera_(2.f, 7.f, (float)M_PI * 0.5f));
+    Perspective* perspective;
+    state.get_Perspective(mpCamera->mpCamera->getId(), &perspective);
+    perspective->fovy = 1.4f;
     mpChassis->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
 
     addToScene();

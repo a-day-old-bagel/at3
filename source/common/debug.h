@@ -200,8 +200,8 @@ namespace at3 {
         3,                              // size
         GL_FLOAT,                       // type
         0,                              // normalized
-        sizeof(LineVertex),             // stride
-        &(((LineVertex *) 0)->pos[0])   // pointer
+        sizeof(Point),                  // stride
+        &(((Point *) 0)->pos[0])        // pointer
     );
     ASSERT_GL_ERROR();
     assert(shader->vertColorLocation() != -1);
@@ -212,8 +212,8 @@ namespace at3 {
         3,                              // size
         GL_FLOAT,                       // type
         0,                              // normalized
-        sizeof(LineVertex),             // stride
-        &(((LineVertex *) 0)->color[0]) // pointer
+        sizeof(Point),                  // stride
+        &(((Point *) 0)->color[0])      // pointer
     );
     ASSERT_GL_ERROR();
 

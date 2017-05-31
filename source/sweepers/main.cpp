@@ -61,7 +61,7 @@ class CruisinGame : public Game<State, DualityInterface> {
     MovementSystem    mMovementSystem;
     PhysicsSystem     mPhysicsSystem;
     AiSystem          mAiSystem;
-    
+
   public:
 
     std::shared_ptr<DebugStuff> mpDebugStuff;
@@ -81,7 +81,7 @@ class CruisinGame : public Game<State, DualityInterface> {
       mSystemsHandlerDlgt = std::bind( &CruisinGame::systemsHandler, this, std::placeholders::_1 );
     }
 
-    EzecsResult init() {
+    bool init() {
 
       rayFuncType rayFunc = std::bind( &PhysicsSystem::rayTest, &mPhysicsSystem,
                                        std::placeholders::_1, std::placeholders::_2 );

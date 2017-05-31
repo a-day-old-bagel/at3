@@ -17,6 +17,8 @@ namespace at3 {
       glm::mat4 lastWorldViewQueried; // set every time worldView is called (for cache)
 
       virtual glm::mat4 projection(float aspect, float alpha = 1.0f) const = 0;
+
+      virtual float getFovy() const = 0;
   };
 
   template <typename EcsInterface>

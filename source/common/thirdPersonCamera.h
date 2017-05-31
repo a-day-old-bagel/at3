@@ -14,17 +14,16 @@ namespace at3 {
     public:
       std::shared_ptr<PerspectiveCamera<EcsInterface>> mpCamera;
       std::shared_ptr<SceneObject<EcsInterface>> mpCamGimbal;
-      ThirdPersonCamera(float fovy, float near, float far, float up, float back, float tilt);
+      ThirdPersonCamera(float up, float back, float tilt);
       virtual ~ThirdPersonCamera();
   };
 
   template <typename EcsInterface>
-  ThirdPersonCamera<EcsInterface>::ThirdPersonCamera(float fovy, float near, float far,
-                                                     float up, float back, float tilt) {
+  ThirdPersonCamera<EcsInterface>::ThirdPersonCamera(float up, float back, float tilt) {
     glm::mat4 ident;
     glm::mat4 camMat = glm::rotate(glm::translate(ident, {0.f, -back, 0.f}), tilt, glm::vec3(1.0f, 0.0f, 0.0f));
     mpCamera = std::shared_ptr<PerspectiveCamera<EcsInterface>>
-        (new PerspectiveCamera<EcsInterface>(fovy, near, far, camMat));
+        (new PerspectiveCamera<EcsInterface>(camMat));
     mpCamGimbal = std::shared_ptr<SceneObject<EcsInterface>>
         (new SceneObject<EcsInterface>());
     // add mouse controls to the camera gimbal so that it rotates with the mouse

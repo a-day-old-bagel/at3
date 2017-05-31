@@ -7,7 +7,6 @@
 #include <glm/gtx/transform.hpp>
 
 #include "sceneObject.h"
-#include "loadCubeMap.h"
 #include "shaderProgram.h"
 #include "shaders.h"
 #include "glUtil.h"

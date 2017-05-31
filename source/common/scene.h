@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "settings.h"
 #include "camera.h"
 #include "sceneObject.h"
 #include "transformStack.h"

@@ -28,6 +28,7 @@
 #include <functional>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "settings.h"
 #include "ezecs.hpp"
 #include "dualityInterface.h"
 #include "game.h"
@@ -57,7 +58,7 @@ class CruisinGame : public Game<State, DualityInterface> {
     ControlSystem     mControlSystem;
     MovementSystem    mMovementSystem;
     PhysicsSystem     mPhysicsSystem;
-    
+
   public:
 
     std::shared_ptr<DebugStuff> mpDebugStuff;
@@ -66,19 +67,18 @@ class CruisinGame : public Game<State, DualityInterface> {
 
     CruisinGame(int argc, char **argv)
         : Game(argc, argv, "at3"),
-          mDualityInterface(&state),
-          mControlSystem(&state),
-          mMovementSystem(&state),
-          mPhysicsSystem(&state) {
+          mDualityInterface(&mState),
+          mControlSystem(&mState),
+          mMovementSystem(&mState),
+          mPhysicsSystem(&mState)
+    {
       // link the ecs and the scene graph together
       SceneObject_::linkEcs(mDualityInterface);
       // assign the systems' event handler function
       mSystemsHandlerDlgt = std::bind( &CruisinGame::systemsHandler, this, std::placeholders::_1 );
     }
 
-    EzecsResult init() {
-
-      std::cout << "Game is initializing...\n" << std::endl;
+    bool init() {
 
       // Initialize the systems
       bool initSuccess = true;
@@ -93,36 +93,34 @@ class CruisinGame : public Game<State, DualityInterface> {
       // a terrain
       TerrainObject_::initTextures();
       mpTerrain = std::make_shared<TerrainObject_> (ident, -5000.f, 5000.f, -5000.f, 5000.f, -200, 200);
-      this->scene.addObject(mpTerrain);
+      this->mScene.addObject(mpTerrain);
 
       // a buggy
       glm::mat4 buggyMat = glm::translate(ident, { 0.f, -290.f, 0.f });
-      mpDuneBuggy = std::make_unique<DuneBuggy> (state, scene, buggyMat);
+      mpDuneBuggy = std::make_unique<DuneBuggy> (mState, mScene, buggyMat);
 
       // a flying pyramid
       glm::mat4 pyramidMat = glm::translate(ident, { 0.f, 0.f, 5.f });
-      mpPyramid = std::make_unique<Pyramid> (state, scene, pyramidMat);
+      mpPyramid = std::make_unique<Pyramid> (mState, mScene, pyramidMat);
 
       // a skybox-like background (but better than a literal sky box)
       mpSkybox = std::make_shared<SkyBox_> ( );
-      this->scene.addObject(mpSkybox);
-//      LoadResult loaded = mpSkybox->useCubeMap("sea", "png");
-//      assert(loaded == LOAD_SUCCESS);
+      this->mScene.addObject(mpSkybox);
       mpSkybox->useCubeMap("sea.png");
 
       // start with the camera focused on the pyramid
       this->setCamera(mpPyramid->getCamPtr());
 
       // some debug-draw features...
-      mpDebugStuff = std::make_shared<DebugStuff> (scene, &mPhysicsSystem);
+      mpDebugStuff = std::make_shared<DebugStuff> (mScene, &mPhysicsSystem);
 
-      std::cout << "Game has started.\n" << std::endl;
-
-      return EZECS_SUCCESS;
+      return true;
     }
+
     void deInit() {
       mPhysicsSystem.deInit();
     }
+
     bool systemsHandler(SDL_Event& event) {
       if (mControlSystem.handleEvent(event)) {
         return true; // handled it here
@@ -142,9 +140,7 @@ class CruisinGame : public Game<State, DualityInterface> {
             case SDL_SCANCODE_2: {
               setCamera(mpDuneBuggy->getCamPtr());
             } break;
-            case SDL_SCANCODE_3: {
-              assert(false);
-            } break;
+            case SDL_SCANCODE_3:
             case SDL_SCANCODE_4:
             case SDL_SCANCODE_5:
             case SDL_SCANCODE_6:
@@ -186,9 +182,10 @@ void mainLoop(void *instance) {
 }
 
 int main(int argc, char **argv) {
+  std::cout << "Game is initializing...\n" << std::endl;
   CruisinGame game(argc, argv);
-  EzecsResult status = game.init();
-  if (status.isError()) { fprintf(stderr, "%s", status.toString().c_str()); }
+  if ( ! game.init() ) { return -1; }
+  std::cout << "Game has started.\n" << std::endl;
 
   // snazzy tunes
 //  game.debugStuff->queueMusic();

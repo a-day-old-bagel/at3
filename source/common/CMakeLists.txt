@@ -1,13 +1,15 @@
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${epoxy_DEFINITIONS}")
 add_library(common STATIC
-        glUtil.cpp
-        loadedTexture.cpp
+    glUtil.cpp
+    graphicsBackend.cpp
+    loadedTexture.cpp
     shaderProgram.cpp
     shaders.cpp
     shaders.cpp
     transform.cpp
     transformRAII.cpp
     transformStack.cpp
+    settings.cpp
     )
 target_link_libraries(common
     glm
