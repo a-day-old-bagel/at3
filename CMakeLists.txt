@@ -109,6 +109,6 @@ set( AT3_TARGET_PREFIX at3_ )
   include_directories( "./extern/stb" )
 
 # Runtime Compiled C++ stuff
-  add_subdirectory( "./extern/RunTimeCompiledCPlusPlus" )
+#  add_subdirectory( "./extern/RunTimeCompiledCPlusPlus" )
 
 add_subdirectory( "./source" )
