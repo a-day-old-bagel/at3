@@ -17,15 +17,18 @@ namespace at3 {
     void swap();
     void clear();
     bool handleEvent(const SDL_Event &event);
-    bool toggleFullscreen();  // returns true if fullscreen is on after the call.
+    bool setFullscreenMode(uint32_t mode);
+    void toggleFullscreen();
     float getAspect();
     void setFovy(float fovy);
 
-    extern const char *windowTitle;
     extern float currentFovY;
 
     namespace sdl {
+      bool init();
       extern SDL_Window *window;
+      extern const char *windowTitle;
+      extern uint32_t windowFlags;
     }
     namespace opengl {
       bool init();

@@ -1,5 +1,6 @@
 
 #include <sstream>
+#include <SDL_video.h>
 #include "settings.h"
 
 namespace at3 {
@@ -8,12 +9,11 @@ namespace at3 {
     // These are default settings. They can be overwritten at runtime with an ini file.
     namespace graphics {
       uint32_t api = OPENGL;
+      uint32_t fullscreen = WINDOWED;
       uint32_t windowDimX = 1200;
       uint32_t windowDimY = 700;
-      uint32_t windowPosX = 0;
-      uint32_t windowPosY = 0;
-      uint32_t windowResX = 1200;
-      uint32_t windowResY = 700;
+      int32_t  windowPosX = SDL_WINDOWPOS_CENTERED;
+      int32_t  windowPosY = SDL_WINDOWPOS_CENTERED;
       float fovy = 1.1f;
       float near = 0.1f;
       float far = 10000.f;
@@ -30,12 +30,11 @@ namespace at3 {
      */
     void setupRegistries() {
       registry.insert(std::make_pair( "graphics_api_u", &graphics::api));
+      registry.insert(std::make_pair( "graphics_fullscr_u", &graphics::fullscreen));
       registry.insert(std::make_pair( "graphics_win_dimx_u", &graphics::windowDimX));
       registry.insert(std::make_pair( "graphics_win_dimy_u", &graphics::windowDimY));
-      registry.insert(std::make_pair( "graphics_win_posx_u", &graphics::windowPosX));
-      registry.insert(std::make_pair( "graphics_win_posy_u", &graphics::windowPosY));
-      registry.insert(std::make_pair( "graphics_win_resx_u", &graphics::windowResX));
-      registry.insert(std::make_pair( "graphics_win_resy_u", &graphics::windowResY));
+      registry.insert(std::make_pair( "graphics_win_posx_i", &graphics::windowPosX));
+      registry.insert(std::make_pair( "graphics_win_posy_i", &graphics::windowPosY));
     }
 
     // This is used in the functions below.
@@ -66,6 +65,7 @@ namespace at3 {
               // Add an entry for any other types you want to support here and in 'saveToIni'.
               // make sure the type can be read from a stream with the >> operator correctly.
               CASE_CHAR_TYPE('u', uint32_t)
+              CASE_CHAR_TYPE('i', int32_t)
               CASE_CHAR_TYPE('f', float)
 
               default: {
@@ -92,7 +92,7 @@ namespace at3 {
       if (!workedFlawlessly) {
         reportProblem << "Some user settings may have failed to load!" << std::endl;
       }
-      fprintf(stdout, "\n%s\n%s\n", reportNormal.str().c_str(), reportProblem.str().c_str());
+      fprintf(stdout, "\n%s%s\n", reportNormal.str().c_str(), reportProblem.str().c_str());
       return workedFlawlessly;
     }
 
@@ -118,6 +118,7 @@ namespace at3 {
           // Add an entry for any other types you want to support here and in 'loadFromIni'.
           // make sure the type can be written to a stream with the << operator correctly.
           CASE_CHAR_TYPE('u', uint32_t)
+          CASE_CHAR_TYPE('i', int32_t)
           CASE_CHAR_TYPE('f', float)
 
           default: {
@@ -131,7 +132,7 @@ namespace at3 {
       if (!workedFlawlessly) {
         reportProblem << "Some user settings may may not have been saved!" << std::endl;
       }
-      fprintf(stdout, "\n%s\n%s\n", reportNormal.str().c_str(), reportProblem.str().c_str());
+      fprintf(stdout, "\n%s%s", reportNormal.str().c_str(), reportProblem.str().c_str());
       return workedFlawlessly;
     }
 

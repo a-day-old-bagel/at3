@@ -13,19 +13,23 @@ namespace at3 {
 
     namespace graphics {
       enum Api {
-        OPENGL = 0, VULKAN = 1
+          INVALID_API = 0,
+          OPENGL = 1, VULKAN = 2
+      };
+      enum ScreenMode {
+          INVALID_MODE = 0,
+          WINDOWED = 1, MAXIMIZED = 2, FAKED_FULLSCREEN = 3, FULLSCREEN = 4
       };
       extern uint32_t api;
+      extern uint32_t fullscreen;
       extern uint32_t windowDimX, windowDimY;
-      extern uint32_t windowPosX, windowPosY;
-      extern uint32_t windowResX, windowResY;
+      extern int32_t windowPosX, windowPosY;
       extern float fovy, near, far;
     }
-
     void setupRegistries();
     bool loadFromIni(const char *filename);
     bool saveToIni(const char *filename);
-    extern std::map<std::string, void*> registry;
+    extern std::map<std::string, void *> registry;
     extern bool loaded;
   }
 }
