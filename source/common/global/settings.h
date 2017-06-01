@@ -13,14 +13,14 @@ namespace at3 {
 
     namespace graphics {
       enum Api {
-          INVALID_API = 0,
-          OPENGL = 1, VULKAN = 2
+        INVALID_API = 0,
+        SDL2 = 1, GLFW = 2, OPENGL_CL = 3, VULKAN = 4
       };
       enum ScreenMode {
-          INVALID_MODE = 0,
-          WINDOWED = 1, MAXIMIZED = 2, FAKED_FULLSCREEN = 3, FULLSCREEN = 4
+        INVALID_MODE = 0,
+        WINDOWED = 1, MAXIMIZED = 2, FAKED_FULLSCREEN = 3, FULLSCREEN = 4
       };
-      extern uint32_t api;
+      extern uint32_t gpuApi, windowApi;
       extern uint32_t fullscreen;
       extern uint32_t windowDimX, windowDimY;
       extern int32_t windowPosX, windowPosY;

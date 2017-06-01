@@ -8,12 +8,19 @@ namespace at3 {
     bool init() {
 	    currentFovY = settings::graphics::fovy;
       bool success = true;
-      success &= sdl::init();
-      switch (settings::graphics::api) {
-        case settings::graphics::OPENGL: success &= opengl::init(); break;
+      switch (settings::graphics::windowApi) {
+        case settings::graphics::SDL2: success &= sdl2::init(); break;
+        case settings::graphics::GLFW: success &= glfw::init(); break;
+        default: {
+          std::cerr << "Invalid windowing API selection: " << settings::graphics::windowApi << std::endl;
+          success = false;
+        }
+      }
+      switch (settings::graphics::gpuApi) {
+        case settings::graphics::OPENGL_CL: success &= opengl::init(); break;
         case settings::graphics::VULKAN: success &= vulkan::init(); break;
         default: {
-          std::cerr << "Invalid graphics API selection: " << settings::graphics::api << std::endl;
+          std::cerr << "Invalid graphics API selection: " << settings::graphics::gpuApi << std::endl;
           success = false;
         }
       }
@@ -24,15 +31,15 @@ namespace at3 {
       return success;
     }
     void swap() {
-      switch (settings::graphics::api) {
-        case settings::graphics::OPENGL: opengl::swap(); break;
+      switch (settings::graphics::gpuApi) {
+        case settings::graphics::OPENGL_CL: opengl::swap(); break;
         case settings::graphics::VULKAN: vulkan::swap(); break;
         default: assert(false);
       }
     }
     void clear() {
-      switch (settings::graphics::api) {
-        case settings::graphics::OPENGL: opengl::clear(); break;
+      switch (settings::graphics::gpuApi) {
+        case settings::graphics::OPENGL_CL: opengl::clear(); break;
         case settings::graphics::VULKAN: vulkan::clear(); break;
         default: assert(false);
       }
@@ -78,19 +85,19 @@ namespace at3 {
     bool setFullscreenMode(uint32_t mode) {
       switch (mode) {
         case settings::graphics::FULLSCREEN: {
-          SDL_SetWindowFullscreen(sdl::window, SDL_WINDOW_FULLSCREEN);
+          SDL_SetWindowFullscreen(sdl2::window, SDL_WINDOW_FULLSCREEN);
         } break;
         case settings::graphics::FAKED_FULLSCREEN: {
-          SDL_SetWindowFullscreen(sdl::window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+          SDL_SetWindowFullscreen(sdl2::window, SDL_WINDOW_FULLSCREEN_DESKTOP);
         } break;
-        case settings::graphics::MAXIMIZED: SDL_MaximizeWindow(sdl::window);
+        case settings::graphics::MAXIMIZED: SDL_MaximizeWindow(sdl2::window);
         case settings::graphics::WINDOWED:
         default: {
-          SDL_SetWindowFullscreen(sdl::window, 0);
+          SDL_SetWindowFullscreen(sdl2::window, 0);
         }
       }
-      bool currentlyFull = (bool) (SDL_GetWindowFlags(sdl::window) & SDL_WINDOW_FULLSCREEN);
-      bool currentlyFake = (bool) (SDL_GetWindowFlags(sdl::window) & SDL_WINDOW_FULLSCREEN_DESKTOP);
+      bool currentlyFull = (bool) (SDL_GetWindowFlags(sdl2::window) & SDL_WINDOW_FULLSCREEN);
+      bool currentlyFake = (bool) (SDL_GetWindowFlags(sdl2::window) & SDL_WINDOW_FULLSCREEN_DESKTOP);
       if (currentlyFull) {
         settings::graphics::fullscreen = settings::graphics::FULLSCREEN;
       } else if (currentlyFake) {
@@ -101,8 +108,8 @@ namespace at3 {
       return (settings::graphics::fullscreen == mode);
     }
     void toggleFullscreen() {
-      bool currentlyFull = (bool) (SDL_GetWindowFlags(sdl::window) & SDL_WINDOW_FULLSCREEN);
-      bool currentlyFake = (bool) (SDL_GetWindowFlags(sdl::window) & SDL_WINDOW_FULLSCREEN_DESKTOP);
+      bool currentlyFull = (bool) (SDL_GetWindowFlags(sdl2::window) & SDL_WINDOW_FULLSCREEN);
+      bool currentlyFake = (bool) (SDL_GetWindowFlags(sdl2::window) & SDL_WINDOW_FULLSCREEN_DESKTOP);
       if (currentlyFull || currentlyFake) {
         if ( ! setFullscreenMode(settings::graphics::WINDOWED)) {
           std::cerr << "Failed to change to windowed mode!" << std::endl;
@@ -123,7 +130,17 @@ namespace at3 {
 
     float currentFovY;
 
-    namespace sdl {
+    namespace glfw {
+      bool init() {
+        if( ! glfwInit()) {
+          return false;
+        }
+        return true;
+      }
+      GLFWwindow* window;
+    }
+
+    namespace sdl2 {
       bool init() {
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
           fprintf(stderr, "Failed to initialize SDL: %s\n", SDL_GetError());
@@ -148,36 +165,51 @@ namespace at3 {
 
     namespace opengl {
       bool init() {
-        SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
-        sdl::window = SDL_CreateWindow(
-            sdl::windowTitle,                      // title
-            settings::graphics::windowPosX,        // x
-            settings::graphics::windowPosY,        // y
-            settings::graphics::windowDimX,        // width
-            settings::graphics::windowDimY,        // height
-            sdl::windowFlags | SDL_WINDOW_OPENGL   // flags
-        );
-        if (sdl::window == nullptr) {
-          fprintf(stderr, "Failed to create SDL window: %s\n", SDL_GetError());
-          return false;
+        switch (settings::graphics::windowApi) {
+          case settings::graphics::GLFW: {
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+            glfw::window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
+            if (glfw::window == NULL) {
+              std::cerr << "Failed to create GLFW window" << std::endl;
+              return false;
+            }
+            glfwMakeContextCurrent(glfw::window);
+          } break;
+          default: {
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+            sdl2::window = SDL_CreateWindow(
+                sdl2::windowTitle,                      // title
+                settings::graphics::windowPosX,         // x
+                settings::graphics::windowPosY,         // y
+                settings::graphics::windowDimX,         // width
+                settings::graphics::windowDimY,         // height
+                sdl2::windowFlags | SDL_WINDOW_OPENGL   // flags
+            );
+            if (sdl2::window == nullptr) {
+              std::cerr << "Failed to create SDL window: " << SDL_GetError() << std::endl;
+              return false;
+            }
+            glContext = SDL_GL_CreateContext(sdl2::window);
+            if (glContext == nullptr) {
+              fprintf(stderr, "Failed to initialize OpenGL context: %s\n", SDL_GetError());
+              return false;
+            }
+            glClearColor(0.0, 0.0, 0.0, 0.0);
+            glClearDepth(1.0);
+            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(GL_LEQUAL);
+            glEnable(GL_CULL_FACE);
+            glFrontFace(GL_CCW);
+            glViewport(0, 0, settings::graphics::windowDimX, settings::graphics::windowDimY);
+            ASSERT_GL_ERROR();
+          }
         }
-        glContext = SDL_GL_CreateContext(sdl::window);
-        if (glContext == nullptr) {
-          fprintf(stderr, "Failed to initialize OpenGL context: %s\n", SDL_GetError());
-          return false;
-        }
-        glClearColor(0.0, 0.0, 0.0, 0.0);
-        glClearDepth(1.0);
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LEQUAL);
-        glEnable(GL_CULL_FACE);
-        glFrontFace(GL_CCW);
-        glViewport(0, 0, settings::graphics::windowDimX, settings::graphics::windowDimY);
-        ASSERT_GL_ERROR();
         return true;
       }
       void swap() {
-        SDL_GL_SwapWindow(sdl::window);
+        SDL_GL_SwapWindow(sdl2::window);
       }
       void clear() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

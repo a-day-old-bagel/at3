@@ -3,6 +3,7 @@
 
 #include <epoxy/gl.h>
 #include <SDL.h>
+#include "GLFW/glfw3.h"
 
 #include "settings.h"
 #include "loadedTexture.h"
@@ -24,7 +25,11 @@ namespace at3 {
 
     extern float currentFovY;
 
-    namespace sdl {
+    namespace glfw {
+      bool init();
+      extern GLFWwindow* window;
+    }
+    namespace sdl2 {
       bool init();
       extern SDL_Window *window;
       extern const char *windowTitle;

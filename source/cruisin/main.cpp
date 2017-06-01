@@ -193,6 +193,8 @@ int main(int argc, char **argv) {
   while (!game.mQuit) {
     mainLoop(&game);
   }
+
+  // TODO: clean up SDL, GLFW, OPENGL, VULKAN, ETC!!! (in their own places)
   return 0;
 }
 

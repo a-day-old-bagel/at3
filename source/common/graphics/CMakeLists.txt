@@ -12,6 +12,7 @@ target_link_libraries(${AT3_TARGET_PREFIX}graphics
     ${SDL2_LIBRARY}
     epoxy_static
     ${OPENGL_LIBRARIES}
+    glfw
 #    fastnoise
     )
 target_include_directories( ${AT3_TARGET_PREFIX}graphics PUBLIC
