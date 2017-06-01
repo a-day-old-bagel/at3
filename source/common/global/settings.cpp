@@ -26,6 +26,7 @@ namespace at3 {
      * name is one of the following (to add to this list, make an entry in the switch
      * statement that appears in the functions 'loadFromIni' and 'saveToIni' below):
      *      'u' : indicates that the variable will be a 'uint32_t' in memory
+     *      'i' : indicates that the variable will be a 'int32_t' in memory
      *      'f' : indicates that the variable will be a 'float' in memory
      */
     void setupRegistries() {

@@ -1,26 +1,25 @@
 
-add_library(graphics STATIC
+add_library(${AT3_TARGET_PREFIX}graphics STATIC
     glUtil.cpp
     graphicsBackend.cpp
     loadedTexture.cpp
     shaderProgram.cpp
     shaders.cpp
     )
-target_link_libraries(graphics
-    global
+target_link_libraries(${AT3_TARGET_PREFIX}graphics
+    ${AT3_TARGET_PREFIX}global
     glm
-#    assimp
     ${SDL2_LIBRARY}
     epoxy_static
     ${OPENGL_LIBRARIES}
 #    fastnoise
     )
-target_include_directories( graphics PUBLIC
+target_include_directories( ${AT3_TARGET_PREFIX}graphics PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
     )
-set_property( TARGET graphics PROPERTY CXX_STANDARD 11 )
-set_property( TARGET graphics PROPERTY CXX_STANDARD_REQUIRED ON )
+set_property( TARGET ${AT3_TARGET_PREFIX}graphics PROPERTY CXX_STANDARD 11 )
+set_property( TARGET ${AT3_TARGET_PREFIX}graphics PROPERTY CXX_STANDARD_REQUIRED ON )
 
 # Convert shaders to C files
 file( GLOB_RECURSE shaders
@@ -32,7 +31,7 @@ file( GLOB_RECURSE shaders
     )
 foreach( shader ${shaders} )
   file( RELATIVE_PATH shader_rel "${CMAKE_CURRENT_SOURCE_DIR}" "${shader}" )
-  string( REPLACE "/" "_" shader_target "${shader_rel}.c" )
+  string( REPLACE "/" "_" shader_target "${AT3_TARGET_PREFIX}${shader_rel}.c" )
   get_filename_component( shader_dir "${shader_rel}" DIRECTORY )
   message( STATUS "${CMAKE_CURRENT_SOURCE_DIR}/${shader_rel} ${CMAKE_CURRENT_BINARY_DIR}/${shader_target}" )
   add_custom_target( "${shader_target}"
@@ -40,7 +39,7 @@ foreach( shader ${shaders} )
       DEPENDS "${shader}" xxd_static
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       )
-  add_dependencies( graphics
+  add_dependencies( ${AT3_TARGET_PREFIX}graphics
       "${shader_target}"
       )
 endforeach()

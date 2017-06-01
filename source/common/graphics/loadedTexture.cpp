@@ -76,19 +76,17 @@ namespace at3 {
     std::string left    = std::string("assets/cubeMaps/" + rawName + "/negx" + extName);
     std::string right   = std::string("assets/cubeMaps/" + rawName + "/posx" + extName);
 
-    printf("\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n",
-           front.c_str(), back.c_str(), bottom.c_str(), top.c_str(), left.c_str(), right.c_str());
-
     glGenTextures(1, &mTexture);
     glBindTexture(GL_TEXTURE_CUBE_MAP, mTexture);
     FORCE_ASSERT_GL_ERROR();
 
+    // FIXME: Why does top go with negative-y and bottom with positive-y? WHY?
     int r;
 #   define CONTINUE_IF_SUCCESS(s, f) r = loadCubeSide(s, f); if (r) return;
     CONTINUE_IF_SUCCESS(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, front);
     CONTINUE_IF_SUCCESS(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, back);
-    CONTINUE_IF_SUCCESS(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, top);
-    CONTINUE_IF_SUCCESS(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, bottom);
+    CONTINUE_IF_SUCCESS(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, top);
+    CONTINUE_IF_SUCCESS(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, bottom);
     CONTINUE_IF_SUCCESS(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, left);
     CONTINUE_IF_SUCCESS(GL_TEXTURE_CUBE_MAP_POSITIVE_X, right);
 #   undef CONTINUE_IF_SUCCESS

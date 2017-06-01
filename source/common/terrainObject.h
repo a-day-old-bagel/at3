@@ -38,9 +38,6 @@ namespace at3 {
           const glm::mat4 &modelView,
           const glm::mat4 &projection);
 
-      float m_genTrigTerrain(std::vector<uint8_t> &diffuse, std::vector<float> &terrain,
-                             float xScale, float yScale, float zScale);
-
       FastNoise noiseGen;
       float m_getNoise(float x, float y);
       glm::vec2 m_genTerrain(std::vector<uint8_t> &diffuse, std::vector<float> &terrain,
@@ -133,43 +130,6 @@ namespace at3 {
         GL_STATIC_DRAW  // usage
     );                                                             FORCE_ASSERT_GL_ERROR();
     m_numIndices = indices.size();
-  }
-
-  template <typename EcsInterface>
-  float TerrainObject<EcsInterface>::m_genTrigTerrain(std::vector<uint8_t> &diffuse, std::vector<float> &terrain,
-                                                             float xScale, float yScale, float zScale) {
-    assert(false); // This function is out of date, do not use.
-    float hillFreqX = 1.f / ((float)resX / 10.f);
-    float hillFreqY = 1.f / ((float)resY / 12.f);
-    float hNormalizer = 1 / (1 + 1 + 0.2f + 0.18f);
-    float newZScale = hNormalizer * (0.5f * zScale);
-    for (GLsizei y = 0; y < resY; ++y) {
-      for (GLsizei x = 0; x < resX; ++x) {
-        float height = hNormalizer * ( // 0.0625f
-            sin((float)x * hillFreqX) + 0.2f * cos((float)x * hillFreqX * 3.7f) +
-            sin((float)y * hillFreqY) + 0.18f * sin((float)y * hillFreqY * 2.8f)
-        );
-        glm::vec3 normal( // FIXME: fix this normal to scale
-            (zScale / xScale) * (cos((float)x * hillFreqX) - 3.7f * 0.2f * sin((float)x * hillFreqX * 3.7f)),
-            (zScale / yScale) * (cos((float)y * hillFreqY) + 2.8f * 0.18f * cos((float)y * hillFreqY * 2.8f)),
-            1.f
-        );
-        normal = glm::normalize(normal);
-        // fill terrain texture data
-        terrain.push_back(normal.x);
-        terrain.push_back(normal.y);
-        terrain.push_back(normal.z);
-        terrain.push_back(height);
-        // fill diffuse texture data
-        diffuse.push_back((uint8_t)((1.f - normal.z) * 96 + 32));
-        diffuse.push_back((uint8_t)(normal.z * 32 + 96));
-        diffuse.push_back((uint8_t)((1.f - normal.z) * 64 + 32));
-        diffuse.push_back(255);
-        // keep the terrain heights around for physics
-        heights.push_back(height);
-      }
-    }
-    return newZScale;
   }
 
   template <typename EcsInterface>

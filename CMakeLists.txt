@@ -88,6 +88,7 @@ endif (AT3_USE_INCLUDED_LIBS)
 # I dare you to find a better way to fix this that doesn't require suppressing ALL dev warnings (-Wno-dev)
 # The warnings are generated because I use "VERSION <number>" in the project command, and the above projects don't.
 project( at3 VERSION 0.01.01.01 LANGUAGES CXX)
+set( AT3_TARGET_PREFIX at3_ )
 
 # These libraries will need to be built from source in all cases
   # XXD
