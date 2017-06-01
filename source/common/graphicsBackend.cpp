@@ -5,6 +5,7 @@
 namespace at3 {
   namespace graphicsBackend {
     bool init() {
+	  currentFovY = settings::graphics::fovy;
       switch (settings::graphics::api) {
         case settings::graphics::OPENGL: return opengl::init();
         case settings::graphics::VULKAN: return vulkan::init();
@@ -30,13 +31,17 @@ namespace at3 {
         case SDL_WINDOWEVENT:
           switch (event.window.event) {
             case SDL_WINDOWEVENT_SIZE_CHANGED: {
-              currentWindowWidth = event.window.data1;
-              currentWindowHeight = event.window.data2;
-              glViewport(0, 0, currentWindowWidth, currentWindowHeight);
-              Shaders::updateViewInfos(currentFovY, currentWindowWidth, currentWindowHeight);
-              std::cout << "NEW SCREEN SIZE: " << currentWindowWidth << ", " << currentWindowHeight << std::endl;
-              break;
-            }
+              // TODO: SDL_SetWindowDisplayMode
+              settings::graphics::windowDimX = (uint32_t)event.window.data1;
+              settings::graphics::windowDimY = (uint32_t)event.window.data2;
+              glViewport(0, 0, settings::graphics::windowDimX, settings::graphics::windowDimY);
+              Shaders::updateViewInfos(currentFovY, settings::graphics::windowDimX, settings::graphics::windowDimY);
+              std::cout << "NEW SCREEN SIZE: " << settings::graphics::windowDimX
+                        << ", " << settings::graphics::windowDimY << std::endl;
+            } break;
+            case SDL_WINDOWEVENT_MOVED: {
+              // TODO: SDL_SetWindowDisplayMode
+            } break;
             default: break;
           } break;
         case SDL_KEYDOWN:
@@ -52,29 +57,30 @@ namespace at3 {
               Shaders::toggleEdgeView();
             } break;
             default: break;
-          } return false; // could not handle it here
-        default: return false;  // could not handle it here
+          } return false;       // did not handle it here
+        default: return false;  // did not handle it here
       }
-      return true;  // handled it here
+      return true;              // handled it here
     }
     bool toggleFullscreen() {
-      bool isFullScreen = (bool)(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN);
-      SDL_SetWindowFullscreen(window, isFullScreen ? 0 : SDL_WINDOW_FULLSCREEN);
+      bool isFullScreen = (bool)(SDL_GetWindowFlags(sdl::window) & SDL_WINDOW_FULLSCREEN);
+      SDL_SetWindowFullscreen(sdl::window, isFullScreen ? 0 : SDL_WINDOW_FULLSCREEN);
       return !isFullScreen;
     }
     float getAspect() {
-      return (float)currentWindowWidth / (float)currentWindowHeight;
+      return (float)settings::graphics::windowDimX / (float)settings::graphics::windowDimY;
     }
     void setFovy(float fovy) {
       graphicsBackend::currentFovY = fovy;
-      Shaders::updateViewInfos(fovy, currentWindowWidth, currentWindowHeight);
+      Shaders::updateViewInfos(fovy, settings::graphics::windowDimX, settings::graphics::windowDimY);
     }
 
-    const char *windowTitle;
-    SDL_Window *window;
-    int currentWindowWidth;
-    int currentWindowHeight;
+    const char *windowTitle = NULL;
     float currentFovY;
+
+    namespace sdl {
+      SDL_Window *window = NULL;
+    }
 
     namespace opengl {
       bool init() {
@@ -86,21 +92,21 @@ namespace at3 {
           return false;
         }
         SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
-        graphicsBackend::window = SDL_CreateWindow(
+        sdl::window = SDL_CreateWindow(
             graphicsBackend::windowTitle,            // title
             SDL_WINDOWPOS_UNDEFINED,  // x
             SDL_WINDOWPOS_UNDEFINED,  // y
-            settings::graphics::windowWidth, settings::graphics::windowHeight,
+            settings::graphics::windowDimX, settings::graphics::windowDimY,
             SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE  // flags
         );
-        if (graphicsBackend::window == nullptr) {
+        if (sdl::window == nullptr) {
           fprintf(stderr, "Failed to create SDL window: %s\n",
                   SDL_GetError());
           return false;
         }
 
         // OpenGL stuff
-        glContext = SDL_GL_CreateContext(graphicsBackend::window);
+        glContext = SDL_GL_CreateContext(sdl::window);
         if (glContext == nullptr) {
           fprintf(stderr, "Failed to initialize OpenGL context: %s\n",
                   SDL_GetError());
@@ -112,21 +118,19 @@ namespace at3 {
         glDepthFunc(GL_LEQUAL);
         glEnable(GL_CULL_FACE);
         glFrontFace(GL_CCW);
-        glViewport(0, 0, settings::graphics::windowWidth, settings::graphics::windowHeight);
+        glViewport(0, 0, settings::graphics::windowDimX, settings::graphics::windowDimY);
         ASSERT_GL_ERROR();
 
-        Shaders::updateViewInfos(currentFovY, currentWindowWidth, currentWindowHeight);
+        Shaders::updateViewInfos(currentFovY, settings::graphics::windowDimX, settings::graphics::windowDimY);
 
         return true;
       }
       void swap() {
-        SDL_GL_SwapWindow(graphicsBackend::window);
+        SDL_GL_SwapWindow(sdl::window);
       }
       void clear() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       }
-      const char *windowTitle = NULL;
-      SDL_Window *window = NULL;
       SDL_GLContext glContext;
     }
 

@@ -6,7 +6,7 @@
 
 #include <fstream>
 #include <string>
-#include <unordered_map>
+#include <map>
 
 namespace at3 {
   namespace settings {
@@ -16,15 +16,16 @@ namespace at3 {
         OPENGL = 0, VULKAN = 1
       };
       extern uint32_t api;
-      extern uint32_t windowWidth, windowHeight;
+      extern uint32_t windowDimX, windowDimY;
+      extern uint32_t windowPosX, windowPosY;
+      extern uint32_t windowResX, windowResY;
       extern float fovy, near, far;
     }
 
     void setupRegistries();
     bool loadFromIni(const char *filename);
-    void saveToIni(const char *filename);
-    extern std::unordered_map<std::string, void*> registry;
-    extern std::unordered_map<void*, std::string> reverseRegistry;
+    bool saveToIni(const char *filename);
+    extern std::map<std::string, void*> registry;
     extern bool loaded;
   }
 }

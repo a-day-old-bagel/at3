@@ -22,11 +22,11 @@ namespace at3 {
     void setFovy(float fovy);
 
     extern const char *windowTitle;
-    extern SDL_Window *window;
-    extern int currentWindowWidth;
-    extern int currentWindowHeight;
     extern float currentFovY;
 
+    namespace sdl {
+      extern SDL_Window *window;
+    }
     namespace opengl {
       bool init();
       void swap();

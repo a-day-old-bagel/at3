@@ -1,74 +1,149 @@
 
+#include <sstream>
 #include "settings.h"
 
 namespace at3 {
   namespace settings {
 
-    // These are default settings. They can be overwritten in the settings ini file.
+    // These are default settings. They can be overwritten at runtime with an ini file.
     namespace graphics {
       uint32_t api = OPENGL;
-      uint32_t windowWidth = 800;
-      uint32_t windowHeight = 600;
+      uint32_t windowDimX = 1200;
+      uint32_t windowDimY = 700;
+      uint32_t windowPosX = 0;
+      uint32_t windowPosY = 0;
+      uint32_t windowResX = 1200;
+      uint32_t windowResY = 700;
       float fovy = 1.1f;
       float near = 0.1f;
       float far = 10000.f;
     }
 
-    // This is the mapping from the names that appear in the ini to the variables here.
+    /**
+     * Defines the mapping from the names that appear in the ini to the variables here.
+     * When an ini is saved, the entries will be arranged alphabetically.
+     * A variable name in the ini must be formatted such that the LAST LETTER of the
+     * name is one of the following (to add to this list, make an entry in the switch
+     * statement that appears in the functions 'loadFromIni' and 'saveToIni' below):
+     *      'u' : indicates that the variable will be a 'uint32_t' in memory
+     *      'f' : indicates that the variable will be a 'float' in memory
+     */
     void setupRegistries() {
-      registry.insert(std::make_pair("u_graphicsApi", &graphics::api));
-      registry.insert(std::make_pair("u_windowWidth", &graphics::windowWidth));
-      registry.insert(std::make_pair("u_windowHeight", &graphics::windowHeight));
-      registry.insert(std::make_pair("f_fieldOfViewY", &graphics::fovy));
-      registry.insert(std::make_pair("f_nearPlane", &graphics::near));
-      registry.insert(std::make_pair("f_farPlane", &graphics::far));
-      for (auto pair : registry) {
-        reverseRegistry.insert(std::make_pair(pair.second, pair.first));
-      }
+      registry.insert(std::make_pair( "graphics_api_u", &graphics::api));
+      registry.insert(std::make_pair( "graphics_win_dimx_u", &graphics::windowDimX));
+      registry.insert(std::make_pair( "graphics_win_dimy_u", &graphics::windowDimY));
+      registry.insert(std::make_pair( "graphics_win_posx_u", &graphics::windowPosX));
+      registry.insert(std::make_pair( "graphics_win_posy_u", &graphics::windowPosY));
+      registry.insert(std::make_pair( "graphics_win_resx_u", &graphics::windowResX));
+      registry.insert(std::make_pair( "graphics_win_resy_u", &graphics::windowResY));
     }
 
+    // This is used in the functions below.
+#   define CASE_CHAR_TYPE(c, t) case c: ini >> (*(( t *) registry.at(settingName))); break;
+
+    /**
+     * Attempts to read a user settings ini file.
+     * @param filename of the ini file
+     * @return true if worked, false if any problems (fatal or otherwise) were encountered
+     */
     bool loadFromIni(const char *filename) {
       setupRegistries();
       std::ifstream ini(filename);
-      if (!ini) {
-        fprintf(stderr, "SETTINGS: Could not open file: %s\n", filename);
-        return false;
-      }
-      std::string settingName, garbage;
+      std::stringstream reportProblem, reportNormal;
       bool workedFlawlessly = true;
-      while (ini >> settingName) {
-        if (registry.count(settingName)) {
-          char type = settingName[0];
-          switch (type) {
-            case 'u': {
-              ini >> (*((uint32_t *) registry.at(settingName)));
-            } break;
-            case 'f': {
-              ini >> (*((float *) registry.at(settingName)));
-            } break;
-            default: {
-              fprintf(stderr, "SETTINGS: Attempted to set with invalid type prefix: %s\n", settingName.c_str());
-              workedFlawlessly = false;
+      if (!ini) {
+        reportProblem << "No user settings found (" << filename
+               << "). Default settings will be used." << std::endl;
+        workedFlawlessly = false;
+      } else {
+        reportNormal << "Found user settings file: " << filename << std::endl;
+        std::string settingName, garbage;
+        while (ini >> settingName) {
+          if (registry.count(settingName)) {
+            char lastLetter = (char) settingName[settingName.size() - 1];
+            switch (lastLetter) {
+
+              // Add an entry for any other types you want to support here and in 'saveToIni'.
+              // make sure the type can be read from a stream with the >> operator correctly.
+              CASE_CHAR_TYPE('u', uint32_t)
+              CASE_CHAR_TYPE('f', float)
+
+              default: {
+                reportProblem << "Encountered user setting with invalid type postfix: "
+                              << settingName << std::endl;
+                workedFlawlessly = false;
+              } continue;
             }
+            if (ini.eof()) {
+              reportProblem << "Value missing for user setting: " << settingName << std::endl;
+              continue;
+            } else if (ini.fail()) {
+              reportProblem << "Error reading user setting value: " << settingName << std::endl;
+              ini.clear();
+              continue;
+            }
+            reportNormal << "Loaded user setting: " << settingName << std::endl;
+          } else {
+            reportProblem << "Unrecognized user settings input: " << settingName << std::endl;
+            workedFlawlessly = false;
           }
-          fprintf(stdout, "Loading setting: %s\n", settingName.c_str());
-        } else {
-          fprintf(stderr, "SETTINGS: Unrecognized input: %s\n", settingName.c_str());
-          workedFlawlessly = false;
         }
       }
       if (!workedFlawlessly) {
-        fprintf(stderr, "SETTINGS: Some settings failed to load!\n");
+        reportProblem << "Some user settings may have failed to load!" << std::endl;
       }
+      fprintf(stdout, "\n%s\n%s\n", reportNormal.str().c_str(), reportProblem.str().c_str());
       return workedFlawlessly;
     }
 
-    void saveToIni(const char *filename) {
-      // TODO
+    // This is being redefined for the function below.
+#   undef CASE_CHAR_TYPE
+#   define CASE_CHAR_TYPE(c, t) case c: ini << settingName << " " \
+                                << (*(( t *) pair.second)) << std::endl; break;
+
+    /**
+     * Attempts to write a user settings ini file (will overwrite entire file).
+     * @param filename of the ini file
+     * @return true if worked, false if any problems (fatal or otherwise) were encountered
+     */
+    bool saveToIni(const char *filename) {
+      std::ofstream ini(filename, std::ios_base::out);
+      std::stringstream reportProblem, reportNormal;
+      bool workedFlawlessly = true;
+      for (auto pair : registry) {
+        std::string settingName = pair.first;
+        char lastLetter = (char) settingName[settingName.size() - 1];
+        switch (lastLetter) {
+
+          // Add an entry for any other types you want to support here and in 'loadFromIni'.
+          // make sure the type can be written to a stream with the << operator correctly.
+          CASE_CHAR_TYPE('u', uint32_t)
+          CASE_CHAR_TYPE('f', float)
+
+          default: {
+            reportProblem << "Did not save user setting (invalid type postfix): "
+                          << settingName << " postfix was: " << lastLetter << std::endl;
+            workedFlawlessly = false;
+          } continue;
+        }
+        reportNormal << "Saved user setting: " << settingName << std::endl;
+      }
+      if (!workedFlawlessly) {
+        reportProblem << "Some user settings may may not have been saved!" << std::endl;
+      }
+      fprintf(stdout, "\n%s\n%s\n", reportNormal.str().c_str(), reportProblem.str().c_str());
+      return workedFlawlessly;
     }
 
-    std::unordered_map<std::string, void*> registry;
-    std::unordered_map<void*, std::string> reverseRegistry;
+    // This was used in the functions above.
+#   undef CASE_CHAR_TYPE
+
+    std::map<std::string, void*> registry;
+
+    /**
+     * 'settings::loaded' will be initialized to true if no problems were encountered while
+     * loading settings from a user ini file
+     */
     bool loaded = loadFromIni("settings.ini");
   }
 }

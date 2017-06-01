@@ -47,8 +47,9 @@ namespace at3 {
   template <typename EcsState, typename EcsInterface>
   Game<EcsState, EcsInterface>::Game(int argc, char **argv, const char *windowTitle) {
     mLastTime = 0.0f;
-    if ( ! settings::loaded || ! graphicsBackend::init() ) {
-      exit(EXIT_FAILURE);
+    if ( ! graphicsBackend::init() ) {
+      std::cerr << "Could not initialize graphics backend!" << std::endl;
+      exit(-2);
     }
   }
 
@@ -69,11 +70,14 @@ namespace at3 {
     // poll events
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_QUIT) { return false; }            // This signals the main loop to exit
+      if (event.type == SDL_QUIT) {
+        settings::saveToIni("settings.ini");
+        return false;
+      }
       if (systemsHandler(event)) { continue; }                // The systems have handled this event
       if (graphicsBackend::handleEvent(event)) { continue; }  // Graphics backend handled it
       if (this->handleEvent(event)) { continue; }             // Our derived class handled this event
-      if (mScene.handleEvent(event)) { continue; }             // One of the scene objects handled this event
+      if (mScene.handleEvent(event)) { continue; }            // One of the scene objects handled this event
     }
 
     // Calculate the time since the last frame was drawn TODO: SDL_GetTicks may be too granular

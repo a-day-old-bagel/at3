@@ -1,5 +1,5 @@
 
-#include <math.h>
+#include <SDL_stdinc.h>
 #include "shaderProgram.h"
 #include "shaders.h"
 #include "glUtil.h"
