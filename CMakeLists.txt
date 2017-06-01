@@ -78,6 +78,8 @@ if (AT3_USE_INCLUDED_LIBS) # BUILD AND INCLUDE EXTERNS
   include_directories( "./extern/libepoxy/registry" )
   include_directories( "${CMAKE_CURRENT_BINARY_DIR}/extern/libepoxy/include" )
 
+  # GLFW
+
 else (AT3_USE_INCLUDED_LIBS)
   message(FATAL_ERROR
           "Use of system libraries (instead of building the included ones) is not yet supported.\
@@ -98,7 +100,7 @@ set( AT3_TARGET_PREFIX at3_ )
   # FASTNOISE, ETC.
   add_subdirectory( "./extern")
 
-# OpenGL and SDL2 are not included in source, unlike other external libraries, so they will always need to be found.
+# OpenGL and SDL2/GLFW are not included, unlike other external libraries, so they will always need to be found.
   find_package( OpenGL REQUIRED )
   include_directories( SYSTEM ${OPENGL_INCLUDE_DIR} )
   find_package( SDL2 REQUIRED )
