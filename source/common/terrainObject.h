@@ -59,7 +59,7 @@ namespace at3 {
 
   template <typename EcsInterface>
   TerrainObject<EcsInterface>::TerrainObject(const glm::mat4 &transform,
-                                                    float xMin, float xMax, float yMin, float yMax, float zMin, float zMax) {
+                                             float xMin, float xMax, float yMin, float yMax, float zMin, float zMax) {
     assert(xMax > xMin);
     assert(yMax > yMin);
     assert(zMax > zMin);
