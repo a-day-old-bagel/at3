@@ -32,15 +32,15 @@ file( GLOB_RECURSE shaders
     )
 foreach( shader ${shaders} )
   file( RELATIVE_PATH shader_rel "${CMAKE_CURRENT_SOURCE_DIR}" "${shader}" )
-  string( REPLACE "/" "_" shader_target "${AT3_TARGET_PREFIX}${shader_rel}.c" )
+  string( REPLACE "/" "_" shader_target "${shader_rel}.c" )
   get_filename_component( shader_dir "${shader_rel}" DIRECTORY )
   message( STATUS "${CMAKE_CURRENT_SOURCE_DIR}/${shader_rel} ${CMAKE_CURRENT_BINARY_DIR}/${shader_target}" )
-  add_custom_target( "${shader_target}"
+  add_custom_target( "${AT3_TARGET_PREFIX}${shader_target}"
       COMMAND xxd -include ${shader_rel} > "${CMAKE_CURRENT_BINARY_DIR}/${shader_target}"
       DEPENDS "${shader}" xxd_static
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       )
   add_dependencies( ${AT3_TARGET_PREFIX}graphics
-      "${shader_target}"
+      "${AT3_TARGET_PREFIX}${shader_target}"
       )
 endforeach()
