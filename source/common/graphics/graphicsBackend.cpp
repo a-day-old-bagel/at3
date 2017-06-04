@@ -44,6 +44,9 @@ namespace at3 {
         default: assert(false);
       }
     }
+    void deinit() {
+      // TODO
+    }
     bool handleEvent(const SDL_Event &event) {
       switch (event.type) {
         case SDL_WINDOWEVENT:
@@ -128,6 +131,7 @@ namespace at3 {
       Shaders::updateViewInfos(fovy, settings::graphics::windowDimX, settings::graphics::windowDimY);
     }
 
+    const char *windowTitle = nullptr;
     float currentFovY;
 
     namespace glfw {
@@ -135,7 +139,11 @@ namespace at3 {
         if( ! glfwInit()) {
           return false;
         }
+        glfwSetErrorCallback(errorCallbackImpl);
         return true;
+      }
+      void errorCallbackImpl(int error, const char* desc) {
+        fprintf(stderr, "GLFW: %s\n", desc);
       }
       GLFWwindow* window;
     }
@@ -151,15 +159,14 @@ namespace at3 {
             windowFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
           } break;
           case settings::graphics::FULLSCREEN: {
-            windowFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+            windowFlags |= SDL_WINDOW_FULLSCREEN;
           } break;
           case settings::graphics::WINDOWED:
           default: break;
         }
         return true;
       }
-      SDL_Window *window = NULL;
-      const char *windowTitle = NULL;
+      SDL_Window *window = nullptr;
       uint32_t windowFlags = SDL_WINDOW_RESIZABLE;
     }
 
@@ -170,8 +177,12 @@ namespace at3 {
             glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
             glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-            glfw::window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
-            if (glfw::window == NULL) {
+            glfw::window = glfwCreateWindow(
+                settings::graphics::windowDimX,
+                settings::graphics::windowDimY,
+                windowTitle,
+                nullptr, nullptr);
+            if ( ! glfw::window) {
               std::cerr << "Failed to create GLFW window" << std::endl;
               return false;
             }
@@ -180,7 +191,7 @@ namespace at3 {
           default: {
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
             sdl2::window = SDL_CreateWindow(
-                sdl2::windowTitle,                      // title
+                windowTitle,                            // title
                 settings::graphics::windowPosX,         // x
                 settings::graphics::windowPosY,         // y
                 settings::graphics::windowDimX,         // width
@@ -196,16 +207,16 @@ namespace at3 {
               fprintf(stderr, "Failed to initialize OpenGL context: %s\n", SDL_GetError());
               return false;
             }
-            glClearColor(0.0, 0.0, 0.0, 0.0);
-            glClearDepth(1.0);
-            glEnable(GL_DEPTH_TEST);
-            glDepthFunc(GL_LEQUAL);
-            glEnable(GL_CULL_FACE);
-            glFrontFace(GL_CCW);
-            glViewport(0, 0, settings::graphics::windowDimX, settings::graphics::windowDimY);
-            ASSERT_GL_ERROR();
           }
         }
+        glClearColor(0.0, 0.0, 0.0, 0.0);
+        glClearDepth(1.0);
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
+        glEnable(GL_CULL_FACE);
+        glFrontFace(GL_CCW);
+        glViewport(0, 0, settings::graphics::windowDimX, settings::graphics::windowDimY);
+        ASSERT_GL_ERROR();
         return true;
       }
       void swap() {
