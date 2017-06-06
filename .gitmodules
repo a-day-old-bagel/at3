@@ -28,3 +28,6 @@
 [submodule "extern/RunTimeCompiledCPlusPlus"]
 	path = extern/RunTimeCompiledCPlusPlus
 	url = https://github.com/RunTimeCompiledCPlusPlus/RunTimeCompiledCPlusPlus
+[submodule "extern/sdl_vulkan"]
+	path = extern/sdl_vulkan
+	url = https://github.com/a-day-old-bagel/sdl_vulkan

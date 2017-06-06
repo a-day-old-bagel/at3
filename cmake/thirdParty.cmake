@@ -75,6 +75,9 @@ option( GLFW_VULKAN_STATIC "Use the Vulkan loader statically linked into applica
 option( GLFW_DOCUMENT_INTERNALS "Include internals in documentation" OFF )
 add_subdirectory( "./extern/glfw" )
 
+# SDL_VULKAN
+add_subdirectory( "./extern/sdl_vulkan" )
+
 # XXD
 option( XXD_STATIC_LIB "Build a static lib of xxd" ON )
 option( XXD_EXECUTABLE "Build xxd as an executable" OFF )
