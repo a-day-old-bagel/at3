@@ -1,8 +1,11 @@
 #include "vulkanTest.h"
 #include <SDL_vulkan.h>
 #include <assert.h>
-#include <stdio.h>
+
+#ifdef _WIN32
 #include <windows.h>
+#include <stdio.h>
+#endif
 
 VKAPI_ATTR VkBool32 VKAPI_CALL
                     dbgFunc(VkFlags msgFlags, VkDebugReportObjectTypeEXT objType,
@@ -478,7 +481,6 @@ void vulkan_main(SDL_Window *window, PFN_vkCreateDebugReportCallbackEXT CreateDe
     assert(err == VK_SUCCESS);
 
     vkDestroySemaphore(device, present_complete_semaphore, NULL);
-
-    free(buffers);
   }
+  free(buffers);
 }
