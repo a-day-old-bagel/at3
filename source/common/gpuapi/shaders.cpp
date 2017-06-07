@@ -2,7 +2,7 @@
 #include <SDL_stdinc.h>
 #include "shaderProgram.h"
 #include "shaders.h"
-#include "glUtil.h"
+#include "openglValidation.h"
 
 namespace at3 {
 # define SHADER_DIR shaders

@@ -1,10 +1,14 @@
 
 add_library( ${AT3_TARGET_PREFIX}graphics STATIC
-  glUtil.cpp
   graphicsBackend.cpp
   loadedTexture.cpp
+  openglCalls.cpp
+  openglValidation.cpp
+  sdl2Calls.cpp
   shaderProgram.cpp
   shaders.cpp
+  vulkanCalls.cpp
+  vulkanTest.c
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}graphics
   ${AT3_TARGET_PREFIX}global
@@ -12,7 +16,6 @@ target_link_libraries( ${AT3_TARGET_PREFIX}graphics
   SDL_vulkan
   epoxy_static
   ${OPENGL_LIBRARIES}
-  glfw
   #fastnoise
   )
 target_include_directories( ${AT3_TARGET_PREFIX}graphics PUBLIC

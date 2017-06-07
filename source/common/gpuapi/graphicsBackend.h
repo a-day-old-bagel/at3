@@ -2,13 +2,13 @@
 #pragma once
 
 #include <epoxy/gl.h>
+#include <SDL_vulkan.h>
 #include <SDL.h>
-#include "GLFW/glfw3.h"
 
 #include "settings.h"
 #include "loadedTexture.h"
 #include "material.h"
-#include "glUtil.h"
+#include "openglValidation.h"
 #include "shaders.h"
 #include "shaderProgram.h"
 
@@ -27,11 +27,6 @@ namespace at3 {
     extern const char *windowTitle;
     extern float currentFovY;
 
-    namespace glfw {
-      bool init();
-      void errorCallbackImpl(int error, const char* desc);
-      extern GLFWwindow* window;
-    }
     namespace sdl2 {
       bool init();
       extern SDL_Window *window;
@@ -47,6 +42,11 @@ namespace at3 {
       bool init();
       void swap();
       void clear();
+
+      extern PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback;
+      extern PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallback;
+      extern VkDebugReportCallbackEXT msg_callback;
+      extern PFN_vkDebugReportMessageEXT DebugReportMessage;
     }
   }
 }

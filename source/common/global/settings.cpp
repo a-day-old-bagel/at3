@@ -8,8 +8,7 @@ namespace at3 {
 
     // These are default settings. They can be overwritten at runtime with an ini file.
     namespace graphics {
-      uint32_t gpuApi = OPENGL_CL;
-      uint32_t windowApi = SDL2;
+      uint32_t gpuApi = OPENGL_OPENCL;
       uint32_t fullscreen = WINDOWED;
       uint32_t windowDimX = 1200;
       uint32_t windowDimY = 700;
@@ -32,7 +31,6 @@ namespace at3 {
      */
     void setupRegistries() {
       registry.insert(std::make_pair( "graphics_api_gpu_u", &graphics::gpuApi));
-      registry.insert(std::make_pair( "graphics_api_win_u", &graphics::windowApi));
       registry.insert(std::make_pair( "graphics_fullscr_u", &graphics::fullscreen));
       registry.insert(std::make_pair( "graphics_win_dimx_u", &graphics::windowDimX));
       registry.insert(std::make_pair( "graphics_win_dimy_u", &graphics::windowDimY));

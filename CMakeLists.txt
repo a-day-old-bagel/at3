@@ -10,7 +10,7 @@ set( CMAKE_DISABLE_SOURCE_CHANGES ON )
 include( cmake/buildThirdParty.cmake )
 
 # Define project name, version, language, and target name prefix
-project( at3 VERSION 0.01.01.01 LANGUAGES CXX )
+project( at3 VERSION 0.01.01.01 LANGUAGES CXX C )
 set( AT3_TARGET_PREFIX at3_ )
 
 # Include third-party libraries that the user has installed on their system

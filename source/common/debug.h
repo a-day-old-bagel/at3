@@ -7,7 +7,7 @@
 
 #include "sceneObject.h"
 #include "debug.h"
-#include "glUtil.h"
+#include "openglValidation.h"
 #include "shaderProgram.h"
 #include "shaders.h"
 

@@ -1,7 +1,7 @@
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${epoxy_DEFINITIONS}" )
 
 add_subdirectory( global )
-add_subdirectory( graphics )
+add_subdirectory(gpuapi)
 
 add_library( ${AT3_TARGET_PREFIX}common STATIC
   transform.cpp

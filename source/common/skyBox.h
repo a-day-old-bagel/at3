@@ -9,7 +9,7 @@
 #include "sceneObject.h"
 #include "shaderProgram.h"
 #include "shaders.h"
-#include "glUtil.h"
+#include "openglValidation.h"
 
 #include "loadedTexture.h"
 
