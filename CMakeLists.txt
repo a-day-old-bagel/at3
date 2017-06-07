@@ -7,17 +7,17 @@ set( CMAKE_DISABLE_SOURCE_CHANGES ON )
 
 # Build third-party libraries that are already set up for cmake
 # This call works best before the "project" call is made.
-include(cmake/buildThirdParty.cmake)
+include( cmake/buildThirdParty.cmake )
 
 # Define project name, version, language, and target name prefix
 project( at3 VERSION 0.01.01.01 LANGUAGES CXX )
 set( AT3_TARGET_PREFIX at3_ )
 
 # Include third-party libraries that the user has installed on their system
-include(cmake/findSystemLibs.cmake)
+include( cmake/findSystemLibs.cmake )
 
 # Build third-party libraries that required custom targets to be made
-add_subdirectory( "./extern")
+add_subdirectory( "./extern" )
 
 # Build this project's targets
 add_subdirectory( "./source" )
