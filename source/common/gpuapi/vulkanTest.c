@@ -1,6 +1,8 @@
 #include "vulkanTest.h"
 #include <SDL_vulkan.h>
 #include <assert.h>
+#include <stdio.h>
+#include <windows.h>
 
 VKAPI_ATTR VkBool32 VKAPI_CALL
                     dbgFunc(VkFlags msgFlags, VkDebugReportObjectTypeEXT objType,
@@ -107,15 +109,17 @@ void vulkan_main(SDL_Window *window, PFN_vkCreateDebugReportCallbackEXT CreateDe
 
   VkPhysicalDevice gpu;
   {
-    uint32_t gpu_count;
+    uint32_t gpu_count = 0;
     err = vkEnumeratePhysicalDevices(inst, &gpu_count, NULL);
     assert(!err && gpu_count > 0);
 
     if (gpu_count > 0) {
-      VkPhysicalDevice gpus[gpu_count];
+//      VkPhysicalDevice gpus[gpu_count];
+      VkPhysicalDevice *gpus = (VkPhysicalDevice*)malloc(gpu_count * sizeof(VkPhysicalDevice));
       err = vkEnumeratePhysicalDevices(inst, &gpu_count, gpus);
       assert(!err);
       gpu = gpus[0];
+      free(gpus);
     } else {
       gpu = VK_NULL_HANDLE;
     }
@@ -129,7 +133,9 @@ void vulkan_main(SDL_Window *window, PFN_vkCreateDebugReportCallbackEXT CreateDe
     {
       uint32_t queue_count;
       vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queue_count, NULL);
-      VkQueueFamilyProperties queue_props[queue_count];
+//      VkQueueFamilyProperties queue_props[queue_count];
+      VkQueueFamilyProperties *queue_props =
+          (VkQueueFamilyProperties*)malloc(queue_count * sizeof(VkQueueFamilyProperties));
       vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queue_count, queue_props);
       assert(queue_count >= 1);
 
@@ -142,6 +148,7 @@ void vulkan_main(SDL_Window *window, PFN_vkCreateDebugReportCallbackEXT CreateDe
         }
       }
       assert(queue_family_index != UINT32_MAX);
+      free(queue_props);
     }
 
     uint32_t extension_count = 0;
@@ -189,7 +196,8 @@ void vulkan_main(SDL_Window *window, PFN_vkCreateDebugReportCallbackEXT CreateDe
     err = vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &format_count, NULL);
     assert(!err);
 
-    VkSurfaceFormatKHR formats[format_count];
+//    VkSurfaceFormatKHR formats[format_count];
+    VkSurfaceFormatKHR *formats = (VkSurfaceFormatKHR*)malloc(format_count * sizeof(VkSurfaceFormatKHR));
     err = vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &format_count, formats);
     assert(!err);
 
@@ -200,6 +208,7 @@ void vulkan_main(SDL_Window *window, PFN_vkCreateDebugReportCallbackEXT CreateDe
       format = formats[0].format;
     }
     color_space = formats[0].colorSpace;
+    free(formats);
   }
 
   VkCommandBuffer draw_cmd;
@@ -256,21 +265,25 @@ void vulkan_main(SDL_Window *window, PFN_vkCreateDebugReportCallbackEXT CreateDe
     assert(!err);
   }
 
-  struct {
+  typedef struct {
     VkImage image;
     VkCommandBuffer cmd;
     VkImageView view;
     VkFramebuffer fb;
-  } buffers[swapchain_image_count];
+  } Buffer;
+
+  Buffer *buffers = (Buffer*)malloc(swapchain_image_count * sizeof(Buffer));
 
   {
     err = vkGetSwapchainImagesKHR(device, swapchain, &swapchain_image_count, 0);
     assert(!err);
-    VkImage swapchain_images[swapchain_image_count];
+//    VkImage swapchain_images[swapchain_image_count];
+    VkImage *swapchain_images = (VkImage*)malloc(swapchain_image_count * sizeof(VkImage));
     err = vkGetSwapchainImagesKHR(device, swapchain, &swapchain_image_count, swapchain_images);
     assert(!err);
     for (uint32_t i = 0; i < swapchain_image_count; i++)
       buffers[i].image = swapchain_images[i];
+    free(swapchain_images);
   }
 
   for (uint32_t i = 0; i < swapchain_image_count; i++) {
@@ -465,5 +478,7 @@ void vulkan_main(SDL_Window *window, PFN_vkCreateDebugReportCallbackEXT CreateDe
     assert(err == VK_SUCCESS);
 
     vkDestroySemaphore(device, present_complete_semaphore, NULL);
+
+    free(buffers);
   }
 }
