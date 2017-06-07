@@ -9,7 +9,7 @@ add_library(${AT3_TARGET_PREFIX}graphics STATIC
 target_link_libraries(${AT3_TARGET_PREFIX}graphics
     ${AT3_TARGET_PREFIX}global
     glm
-    ${SDL2_LIBRARY}
+    SDL_vulkan
     epoxy_static
     ${OPENGL_LIBRARIES}
     glfw
