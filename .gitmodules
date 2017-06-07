@@ -22,9 +22,6 @@
 [submodule "extern/assimp"]
 	path = extern/assimp
 	url = https://github.com/assimp/assimp
-[submodule "extern/glfw"]
-	path = extern/glfw
-	url = https://github.com/glfw/glfw
 [submodule "extern/RunTimeCompiledCPlusPlus"]
 	path = extern/RunTimeCompiledCPlusPlus
 	url = https://github.com/RunTimeCompiledCPlusPlus/RunTimeCompiledCPlusPlus
