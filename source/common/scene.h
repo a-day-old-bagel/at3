@@ -14,6 +14,7 @@ namespace at3 {
 
   template <typename EcsInterface> class Camera;
   template <typename EcsInterface> class SceneObject;
+
   /**
    * This class implements a scene graph.
    */
@@ -24,21 +25,24 @@ namespace at3 {
 
     public:
 
-      Scene();
-      ~Scene();
-
       /**
        * Adds a top level object to the scene graph
        */
       void addObject(std::shared_ptr<SceneObject<EcsInterface>> object);
 
       /**
-       * Removes a top level object from the scene graph. This will not
-       * remove that objects children from it, however.
+       * Removes a top level object from the scene graph. This should
+       * automatically deallocate the shared_ptrs that it keeps for its
+       * children, and so recursively deal with all children as well (I think)
        *
        * \param address The memory address of the object.
        */
       void removeObject(const SceneObject<EcsInterface> *address);
+
+      /**
+       * Clears the scene graph
+       */
+      void clear();
 
       /**
        * An event percolates through the scene graph. If any object handles
@@ -61,16 +65,6 @@ namespace at3 {
   };
 
   template <typename EcsInterface>
-  Scene<EcsInterface>::Scene() {
-
-  }
-
-  template <typename EcsInterface>
-  Scene<EcsInterface>::~Scene() {
-
-  }
-
-  template <typename EcsInterface>
   void Scene<EcsInterface>::addObject(std::shared_ptr<SceneObject<EcsInterface>> object) {
     this->m_objects.insert({object.get(), object});
   }
@@ -81,6 +75,11 @@ namespace at3 {
     if (iterator != m_objects.end()) {
       m_objects.erase(iterator);
     }
+  }
+
+  template <typename EcsInterface>
+  void Scene<EcsInterface>::clear() {
+    m_objects.clear();
   }
 
   template <typename EcsInterface>

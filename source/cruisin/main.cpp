@@ -47,18 +47,19 @@
 using namespace at3;
 using namespace ezecs;
 
-class CruisinGame : public Game<State, DualityInterface, CruisinGame> {
+class CruisinGame : public Game<DualityInterface, CruisinGame> {
   private:
+    State             mState;
+    DualityInterface  mDualityInterface;
+    ControlSystem     mControlSystem;
+    MovementSystem    mMovementSystem;
+    PhysicsSystem     mPhysicsSystem;
+
     std::shared_ptr<SkyBox_>         mpSkybox;
     std::shared_ptr<TerrainObject_>  mpTerrain;
     std::unique_ptr<Pyramid>         mpPyramid;
     std::unique_ptr<DuneBuggy>       mpDuneBuggy;
     std::shared_ptr<DebugStuff>      mpDebugStuff;
-
-    DualityInterface  mDualityInterface;
-    ControlSystem     mControlSystem;
-    MovementSystem    mMovementSystem;
-    PhysicsSystem     mPhysicsSystem;
 
   public:
 
@@ -115,6 +116,14 @@ class CruisinGame : public Game<State, DualityInterface, CruisinGame> {
     }
 
     void onDeInit() {
+
+      mpSkybox.reset();
+      mpTerrain.reset();
+      mpPyramid.reset();
+      mpDuneBuggy.reset();
+      mpDebugStuff.reset();
+      Debug_::reset();
+
       mPhysicsSystem.deInit();
     }
 
@@ -173,25 +182,23 @@ class CruisinGame : public Game<State, DualityInterface, CruisinGame> {
 
 int main(int argc, char **argv) {
 
-  std::cout << "Game is initializing..." << std::endl;
-
   CruisinGame game;
+
+  std::cout << std::endl << "Game is initializing..." << std::endl;
   if (!game.init("cruisin", "at3_cruisin_settings.ini")) {
     return -1;
   }
 
-  std::cout << "Game has started." << std::endl;
-
+  std::cout << std::endl << "Game has started." << std::endl;
   while (!game.isQuit()) {
     game.tick();
   }
 
-  std::cout << "Game has finished." << std::endl;
+  std::cout << std::endl << "Game is cleaning up..." << std::endl;
+  game.deInit();
 
-  // FIXME: crashes on return
-  exit(0);
-
-  // return 0;
+  std::cout << std::endl << "Game has finished." << std::endl;
+  return 0;
 }
 
 #pragma clang diagnostic pop

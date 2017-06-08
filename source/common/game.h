@@ -19,7 +19,7 @@ namespace at3 {
   template <typename EcsInterface> class Camera;
   template <typename EcsInterface> class Scene;
 
-  template <typename EcsState, typename EcsInterface, typename Derived>
+  template <typename EcsInterface, typename Derived>
   class Game {
 
     private:
@@ -31,7 +31,6 @@ namespace at3 {
       Derived &derived();
 
     protected:
-      EcsState mState;
       Scene<EcsInterface> mScene;
 
     public:
@@ -45,13 +44,13 @@ namespace at3 {
       std::shared_ptr<Camera<EcsInterface>> getCamera() { return mpCamera; }
   };
 
-  template <typename EcsState, typename EcsInterface, typename Derived>
-  Derived & Game<EcsState, EcsInterface, Derived>::derived() {
+  template <typename EcsInterface, typename Derived>
+  Derived & Game<EcsInterface, Derived>::derived() {
     return *static_cast<Derived*>(this);
   }
 
-  template <typename EcsState, typename EcsInterface, typename Derived>
-  bool Game<EcsState, EcsInterface, Derived>::init(const char *appName, const char *settingsName) {
+  template <typename EcsInterface, typename Derived>
+  bool Game<EcsInterface, Derived>::init(const char *appName, const char *settingsName) {
     mSettingsFileName = settingsName;
     graphicsBackend::applicationName = appName;
     derived().registerCustomSettings();
@@ -61,21 +60,22 @@ namespace at3 {
     return true;
   }
 
-  template <typename EcsState, typename EcsInterface, typename Derived>
-  bool Game<EcsState, EcsInterface, Derived>::isQuit() {
+  template <typename EcsInterface, typename Derived>
+  bool Game<EcsInterface, Derived>::isQuit() {
     return mIsQuit;
   }
 
-  template <typename EcsState, typename EcsInterface, typename Derived>
-  void Game<EcsState, EcsInterface, Derived>::deInit() {
-    mIsQuit = true;
+  template <typename EcsInterface, typename Derived>
+  void Game<EcsInterface, Derived>::deInit() {
+    mpCamera.reset();
+    mScene.clear();
     derived().onDeInit();
     graphicsBackend::deinit();
     settings::saveToIni(mSettingsFileName.c_str());
   }
 
-  template <typename EcsState, typename EcsInterface, typename Derived>
-  void Game<EcsState, EcsInterface, Derived>::tick() {
+  template <typename EcsInterface, typename Derived>
+  void Game<EcsInterface, Derived>::tick() {
 
     // Previous draw now finished, put it on screen
     graphicsBackend::swap();
@@ -89,9 +89,9 @@ namespace at3 {
     // Poll events
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_QUIT) { deInit(); return; }
+      if (event.type == SDL_QUIT) { mIsQuit = true; return; }
       if (graphicsBackend::handleEvent(event)) { continue; }  // Graphics backend handled it exclusively
-      if (derived().handleEvent(event)) { continue; }             // The derived object handled it exclusively
+      if (derived().handleEvent(event)) { continue; }         // The derived object handled it exclusively
       if (mScene.handleEvent(event)) { continue; }            // One of the scene objects handled it exclusively
     }
 
@@ -111,8 +111,8 @@ namespace at3 {
 
   }
 
-  template <typename EcsState, typename EcsInterface, typename Derived>
-  void Game<EcsState, EcsInterface, Derived>::setCamera(std::shared_ptr<Camera<EcsInterface>> camera) {
+  template <typename EcsInterface, typename Derived>
+  void Game<EcsInterface, Derived>::setCamera(std::shared_ptr<Camera<EcsInterface>> camera) {
     mpCamera = camera;
     graphicsBackend::setFovy(camera->getFovy());
   }

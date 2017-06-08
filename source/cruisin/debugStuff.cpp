@@ -99,7 +99,7 @@ namespace at3 {
     // a virus
     debugGenerateVirus();
     // a bullet physics debug-drawing thing
-    mpBulletDebug = std::shared_ptr<BulletDebug_> ( new BulletDebug_() );
+    mpBulletDebug = std::make_shared<BulletDebug_>();
     mpBulletDebug->setDebugMode(btIDebugDraw::DBG_DrawAabb | btIDebugDraw::DBG_DrawWireframe);
     physicsSystem->setDebugDrawer(mpBulletDebug);
     addToScene();

@@ -50,8 +50,12 @@ namespace at3 {
           const glm::vec3 &pos,
           const glm::vec3 &color);
 
+      static std::shared_ptr<Debug<EcsInterface>>* inst;
+
     public:
+
       static std::shared_ptr<Debug<EcsInterface>> instance();
+      static void reset();
 
       static void drawLine(
           const glm::vec3 &a,
@@ -250,10 +254,18 @@ namespace at3 {
   }
 
   template<typename EcsInterface>
+  std::shared_ptr<Debug<EcsInterface>>* Debug<EcsInterface>::inst = nullptr;
+
+  template<typename EcsInterface>
   std::shared_ptr<Debug<EcsInterface>> Debug<EcsInterface>::instance() {
-    static std::shared_ptr<Debug> instance = std::shared_ptr<Debug>(
-        new Debug());
+    static std::shared_ptr<Debug> instance = std::shared_ptr<Debug>( new Debug() );
+    inst = &instance;
     return instance;
+  }
+
+  template<typename EcsInterface>
+  void Debug<EcsInterface>::reset() {
+    inst->reset();
   }
 
   template<typename EcsInterface>
