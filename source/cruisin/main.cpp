@@ -62,7 +62,7 @@ class CruisinGame : public Game<State, DualityInterface, CruisinGame> {
 
   public:
 
-    CruisinGame(int argc, char **argv)
+    CruisinGame()
         : Game(),
           mDualityInterface(&mState),
           mControlSystem(&mState),
@@ -123,7 +123,7 @@ class CruisinGame : public Game<State, DualityInterface, CruisinGame> {
       settings::addCustom("cruisin_customSetting_i", &customSetting);
     }
 
-    bool onEvent(SDL_Event& event) {
+    bool handleEvent(SDL_Event& event) {
       if (mControlSystem.handleEvent(event)) {
         return true; // handled it here
       }
@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
 
   std::cout << "Game is initializing..." << std::endl;
 
-  CruisinGame game(argc, argv);
+  CruisinGame game;
   if (!game.init("cruisin", "at3_cruisin_settings.ini")) {
     return -1;
   }

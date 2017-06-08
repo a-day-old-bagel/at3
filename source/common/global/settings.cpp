@@ -47,7 +47,6 @@ namespace at3 {
      * @return true if successful
      */
     bool addCustom(const char *name, void *data) {
-      printf("foo\n");
       if (loaded) {
         return false;
       } else {
@@ -77,8 +76,8 @@ namespace at3 {
 #   define CASE_CHAR_TYPE(c, t) case c: ini >> (*(( t *) registry.at(settingName))); break;
 
     /**
-     * Attempts to read a user settings ini file. This call is designed to only be made once.
-     * Any further attempts after the first will fail.
+     * Attempts to read a user settings ini file. This call is designed to only be made once
+     * per run of the application. Any further attempts after the first will fail.
      * @param filename of the ini file
      * @return true if worked, false if any problems (fatal or otherwise) were encountered
      */

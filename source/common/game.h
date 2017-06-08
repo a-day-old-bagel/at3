@@ -35,8 +35,6 @@ namespace at3 {
       Scene<EcsInterface> mScene;
 
     public:
-      Game();
-      virtual ~Game();
 
       bool init(const char *appName, const char *settingsName);
       void tick();
@@ -46,16 +44,6 @@ namespace at3 {
       void setCamera(std::shared_ptr<Camera<EcsInterface>> camera);
       std::shared_ptr<Camera<EcsInterface>> getCamera() { return mpCamera; }
   };
-
-  template <typename EcsState, typename EcsInterface, typename Derived>
-  Game<EcsState, EcsInterface, Derived>::Game() {
-
-  }
-
-  template <typename EcsState, typename EcsInterface, typename Derived>
-  Game<EcsState, EcsInterface, Derived>::~Game() {
-
-  }
 
   template <typename EcsState, typename EcsInterface, typename Derived>
   Derived & Game<EcsState, EcsInterface, Derived>::derived() {
@@ -68,11 +56,9 @@ namespace at3 {
     graphicsBackend::applicationName = appName;
     derived().registerCustomSettings();
     settings::loadFromIni(mSettingsFileName.c_str());
-    if ( ! graphicsBackend::init() ) {
-      std::cerr << "Could not initialize graphics backend!" << std::endl;
-      exit(-2);
-    }
-    derived().onInit();
+    if (!graphicsBackend::init()) { return false; }
+    if (!derived().onInit()) { return false; }
+    return true;
   }
 
   template <typename EcsState, typename EcsInterface, typename Derived>
@@ -104,9 +90,9 @@ namespace at3 {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) { deInit(); return; }
-      if (derived().onEvent(event)) { continue; }            // The derived object handled it
-      if (graphicsBackend::handleEvent(event)) { continue; }  // Graphics backend handled it
-      if (mScene.handleEvent(event)) { continue; }            // One of the scene objects handled this event
+      if (graphicsBackend::handleEvent(event)) { continue; }  // Graphics backend handled it exclusively
+      if (derived().handleEvent(event)) { continue; }             // The derived object handled it exclusively
+      if (mScene.handleEvent(event)) { continue; }            // One of the scene objects handled it exclusively
     }
 
     // Update logic given the time since the last frame was drawn TODO: SDL_GetTicks may be too granular
