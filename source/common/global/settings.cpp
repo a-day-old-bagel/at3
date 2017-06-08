@@ -47,6 +47,7 @@ namespace at3 {
      * @return true if successful
      */
     bool addCustom(const char *name, void *data) {
+      printf("foo\n");
       if (loaded) {
         return false;
       } else {

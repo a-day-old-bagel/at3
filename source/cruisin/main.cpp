@@ -47,12 +47,13 @@
 using namespace at3;
 using namespace ezecs;
 
-class CruisinGame : public Game<State, DualityInterface> {
+class CruisinGame : public Game<State, DualityInterface, CruisinGame> {
   private:
     std::shared_ptr<SkyBox_>         mpSkybox;
     std::shared_ptr<TerrainObject_>  mpTerrain;
     std::unique_ptr<Pyramid>         mpPyramid;
     std::unique_ptr<DuneBuggy>       mpDuneBuggy;
+    std::shared_ptr<DebugStuff>      mpDebugStuff;
 
     DualityInterface  mDualityInterface;
     ControlSystem     mControlSystem;
@@ -61,24 +62,14 @@ class CruisinGame : public Game<State, DualityInterface> {
 
   public:
 
-    std::shared_ptr<DebugStuff> mpDebugStuff;
-    eventHandlerFunction mSystemsHandlerDlgt;
-    bool mQuit = false;
-
     CruisinGame(int argc, char **argv)
-        : Game(argc, argv, "cruisin", "cruisin_settings.ini"),
+        : Game(),
           mDualityInterface(&mState),
           mControlSystem(&mState),
           mMovementSystem(&mState),
-          mPhysicsSystem(&mState)
-    {
-      // link the ecs and the scene graph together
-      SceneObject_::linkEcs(mDualityInterface);
-      // assign the systems' event handler function
-      mSystemsHandlerDlgt = std::bind( &CruisinGame::systemsHandler, this, std::placeholders::_1 );
-    }
+          mPhysicsSystem(&mState) { }
 
-    bool init() {
+    bool onInit() {
 
       // Initialize the systems
       bool initSuccess = true;
@@ -86,6 +77,9 @@ class CruisinGame : public Game<State, DualityInterface> {
       initSuccess &= mPhysicsSystem.init();
       initSuccess &= mMovementSystem.init();
       assert(initSuccess);
+
+      // link the ecs and the scene graph together
+      SceneObject_::linkEcs(mDualityInterface);
 
       // an identity matrix
       glm::mat4 ident;
@@ -111,13 +105,16 @@ class CruisinGame : public Game<State, DualityInterface> {
       // start with the camera focused on the pyramid
       this->setCamera(mpPyramid->getCamPtr());
 
-      // some debug-draw features...
+      // some debug-draw features
       mpDebugStuff = std::make_shared<DebugStuff> (mScene, &mPhysicsSystem);
+
+      // test out some music
+      // mpDebugStuff->queueMusic();
 
       return true;
     }
 
-    void deInit() {
+    void onDeInit() {
       mPhysicsSystem.deInit();
     }
 
@@ -126,7 +123,7 @@ class CruisinGame : public Game<State, DualityInterface> {
       settings::addCustom("cruisin_customSetting_i", &customSetting);
     }
 
-    bool systemsHandler(SDL_Event& event) {
+    bool onEvent(SDL_Event& event) {
       if (mControlSystem.handleEvent(event)) {
         return true; // handled it here
       }
@@ -164,7 +161,7 @@ class CruisinGame : public Game<State, DualityInterface> {
       }
       return true; // handled it here
     }
-    void tick(float dt) {
+    void onTick(float dt) {
       mControlSystem.setWorldView(getCamera()->lastWorldViewQueried);
       mControlSystem.tick(dt);
       mPhysicsSystem.tick(dt);
@@ -174,33 +171,27 @@ class CruisinGame : public Game<State, DualityInterface> {
     }
 };
 
-void mainLoop(void *instance) {
-  CruisinGame *game = (CruisinGame *) instance;
-  float dt;
-  bool keepGoing = game->mainLoop(game->mSystemsHandlerDlgt, dt);
-  if (!keepGoing) {
-    game->deInit();
-    game->mQuit = true;
-    exit(0);  // For future compatibility with Emscripten
-  }
-  game->tick(dt);
-}
-
 int main(int argc, char **argv) {
-  std::cout << "Game is initializing...\n" << std::endl;
+
+  std::cout << "Game is initializing..." << std::endl;
+
   CruisinGame game(argc, argv);
-  if ( ! game.init() ) { return -1; }
-  std::cout << "Game has started.\n" << std::endl;
-
-  // snazzy tunes
-//  game.debugStuff->queueMusic();
-
-  while (!game.mQuit) {
-    mainLoop(&game);
+  if (!game.init("cruisin", "at3_cruisin_settings.ini")) {
+    return -1;
   }
 
-  // TODO: clean up SDL, GLFW, OPENGL, VULKAN, ETC!!! (in their own places)
-  return 0;
+  std::cout << "Game has started." << std::endl;
+
+  while (!game.isQuit()) {
+    game.tick();
+  }
+
+  std::cout << "Game has finished." << std::endl;
+
+  // FIXME: crashes on return
+  exit(0);
+
+  // return 0;
 }
 
 #pragma clang diagnostic pop

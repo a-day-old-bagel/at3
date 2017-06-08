@@ -37,7 +37,7 @@ namespace at3 {
       }
     }
     void deinit() {
-      // TODO
+      // TODO: clean up SDL, GLFW, OPENGL, VULKAN, ETC!!! (in their own places)
     }
     bool handleEvent(const SDL_Event &event) {
       switch (event.type) {
