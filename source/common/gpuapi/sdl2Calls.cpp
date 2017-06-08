@@ -36,7 +36,7 @@ namespace at3 {
           }
         }
         sdl2::window = SDL_CreateWindow(
-            windowTitle,                    // title
+            applicationName,                // window title
             settings::graphics::windowPosX, // x
             settings::graphics::windowPosY, // y
             settings::graphics::windowDimX, // width

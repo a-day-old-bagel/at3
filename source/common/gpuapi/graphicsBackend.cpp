@@ -123,7 +123,7 @@ namespace at3 {
       Shaders::updateViewInfos(fovy, settings::graphics::windowDimX, settings::graphics::windowDimY);
     }
 
-    const char *windowTitle = nullptr;
+    const char *applicationName = nullptr;
     float currentFovY;
   }
 }

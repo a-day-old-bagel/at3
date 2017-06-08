@@ -24,7 +24,7 @@ namespace at3 {
     float getAspect();
     void setFovy(float fovy);
 
-    extern const char *windowTitle;
+    extern const char *applicationName;
     extern float currentFovY;
 
     namespace sdl2 {

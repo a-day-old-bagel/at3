@@ -23,15 +23,20 @@ namespace at3 {
 
   template <typename EcsState, typename EcsInterface>
   class Game {
+
     private:
       std::shared_ptr<Camera<EcsInterface>> mpCamera;
-      float mLastTime;
+      float mLastTime = 0.f;
+      std::string settingsFileName;
+
     protected:
       EcsState mState;
       Scene<EcsInterface> mScene;
 
+      virtual void registerCustomSettings() { }
+
     public:
-      Game(int argc, char **argv, const char *windowTitle);
+      Game(int argc, char **argv, const char *appName = "at3", const char *settingsName = "settings.ini");
       virtual ~Game();
 
       void setCamera(std::shared_ptr<Camera<EcsInterface>> camera);
@@ -45,8 +50,11 @@ namespace at3 {
   };
 
   template <typename EcsState, typename EcsInterface>
-  Game<EcsState, EcsInterface>::Game(int argc, char **argv, const char *windowTitle) {
-    mLastTime = 0.0f;
+  Game<EcsState, EcsInterface>::Game(int argc, char **argv, const char *appName, const char *settingsName) {
+    settingsFileName = settingsName;
+    graphicsBackend::applicationName = appName;
+    registerCustomSettings();
+    settings::loadFromIni(settingsFileName.c_str());
     if ( ! graphicsBackend::init() ) {
       std::cerr << "Could not initialize graphics backend!" << std::endl;
       exit(-2);
@@ -71,7 +79,7 @@ namespace at3 {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) {
-        settings::saveToIni("settings.ini");
+        settings::saveToIni(settingsFileName.c_str());
         return false;
       }
       if (systemsHandler(event)) { continue; }                // The systems have handled this event

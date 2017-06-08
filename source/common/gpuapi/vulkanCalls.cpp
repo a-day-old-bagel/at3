@@ -11,7 +11,7 @@ namespace at3 {
         vulkan_main(sdl2::window, CreateDebugReportCallback, DestroyDebugReportCallback,
                     msg_callback, DebugReportMessage);
 
-        fprintf(stderr, "Vulkan API not yet supported!\n");
+        fprintf(stderr, "This was a test - the Vulkan API is not yet fully supported!\n");
         return false;
       }
       void swap() {

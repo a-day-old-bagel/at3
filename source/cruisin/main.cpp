@@ -66,7 +66,7 @@ class CruisinGame : public Game<State, DualityInterface> {
     bool mQuit = false;
 
     CruisinGame(int argc, char **argv)
-        : Game(argc, argv, "at3"),
+        : Game(argc, argv, "cruisin", "cruisin_settings.ini"),
           mDualityInterface(&mState),
           mControlSystem(&mState),
           mMovementSystem(&mState),
@@ -119,6 +119,11 @@ class CruisinGame : public Game<State, DualityInterface> {
 
     void deInit() {
       mPhysicsSystem.deInit();
+    }
+
+    int32_t customSetting = 1337;
+    virtual void registerCustomSettings() {
+      settings::addCustom("cruisin_customSetting_i", &customSetting);
     }
 
     bool systemsHandler(SDL_Event& event) {

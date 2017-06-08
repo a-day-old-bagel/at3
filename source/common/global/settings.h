@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string>
 #include <map>
+#include <vector>
 
 namespace at3 {
   namespace settings {
@@ -23,10 +24,9 @@ namespace at3 {
       extern int32_t windowPosX, windowPosY;
       extern float fovy, near, far;
     }
-    void setupRegistries();
+
+    bool addCustom(const char *name, void *data);
     bool loadFromIni(const char *filename);
     bool saveToIni(const char *filename);
-    extern std::map<std::string, void *> registry;
-    extern bool loaded;
   }
 }
