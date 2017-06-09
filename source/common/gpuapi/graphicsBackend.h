@@ -17,7 +17,7 @@ namespace at3 {
     bool init();
     void swap();
     void clear();
-    void deinit();
+    void deInit();
     bool handleEvent(const SDL_Event &event);
     bool setFullscreenMode(uint32_t mode);
     void toggleFullscreen();

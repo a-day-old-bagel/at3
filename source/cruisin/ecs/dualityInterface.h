@@ -25,6 +25,7 @@ namespace at3 {
       ezecs::State* state;
     public:
       typedef ezecs::entityId EcsId;
+      typedef ezecs::State State;
       DualityInterface(ezecs::State* state);
       ezecs::entityId createEntity();
       void destroyEntity(const ezecs::entityId& id);

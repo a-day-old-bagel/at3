@@ -49,7 +49,7 @@ using namespace ezecs;
 
 class CruisinGame : public Game<DualityInterface, CruisinGame> {
   private:
-    State             mState;
+
     DualityInterface  mDualityInterface;
     ControlSystem     mControlSystem;
     MovementSystem    mMovementSystem;
@@ -69,6 +69,10 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
           mControlSystem(&mState),
           mMovementSystem(&mState),
           mPhysicsSystem(&mState) { }
+
+    virtual ~CruisinGame() {
+      mScene.clear();
+    }
 
     bool onInit() {
 
@@ -113,18 +117,6 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
       // mpDebugStuff->queueMusic();
 
       return true;
-    }
-
-    void onDeInit() {
-
-      mpSkybox.reset();
-      mpTerrain.reset();
-      mpPyramid.reset();
-      mpDuneBuggy.reset();
-      mpDebugStuff.reset();
-      Debug_::reset();
-
-      mPhysicsSystem.deInit();
     }
 
     int32_t customSetting = 1337;
@@ -193,9 +185,6 @@ int main(int argc, char **argv) {
   while (!game.isQuit()) {
     game.tick();
   }
-
-  std::cout << std::endl << "Game is cleaning up..." << std::endl;
-  game.deInit();
 
   std::cout << std::endl << "Game has finished." << std::endl;
   return 0;

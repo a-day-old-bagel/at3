@@ -22,6 +22,10 @@ namespace at3 {
   template <typename EcsInterface, typename Derived>
   class Game {
 
+    protected:
+      typename EcsInterface::State mState;
+      Scene<EcsInterface> mScene;
+
     private:
       std::shared_ptr<Camera<EcsInterface>> mpCamera;
       float mLastTime = 0.f;
@@ -30,10 +34,9 @@ namespace at3 {
 
       Derived &derived();
 
-    protected:
-      Scene<EcsInterface> mScene;
-
     public:
+
+      virtual ~Game();
 
       bool init(const char *appName, const char *settingsName);
       void tick();
@@ -43,6 +46,12 @@ namespace at3 {
       void setCamera(std::shared_ptr<Camera<EcsInterface>> camera);
       std::shared_ptr<Camera<EcsInterface>> getCamera() { return mpCamera; }
   };
+
+  template <typename EcsInterface, typename Derived>
+  Game<EcsInterface, Derived>::~Game() {
+    std::cout << "Game is destructing." << std::endl;
+    fflush(stdout);
+  }
 
   template <typename EcsInterface, typename Derived>
   Derived & Game<EcsInterface, Derived>::derived() {
@@ -67,10 +76,9 @@ namespace at3 {
 
   template <typename EcsInterface, typename Derived>
   void Game<EcsInterface, Derived>::deInit() {
+    mIsQuit = true;
     mpCamera.reset();
-    mScene.clear();
-    derived().onDeInit();
-    graphicsBackend::deinit();
+    graphicsBackend::deInit();
     settings::saveToIni(mSettingsFileName.c_str());
   }
 
@@ -89,7 +97,7 @@ namespace at3 {
     // Poll events
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_QUIT) { mIsQuit = true; return; }
+      if (event.type == SDL_QUIT) { deInit(); return; }
       if (graphicsBackend::handleEvent(event)) { continue; }  // Graphics backend handled it exclusively
       if (derived().handleEvent(event)) { continue; }         // The derived object handled it exclusively
       if (mScene.handleEvent(event)) { continue; }            // One of the scene objects handled it exclusively
@@ -101,14 +109,11 @@ namespace at3 {
     mLastTime = currentTime;
     derived().onTick(dt);
 
-    // Clear the graphics scene and begin redraw
+    // Clear the graphics scene and begin redraw if a camera is assigned
     graphicsBackend::clear();
-    if (!mpCamera) {
-      fprintf(stderr, "The camera is not set!\n");
-    } else {
-      mScene.draw(*mpCamera, graphicsBackend::getAspect());
+    if (mpCamera) {
+      mScene.draw(*mpCamera, false);
     }
-
   }
 
   template <typename EcsInterface, typename Derived>

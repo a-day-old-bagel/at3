@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "settings.h"
+#include "graphicsBackend.h"
 #include "camera.h"
 #include "sceneObject.h"
 #include "transformStack.h"
@@ -24,6 +25,8 @@ namespace at3 {
       std::unordered_map<const SceneObject<EcsInterface> *, std::shared_ptr<SceneObject<EcsInterface>>> m_objects;
 
     public:
+
+      ~Scene();
 
       /**
        * Adds a top level object to the scene graph
@@ -61,8 +64,13 @@ namespace at3 {
        * \param alpha Currently unused, since Bullet does its own interpolation
        * \param debug Indicates that object should draw with debug information
        */
-      void draw(Camera<EcsInterface> &camera, float aspect, bool debug = false) const;
+      void draw(Camera<EcsInterface> &camera, bool debug = false) const;
   };
+
+  template <typename EcsInterface>
+  Scene<EcsInterface>::~Scene() {
+    printf("Scene is destructing.\n");
+  }
 
   template <typename EcsInterface>
   void Scene<EcsInterface>::addObject(std::shared_ptr<SceneObject<EcsInterface>> object) {
@@ -92,14 +100,14 @@ namespace at3 {
   }
 
   template <typename EcsInterface>
-  void Scene<EcsInterface>::draw(Camera<EcsInterface> &camera, float aspect, bool debug) const
+  void Scene<EcsInterface>::draw(Camera<EcsInterface> &camera, bool debug) const
   {
     // Transform stack starts out empty
     TransformStack modelWorld;
 
     // Get camera transforms
     auto worldView = camera.worldView();
-    auto projection = camera.projection(aspect);
+    auto projection = camera.projection(graphicsBackend::getAspect());
 
     // draw each top level object
     for (auto object : this->m_objects) {

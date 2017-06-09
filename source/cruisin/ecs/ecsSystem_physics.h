@@ -59,6 +59,7 @@ namespace at3 {
               PHYSICS | TRACKCONTROLS,
       };
       PhysicsSystem(State* state);
+      ~PhysicsSystem();
       bool onInit();
       void onTick(float dt);
       void deInit();

@@ -36,8 +36,9 @@ namespace at3 {
         default: assert(false);
       }
     }
-    void deinit() {
+    void deInit() {
       // TODO: clean up SDL, GLFW, OPENGL, VULKAN, ETC!!! (in their own places)
+      std::cout << "GPU/Window resource clean-up needs implementation." << std::endl;
     }
     bool handleEvent(const SDL_Event &event) {
       switch (event.type) {

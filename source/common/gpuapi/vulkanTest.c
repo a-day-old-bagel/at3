@@ -8,9 +8,9 @@
 #endif
 
 VKAPI_ATTR VkBool32 VKAPI_CALL
-                    dbgFunc(VkFlags msgFlags, VkDebugReportObjectTypeEXT objType,
-                            uint64_t srcObject, size_t location, int32_t msgCode,
-                            const char *pLayerPrefix, const char *pMsg, void *pUserData) {
+dbgFunc(VkFlags msgFlags, VkDebugReportObjectTypeEXT objType,
+        uint64_t srcObject, size_t location, int32_t msgCode,
+        const char *pLayerPrefix, const char *pMsg, void *pUserData) {
   char *message = (char *)malloc(strlen(pMsg) + 100);
 
   assert(message);
@@ -47,9 +47,10 @@ void vulkan_main(SDL_Window *window, PFN_vkCreateDebugReportCallbackEXT CreateDe
                  PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallback,
                  VkDebugReportCallbackEXT msg_callback,
                  PFN_vkDebugReportMessageEXT DebugReportMessage) {
-  VkResult err;
 
+  VkResult err;
   VkInstance inst;
+
   {
     uint32_t extension_count = 0;
     const char *extension_names[64];

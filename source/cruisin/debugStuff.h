@@ -20,6 +20,7 @@ namespace at3 {
       void addToScene();
     public:
       DebugStuff(Scene_ &scene, PhysicsSystem* physicsSystem);
+      ~DebugStuff();
       void queueMusic();
       lineDrawFuncType getLineDrawFunc();
   };

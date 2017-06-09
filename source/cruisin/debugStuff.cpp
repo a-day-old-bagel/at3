@@ -104,6 +104,9 @@ namespace at3 {
     physicsSystem->setDebugDrawer(mpBulletDebug);
     addToScene();
   }
+  DebugStuff::~DebugStuff() {
+    Debug_::reset();
+  }
   void DebugStuff::addToScene() {
     mpScene->addObject(mpBulletDebug);
     mpScene->addObject(Debug_::instance());

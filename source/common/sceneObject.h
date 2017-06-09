@@ -152,6 +152,7 @@ namespace at3 {
 
   template <typename EcsInterface>
   SceneObject<EcsInterface>::~SceneObject() {
+    printf("Entity %u is destructing.\n", id);
     ecs->destroyEntity(id);
   }
 

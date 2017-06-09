@@ -65,6 +65,9 @@ namespace at3 {
   PhysicsSystem::PhysicsSystem(State *state) : System(state) {
 
   }
+  PhysicsSystem::~PhysicsSystem() {
+    deInit();
+  }
 
   bool PhysicsSystem::onInit() {
     registries[0].discoverHandler = DELEGATE(&PhysicsSystem::onDiscover, this);
@@ -159,7 +162,8 @@ namespace at3 {
   }
 
   void PhysicsSystem::deInit() {
-	  // onForget will be called for each id
+    std::cout << "Physics system is cleaning up." << std::endl;
+	  // onForget will be called for each remaining id
     std::vector<entityId> ids = registries[1].ids;
     for (auto id : ids) {
       state->rem_PyramidControls((entityId) id);
