@@ -34,7 +34,8 @@ using namespace ezecs;
 namespace at3 {
 
   // A custom bullet collision callback to prevent collisions with backfaces (created for use with terrain).
-  static bool myCustomMaterialCombinerCallback(
+  static bool myCustomMaterialCombinerCallback
+      (
       btManifoldPoint& cp,
       const btCollisionObjectWrapper* colObj0Wrap,
       int partId0,
@@ -42,7 +43,8 @@ namespace at3 {
       const btCollisionObjectWrapper* colObj1Wrap,
       int partId1,
       int index1
-  ) {
+      )
+  {
     // one-sided triangles
     if (colObj1Wrap->getCollisionShape()->getShapeType() == TRIANGLE_SHAPE_PROXYTYPE)
     {
@@ -63,7 +65,7 @@ namespace at3 {
   }
 
   PhysicsSystem::PhysicsSystem(State *state) : System(state) {
-
+    name = "Physics System";
   }
   PhysicsSystem::~PhysicsSystem() {
     deInit();
@@ -162,7 +164,7 @@ namespace at3 {
   }
 
   void PhysicsSystem::deInit() {
-    std::cout << "Physics system is cleaning up." << std::endl;
+    std::cout << name << " is de-initializing" << std::endl;
 	  // onForget will be called for each remaining id
     std::vector<entityId> ids = registries[1].ids;
     for (auto id : ids) {

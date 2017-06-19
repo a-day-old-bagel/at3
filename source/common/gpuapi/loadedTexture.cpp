@@ -69,12 +69,12 @@ namespace at3 {
     std::string extName = textureFileBaseName.substr(lastDotIndex, textureFileBaseName.size());
 
     // generate true file names for separate images (one for each side of cube)
-    std::string front   = std::string("assets/cubeMaps/" + rawName + "/negz" + extName);
-    std::string back    = std::string("assets/cubeMaps/" + rawName + "/posz" + extName);
-    std::string bottom  = std::string("assets/cubeMaps/" + rawName + "/negy" + extName);
-    std::string top     = std::string("assets/cubeMaps/" + rawName + "/posy" + extName);
-    std::string left    = std::string("assets/cubeMaps/" + rawName + "/negx" + extName);
-    std::string right   = std::string("assets/cubeMaps/" + rawName + "/posx" + extName);
+    std::string front   = std::string(rawName + "/negz" + extName);
+    std::string back    = std::string(rawName + "/posz" + extName);
+    std::string bottom  = std::string(rawName + "/negy" + extName);
+    std::string top     = std::string(rawName + "/posy" + extName);
+    std::string left    = std::string(rawName + "/negx" + extName);
+    std::string right   = std::string(rawName + "/posx" + extName);
 
     glGenTextures(1, &mTexture);
     glBindTexture(GL_TEXTURE_CUBE_MAP, mTexture);

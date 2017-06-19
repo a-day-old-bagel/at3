@@ -12,7 +12,6 @@
 #include "graphicsBackend.h"
 #include "debug.h"
 #include "scene.h"
-#include "game.h"
 
 namespace at3 {
 
@@ -27,6 +26,7 @@ namespace at3 {
       Scene<EcsInterface> mScene;
 
     private:
+      EcsInterface mEcsInterface;
       std::shared_ptr<Camera<EcsInterface>> mpCamera;
       float mLastTime = 0.f;
       std::string mSettingsFileName;
@@ -36,7 +36,8 @@ namespace at3 {
 
     public:
 
-      virtual ~Game();
+      Game() : mEcsInterface(&mState) { SceneObject_::linkEcs(mEcsInterface); }
+      virtual ~Game() { std::cout << "Game is destructing." << std::endl; };
 
       bool init(const char *appName, const char *settingsName);
       void tick();
@@ -46,12 +47,6 @@ namespace at3 {
       void setCamera(std::shared_ptr<Camera<EcsInterface>> camera);
       std::shared_ptr<Camera<EcsInterface>> getCamera() { return mpCamera; }
   };
-
-  template <typename EcsInterface, typename Derived>
-  Game<EcsInterface, Derived>::~Game() {
-    std::cout << "Game is destructing." << std::endl;
-    fflush(stdout);
-  }
 
   template <typename EcsInterface, typename Derived>
   Derived & Game<EcsInterface, Derived>::derived() {
@@ -97,7 +92,10 @@ namespace at3 {
     // Poll events
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_QUIT) { deInit(); return; }
+      if (event.type == SDL_QUIT) {
+        deInit();   // May deallocate some important things
+        return;     // So return makes sure no more events are processed
+      }
       if (graphicsBackend::handleEvent(event)) { continue; }  // Graphics backend handled it exclusively
       if (derived().handleEvent(event)) { continue; }         // The derived object handled it exclusively
       if (mScene.handleEvent(event)) { continue; }            // One of the scene objects handled it exclusively

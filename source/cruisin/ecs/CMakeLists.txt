@@ -8,7 +8,7 @@ add_subdirectory( "./bullet" )
 add_library( ${TARGET_NAME}_systems STATIC
   dualityInterface.cpp
   ecsSystem_controls.cpp
-  ecsSystem_movement.cpp
+  ecsSystem_animation.cpp
   ecsSystem_physics.cpp
   )
 target_link_libraries( ${TARGET_NAME}_systems

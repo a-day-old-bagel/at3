@@ -33,7 +33,7 @@
 #include "dualityInterface.h"
 #include "game.h"
 
-#include "ecsSystem_movement.h"
+#include "ecsSystem_animation.h"
 #include "ecsSystem_controls.h"
 #include "ecsSystem_physics.h"
 
@@ -48,11 +48,9 @@ using namespace at3;
 using namespace ezecs;
 
 class CruisinGame : public Game<DualityInterface, CruisinGame> {
-  private:
 
-    DualityInterface  mDualityInterface;
     ControlSystem     mControlSystem;
-    MovementSystem    mMovementSystem;
+    AnimationSystem   mAnimationSystem;
     PhysicsSystem     mPhysicsSystem;
 
     std::shared_ptr<SkyBox_>         mpSkybox;
@@ -65,9 +63,8 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
 
     CruisinGame()
         : Game(),
-          mDualityInterface(&mState),
           mControlSystem(&mState),
-          mMovementSystem(&mState),
+          mAnimationSystem(&mState),
           mPhysicsSystem(&mState) { }
 
     virtual ~CruisinGame() {
@@ -80,11 +77,8 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
       bool initSuccess = true;
       initSuccess &= mControlSystem.init();
       initSuccess &= mPhysicsSystem.init();
-      initSuccess &= mMovementSystem.init();
+      initSuccess &= mAnimationSystem.init();
       assert(initSuccess);
-
-      // link the ecs and the scene graph together
-      SceneObject_::linkEcs(mDualityInterface);
 
       // an identity matrix
       glm::mat4 ident;
@@ -105,7 +99,7 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
       // a skybox-like background (but better than a literal sky box)
       mpSkybox = std::make_shared<SkyBox_> ( );
       this->mScene.addObject(mpSkybox);
-      mpSkybox->useCubeMap("sea.png");
+      mpSkybox->useCubeMap("assets/cubeMaps/sea.png");
 
       // start with the camera focused on the pyramid
       this->setCamera(mpPyramid->getCamPtr());
@@ -166,7 +160,7 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
       mControlSystem.setWorldView(getCamera()->lastWorldViewQueried);
       mControlSystem.tick(dt);
       mPhysicsSystem.tick(dt);
-      mMovementSystem.tick(dt);
+      mAnimationSystem.tick(dt);
 
       mpPyramid->resizeFire();
     }
@@ -177,7 +171,7 @@ int main(int argc, char **argv) {
   CruisinGame game;
 
   std::cout << std::endl << "Game is initializing..." << std::endl;
-  if (!game.init("cruisin", "at3_cruisin_settings.ini")) {
+  if ( ! game.init("cruisin", "at3_cruisin_settings.ini")) {
     return -1;
   }
 

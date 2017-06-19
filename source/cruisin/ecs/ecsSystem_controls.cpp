@@ -42,7 +42,7 @@ namespace at3 {
   #endif
 
   ControlSystem::ControlSystem(State *state) : System(state) {
-
+    name = "Control System";
   }
   bool ControlSystem::onInit() {
     return true;

@@ -28,12 +28,12 @@
 using namespace ezecs;
 
 namespace at3 {
-  class MovementSystem : public System<MovementSystem> {
+  class AnimationSystem : public System<AnimationSystem> {
     public:
       std::vector<compMask> requiredComponents = {
           TRANSFORMFUNCTION
       };
-      MovementSystem(State* state);
+      AnimationSystem(State* state);
       bool onInit();
       void onTick(float dt);
   };

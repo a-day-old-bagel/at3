@@ -21,17 +21,17 @@
  * IN THE SOFTWARE.
  */
 #include <SDL_timer.h>
-#include "ecsSystem_movement.h"
+#include "ecsSystem_animation.h"
 
 namespace at3 {
 
-  MovementSystem::MovementSystem(State *state) : System(state) {
-
+  AnimationSystem::AnimationSystem(State *state) : System(state) {
+    name = "Animation System";
   }
-  bool MovementSystem::onInit() {
+  bool AnimationSystem::onInit() {
     return true;
   }
-  void MovementSystem::onTick(float dt) {
+  void AnimationSystem::onTick(float dt) {
     for (auto id : registries[0].ids) {
       Placement* placement;
       state->get_Placement(id, &placement);
