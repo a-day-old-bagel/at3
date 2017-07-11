@@ -1,9 +1,5 @@
-//
-// Created by volundr on 4/27/17.
-//
 
-#ifndef AT3_DEBUGSTUFF_H
-#define AT3_DEBUGSTUFF_H
+#pragma once
 
 #include <vector>
 #include "dualityInterface.h"
@@ -25,6 +21,3 @@ namespace at3 {
       lineDrawFuncType getLineDrawFunc();
   };
 }
-
-
-#endif //AT3_DEBUGSTUFF_H

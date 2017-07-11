@@ -85,7 +85,7 @@ namespace {
   };
   struct Physics : public Component<Physics> {
     enum Geometry {
-      NONE, PLANE, SPHERE, BOX, MESH, TERRAIN, WHEEL
+      NONE, PLANE, SPHERE, BOX, MESH, TERRAIN, WHEEL, CHARA
     };
     int geom;
     float mass;
@@ -101,14 +101,11 @@ namespace {
   EZECS_COMPONENT_DEPENDENCIES(Physics, Placement)
 
   struct PyramidControls : public Component<PyramidControls> {
-    enum Style {
-      ROTATE_ALL_AXES, ROTATE_ABOUT_Z
-    };
     glm::vec3 accel;
     glm::vec3 force;
     glm::vec3 up;
     int style;
-    PyramidControls(Style style);
+    PyramidControls();
   };
   EZECS_COMPONENT_DEPENDENCIES(PyramidControls, Physics)
 
@@ -122,6 +119,19 @@ namespace {
     TrackControls();
   };
   EZECS_COMPONENT_DEPENDENCIES(TrackControls, Physics)
+
+  struct PlayerControls : public Component<PlayerControls> {
+    glm::vec2 horizControl, horizForces;
+    glm::vec3 up;
+    uint32_t lastJumpTime = 0;
+    bool jumpRequested = false;
+    bool jumpInProgress = false;
+    bool isGrounded = false;
+    bool isRunning = false;
+    bool isTumbling = false;
+    PlayerControls();
+  };
+  EZECS_COMPONENT_DEPENDENCIES(PlayerControls, Physics)
 
   struct MouseControls : public Component<MouseControls> {
     float sinOfVertTolerance = 0.5;
@@ -182,10 +192,11 @@ namespace {
     rigidBody->setAngularVelocity( {0.f, 0.f, 0.f} );
   }
 
-  PyramidControls::PyramidControls(PyramidControls::Style style)
-      : style(style) { }
+  PyramidControls::PyramidControls() {}
 
   TrackControls::TrackControls() {}
+
+  PlayerControls::PlayerControls() {}
 
   MouseControls::MouseControls(bool invertedX, bool invertedY)
       : invertedX(invertedX), invertedY(invertedY) { }

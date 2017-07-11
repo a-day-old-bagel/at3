@@ -2,8 +2,7 @@
 // Created by volundr on 4/27/17.
 //
 
-#ifndef AT3_PYRAMID_H
-#define AT3_PYRAMID_H
+#pragma once
 
 #include <vector>
 #include "dualityInterface.h"
@@ -29,6 +28,3 @@ namespace at3 {
       std::shared_ptr<PerspectiveCamera_> getCamPtr();
   };
 }
-
-
-#endif //AT3_PYRAMID_H

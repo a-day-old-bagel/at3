@@ -57,6 +57,7 @@ namespace at3 {
               PHYSICS | PYRAMIDCONTROLS,
               PHYSICS | TERRAIN,
               PHYSICS | TRACKCONTROLS,
+              PHYSICS | PLAYERCONTROLS,
       };
       PhysicsSystem(State* state);
       ~PhysicsSystem();

@@ -37,6 +37,7 @@
 #include "ecsSystem_controls.h"
 #include "ecsSystem_physics.h"
 
+#include "basicWalker.h"
 #include "duneBuggy.h"
 #include "pyramid.h"
 #include "debugStuff.h"
@@ -55,6 +56,7 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
 
     std::shared_ptr<SkyBox_>         mpSkybox;
     std::shared_ptr<TerrainObject_>  mpTerrain;
+    std::unique_ptr<BasicWalker>     mpPlayer;
     std::unique_ptr<Pyramid>         mpPyramid;
     std::unique_ptr<DuneBuggy>       mpDuneBuggy;
     std::shared_ptr<DebugStuff>      mpDebugStuff;
@@ -88,6 +90,10 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
       mpTerrain = std::make_shared<TerrainObject_> (ident, -5000.f, 5000.f, -5000.f, 5000.f, -200, 200);
       this->mScene.addObject(mpTerrain);
 
+      // the player
+      glm::mat4 playerMat = glm::translate(ident, { 0.f, -100.f, 0.f});
+      mpPlayer = std::make_unique<BasicWalker> (mState, mScene, playerMat);
+
       // a buggy
       glm::mat4 buggyMat = glm::translate(ident, { 0.f, -290.f, 0.f });
       mpDuneBuggy = std::make_unique<DuneBuggy> (mState, mScene, buggyMat);
@@ -102,7 +108,8 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
       mpSkybox->useCubeMap("assets/cubeMaps/sea.png");
 
       // start with the camera focused on the pyramid
-      this->setCamera(mpPyramid->getCamPtr());
+//      this->setCamera(mpPyramid->getCamPtr());
+      this->setCamera(mpPlayer->getCamPtr());
 
       // some debug-draw features
       mpDebugStuff = std::make_shared<DebugStuff> (mScene, &mPhysicsSystem);
@@ -128,24 +135,31 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
       switch (event.type) {
         case SDL_KEYDOWN:
           switch (event.key.keysym.scancode) {
-            case SDL_SCANCODE_E: {
+            case SDL_SCANCODE_O: { // "o" not "zero"
               mpPyramid->spawnSphere();
             } break;
             case SDL_SCANCODE_1: {
-              setCamera(mpPyramid->getCamPtr());
+              setCamera(mpPlayer->getCamPtr());
             } break;
             case SDL_SCANCODE_2: {
+              setCamera(mpPyramid->getCamPtr());
+            } break;
+            case SDL_SCANCODE_3: {
               setCamera(mpDuneBuggy->getCamPtr());
             } break;
-            case SDL_SCANCODE_3:
-            case SDL_SCANCODE_4:
-            case SDL_SCANCODE_5:
-            case SDL_SCANCODE_6:
-            case SDL_SCANCODE_7:
-            case SDL_SCANCODE_8:
-            case SDL_SCANCODE_9:
+            case SDL_SCANCODE_4: {
+            } break;
+            case SDL_SCANCODE_5: {
+            } break;
+            case SDL_SCANCODE_6: {
+            } break;
+            case SDL_SCANCODE_7: {
+            } break;
+            case SDL_SCANCODE_8: {
+            } break;
+            case SDL_SCANCODE_9: {
+            } break;
             case SDL_SCANCODE_0: {
-
             } break;
             case SDL_SCANCODE_RCTRL: {
               mpDuneBuggy->tip();

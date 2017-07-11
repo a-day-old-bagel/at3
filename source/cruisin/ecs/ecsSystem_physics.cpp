@@ -25,6 +25,14 @@
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 #include <BulletCollision/CollisionShapes/btTriangleShape.h>
+//#include <BulletDynamics/Character/btKinematicCharacterController.h>
+
+#include "debug.h"
+
+#define HUMAN_HEIGHT 1.83f
+#define HUMAN_WIDTH 0.5f
+#define CHARA_JUMP 8.f
+#define CHARA_JUMP_COOLDOWN_MS 800
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "IncompatibleTypes"
@@ -91,32 +99,113 @@ namespace at3 {
 
     // set up ghost object collision detection
     dynamicsWorld->getPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
-//    dynamicsWorld->getBroadphase()->getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
 
     return true;
   }
 
   void PhysicsSystem::onTick(float dt) {
+
+    // PyramidControls
     for (auto id : registries[1].ids) {
-      PyramidControls *controls;
-      state->get_PyramidControls(id, &controls);
+      PyramidControls *ctrls;
+      state->get_PyramidControls(id, &ctrls);
       Physics *physics;
       state->get_Physics(id, &physics);
-      physics->rigidBody->applyImpulse({controls->force.x, controls->force.y, controls->force.z},
-                                       btVector3(controls->up.x, controls->up.y, controls->up.z) * 0.05f);
+      physics->rigidBody->applyImpulse({ctrls->force.x, ctrls->force.y, ctrls->force.z},
+                                       btVector3(ctrls->up.x, ctrls->up.y, ctrls->up.z) * 0.05f);
 
       // Custom constraint to keep the pyramid up FixMe: this sometimes gets stuck in a horizontal position?
       glm::vec3 up{0.f, 0.f, 1.f};
-      float tip = glm::dot(controls->up, up);
-      glm::vec3 rotAxis = glm::cross(controls->up, up);
+      float tip = glm::dot(ctrls->up, up);
+      glm::vec3 rotAxis = glm::cross(ctrls->up, up);
       physics->rigidBody->applyTorque(
-          btVector3(rotAxis.x, rotAxis.y, rotAxis.z) * tip * (controls->up.z < 0 ? -1000.f : 1000.f)
+          btVector3(rotAxis.x, rotAxis.y, rotAxis.z) * tip * (ctrls->up.z < 0 ? -1000.f : 1000.f)
       );
     }
 
+    // PlayerControls
+    for (auto id : registries[4].ids) {
+      PlayerControls *ctrls;
+      state->get_PlayerControls(id, &ctrls);
+      Physics *physics;
+      state->get_Physics(id, &physics);
+
+      // Fire a ray straight down
+      btTransform capsuleTrans;
+      physics->rigidBody->getMotionState()->getWorldTransform(capsuleTrans);
+      float rayLength = HUMAN_HEIGHT * 1.5f;
+      btVector3 rayStart = capsuleTrans.getOrigin();
+      btVector3 rayEnd = rayStart + btVector3(0.f, 0.f, -rayLength);
+      btCollisionWorld::ClosestRayResultCallback groundSpringRayCallback(rayStart, rayEnd);
+      dynamicsWorld->rayTest(rayStart, rayEnd, groundSpringRayCallback);
+
+      float stickyForceLinear = (rayLength * 0.5f) - (groundSpringRayCallback.m_hitPointWorld - rayStart).length();
+      bool isInJumpRange = stickyForceLinear > -rayLength * 0.2f;
+
+      uint32_t currentTime = SDL_GetTicks();
+      bool jumpCooldownFinished = currentTime - ctrls->lastJumpTime > CHARA_JUMP_COOLDOWN_MS;
+      // reset jumping status
+      if (ctrls->jumpInProgress && (jumpCooldownFinished || (stickyForceLinear > rayLength * 0.25f))) {
+        ctrls->jumpInProgress = false;
+      }
+      // apply requested jumps conditionally
+      if (ctrls->jumpRequested) {
+        if (isInJumpRange && ! ctrls->jumpInProgress && ! ctrls->isTumbling) {
+          if (jumpCooldownFinished) {
+            physics->rigidBody->applyImpulse({0.f, 0.f, CHARA_JUMP}, {0.f, 0.f, 0.f});
+            ctrls->jumpInProgress = true;
+            ctrls->lastJumpTime = currentTime;
+          }
+        }
+      }
+
+      // not grounded if high in the air
+      ctrls->isGrounded = groundSpringRayCallback.hasHit();
+      // not grounded if jumping
+      ctrls->isGrounded &= ! ctrls->jumpInProgress;
+      // not grounded if tumbling
+      ctrls->isGrounded &= ! ctrls->isTumbling;
+
+      float linDamp = 0.f;
+      float angDamp = 0.f;
+
+      if (ctrls->isGrounded) {
+        // use lots of linear damping
+        linDamp = 0.9999f;
+        // Movement along ground and "stick to ground" force
+        physics->rigidBody->applyImpulse({ctrls->horizForces.x, ctrls->horizForces.y,
+                                          stickyForceLinear}, {0.f, 0.f, 0.f});
+      } else {
+        // movement while in air (greatly reduced)
+        physics->rigidBody->applyImpulse({ctrls->horizForces.x * 0.05f, ctrls->horizForces.y * 0.05f, 0.f},
+                                         {0.f, 0.f, 0.f});
+      }
+
+      if (! ctrls->isTumbling) {
+        // use lots of angular damping
+        angDamp = 0.9999f;
+        // Custom constraint to keep the player up FixMe: this sometimes gets stuck in a horizontal position?
+        glm::vec3 up{0.f, 0.f, 1.f};
+        float tip = glm::dot(ctrls->up, up);
+        glm::vec3 rotAxis = glm::cross(ctrls->up, up);
+        physics->rigidBody->applyTorque(
+            btVector3(rotAxis.x, rotAxis.y, rotAxis.z) * tip * (ctrls->up.z < 0 ? -100.f : 100.f)
+        );
+      }
+
+      // Set damping
+      physics->rigidBody->setDamping(linDamp, angDamp);
+      // reset tumble status
+      if (ctrls->isTumbling && stickyForceLinear > 0) {
+        ctrls->isTumbling = false;
+      }
+    }
+
+    // Step the world here
     dynamicsWorld->stepSimulation(dt); // time step (s), max sub-steps, sub-step length (s)
     if (debugDrawMode) { dynamicsWorld->debugDrawWorld(); }
 
+    // TrackControls
     for (auto id : registries[3].ids) {
       TrackControls *trackControls;
       state->get_TrackControls(id, &trackControls);
@@ -135,6 +224,7 @@ namespace at3 {
       }
     }
 
+    // All Physics
     for (auto id : registries[0].ids) {
       Physics *physics;
       state->get_Physics(id, &physics);
@@ -170,6 +260,10 @@ namespace at3 {
     for (auto id : ids) {
       state->rem_PyramidControls((entityId) id);
     }
+    ids = registries[4].ids;
+    for (auto id : ids) {
+      state->rem_PlayerControls((entityId) id);
+    }
     ids = registries[0].ids;
     for (auto id : ids) {
       state->rem_Physics((entityId) id);
@@ -201,6 +295,10 @@ namespace at3 {
       case Physics::MESH: {
         std::vector<float> *points = (std::vector<float> *) physics->geomInitData;
         physics->shape = new btConvexHullShape(points->data(), (int) points->size() / 3, 3 * sizeof(float));
+      } break;
+      case Physics::CHARA: {
+        physics->shape = new btCapsuleShapeZ(HUMAN_WIDTH * 0.5f, HUMAN_HEIGHT * 0.33f);
+
       } break;
       case Physics::TERRAIN: {
         return false; // do not track, wait for terrain component to appear

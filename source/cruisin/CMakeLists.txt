@@ -6,7 +6,7 @@ add_executable( ${TARGET_NAME}
   duneBuggy.cpp
   pyramid.cpp
   debugStuff.cpp
-  )
+    basicWalker.cpp basicWalker.h )
 target_link_libraries( ${TARGET_NAME}
   ${TARGET_NAME}_systems
   ${BULLET_LIBRARIES}

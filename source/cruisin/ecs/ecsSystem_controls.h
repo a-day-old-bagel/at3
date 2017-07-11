@@ -32,12 +32,18 @@ namespace at3 {
   class ControlSystem : public System<ControlSystem> {
       std::vector<SDL_Event> queuedEvents;
       glm::mat4 lastKnownWorldView;
+      glm::vec3 lastKnownLookVec;
+      glm::mat3 lastKnownHorizCtrlRot;
+      bool lookInfoIsFresh = false;
+
+      void updateLookInfos();
 
     public:
       std::vector<compMask> requiredComponents = {
               MOUSECONTROLS,
               PYRAMIDCONTROLS,
-              TRACKCONTROLS
+              TRACKCONTROLS,
+              PLAYERCONTROLS
       };
       ControlSystem(State* state);
       bool onInit();

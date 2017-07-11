@@ -23,18 +23,15 @@ namespace at3 {
     glm::mat4 pyrFirMat = glm::scale(glm::rotate(glm::translate(ident, {0.f, 0.f, -0.4f}),
                                                  (float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f)), {0.105f, 0.105f, 0.15f});
 
-    mpBase = std::shared_ptr<MeshObject_> (
-        new MeshObject_("assets/models/pyramid_bottom.dae", "assets/textures/pyramid_bottom.png",
-                        transform, MeshObject_::SUNNY));
-    mpTop = std::shared_ptr<MeshObject_> (
-        new MeshObject_("assets/models/pyramid_top.dae", "assets/textures/pyramid_top_new.png",
-                        ident, MeshObject_::SUNNY));
-    mpThrusters = std::shared_ptr<MeshObject_> (
-        new MeshObject_("assets/models/pyramid_thrusters.dae", "assets/textures/thrusters.png",
-                        ident, MeshObject_::SUNNY));
-    mpFire = std::shared_ptr<MeshObject_> (
-        new MeshObject_("assets/models/pyramid_thruster_flames.dae", "assets/textures/pyramid_flames.png",
-                        pyrFirMat, MeshObject_::FULLBRIGHT));
+    mpBase = std::make_shared<MeshObject_> (
+        "assets/models/pyramid_bottom.dae", "assets/textures/pyramid_bottom.png", transform, MeshObject_::SUNNY);
+    mpTop = std::make_shared<MeshObject_> (
+        "assets/models/pyramid_top.dae", "assets/textures/pyramid_top_new.png", ident, MeshObject_::SUNNY);
+    mpThrusters = std::make_shared<MeshObject_> (
+        "assets/models/pyramid_thrusters.dae", "assets/textures/thrusters.png", ident, MeshObject_::SUNNY);
+    mpFire = std::make_shared<MeshObject_> (
+        "assets/models/pyramid_thruster_flames.dae", "assets/textures/pyramid_flames.png",
+        pyrFirMat, MeshObject_::FULLBRIGHT);
 
     entityId bottomId = mpBase->getId();
     std::vector<float> hullVerts = {
@@ -50,7 +47,7 @@ namespace at3 {
         -1.0f, -1.0f, -0.4f,
     };
     state.add_Physics(bottomId, 100.f, &hullVerts, Physics::MESH);
-    state.add_PyramidControls(bottomId, PyramidControls::ROTATE_ABOUT_Z);
+    state.add_PyramidControls(bottomId);
 
     Physics* physics;
     state.get_Physics(bottomId, &physics);
@@ -63,8 +60,7 @@ namespace at3 {
     entityId fireId = mpFire->getId();
     state.add_TransformFunction(fireId, DELEGATE_NOCLASS(pyrFireWiggle));
 
-    mpCamera = std::shared_ptr<ThirdPersonCamera_> (
-        new ThirdPersonCamera_(2.5f, 5.f, (float)M_PI * 0.5f));
+    mpCamera = std::make_shared<ThirdPersonCamera_> (2.5f, 5.f, (float)M_PI * 0.5f);
     mpBase->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
 
     addToScene();

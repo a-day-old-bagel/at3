@@ -30,6 +30,8 @@
 #define PYR_SIDE_ACCEL 2500.f
 #define PYR_UP_ACCEL 4000.f
 #define TRACK_TORQUE 100.f
+#define CHARA_WALK 75.f
+#define CHARA_RUN 200.f
 
 namespace at3 {
 
@@ -44,18 +46,30 @@ namespace at3 {
   ControlSystem::ControlSystem(State *state) : System(state) {
     name = "Control System";
   }
+
   bool ControlSystem::onInit() {
     return true;
   }
+
   template<typename lastKeyCode>
   static bool anyPressed(const Uint8 *keyStates, lastKeyCode key) {
     return keyStates[key];
   }
+
   template<typename firstKeyCode, typename... keyCode>
   static bool anyPressed(const Uint8 *keyStates, firstKeyCode firstKey, keyCode... keys) {
     return keyStates[firstKey] || anyPressed(keyStates, keys...);
   }
+
   void ControlSystem::onTick(float dt) {
+
+    // renew look infos
+    lookInfoIsFresh = false;
+
+    // Get current keyboard state
+    const Uint8 *keyStates = SDL_GetKeyboardState(NULL);
+#   define DO_ON_KEYS(action, ...) if(anyPressed(keyStates, __VA_ARGS__)) { action; }
+
     // TODO: switching this loop with the inner (event) loop might be better?
     for (auto id : registries[0].ids) {
       MouseControls* mouseControls;
@@ -105,40 +119,21 @@ namespace at3 {
       pyramidControls->accel = glm::vec3();
       pyramidControls->force = glm::vec3();
 
-      // Get current keyboard state and apply actions accordingly
-      const Uint8 *keyStates = SDL_GetKeyboardState(NULL);
-#     define DO_ON_KEYS(action, ...) if(anyPressed(keyStates, __VA_ARGS__)) { action; }
-      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  1.0f,  0.0f), SDL_SCANCODE_W)
-      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f, -1.0f,  0.0f), SDL_SCANCODE_S)
-      DO_ON_KEYS(pyramidControls->accel += glm::vec3(-1.0f,  0.0f,  0.0f), SDL_SCANCODE_A)
-      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 1.0f,  0.0f,  0.0f), SDL_SCANCODE_D)
-      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  0.0f, -1.0f), SDL_SCANCODE_LCTRL, SDL_SCANCODE_LSHIFT)
-      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  0.0f,  1.0f), SDL_SCANCODE_SPACE)
-#     undef DO_ON_KEYS
+      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  1.0f,  0.0f), SDL_SCANCODE_I)
+      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f, -1.0f,  0.0f), SDL_SCANCODE_K)
+      DO_ON_KEYS(pyramidControls->accel += glm::vec3(-1.0f,  0.0f,  0.0f), SDL_SCANCODE_J)
+      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 1.0f,  0.0f,  0.0f), SDL_SCANCODE_L)
+      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  0.0f, -1.0f), SDL_SCANCODE_B)
+      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  0.0f,  1.0f), SDL_SCANCODE_RALT)
 
       if (length(pyramidControls->accel) > 0.0f) {
-        glm::quat quat = glm::quat_cast(lastKnownWorldView);
-        glm::mat3 rotMat;
-        switch (pyramidControls->style) {
-          case PyramidControls::ROTATE_ABOUT_Z: {
-            glm::vec3 transformed = quat * glm::vec3(0.f, 1.0, 0.f);
-            glm::vec3 projected (transformed.x, 0.f, transformed.z);
-            projected = glm::normalize(projected);
-            float rotZ = acosf(glm::dot({0.f, 0.f, -1.f}, projected)) * (transformed.x < 0.f ? -1.f : 1.f);
-            rotMat = glm::mat3(glm::rotate(rotZ, glm::vec3(0.f, 0.f, 1.f)));
-            break;
-          }
-          case PyramidControls::ROTATE_ALL_AXES:
-            rotMat = glm::mat3_cast(quat);
-          default:
-            break;
-        }
+        updateLookInfos();
         // Rotate the movement axis to the correct orientation
         pyramidControls->force = glm::mat3 {
             PYR_SIDE_ACCEL * dt, 0, 0,
             0, PYR_SIDE_ACCEL * dt, 0,
             0, 0, PYR_UP_ACCEL * dt
-        } * glm::normalize(rotMat * pyramidControls->accel);
+        } * glm::normalize(lastKnownHorizCtrlRot * pyramidControls->accel);
       }
     }
     for (auto id : (registries[2].ids)) {
@@ -150,22 +145,50 @@ namespace at3 {
       trackControls->torque = glm::vec2();
       trackControls->brakes = glm::vec2();
 
-      // Get current keyboard state and apply control signals
-      const Uint8 *keyStates = SDL_GetKeyboardState(NULL);
-#     define DO_ON_KEYS(action, ...) if(anyPressed(keyStates, __VA_ARGS__)) { action; }
       DO_ON_KEYS(trackControls->control += glm::vec2( 1.0f,  1.0f), SDL_SCANCODE_UP, SDL_SCANCODE_KP_8)
       DO_ON_KEYS(trackControls->control += glm::vec2(-1.0f, -1.0f), SDL_SCANCODE_DOWN, SDL_SCANCODE_KP_5)
       DO_ON_KEYS(trackControls->control += glm::vec2(-2.0f,  2.0f), SDL_SCANCODE_LEFT, SDL_SCANCODE_KP_4)
       DO_ON_KEYS(trackControls->control += glm::vec2( 2.0f, -2.0f), SDL_SCANCODE_RIGHT, SDL_SCANCODE_KP_6)
       DO_ON_KEYS(trackControls->brakes  += glm::vec2( 5.0f,  0.0f), SDL_SCANCODE_KP_7)
       DO_ON_KEYS(trackControls->brakes  += glm::vec2( 0.0f,  5.0f), SDL_SCANCODE_KP_9)
-#     undef DO_ON_KEYS
 
       // Calculate torque to apply
       trackControls->torque += TRACK_TORQUE * trackControls->control;
 //      trackControls->brakes = glm::vec2(std::max(0.f, 3.f - 3.f * abs(trackControls->torque.x)),
 //                                        std::max(0.f, 3.f - 3.f * abs(trackControls->torque.x)));
     }
+    for (auto id : (registries[3].ids)) {
+      PlayerControls* playerControls;
+      state->get_PlayerControls(id, &playerControls);
+      Placement* placement;
+      state->get_Placement(id, &placement);
+
+      // provide the up vector
+      playerControls->up = glm::quat_cast(placement->mat) * glm::vec3(0.f, 0.f, 1.f);
+
+      playerControls->horizControl = glm::vec2();
+      playerControls->horizForces = glm::vec2();
+      playerControls->jumpRequested = false;
+      playerControls->isRunning = false;
+//      playerControls->isTumbling = false;
+
+      DO_ON_KEYS(playerControls->jumpRequested = true, SDL_SCANCODE_SPACE)
+      DO_ON_KEYS(playerControls->isRunning = true, SDL_SCANCODE_LSHIFT)
+      DO_ON_KEYS(playerControls->isTumbling = true, SDL_SCANCODE_LCTRL)
+      DO_ON_KEYS(playerControls->horizControl += glm::vec2( 0.0f,  1.0f), SDL_SCANCODE_W)
+      DO_ON_KEYS(playerControls->horizControl += glm::vec2( 0.0f, -1.0f), SDL_SCANCODE_S)
+      DO_ON_KEYS(playerControls->horizControl += glm::vec2(-1.0f,  0.0f), SDL_SCANCODE_A)
+      DO_ON_KEYS(playerControls->horizControl += glm::vec2( 1.0f,  0.0f), SDL_SCANCODE_D)
+
+      if (length(playerControls->horizControl) > 0.0f) {
+        updateLookInfos();
+        // Rotate the movement axis to the correct orientation
+        playerControls->horizForces = (playerControls->isRunning ? CHARA_RUN : CHARA_WALK) * dt *
+            glm::normalize(lastKnownHorizCtrlRot * glm::vec3(playerControls->horizControl, 0.f));
+      }
+
+    }
+#   undef DO_ON_KEYS
     queuedEvents.clear();
   }
 
@@ -216,5 +239,17 @@ namespace at3 {
 
   void ControlSystem::setWorldView(glm::mat4 &wv) {
     lastKnownWorldView = wv;
+  }
+
+  void ControlSystem::updateLookInfos() {
+    if (! lookInfoIsFresh) {
+      glm::quat quat = glm::quat_cast(lastKnownWorldView);
+      lastKnownLookVec = quat * glm::vec3(0.f, 1.0, 0.f);
+      glm::vec3 horizLookDir(lastKnownLookVec.x, 0.f, lastKnownLookVec.z);
+      horizLookDir = glm::normalize(horizLookDir);
+      float rotZ = acosf(glm::dot({0.f, 0.f, -1.f}, horizLookDir)) * (lastKnownLookVec.x < 0.f ? -1.f : 1.f);
+      lastKnownHorizCtrlRot = glm::mat3(glm::rotate(rotZ, glm::vec3(0.f, 0.f, 1.f)));
+      lookInfoIsFresh = true;
+    }
   }
 }
