@@ -139,13 +139,20 @@ namespace at3 {
       btCollisionWorld::ClosestRayResultCallback groundSpringRayCallback(rayStart, rayEnd);
       dynamicsWorld->rayTest(rayStart, rayEnd, groundSpringRayCallback);
 
-      float stickyForceLinear = (rayLength * 0.5f) - (groundSpringRayCallback.m_hitPointWorld - rayStart).length();
+      float rayDistTravelled = (groundSpringRayCallback.m_hitPointWorld - rayStart).length();
+      float maxStickyForce = rayLength * 0.5f;
+      float stickyForceLinear = maxStickyForce - rayDistTravelled;
       bool isInJumpRange = stickyForceLinear > -rayLength * 0.2f;
+      bool rayHitGoodGround = groundSpringRayCallback.hasHit();
+      if (groundSpringRayCallback.m_hitNormalWorld.z() < 0.5) {
+        rayHitGoodGround = false;
+      }
 
       uint32_t currentTime = SDL_GetTicks();
       bool jumpCooldownFinished = currentTime - ctrls->lastJumpTime > CHARA_JUMP_COOLDOWN_MS;
       // reset jumping status
-      if (ctrls->jumpInProgress && (jumpCooldownFinished || (stickyForceLinear > rayLength * 0.25f))) {
+      if (ctrls->jumpInProgress && (jumpCooldownFinished ||
+          (rayHitGoodGround && stickyForceLinear > rayLength * 0.25f))) {
         ctrls->jumpInProgress = false;
       }
       // apply requested jumps conditionally
@@ -159,31 +166,31 @@ namespace at3 {
         }
       }
 
-      // not grounded if high in the air
-      ctrls->isGrounded = groundSpringRayCallback.hasHit();
+      // not grounded if high in the air or on steep slope
+      ctrls->isGrounded = rayHitGoodGround;
       // not grounded if jumping
-      ctrls->isGrounded &= ! ctrls->jumpInProgress;
+      ctrls->isGrounded &= (! ctrls->jumpInProgress);
       // not grounded if tumbling
-      ctrls->isGrounded &= ! ctrls->isTumbling;
+      ctrls->isGrounded &= (! ctrls->isTumbling);
 
       float linDamp = 0.f;
       float angDamp = 0.f;
 
       if (ctrls->isGrounded) {
         // use lots of linear damping
-        linDamp = 0.9999f;
+        linDamp = 0.999999f;
         // Movement along ground and "stick to ground" force
         physics->rigidBody->applyImpulse({ctrls->horizForces.x, ctrls->horizForces.y,
                                           stickyForceLinear}, {0.f, 0.f, 0.f});
-      } else {
-        // movement while in air (greatly reduced)
-        physics->rigidBody->applyImpulse({ctrls->horizForces.x * 0.05f, ctrls->horizForces.y * 0.05f, 0.f},
-                                         {0.f, 0.f, 0.f});
+      } else if (! ctrls->isTumbling) {
+        // movement while in air but not tumbling (greatly reduced)
+        physics->rigidBody->applyImpulse({ctrls->horizForces.x * 0.05f,
+                                          ctrls->horizForces.y * 0.05f, 0.f}, {0.f, 0.f, 0.f});
       }
 
       if (! ctrls->isTumbling) {
         // use lots of angular damping
-        angDamp = 0.9999f;
+        angDamp = 0.999999f;
         // Custom constraint to keep the player up FixMe: this sometimes gets stuck in a horizontal position?
         glm::vec3 up{0.f, 0.f, 1.f};
         float tip = glm::dot(ctrls->up, up);
@@ -196,7 +203,7 @@ namespace at3 {
       // Set damping
       physics->rigidBody->setDamping(linDamp, angDamp);
       // reset tumble status
-      if (ctrls->isTumbling && stickyForceLinear > 0) {
+      if (ctrls->isTumbling && rayHitGoodGround && rayDistTravelled < HUMAN_HEIGHT) {
         ctrls->isTumbling = false;
       }
     }
@@ -298,7 +305,6 @@ namespace at3 {
       } break;
       case Physics::CHARA: {
         physics->shape = new btCapsuleShapeZ(HUMAN_WIDTH * 0.5f, HUMAN_HEIGHT * 0.33f);
-
       } break;
       case Physics::TERRAIN: {
         return false; // do not track, wait for terrain component to appear

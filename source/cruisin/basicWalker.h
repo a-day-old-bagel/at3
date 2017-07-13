@@ -13,7 +13,8 @@ namespace at3 {
       Scene_* mpScene;
       void addToScene();
     public:
-      std::shared_ptr<MeshObject_> mpBody;
+      std::shared_ptr<SceneObject_> mpPhysicsBody;
+      std::shared_ptr<MeshObject_> mpVisualBody;
       std::shared_ptr<ThirdPersonCamera_> mpCamera;
 
       BasicWalker(ezecs::State &state, Scene_ &scene, glm::mat4 &transform);

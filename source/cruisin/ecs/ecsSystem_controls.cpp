@@ -170,7 +170,6 @@ namespace at3 {
       playerControls->horizForces = glm::vec2();
       playerControls->jumpRequested = false;
       playerControls->isRunning = false;
-//      playerControls->isTumbling = false;
 
       DO_ON_KEYS(playerControls->jumpRequested = true, SDL_SCANCODE_SPACE)
       DO_ON_KEYS(playerControls->isRunning = true, SDL_SCANCODE_LSHIFT)
