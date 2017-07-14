@@ -22,14 +22,9 @@ namespace at3 {
   }
 
   DuneBuggy::DuneBuggy(ezecs::State &state, Scene_ &scene, glm::mat4 &transform) : mpState(&state), mpScene(&scene) {
-    mpChassis = std::shared_ptr<MeshObject_> (
 
-        new MeshObject_("assets/models/pyramid_bottom.dae", transform));
-
-//        new MeshObject_("assets/models/jeep.dae", transform));
-
-//        new MeshObject_("assets/models/pyramid_bottom.dae", "assets/textures/pyramid_bottom.png",
-//                        transform, MeshObject_::SUNNY));
+    mpChassis = std::make_shared<MeshObject_>("assets/models/pyramid_bottom.dae", transform);
+//    mpChassis = std::make_shared<MeshObject_>("assets/models/jeep.dae", transform);
 
     ezecs::entityId chassisId = mpChassis->getId();
 
@@ -66,9 +61,8 @@ namespace at3 {
         { 1.9f, -1.9f, 0.f}
     };
     for (int i = 0; i < 4; ++i) {
-      mvpWheels.push_back(std::shared_ptr<MeshObject_>(
-          new MeshObject_("assets/models/sphere.dae", "assets/textures/thrusters.png",
-                          ident, MeshObject_::SUNNY)));
+      mvpWheels.push_back(std::make_shared<MeshObject_>("assets/models/sphere.dae", "assets/textures/thrusters.png",
+                          ident, MeshObject_::SUNNY));
       entityId wheelId = mvpWheels.back()->getId();
       WheelInitInfo wheelInitInfo{
           {                         // WheelInfo struct - this part of the wheelInitInfo will persist.
@@ -88,8 +82,7 @@ namespace at3 {
       state.add_TransformFunction(wheelId, DELEGATE_NOCLASS(wheelScaler));
     }
 
-    mpCamera = std::shared_ptr<ThirdPersonCamera_> (
-        new ThirdPersonCamera_(2.f, 7.f, (float)M_PI * 0.5f));
+    mpCamera = std::make_shared<ThirdPersonCamera_>(2.f, 7.f, (float)M_PI * 0.5f);
     mpChassis->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
 
     addToScene();
