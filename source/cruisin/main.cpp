@@ -29,6 +29,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "settings.h"
+#include "topics.h"
 #include "ezecs.hpp"
 #include "dualityInterface.h"
 #include "game.h"
@@ -171,7 +172,8 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
       return true; // handled it here
     }
     void onTick(float dt) {
-      mControlSystem.setWorldView(getCamera()->lastWorldViewQueried);
+//      mControlSystem.setWorldView(getCamera()->lastWorldViewQueried);
+      topics::publish("primary_cam_wv", (void*)&getCamera()->lastWorldViewQueried);
       mControlSystem.tick(dt);
       mPhysicsSystem.tick(dt);
       mAnimationSystem.tick(dt);

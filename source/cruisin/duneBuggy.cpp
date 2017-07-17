@@ -39,7 +39,7 @@ namespace at3 {
         -2.1f, -2.1f,  0.4f,
         -2.1f,  2.1f,  0.4f,
     };
-    state.add_TransformFunction(chassisId, DELEGATE_NOCLASS(chassisScalar));
+    state.add_TransformFunction(chassisId, ECS_DELEGATE_NOCLASS(chassisScalar));
     state.add_Physics(chassisId, 50.f, &chassisVerts, Physics::MESH);
     Physics *physics;
     state.get_Physics(chassisId, &physics);
@@ -79,7 +79,7 @@ namespace at3 {
           false                     // is front wheel
       };
       state.add_Physics(wheelId, 10.f, &wheelInitInfo, Physics::WHEEL);
-      state.add_TransformFunction(wheelId, DELEGATE_NOCLASS(wheelScaler));
+      state.add_TransformFunction(wheelId, ECS_DELEGATE_NOCLASS(wheelScaler));
     }
 
     mpCamera = std::make_shared<ThirdPersonCamera_>(2.f, 7.f, (float)M_PI * 0.5f);

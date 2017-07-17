@@ -43,7 +43,8 @@ namespace at3 {
   }
   #endif
 
-  ControlSystem::ControlSystem(State *state) : System(state) {
+  ControlSystem::ControlSystem(State *state)
+      : System(state), wvSub("primary_cam_wv", AT3_DELEGATE(&ControlSystem::setWorldView, this)) {
     name = "Control System";
   }
 
@@ -93,6 +94,7 @@ namespace at3 {
                   (float)event.motion.xrel * MOUSE_SENSITIVITY * ((float) M_PI / 180.0f) * inversionValue,
                   { 0.0f, 0.0f, 1.0f }
               ) * placement->mat;
+              // FIXME: test inversion - is Y being used?
               placement->mat = placement->mat * glm::rotate(
                   glm::mat4(),
                   (float)event.motion.yrel * MOUSE_SENSITIVITY * ((float) M_PI / 180.0f) * inversionValue,
@@ -236,8 +238,12 @@ namespace at3 {
     return true; // handled it here
   }
 
-  void ControlSystem::setWorldView(glm::mat4 &wv) {
-    lastKnownWorldView = wv;
+//  void ControlSystem::setWorldView(glm::mat4 &wv) {
+//    lastKnownWorldView = wv;
+//  }
+
+  void ControlSystem::setWorldView(void *p_wv) {
+    lastKnownWorldView = *((glm::mat4*)p_wv);
   }
 
   void ControlSystem::updateLookInfos() {

@@ -37,7 +37,7 @@ namespace at3 {
                                            ident, MeshObject_::SUNNY);
 
     entityId bodyId = mpVisualBody->getId();
-    state.add_TransformFunction(bodyId, DELEGATE_NOCLASS(bodyScaler));
+    state.add_TransformFunction(bodyId, ECS_DELEGATE_NOCLASS(bodyScaler));
     mpPhysicsBody->addChild(mpVisualBody);
 
     mpCamera = std::make_shared<ThirdPersonCamera_> (0.f, 5.f, (float)M_PI * 0.5f);

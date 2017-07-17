@@ -80,11 +80,11 @@ namespace at3 {
   }
 
   bool PhysicsSystem::onInit() {
-    registries[0].discoverHandler = DELEGATE(&PhysicsSystem::onDiscover, this);
-    registries[0].forgetHandler = DELEGATE(&PhysicsSystem::onForget, this);
-    registries[2].discoverHandler = DELEGATE(&PhysicsSystem::onDiscoverTerrain, this);
-    registries[3].discoverHandler = DELEGATE(&PhysicsSystem::onDiscoverTrackControls, this);
-    registries[3].forgetHandler = DELEGATE(&PhysicsSystem::onForgetTrackControls, this);
+    registries[0].discoverHandler = ECS_DELEGATE(&PhysicsSystem::onDiscover, this);
+    registries[0].forgetHandler = ECS_DELEGATE(&PhysicsSystem::onForget, this);
+    registries[2].discoverHandler = ECS_DELEGATE(&PhysicsSystem::onDiscoverTerrain, this);
+    registries[3].discoverHandler = ECS_DELEGATE(&PhysicsSystem::onDiscoverTrackControls, this);
+    registries[3].forgetHandler = ECS_DELEGATE(&PhysicsSystem::onForgetTrackControls, this);
 
     broadphase = new btDbvtBroadphase();
     collisionConfiguration = new btDefaultCollisionConfiguration();

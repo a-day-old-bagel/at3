@@ -25,6 +25,7 @@
 
 #include <SDL.h>
 #include "ezecs.hpp"
+#include "topics.h"
 
 using namespace ezecs;
 
@@ -35,6 +36,7 @@ namespace at3 {
       glm::vec3 lastKnownLookVec;
       glm::mat3 lastKnownHorizCtrlRot;
       bool lookInfoIsFresh = false;
+      topics::Subscription wvSub;
 
       void updateLookInfos();
 
@@ -49,7 +51,8 @@ namespace at3 {
       bool onInit();
       void onTick(float dt);
       bool handleEvent(SDL_Event& event);
-      void setWorldView(glm::mat4 &wv);
+//      void setWorldView(glm::mat4 &wv);
+      void setWorldView(void* p_wv);
   };
 }
 

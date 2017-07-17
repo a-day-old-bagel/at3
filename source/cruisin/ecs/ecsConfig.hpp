@@ -43,7 +43,7 @@ namespace {
 
   // BEGIN DECLARATIONS
 
-  typedef Delegate<glm::mat4(const glm::mat4&, uint32_t time)> transformFunc;
+  typedef EcsDelegate<glm::mat4(const glm::mat4&, uint32_t time)> transformFunc;
   typedef std::vector<float>* floatVecPtr;
 
   struct Placement : public Component<Placement> {
@@ -56,6 +56,7 @@ namespace {
     Placement(glm::mat4 mat);
     glm::vec3 getTranslation();
     glm::vec3 getLookAt();
+    glm::mat3 getHorizRotMat();
   };
 
   struct TransformFunction : public Component<TransformFunction> {
@@ -162,6 +163,11 @@ namespace {
   glm::vec3 Placement::getLookAt() {
     glm::vec4 lookAt = mat * glm::vec4(0.f, 1.f, 0.f, 0.f);
     return glm::vec3(lookAt.x, lookAt.y, lookAt.z);
+  }
+
+  glm::mat3 Placement::getHorizRotMat() {
+    // TODO
+    return glm::mat3();
   }
 
   TransformFunction::TransformFunction(transformFunc func)
