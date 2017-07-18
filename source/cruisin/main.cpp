@@ -29,7 +29,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "settings.h"
-#include "topics.h"
+#include "topics.hpp"
 #include "ezecs.hpp"
 #include "dualityInterface.h"
 #include "game.h"

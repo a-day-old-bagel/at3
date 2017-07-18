@@ -25,9 +25,10 @@
 
 #include <SDL.h>
 #include "ezecs.hpp"
-#include "topics.h"
+#include "topics.hpp"
 
 using namespace ezecs;
+using namespace rtu;
 
 namespace at3 {
   class ControlSystem : public System<ControlSystem> {

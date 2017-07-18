@@ -4,7 +4,6 @@ add_subdirectory( global )
 add_subdirectory(gpuapi)
 
 add_library( ${AT3_TARGET_PREFIX}common STATIC
-  topics.cpp
   transform.cpp
   transformRAII.cpp
   transformStack.cpp

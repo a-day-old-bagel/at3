@@ -44,7 +44,7 @@ namespace at3 {
   #endif
 
   ControlSystem::ControlSystem(State *state)
-      : System(state), wvSub("primary_cam_wv", AT3_DELEGATE(&ControlSystem::setWorldView, this)) {
+      : System(state), wvSub("primary_cam_wv", RTU_MTHD_DLGT(&ControlSystem::setWorldView, this)) {
     name = "Control System";
   }
 

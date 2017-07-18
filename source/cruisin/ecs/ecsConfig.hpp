@@ -43,7 +43,7 @@ namespace {
 
   // BEGIN DECLARATIONS
 
-  typedef EcsDelegate<glm::mat4(const glm::mat4&, uint32_t time)> transformFunc;
+  typedef rtu::Delegate<glm::mat4(const glm::mat4&, uint32_t time)> transformFunc;
   typedef std::vector<float>* floatVecPtr;
 
   struct Placement : public Component<Placement> {

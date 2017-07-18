@@ -55,10 +55,10 @@ namespace at3 {
     physics->rigidBody->setDamping(0.1f, 0.8f);
 
     entityId topId = mpTop->getId();
-    state.add_TransformFunction(topId, ECS_DELEGATE_NOCLASS(pyrTopRotate));
+    state.add_TransformFunction(topId, RTU_FUNC_DLGT(pyrTopRotate));
 
     entityId fireId = mpFire->getId();
-    state.add_TransformFunction(fireId, ECS_DELEGATE_NOCLASS(pyrFireWiggle));
+    state.add_TransformFunction(fireId, RTU_FUNC_DLGT(pyrFireWiggle));
 
     mpCamera = std::make_shared<ThirdPersonCamera_> (2.5f, 5.f, (float)M_PI * 0.5f);
     mpBase->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
