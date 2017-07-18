@@ -29,8 +29,12 @@
 // BEGIN INCLUDES
 
 #include <vector>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include "glm/gtx/transform.hpp"
+
 #include <btBulletDynamicsCommon.h>
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
@@ -166,8 +170,12 @@ namespace {
   }
 
   glm::mat3 Placement::getHorizRotMat() {
-    // TODO
-    return glm::mat3();
+    glm::quat latestQuat = glm::quat_cast(mat);
+    glm::vec3 latestLook = latestQuat * glm::vec3(0.f, 1.0, 0.f);
+    glm::vec3 latestHorizLook(latestLook.x, 0.f, latestLook.z);
+    latestHorizLook = glm::normalize(latestHorizLook);
+    float rotZ = acosf(glm::dot({0.f, 0.f, -1.f}, latestHorizLook)) * (latestLook.x < 0.f ? -1.f : 1.f);
+    return glm::mat3(glm::rotate(rotZ, glm::vec3(0.f, 0.f, 1.f)));
   }
 
   TransformFunction::TransformFunction(transformFunc func)
