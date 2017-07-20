@@ -12,6 +12,7 @@ namespace at3 {
       ezecs::State* mpState;
       Scene_* mpScene;
       void addToScene();
+      glm::mat4 bodyVisualTransform(const glm::mat4 &transformIn, uint32_t time);
     public:
       std::shared_ptr<SceneObject_> mpPhysicsBody;
       std::shared_ptr<MeshObject_> mpVisualBody;

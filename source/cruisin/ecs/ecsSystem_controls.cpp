@@ -30,8 +30,8 @@
 #define PYR_SIDE_ACCEL 2500.f
 #define PYR_UP_ACCEL 4000.f
 #define TRACK_TORQUE 100.f
-#define CHARA_WALK 75.f
-#define CHARA_RUN 200.f
+#define CHARA_WALK 100.f
+#define CHARA_RUN 250.f
 
 namespace at3 {
 
@@ -94,7 +94,7 @@ namespace at3 {
                   (float)event.motion.xrel * MOUSE_SENSITIVITY * ((float) M_PI / 180.0f) * inversionValue,
                   { 0.0f, 0.0f, 1.0f }
               ) * placement->mat;
-              // FIXME: test inversion - is Y being used?
+              inversionValue = (mouseControls->invertedY ? 1.f : -1.f);
               placement->mat = placement->mat * glm::rotate(
                   glm::mat4(),
                   (float)event.motion.yrel * MOUSE_SENSITIVITY * ((float) M_PI / 180.0f) * inversionValue,
@@ -175,7 +175,6 @@ namespace at3 {
 
       DO_ON_KEYS(playerControls->jumpRequested = true, SDL_SCANCODE_SPACE)
       DO_ON_KEYS(playerControls->isRunning = true, SDL_SCANCODE_LSHIFT)
-      DO_ON_KEYS(playerControls->isTumbling = true, SDL_SCANCODE_LCTRL)
       DO_ON_KEYS(playerControls->horizControl += glm::vec2( 0.0f,  1.0f), SDL_SCANCODE_W)
       DO_ON_KEYS(playerControls->horizControl += glm::vec2( 0.0f, -1.0f), SDL_SCANCODE_S)
       DO_ON_KEYS(playerControls->horizControl += glm::vec2(-1.0f,  0.0f), SDL_SCANCODE_A)

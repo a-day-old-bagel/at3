@@ -12,11 +12,6 @@ using namespace ezecs;
 
 namespace at3 {
 
-  static glm::mat4 bodyScaler(const glm::mat4& transformIn, uint32_t time) {
-    return glm::scale(glm::translate(glm::mat4(), {0.f, 0.f, -HUMAN_HEIGHT * 0.165f}),
-                      {HUMAN_WIDTH * 0.5f, HUMAN_DEPTH * 0.5f, HUMAN_HEIGHT * 0.5f});
-  }
-
   BasicWalker::BasicWalker(ezecs::State &state, Scene_ &scene, glm::mat4 &transform)
       : mpState(&state), mpScene(&scene) {
 
@@ -37,7 +32,7 @@ namespace at3 {
                                            ident, MeshObject_::SUNNY);
 
     entityId bodyId = mpVisualBody->getId();
-    state.add_TransformFunction(bodyId, RTU_FUNC_DLGT(bodyScaler));
+    state.add_TransformFunction(bodyId, RTU_MTHD_DLGT(&BasicWalker::bodyVisualTransform, this));
     mpPhysicsBody->addChild(mpVisualBody);
 
     mpCamera = std::make_shared<ThirdPersonCamera_> (0.f, 5.f, (float)M_PI * 0.5f);
@@ -50,6 +45,18 @@ namespace at3 {
   }
   void BasicWalker::addToScene() {
     mpScene->addObject(mpPhysicsBody);
+  }
+
+  glm::mat4 BasicWalker::bodyVisualTransform(const glm::mat4 &transformIn, uint32_t time) {
+    Placement *placement;
+    mpState->get_Placement(mpCamera->mpCamGimbal->getId(), &placement);
+    return glm::scale(
+               glm::rotate(
+                   glm::translate(
+                       glm::mat4(),
+                   {0.f, 0.f, -HUMAN_HEIGHT * 0.165f}),
+               placement->getHorizRot(), glm::vec3(0.0f, 0.0f, 1.0f)),
+           {HUMAN_WIDTH * 0.5f, HUMAN_DEPTH * 0.5f, HUMAN_HEIGHT * 0.5f});
   }
 }
 #pragma clang diagnostic pop

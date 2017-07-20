@@ -60,6 +60,7 @@ namespace {
     Placement(glm::mat4 mat);
     glm::vec3 getTranslation();
     glm::vec3 getLookAt();
+    float getHorizRot();
     glm::mat3 getHorizRotMat();
   };
 
@@ -128,12 +129,11 @@ namespace {
   struct PlayerControls : public Component<PlayerControls> {
     glm::vec2 horizControl, horizForces;
     glm::vec3 up;
-    uint32_t lastJumpTime = 0;
+    float lastJumpZVel = 0.f;
     bool jumpRequested = false;
     bool jumpInProgress = false;
     bool isGrounded = false;
     bool isRunning = false;
-    bool isTumbling = false;
     PlayerControls();
   };
   EZECS_COMPONENT_DEPENDENCIES(PlayerControls, Physics)
@@ -169,13 +169,16 @@ namespace {
     return glm::vec3(lookAt.x, lookAt.y, lookAt.z);
   }
 
-  glm::mat3 Placement::getHorizRotMat() {
+  float Placement::getHorizRot() {
     glm::quat latestQuat = glm::quat_cast(mat);
     glm::vec3 latestLook = latestQuat * glm::vec3(0.f, 1.0, 0.f);
-    glm::vec3 latestHorizLook(latestLook.x, 0.f, latestLook.z);
+    glm::vec3 latestHorizLook(latestLook.x, latestLook.y, 0.f);
     latestHorizLook = glm::normalize(latestHorizLook);
-    float rotZ = acosf(glm::dot({0.f, 0.f, -1.f}, latestHorizLook)) * (latestLook.x < 0.f ? -1.f : 1.f);
-    return glm::mat3(glm::rotate(rotZ, glm::vec3(0.f, 0.f, 1.f)));
+    return acosf(glm::dot({0.f, 1.f, 0.f}, latestHorizLook)) * (latestLook.x < 0.f ? 1.f : -1.f);
+  }
+
+  glm::mat3 Placement::getHorizRotMat() {
+    return glm::mat3(glm::rotate(getHorizRot(), glm::vec3(0.f, 0.f, 1.f)));
   }
 
   TransformFunction::TransformFunction(transformFunc func)

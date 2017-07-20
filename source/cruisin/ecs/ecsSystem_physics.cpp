@@ -139,73 +139,58 @@ namespace at3 {
       btCollisionWorld::ClosestRayResultCallback groundSpringRayCallback(rayStart, rayEnd);
       dynamicsWorld->rayTest(rayStart, rayEnd, groundSpringRayCallback);
 
+      // some variables to use below
       float rayDistTravelled = (groundSpringRayCallback.m_hitPointWorld - rayStart).length();
-      float maxStickyForce = rayLength * 0.5f;
-      float stickyForceLinear = maxStickyForce - rayDistTravelled;
-      bool isInJumpRange = stickyForceLinear > -rayLength * 0.2f;
+      float maxSpringForce = rayLength * 0.5f;
+      float springForceLinear = maxSpringForce - rayDistTravelled;
+      bool isInJumpRange = springForceLinear > -rayLength * 0.2f;
       bool rayHitGoodGround = groundSpringRayCallback.hasHit();
+
+      // steep ground is not good ground
       if (groundSpringRayCallback.m_hitNormalWorld.z() < 0.5) {
         rayHitGoodGround = false;
       }
 
-      uint32_t currentTime = SDL_GetTicks();
-      bool jumpCooldownFinished = currentTime - ctrls->lastJumpTime > CHARA_JUMP_COOLDOWN_MS;
-      // reset jumping status
-      if (ctrls->jumpInProgress && (jumpCooldownFinished ||
-          (rayHitGoodGround && stickyForceLinear > rayLength * 0.25f))) {
-        ctrls->jumpInProgress = false;
-      }
-      // apply requested jumps conditionally
-      if (ctrls->jumpRequested) {
-        if (isInJumpRange && ! ctrls->jumpInProgress && ! ctrls->isTumbling) {
-          if (jumpCooldownFinished) {
-            physics->rigidBody->applyImpulse({0.f, 0.f, CHARA_JUMP}, {0.f, 0.f, 0.f});
-            ctrls->jumpInProgress = true;
-            ctrls->lastJumpTime = currentTime;
-          }
+      // Handle jumping
+      if (ctrls->jumpInProgress) {
+        float zVel = physics->rigidBody->getLinearVelocity().z();
+        if (zVel > ctrls->lastJumpZVel) {
+          ctrls->jumpInProgress = false;
+        } else {
+          ctrls->lastJumpZVel = zVel;
         }
+      } else if (ctrls->jumpRequested) {
+        physics->rigidBody->applyImpulse({0.f, 0.f, CHARA_JUMP}, {0.f, 0.f, 0.f});
+        ctrls->jumpInProgress = true;
+        ctrls->lastJumpZVel = physics->rigidBody->getLinearVelocity().z();
       }
-
-      // not grounded if high in the air or on steep slope
-      ctrls->isGrounded = rayHitGoodGround;
-      // not grounded if jumping
-      ctrls->isGrounded &= (! ctrls->jumpInProgress);
-      // not grounded if tumbling
-      ctrls->isGrounded &= (! ctrls->isTumbling);
 
       float linDamp = 0.f;
       float angDamp = 0.f;
 
-      if (ctrls->isGrounded) {
-        // use lots of linear damping
-        linDamp = 0.999999f;
-        // Movement along ground and "stick to ground" force
-        physics->rigidBody->applyImpulse({ctrls->horizForces.x, ctrls->horizForces.y,
-                                          stickyForceLinear}, {0.f, 0.f, 0.f});
-      } else if (! ctrls->isTumbling) {
-        // movement while in air but not tumbling (greatly reduced)
-        physics->rigidBody->applyImpulse({ctrls->horizForces.x * 0.05f,
-                                          ctrls->horizForces.y * 0.05f, 0.f}, {0.f, 0.f, 0.f});
+      float springForceOverMax = springForceLinear / maxSpringForce; // How far from equilibrium (0 to 1, 1 is far)
+      ctrls->isGrounded = rayHitGoodGround; // not grounded if high in the air or on steep slope
+      ctrls->isGrounded &= fabs(springForceOverMax) < 1.f; // extra range check
+      ctrls->isGrounded &= (! ctrls->jumpInProgress); // not grounded if jumping
+
+      if (ctrls->isGrounded) { // Movement along ground - apply controls and a "stick to ground" force
+        float sfomPow2 = pow(springForceOverMax, 2);
+        float sfomPow4 = pow(springForceOverMax, 4);
+        float sfom10Pow2 = pow(springForceOverMax * 10.f, 2);
+        float springForceMagnitude = (1.0f - sfomPow2) - std::max(0.f, 1.f - sfom10Pow2);
+        float mvmntForceMagnitude = std::max(0.02f, 0.8f - sfomPow2);
+        float dampingMagnitude = std::min(0.9999999f, 1.1f - sfomPow4);
+        linDamp = dampingMagnitude;
+        float springForceFinal = springForceMagnitude * ((0 < springForceLinear) - (springForceLinear < 0));
+        physics->rigidBody->applyImpulse({ctrls->horizForces.x * mvmntForceMagnitude,
+                                          ctrls->horizForces.y * mvmntForceMagnitude,
+                                          springForceFinal}, {0.f, 0.f, 0.f});
+      } else { // movement while in air - apply greatly reduced controls
+        physics->rigidBody->applyImpulse({ctrls->horizForces.x * 0.02f,
+                                          ctrls->horizForces.y * 0.02f, 0.f}, {0.f, 0.f, 0.f});
       }
 
-      if (! ctrls->isTumbling) {
-        // use lots of angular damping
-        angDamp = 0.999999f;
-        // Custom constraint to keep the player up FixMe: this sometimes gets stuck in a horizontal position?
-        glm::vec3 up{0.f, 0.f, 1.f};
-        float tip = glm::dot(ctrls->up, up);
-        glm::vec3 rotAxis = glm::cross(ctrls->up, up);
-        physics->rigidBody->applyTorque(
-            btVector3(rotAxis.x, rotAxis.y, rotAxis.z) * tip * (ctrls->up.z < 0 ? -100.f : 100.f)
-        );
-      }
-
-      // Set damping
-      physics->rigidBody->setDamping(linDamp, angDamp);
-      // reset tumble status
-      if (ctrls->isTumbling && rayHitGoodGround && rayDistTravelled < HUMAN_HEIGHT) {
-        ctrls->isTumbling = false;
-      }
+      physics->rigidBody->setDamping(linDamp, angDamp); // Set damping
     }
 
     // Step the world here
@@ -336,8 +321,17 @@ namespace at3 {
     physics->shape->calculateLocalInertia(physics->mass, inertia);
     btRigidBody::btRigidBodyConstructionInfo ci(physics->mass, motionState, physics->shape, inertia);
     physics->rigidBody = new btRigidBody(ci);
-    physics->rigidBody->setRestitution(0.5f);
-    physics->rigidBody->setFriction(1.f);
+    switch (physics->geom) {
+      case Physics::CHARA: {
+        physics->rigidBody->setAngularFactor({0.f, 0.f, 0.f});
+        physics->rigidBody->setRestitution(0.f);
+        physics->rigidBody->setFriction(0.f);
+      } break;
+      default: {
+        physics->rigidBody->setRestitution(0.5f);
+        physics->rigidBody->setFriction(1.f);
+      } break;
+    }
     physics->rigidBody->setUserIndex((int)id);
     dynamicsWorld->addRigidBody(physics->rigidBody);
     return true;
