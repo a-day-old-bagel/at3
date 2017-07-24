@@ -2,15 +2,16 @@
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
 
 add_library( ${AT3_TARGET_PREFIX}graphics STATIC
-  graphicsBackend.cpp
-  loadedTexture.cpp
+  graphicsBackend.cpp graphicsBackend.h
+  loadedTexture.cpp loadedTexture.h
+  material.cpp material.h
   openglCalls.cpp
-  openglValidation.cpp
+  openglValidation.cpp openglValidation.h
   sdl2Calls.cpp
-  shaderProgram.cpp
-  shaders.cpp
+  shaderProgram.cpp shaderProgram.h
+  shaders.cpp shaders.h
   vulkanCalls.cpp
-  vulkanTest.c
+  vulkanTest.c vulkanTest.h
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}graphics
   ${AT3_TARGET_PREFIX}global

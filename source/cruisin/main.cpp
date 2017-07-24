@@ -48,6 +48,7 @@
 
 using namespace at3;
 using namespace ezecs;
+using namespace rtu::topics;
 
 class CruisinGame : public Game<DualityInterface, CruisinGame> {
 
@@ -65,12 +66,11 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
   public:
 
     CruisinGame()
-        : Game(),
-          mControlSystem(&mState),
+        : mControlSystem(&mState),
           mAnimationSystem(&mState),
           mPhysicsSystem(&mState) { }
 
-    virtual ~CruisinGame() {
+    ~CruisinGame() {
       mScene.clear();
     }
 
@@ -110,7 +110,8 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
 
       // start with the camera focused on the pyramid
 //      this->setCamera(mpPyramid->getCamPtr());
-      this->setCamera(mpPlayer->getCamPtr());
+      setCamera(mpPlayer->getCamPtr());
+      publish("switch_to_walking_controls", (void*)&mpPlayer->ctrlId);
 
       // some debug-draw features
       mpDebugStuff = std::make_shared<DebugStuff> (mScene, &mPhysicsSystem);
@@ -141,14 +142,18 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
             } break;
             case SDL_SCANCODE_1: {
               setCamera(mpPlayer->getCamPtr());
+              publish("switch_to_walking_controls", (void*)&mpPlayer->ctrlId);
             } break;
             case SDL_SCANCODE_2: {
               setCamera(mpPyramid->getCamPtr());
+              publish("switch_to_pyramid_controls", (void*)&mpPyramid->ctrlId);
             } break;
             case SDL_SCANCODE_3: {
               setCamera(mpDuneBuggy->getCamPtr());
+              publish("switch_to_track_controls", (void*)&mpDuneBuggy->ctrlId);
             } break;
             case SDL_SCANCODE_4: {
+//              publish("primary_cam_wv", (void*)&getCamera()->lastWorldViewQueried);
             } break;
             case SDL_SCANCODE_5: {
             } break;
@@ -172,8 +177,7 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
       return true; // handled it here
     }
     void onTick(float dt) {
-//      mControlSystem.setWorldView(getCamera()->lastWorldViewQueried);
-      topics::publish("primary_cam_wv", (void*)&getCamera()->lastWorldViewQueried);
+      publish("primary_cam_wv", (void*)&getCamera()->lastWorldViewQueried);
       mControlSystem.tick(dt);
       mPhysicsSystem.tick(dt);
       mAnimationSystem.tick(dt);

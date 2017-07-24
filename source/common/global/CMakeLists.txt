@@ -1,6 +1,6 @@
 
 add_library( ${AT3_TARGET_PREFIX}global STATIC
-  settings.cpp
+  settings.cpp settings.h
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}global
   SDL_vulkan

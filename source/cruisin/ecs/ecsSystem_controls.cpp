@@ -33,6 +33,8 @@
 #define CHARA_WALK 100.f
 #define CHARA_RUN 250.f
 
+using namespace rtu::topics;
+
 namespace at3 {
 
   #if !SDL_VERSION_ATLEAST(2, 0, 4)
@@ -44,7 +46,12 @@ namespace at3 {
   #endif
 
   ControlSystem::ControlSystem(State *state)
-      : System(state), wvSub("primary_cam_wv", RTU_MTHD_DLGT(&ControlSystem::setWorldView, this)) {
+      : System(state),
+        updateWvMatSub("primary_cam_wv", RTU_MTHD_DLGT(&ControlSystem::setWorldView, this)),
+        switchToWalkCtrlSub("switch_to_walking_controls", RTU_MTHD_DLGT(&ControlSystem::switchToWalkCtrl, this)),
+        switchToPyrmCtrlSub("switch_to_pyramid_controls", RTU_MTHD_DLGT(&ControlSystem::switchToPyrmCtrl, this)),
+        switchToTrakCtrlSub("switch_to_track_controls", RTU_MTHD_DLGT(&ControlSystem::switchToTrakCtrl, this))
+  {
     name = "Control System";
   }
 
@@ -70,6 +77,9 @@ namespace at3 {
     // Get current keyboard state
     const Uint8 *keyStates = SDL_GetKeyboardState(NULL);
 #   define DO_ON_KEYS(action, ...) if(anyPressed(keyStates, __VA_ARGS__)) { action; }
+
+    DO_ON_KEYS(publish("key_held_w", nullptr), SDL_SCANCODE_W)
+    DO_ON_KEYS(publish("key_held_space", nullptr); printf("space pressed\n"), SDL_SCANCODE_SPACE)
 
     // TODO: switching this loop with the inner (event) loop might be better?
     for (auto id : registries[0].ids) {
@@ -118,15 +128,15 @@ namespace at3 {
       pyramidControls->up = glm::quat_cast(placement->mat) * glm::vec3(0.f, 0.f, 1.f);
 
       // zero out stuff
-      pyramidControls->accel = glm::vec3();
-      pyramidControls->force = glm::vec3();
+//      pyramidControls->accel = glm::vec3();
+//      pyramidControls->force = glm::vec3();
 
-      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  1.0f,  0.0f), SDL_SCANCODE_I)
-      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f, -1.0f,  0.0f), SDL_SCANCODE_K)
-      DO_ON_KEYS(pyramidControls->accel += glm::vec3(-1.0f,  0.0f,  0.0f), SDL_SCANCODE_J)
-      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 1.0f,  0.0f,  0.0f), SDL_SCANCODE_L)
-      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  0.0f, -1.0f), SDL_SCANCODE_B)
-      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  0.0f,  1.0f), SDL_SCANCODE_RALT)
+//      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  1.0f,  0.0f), SDL_SCANCODE_I)
+//      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f, -1.0f,  0.0f), SDL_SCANCODE_K)
+//      DO_ON_KEYS(pyramidControls->accel += glm::vec3(-1.0f,  0.0f,  0.0f), SDL_SCANCODE_J)
+//      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 1.0f,  0.0f,  0.0f), SDL_SCANCODE_L)
+//      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  0.0f, -1.0f), SDL_SCANCODE_B)
+//      DO_ON_KEYS(pyramidControls->accel += glm::vec3( 0.0f,  0.0f,  1.0f), SDL_SCANCODE_RALT)
 
       if (length(pyramidControls->accel) > 0.0f) {
         updateLookInfos();
@@ -136,6 +146,8 @@ namespace at3 {
             0, PYR_SIDE_ACCEL * dt, 0,
             0, 0, PYR_UP_ACCEL * dt
         } * glm::normalize(lastKnownHorizCtrlRot * pyramidControls->accel);
+
+        pyramidControls->accel = glm::vec3();
       }
     }
     for (auto id : (registries[2].ids)) {
@@ -143,21 +155,23 @@ namespace at3 {
       state->get_TrackControls(id, &trackControls);
 
       // zero out stuff
-      trackControls->control = glm::vec2();
-      trackControls->torque = glm::vec2();
-      trackControls->brakes = glm::vec2();
+//      trackControls->control = glm::vec2();
+//      trackControls->torque = glm::vec2();
+//      trackControls->brakes = glm::vec2();
 
-      DO_ON_KEYS(trackControls->control += glm::vec2( 1.0f,  1.0f), SDL_SCANCODE_UP, SDL_SCANCODE_KP_8)
-      DO_ON_KEYS(trackControls->control += glm::vec2(-1.0f, -1.0f), SDL_SCANCODE_DOWN, SDL_SCANCODE_KP_5)
-      DO_ON_KEYS(trackControls->control += glm::vec2(-2.0f,  2.0f), SDL_SCANCODE_LEFT, SDL_SCANCODE_KP_4)
-      DO_ON_KEYS(trackControls->control += glm::vec2( 2.0f, -2.0f), SDL_SCANCODE_RIGHT, SDL_SCANCODE_KP_6)
-      DO_ON_KEYS(trackControls->brakes  += glm::vec2( 5.0f,  0.0f), SDL_SCANCODE_KP_7)
-      DO_ON_KEYS(trackControls->brakes  += glm::vec2( 0.0f,  5.0f), SDL_SCANCODE_KP_9)
+//      DO_ON_KEYS(trackControls->control += glm::vec2( 1.0f,  1.0f), SDL_SCANCODE_UP, SDL_SCANCODE_KP_8)
+//      DO_ON_KEYS(trackControls->control += glm::vec2(-1.0f, -1.0f), SDL_SCANCODE_DOWN, SDL_SCANCODE_KP_5)
+//      DO_ON_KEYS(trackControls->control += glm::vec2(-2.0f,  2.0f), SDL_SCANCODE_LEFT, SDL_SCANCODE_KP_4)
+//      DO_ON_KEYS(trackControls->control += glm::vec2( 2.0f, -2.0f), SDL_SCANCODE_RIGHT, SDL_SCANCODE_KP_6)
+//      DO_ON_KEYS(trackControls->brakes  += glm::vec2( 5.0f,  0.0f), SDL_SCANCODE_KP_7)
+//      DO_ON_KEYS(trackControls->brakes  += glm::vec2( 0.0f,  5.0f), SDL_SCANCODE_KP_9)
 
-      // Calculate torque to apply
-      trackControls->torque += TRACK_TORQUE * trackControls->control;
-//      trackControls->brakes = glm::vec2(std::max(0.f, 3.f - 3.f * abs(trackControls->torque.x)),
-//                                        std::max(0.f, 3.f - 3.f * abs(trackControls->torque.x)));
+      if (length(trackControls->control) > 0.f) {
+        // Calculate torque to apply
+        trackControls->torque += TRACK_TORQUE * trackControls->control;
+
+        trackControls->control = glm::vec2();
+      }
     }
     for (auto id : (registries[3].ids)) {
       PlayerControls* playerControls;
@@ -168,23 +182,25 @@ namespace at3 {
       // provide the up vector
       playerControls->up = glm::quat_cast(placement->mat) * glm::vec3(0.f, 0.f, 1.f);
 
-      playerControls->horizControl = glm::vec2();
-      playerControls->horizForces = glm::vec2();
-      playerControls->jumpRequested = false;
-      playerControls->isRunning = false;
+//      playerControls->horizControl = glm::vec2();
+//      playerControls->horizForces = glm::vec2();
+//      playerControls->jumpRequested = false;
+//      playerControls->isRunning = false;
 
-      DO_ON_KEYS(playerControls->jumpRequested = true, SDL_SCANCODE_SPACE)
-      DO_ON_KEYS(playerControls->isRunning = true, SDL_SCANCODE_LSHIFT)
-      DO_ON_KEYS(playerControls->horizControl += glm::vec2( 0.0f,  1.0f), SDL_SCANCODE_W)
-      DO_ON_KEYS(playerControls->horizControl += glm::vec2( 0.0f, -1.0f), SDL_SCANCODE_S)
-      DO_ON_KEYS(playerControls->horizControl += glm::vec2(-1.0f,  0.0f), SDL_SCANCODE_A)
-      DO_ON_KEYS(playerControls->horizControl += glm::vec2( 1.0f,  0.0f), SDL_SCANCODE_D)
+//      DO_ON_KEYS(playerControls->jumpRequested = true, SDL_SCANCODE_SPACE)
+//      DO_ON_KEYS(playerControls->isRunning = true, SDL_SCANCODE_LSHIFT)
+//      DO_ON_KEYS(playerControls->horizControl += glm::vec2( 0.0f,  1.0f), SDL_SCANCODE_W)
+//      DO_ON_KEYS(playerControls->horizControl += glm::vec2( 0.0f, -1.0f), SDL_SCANCODE_S)
+//      DO_ON_KEYS(playerControls->horizControl += glm::vec2(-1.0f,  0.0f), SDL_SCANCODE_A)
+//      DO_ON_KEYS(playerControls->horizControl += glm::vec2( 1.0f,  0.0f), SDL_SCANCODE_D)
 
       if (length(playerControls->horizControl) > 0.0f) {
         updateLookInfos();
         // Rotate the movement axis to the correct orientation
         playerControls->horizForces = (playerControls->isRunning ? CHARA_RUN : CHARA_WALK) * dt *
             glm::normalize(lastKnownHorizCtrlRot * glm::vec3(playerControls->horizControl, 0.f));
+
+        playerControls->horizControl = glm::vec2();
       }
 
     }
@@ -237,14 +253,6 @@ namespace at3 {
     return true; // handled it here
   }
 
-//  void ControlSystem::setWorldView(glm::mat4 &wv) {
-//    lastKnownWorldView = wv;
-//  }
-
-  void ControlSystem::setWorldView(void *p_wv) {
-    lastKnownWorldView = *((glm::mat4*)p_wv);
-  }
-
   void ControlSystem::updateLookInfos() {
     if (! lookInfoIsFresh) {
       glm::quat quat = glm::quat_cast(lastKnownWorldView);
@@ -255,5 +263,117 @@ namespace at3 {
       lastKnownHorizCtrlRot = glm::mat3(glm::rotate(rotZ, glm::vec3(0.f, 0.f, 1.f)));
       lookInfoIsFresh = true;
     }
+  }
+
+  // used as a subscription action
+  void ControlSystem::setWorldView(void *p_wv) {
+    lastKnownWorldView = *((glm::mat4*)p_wv);
+  }
+
+
+  /*
+   * This section deals with the current active control interface and defines actions for key
+   * events for each type of control interface managed in ControlSystem.
+   */
+
+  class ActiveWalkControl : public SwitchableControls {
+      PlayerControls *getComponent() {
+        PlayerControls *playerControls = nullptr;
+        assert(SUCCESS == state->get_PlayerControls(id, &playerControls));
+        return playerControls;
+      }
+      void forwardOrBackward(float amount) { getComponent()->horizControl += glm::vec2(0.0f, amount); }
+      void rightOrLeft(float amount) { getComponent()->horizControl += glm::vec2(amount, 0.f); }
+      void run() { getComponent()->isRunning = true; }
+      void jump() { getComponent()->jumpRequested = true; printf("jumpRequested = true\n"); }
+
+      // These are used as actions for "key held" topic subscriptions
+      void key_forward(void *nothing) { forwardOrBackward(1.f); }
+      void key_backward(void *nothing) { forwardOrBackward(-1.f); }
+      void key_right(void *nothing) { rightOrLeft(1.f); }
+      void key_left(void *nothing) { rightOrLeft(-1.f); }
+      void key_run(void *nothing) { run(); }
+      void key_jump(void *nothing) { jump(); printf("jump received\n"); }
+    public:
+      ActiveWalkControl(State *state, const entityId id) : SwitchableControls(state, id) {
+        setAction("key_held_w", RTU_MTHD_DLGT(&ActiveWalkControl::key_forward, this));
+        setAction("key_held_s", RTU_MTHD_DLGT(&ActiveWalkControl::key_backward, this));
+        setAction("key_held_d", RTU_MTHD_DLGT(&ActiveWalkControl::key_right, this));
+        setAction("key_held_a", RTU_MTHD_DLGT(&ActiveWalkControl::key_left, this));
+        setAction("key_held_lshift", RTU_MTHD_DLGT(&ActiveWalkControl::key_run, this));
+        setAction("key_held_space", RTU_MTHD_DLGT(&ActiveWalkControl::key_jump, this));
+      }
+  };
+  void ControlSystem::switchToWalkCtrl(void *id) {
+    currentControlInterface = std::make_unique<ActiveWalkControl>(state, *(entityId*)id);
+  }
+
+  class ActivePyrmControl : public SwitchableControls {
+      PyramidControls *getComponent() {
+        PyramidControls *pyramidControls = nullptr;
+        assert(SUCCESS == state->get_PyramidControls(id, &pyramidControls));
+        return pyramidControls;
+      }
+      void forwardOrBackward(float amount) { getComponent()->accel += glm::vec3(0.0f, amount, 0.f); }
+      void rightOrLeft(float amount) { getComponent()->accel += glm::vec3(amount, 0.f, 0.f); }
+      void upOrDown(float amount) { getComponent()->accel += glm::vec3(0.f, 0.f, amount); }
+
+      // These are used as actions for "key held" topic subscriptions
+      void key_forward(void *nothing) { forwardOrBackward(1.f); }
+      void key_backward(void *nothing) { forwardOrBackward(-1.f); }
+      void key_right(void *nothing) { rightOrLeft(1.f); }
+      void key_left(void *nothing) { rightOrLeft(-1.f); }
+      void key_up(void *nothing) { upOrDown(1.f); }
+      void key_down(void *nothing) { upOrDown(-1.f); }
+    public:
+      ActivePyrmControl(State *state, const entityId id) : SwitchableControls(state, id) {
+        setAction("key_held_w", RTU_MTHD_DLGT(&ActivePyrmControl::key_forward, this));
+        setAction("key_held_s", RTU_MTHD_DLGT(&ActivePyrmControl::key_backward, this));
+        setAction("key_held_d", RTU_MTHD_DLGT(&ActivePyrmControl::key_right, this));
+        setAction("key_held_a", RTU_MTHD_DLGT(&ActivePyrmControl::key_left, this));
+        setAction("key_held_lshift", RTU_MTHD_DLGT(&ActivePyrmControl::key_up, this));
+        setAction("key_held_space", RTU_MTHD_DLGT(&ActivePyrmControl::key_down, this));
+      }
+  };
+  void ControlSystem::switchToPyrmCtrl(void *id) {
+    currentControlInterface = std::make_unique<ActivePyrmControl>(state, *(entityId*)id);
+    printf("switch to pyramid controls: %u\n", *(entityId*)id);
+  }
+
+  class ActiveTrakControl : public SwitchableControls {
+      TrackControls *getComponent() {
+        TrackControls *trackControls = nullptr;
+        assert(SUCCESS == state->get_TrackControls(id, &trackControls));
+        return trackControls;
+      }
+      void forwardOrBackward(float amount) {
+        getComponent()->control += glm::vec2(amount, amount);
+      }
+      void rightOrLeft(float amount) {
+        getComponent()->control += glm::vec2(amount * 2.f, -amount * 2.f);
+      }
+      void brakeRightOrLeft(float amount) {
+        getComponent()->brakes += glm::vec2(std::max(0.f, -amount * 5.f), std::max(0.f, amount * 5.f));
+      }
+
+      // These are used as actions for "key held" topic subscriptions
+      void key_forward(void *nothing) { forwardOrBackward(1.f); }
+      void key_backward(void *nothing) { forwardOrBackward(-1.f); }
+      void key_right(void *nothing) { rightOrLeft(1.f); }
+      void key_left(void *nothing) { rightOrLeft(-1.f); }
+      void key_brakeRight(void *nothing) { brakeRightOrLeft(1.f); }
+      void key_brakeLeft(void *nothing) { brakeRightOrLeft(-1.f); }
+    public:
+      ActiveTrakControl(State *state, const entityId id) : SwitchableControls(state, id) {
+        setAction("key_held_w", RTU_MTHD_DLGT(&ActiveTrakControl::key_forward, this));
+        setAction("key_held_s", RTU_MTHD_DLGT(&ActiveTrakControl::key_backward, this));
+        setAction("key_held_d", RTU_MTHD_DLGT(&ActiveTrakControl::key_right, this));
+        setAction("key_held_a", RTU_MTHD_DLGT(&ActiveTrakControl::key_left, this));
+        setAction("key_held_e", RTU_MTHD_DLGT(&ActiveTrakControl::key_brakeRight, this));
+        setAction("key_held_q", RTU_MTHD_DLGT(&ActiveTrakControl::key_brakeLeft, this));
+      }
+  };
+  void ControlSystem::switchToTrakCtrl(void *id) {
+    currentControlInterface = std::make_unique<ActiveTrakControl>(state, *(entityId*)id);
   }
 }

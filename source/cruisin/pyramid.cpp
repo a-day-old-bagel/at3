@@ -63,6 +63,8 @@ namespace at3 {
     mpCamera = std::make_shared<ThirdPersonCamera_> (2.5f, 5.f, (float)M_PI * 0.5f);
     mpBase->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
 
+    ctrlId = bottomId;
+
     addToScene();
   }
   void Pyramid::addToScene() {
@@ -101,5 +103,6 @@ namespace at3 {
   std::shared_ptr<PerspectiveCamera_> Pyramid::getCamPtr() {
     return mpCamera->mpCamera;
   }
+
 }
 #pragma clang diagnostic pop

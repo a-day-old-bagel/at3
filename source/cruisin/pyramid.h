@@ -21,6 +21,7 @@ namespace at3 {
     public:
       std::shared_ptr<MeshObject_> mpBase;
       std::shared_ptr<ThirdPersonCamera_> mpCamera;
+      ezecs::entityId ctrlId;
 
       Pyramid(ezecs::State &state, Scene_ &scene, glm::mat4 &transform);
       void resizeFire();

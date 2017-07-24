@@ -23,23 +23,34 @@
 #ifndef ECSSYSTEM_WASDCONTROLS_H
 #define ECSSYSTEM_WASDCONTROLS_H
 
+#include <memory>
 #include <SDL.h>
 #include "ezecs.hpp"
 #include "topics.hpp"
+#include "activeControl.h"
 
 using namespace ezecs;
-using namespace rtu;
 
 namespace at3 {
+  class SwitchableControls;
   class ControlSystem : public System<ControlSystem> {
       std::vector<SDL_Event> queuedEvents;
       glm::mat4 lastKnownWorldView;
       glm::vec3 lastKnownLookVec;
       glm::mat3 lastKnownHorizCtrlRot;
       bool lookInfoIsFresh = false;
-      topics::Subscription wvSub;
+
+      rtu::topics::Subscription updateWvMatSub;
+      rtu::topics::Subscription switchToWalkCtrlSub;
+      rtu::topics::Subscription switchToPyrmCtrlSub;
+      rtu::topics::Subscription switchToTrakCtrlSub;
+      std::unique_ptr<SwitchableControls> currentControlInterface;
 
       void updateLookInfos();
+      void setWorldView(void* p_wv);
+      void switchToWalkCtrl(void* id);
+      void switchToPyrmCtrl(void* id);
+      void switchToTrakCtrl(void *id);
 
     public:
       std::vector<compMask> requiredComponents = {
@@ -52,8 +63,22 @@ namespace at3 {
       bool onInit();
       void onTick(float dt);
       bool handleEvent(SDL_Event& event);
-//      void setWorldView(glm::mat4 &wv);
-      void setWorldView(void* p_wv);
+  };
+
+  /*
+   * SwitchableControls is a base class for various control objects declared and defined in
+   * ecsSystem_controls.cpp. It's purpose is to allow for user input to be routed to a certain
+   * active control interface or shared between control interfaces if necessary.
+   * ControlSystem has a single unique_ptr that points to one of these at a time, corresponding
+   * to the entity currently being controlled by the player.
+   */
+  class SwitchableControls : public ActiveControl {
+    protected:
+      State *state;
+      entityId id;
+    public:
+      SwitchableControls(State *state, const entityId id) : state(state), id(id) { }
+      entityId getId() { return id; }
   };
 }
 

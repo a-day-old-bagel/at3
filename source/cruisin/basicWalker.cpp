@@ -38,6 +38,8 @@ namespace at3 {
     mpCamera = std::make_shared<ThirdPersonCamera_> (0.f, 5.f, (float)M_PI * 0.5f);
     mpPhysicsBody->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
 
+    ctrlId = physicalId;
+
     addToScene();
   }
   std::shared_ptr<PerspectiveCamera_> BasicWalker::getCamPtr() {
@@ -58,5 +60,6 @@ namespace at3 {
                placement->getHorizRot(), glm::vec3(0.0f, 0.0f, 1.0f)),
            {HUMAN_WIDTH * 0.5f, HUMAN_DEPTH * 0.5f, HUMAN_HEIGHT * 0.5f});
   }
+
 }
 #pragma clang diagnostic pop

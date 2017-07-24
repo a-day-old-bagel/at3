@@ -3,15 +3,16 @@ set( TARGET_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR} )
 add_subdirectory( "./ecs" )
 add_executable( ${TARGET_NAME}
   main.cpp
-  duneBuggy.cpp
-  pyramid.cpp
-  debugStuff.cpp
-    basicWalker.cpp basicWalker.h )
+  duneBuggy.cpp duneBuggy.h
+  pyramid.cpp pyramid.h
+  debugStuff.cpp debugStuff.h
+  basicWalker.cpp basicWalker.h
+  )
 target_link_libraries( ${TARGET_NAME}
   ${TARGET_NAME}_systems
   ${BULLET_LIBRARIES}
   )
-set_property( TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 14 )
+set_property( TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 17 )
 set_property( TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD_REQUIRED ON )
 
 #Copy assets to the build folder.

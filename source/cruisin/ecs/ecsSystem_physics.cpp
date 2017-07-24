@@ -114,6 +114,9 @@ namespace at3 {
       physics->rigidBody->applyImpulse({ctrls->force.x, ctrls->force.y, ctrls->force.z},
                                        btVector3(ctrls->up.x, ctrls->up.y, ctrls->up.z) * 0.05f);
 
+      // zero control forces
+      ctrls->force = glm::vec3();
+
       // Custom constraint to keep the pyramid up FixMe: this sometimes gets stuck in a horizontal position?
       glm::vec3 up{0.f, 0.f, 1.f};
       float tip = glm::dot(ctrls->up, up);
@@ -191,6 +194,11 @@ namespace at3 {
       }
 
       physics->rigidBody->setDamping(linDamp, angDamp); // Set damping
+
+      // zero controls
+      ctrls->horizForces = glm::vec2();
+      ctrls->jumpRequested = false;
+      ctrls->isRunning = false;
     }
 
     // Step the world here
@@ -214,6 +222,9 @@ namespace at3 {
       for (int i = 0; i < trackControls->vehicle->getNumWheels(); ++i) {
         trackControls->vehicle->updateWheelTransform(i, true);
       }
+      // zero control forces
+      trackControls->torque = glm::vec2();
+      trackControls->brakes = glm::vec2();
     }
 
     // All Physics

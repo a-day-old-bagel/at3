@@ -85,6 +85,8 @@ namespace at3 {
     mpCamera = std::make_shared<ThirdPersonCamera_>(2.f, 7.f, (float)M_PI * 0.5f);
     mpChassis->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
 
+    ctrlId = chassisId;
+
     addToScene();
   }
   void DuneBuggy::addToScene() {
@@ -102,5 +104,6 @@ namespace at3 {
   std::shared_ptr<PerspectiveCamera_> DuneBuggy::getCamPtr() {
     return mpCamera->mpCamera;
   }
+
 }
 #pragma clang diagnostic pop
