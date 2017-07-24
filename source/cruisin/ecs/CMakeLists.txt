@@ -18,5 +18,5 @@ target_link_libraries( ${TARGET_NAME}_systems
 target_include_directories( ${TARGET_NAME}_systems PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
-set_property( TARGET ${TARGET_NAME}_systems PROPERTY CXX_STANDARD 11 )
+set_property( TARGET ${TARGET_NAME}_systems PROPERTY CXX_STANDARD 17 )
 set_property( TARGET ${TARGET_NAME}_systems PROPERTY CXX_STANDARD_REQUIRED ON )
