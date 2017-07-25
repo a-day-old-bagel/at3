@@ -79,7 +79,13 @@ namespace at3 {
 #   define DO_ON_KEYS(action, ...) if(anyPressed(keyStates, __VA_ARGS__)) { action; }
 
     DO_ON_KEYS(publish("key_held_w", nullptr), SDL_SCANCODE_W)
+    DO_ON_KEYS(publish("key_held_s", nullptr), SDL_SCANCODE_S)
+    DO_ON_KEYS(publish("key_held_d", nullptr), SDL_SCANCODE_D)
+    DO_ON_KEYS(publish("key_held_a", nullptr), SDL_SCANCODE_A)
+    DO_ON_KEYS(publish("key_held_e", nullptr), SDL_SCANCODE_E)
+    DO_ON_KEYS(publish("key_held_q", nullptr), SDL_SCANCODE_Q)
     DO_ON_KEYS(publish("key_held_space", nullptr); printf("space pressed\n"), SDL_SCANCODE_SPACE)
+    DO_ON_KEYS(publish("key_held_lshift", nullptr), SDL_SCANCODE_LSHIFT)
 
     // TODO: switching this loop with the inner (event) loop might be better?
     for (auto id : registries[0].ids) {
