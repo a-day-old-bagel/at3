@@ -34,7 +34,6 @@ using namespace ezecs;
 namespace at3 {
   class SwitchableControls;
   class ControlSystem : public System<ControlSystem> {
-      std::vector<SDL_Event> queuedEvents;
       glm::mat4 lastKnownWorldView;
       glm::vec3 lastKnownLookVec;
       glm::mat3 lastKnownHorizCtrlRot;
@@ -44,17 +43,20 @@ namespace at3 {
       rtu::topics::Subscription switchToWalkCtrlSub;
       rtu::topics::Subscription switchToPyrmCtrlSub;
       rtu::topics::Subscription switchToTrakCtrlSub;
-      std::unique_ptr<SwitchableControls> currentControlInterface;
+      std::unique_ptr<SwitchableControls> currentCtrlKeys;
+
+      rtu::topics::Subscription switchToMousCtrlSub;
+      std::unique_ptr<SwitchableControls> currentCtrlMous;
 
       void updateLookInfos();
       void setWorldView(void* p_wv);
+      void switchToMousCtrl(void *id);
       void switchToWalkCtrl(void* id);
       void switchToPyrmCtrl(void* id);
       void switchToTrakCtrl(void *id);
 
     public:
       std::vector<compMask> requiredComponents = {
-              MOUSECONTROLS,
               PYRAMIDCONTROLS,
               TRACKCONTROLS,
               PLAYERCONTROLS

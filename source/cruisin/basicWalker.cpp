@@ -39,6 +39,7 @@ namespace at3 {
     mpPhysicsBody->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
 
     ctrlId = physicalId;
+    camGimbalId = mpCamera->mpCamGimbal->getId();
 
     addToScene();
   }
@@ -60,6 +61,5 @@ namespace at3 {
                placement->getHorizRot(), glm::vec3(0.0f, 0.0f, 1.0f)),
            {HUMAN_WIDTH * 0.5f, HUMAN_DEPTH * 0.5f, HUMAN_HEIGHT * 0.5f});
   }
-
 }
 #pragma clang diagnostic pop

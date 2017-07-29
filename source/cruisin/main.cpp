@@ -112,6 +112,7 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
 //      this->setCamera(mpPyramid->getCamPtr());
       setCamera(mpPlayer->getCamPtr());
       publish("switch_to_walking_controls", (void*)&mpPlayer->ctrlId);
+      publish("switch_to_mouse_controls", (void*)&mpPlayer->camGimbalId);
 
       // some debug-draw features
       mpDebugStuff = std::make_shared<DebugStuff> (mScene, &mPhysicsSystem);
@@ -143,17 +144,19 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
             case SDL_SCANCODE_1: {
               setCamera(mpPlayer->getCamPtr());
               publish("switch_to_walking_controls", (void*)&mpPlayer->ctrlId);
+              publish("switch_to_mouse_controls", (void*)&mpPlayer->camGimbalId);
             } break;
             case SDL_SCANCODE_2: {
               setCamera(mpPyramid->getCamPtr());
               publish("switch_to_pyramid_controls", (void*)&mpPyramid->ctrlId);
+              publish("switch_to_mouse_controls", (void*)&mpPyramid->camGimbalId);
             } break;
             case SDL_SCANCODE_3: {
               setCamera(mpDuneBuggy->getCamPtr());
               publish("switch_to_track_controls", (void*)&mpDuneBuggy->ctrlId);
+              publish("switch_to_mouse_controls", (void*)&mpDuneBuggy->camGimbalId);
             } break;
             case SDL_SCANCODE_4: {
-//              publish("primary_cam_wv", (void*)&getCamera()->lastWorldViewQueried);
             } break;
             case SDL_SCANCODE_5: {
             } break;
@@ -179,10 +182,9 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
     void onTick(float dt) {
       publish("primary_cam_wv", (void*)&getCamera()->lastWorldViewQueried);
       mControlSystem.tick(dt);
+      mpPyramid->resizeFire();
       mPhysicsSystem.tick(dt);
       mAnimationSystem.tick(dt);
-
-      mpPyramid->resizeFire();
     }
 };
 

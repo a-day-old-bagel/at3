@@ -86,6 +86,7 @@ namespace at3 {
     mpChassis->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
 
     ctrlId = chassisId;
+    camGimbalId = mpCamera->mpCamGimbal->getId();
 
     addToScene();
   }

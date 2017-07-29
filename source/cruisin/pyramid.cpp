@@ -64,6 +64,7 @@ namespace at3 {
     mpBase->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
 
     ctrlId = bottomId;
+    camGimbalId = mpCamera->mpCamGimbal->getId();
 
     addToScene();
   }
@@ -77,7 +78,7 @@ namespace at3 {
     // make the fire look big if the pyramid is thrusting upwards
     PyramidControls* controls;
     mpState->get_PyramidControls(mpBase->getId(), &controls);
-    if (controls->accel.z > 0) {
+    if (controls->force.z > 0) {
       pyrFireSize = 1.5f;
       pyrFireScale = 1.f;
     } else {
@@ -85,6 +86,7 @@ namespace at3 {
       pyrFireScale = 0.15f;
     }
   }
+
   void Pyramid::spawnSphere() {
     Placement *source;
     mpState->get_Placement(mpBase->getId(), &source);
@@ -103,6 +105,5 @@ namespace at3 {
   std::shared_ptr<PerspectiveCamera_> Pyramid::getCamPtr() {
     return mpCamera->mpCamera;
   }
-
 }
 #pragma clang diagnostic pop

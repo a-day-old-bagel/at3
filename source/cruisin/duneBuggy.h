@@ -17,6 +17,7 @@ namespace at3 {
       std::shared_ptr<MeshObject_> mpChassis;
       std::shared_ptr<ThirdPersonCamera_> mpCamera;
       ezecs::entityId ctrlId;
+      ezecs::entityId camGimbalId;
 
       DuneBuggy(ezecs::State &state, Scene_ &scene, glm::mat4 &transform);
       std::shared_ptr<PerspectiveCamera_> getCamPtr();
