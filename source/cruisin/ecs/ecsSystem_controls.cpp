@@ -60,43 +60,10 @@ namespace at3 {
     return true;
   }
 
-  template<typename lastKeyCode>
-  static bool anyPressed(const Uint8 *keyStates, lastKeyCode key) {
-    return keyStates[key];
-  }
-
-  template<typename firstKeyCode, typename... keyCode>
-  static bool anyPressed(const Uint8 *keyStates, firstKeyCode firstKey, keyCode... keys) {
-    return keyStates[firstKey] || anyPressed(keyStates, keys...);
-  }
-
-  //TODO
-  //TODO ALL EVENTS MOVED INTO GAME OBJECTS, USE TOPICS
-  //TODO
-  //TODO
-  //TODO ALL EVENTS MOVED INTO GAME OBJECTS, USE TOPICS
-  //TODO
-  //TODO
-  //TODO ALL EVENTS MOVED INTO GAME OBJECTS, USE TOPICS
-  //TODO
-
   void ControlSystem::onTick(float dt) {
 
     // renew look infos
     lookInfoIsFresh = false;
-
-    // Get current keyboard state
-    const Uint8 *keyStates = SDL_GetKeyboardState(NULL);
-#   define DO_ON_KEYS(action, ...) if(anyPressed(keyStates, __VA_ARGS__)) { action; }
-
-    DO_ON_KEYS(publish("key_held_w", nullptr), SDL_SCANCODE_W)
-    DO_ON_KEYS(publish("key_held_s", nullptr), SDL_SCANCODE_S)
-    DO_ON_KEYS(publish("key_held_d", nullptr), SDL_SCANCODE_D)
-    DO_ON_KEYS(publish("key_held_a", nullptr), SDL_SCANCODE_A)
-    DO_ON_KEYS(publish("key_held_e", nullptr), SDL_SCANCODE_E)
-    DO_ON_KEYS(publish("key_held_q", nullptr), SDL_SCANCODE_Q)
-    DO_ON_KEYS(publish("key_held_space", nullptr), SDL_SCANCODE_SPACE)
-    DO_ON_KEYS(publish("key_held_lshift", nullptr), SDL_SCANCODE_LSHIFT)
 
     for (auto id : (registries[0].ids)) { // Pyramid
       PyramidControls* pyramidControls;
@@ -147,10 +114,18 @@ namespace at3 {
 
         playerControls->horizControl = glm::vec2();
       }
-
     }
-#   undef DO_ON_KEYS
   }
+
+  //TODO
+  //TODO ALL EVENTS MOVED INTO GAME OBJECTS, USE TOPICS
+  //TODO
+  //TODO
+  //TODO ALL EVENTS MOVED INTO GAME OBJECTS, USE TOPICS
+  //TODO
+  //TODO
+  //TODO ALL EVENTS MOVED INTO GAME OBJECTS, USE TOPICS
+  //TODO
 
   bool ControlSystem::handleEvent(SDL_Event &event) {
     switch (event.type) {
@@ -330,6 +305,11 @@ namespace at3 {
         assert(SUCCESS == state->get_TrackControls(id, &trackControls));
         return trackControls;
       }
+      Physics *getPhysics() {
+        Physics *physics = nullptr;
+        assert(SUCCESS == state->get_Physics(id, &physics));
+        return physics;
+      }
       void forwardOrBackward(float amount) {
         getComponent()->control += glm::vec2(amount, amount);
       }
@@ -339,6 +319,9 @@ namespace at3 {
       void brakeRightOrLeft(float amount) {
         getComponent()->brakes += glm::vec2(std::max(0.f, -amount * 5.f), std::max(0.f, amount * 5.f));
       }
+      void flip() {
+        getPhysics()->rigidBody->applyImpulse({0.f, 0.f, 100.f}, {1.f, 0.f, 0.f});
+      }
 
       // These are used as actions for "key held" topic subscriptions
       void key_forward(void *nothing) { forwardOrBackward(1.f); }
@@ -347,6 +330,7 @@ namespace at3 {
       void key_left(void *nothing) { rightOrLeft(-1.f); }
       void key_brakeRight(void *nothing) { brakeRightOrLeft(1.f); }
       void key_brakeLeft(void *nothing) { brakeRightOrLeft(-1.f); }
+      void key_flip(void *nothing) { flip(); }
     public:
       ActiveTrakControl(State *state, const entityId id) : SwitchableControls(state, id) {
         setAction("key_held_w", RTU_MTHD_DLGT(&ActiveTrakControl::key_forward, this));
@@ -355,6 +339,7 @@ namespace at3 {
         setAction("key_held_a", RTU_MTHD_DLGT(&ActiveTrakControl::key_left, this));
         setAction("key_held_e", RTU_MTHD_DLGT(&ActiveTrakControl::key_brakeRight, this));
         setAction("key_held_q", RTU_MTHD_DLGT(&ActiveTrakControl::key_brakeLeft, this));
+        setAction("key_down_f", RTU_MTHD_DLGT(&ActiveTrakControl::key_flip, this));
       }
   };
   void ControlSystem::switchToTrakCtrl(void *id) {

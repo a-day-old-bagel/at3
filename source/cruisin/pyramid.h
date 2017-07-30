@@ -28,5 +28,6 @@ namespace at3 {
       void resizeFire();
       void spawnSphere();
       std::shared_ptr<PerspectiveCamera_> getCamPtr();
+      void makeActiveControl(void* nothing);
   };
 }

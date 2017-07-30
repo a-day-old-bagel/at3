@@ -56,6 +56,8 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
     AnimationSystem   mAnimationSystem;
     PhysicsSystem     mPhysicsSystem;
 
+    std::unique_ptr<Subscription> key1Sub, key2Sub, key3Sub;
+
     std::shared_ptr<SkyBox_>         mpSkybox;
     std::shared_ptr<TerrainObject_>  mpTerrain;
     std::unique_ptr<BasicWalker>     mpPlayer;
@@ -108,11 +110,14 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
       this->mScene.addObject(mpSkybox);
       mpSkybox->useCubeMap("assets/cubeMaps/sea.png");
 
-      // start with the camera focused on the pyramid
-//      this->setCamera(mpPyramid->getCamPtr());
-      setCamera(mpPlayer->getCamPtr());
-      publish("switch_to_walking_controls", (void*)&mpPlayer->ctrlId);
-      publish("switch_to_mouse_controls", (void*)&mpPlayer->camGimbalId);
+      // Set up control switching, start as player entity.
+      mpPlayer->makeActiveControl(nullptr);
+      key1Sub =
+          std::make_unique<Subscription>("key_down_1", RTU_MTHD_DLGT(&BasicWalker::makeActiveControl, mpPlayer.get()));
+      key2Sub =
+          std::make_unique<Subscription>("key_down_2", RTU_MTHD_DLGT(&DuneBuggy::makeActiveControl, mpDuneBuggy.get()));
+      key3Sub =
+          std::make_unique<Subscription>("key_down_3", RTU_MTHD_DLGT(&Pyramid::makeActiveControl, mpPyramid.get()));
 
       // some debug-draw features
       mpDebugStuff = std::make_shared<DebugStuff> (mScene, &mPhysicsSystem);
@@ -129,58 +134,11 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
     }
 
     bool handleEvent(SDL_Event& event) {
-      if (mControlSystem.handleEvent(event)) {
-        return true; // handled it here
-      }
-      if (mPhysicsSystem.handleEvent(event)) {
-        return true; // handled it here
-      }
-      switch (event.type) {
-        case SDL_KEYDOWN:
-          switch (event.key.keysym.scancode) {
-            case SDL_SCANCODE_O: { // "o" not "zero"
-              mpPyramid->spawnSphere();
-            } break;
-            case SDL_SCANCODE_1: {
-              setCamera(mpPlayer->getCamPtr());
-              publish("switch_to_walking_controls", (void*)&mpPlayer->ctrlId);
-              publish("switch_to_mouse_controls", (void*)&mpPlayer->camGimbalId);
-            } break;
-            case SDL_SCANCODE_2: {
-              setCamera(mpPyramid->getCamPtr());
-              publish("switch_to_pyramid_controls", (void*)&mpPyramid->ctrlId);
-              publish("switch_to_mouse_controls", (void*)&mpPyramid->camGimbalId);
-            } break;
-            case SDL_SCANCODE_3: {
-              setCamera(mpDuneBuggy->getCamPtr());
-              publish("switch_to_track_controls", (void*)&mpDuneBuggy->ctrlId);
-              publish("switch_to_mouse_controls", (void*)&mpDuneBuggy->camGimbalId);
-            } break;
-            case SDL_SCANCODE_4: {
-            } break;
-            case SDL_SCANCODE_5: {
-            } break;
-            case SDL_SCANCODE_6: {
-            } break;
-            case SDL_SCANCODE_7: {
-            } break;
-            case SDL_SCANCODE_8: {
-            } break;
-            case SDL_SCANCODE_9: {
-            } break;
-            case SDL_SCANCODE_0: {
-            } break;
-            case SDL_SCANCODE_RCTRL: {
-              mpDuneBuggy->tip();
-            } break;
-            default: return false; // could not handle it here
-        } break;
-        default: return false; // could not handle it here
-      }
-      return true; // handled it here
+      return // true if handled here, false otherwise
+          mControlSystem.handleEvent(event) ||
+          mPhysicsSystem.handleEvent(event);
     }
     void onTick(float dt) {
-      publish("primary_cam_wv", (void*)&getCamera()->lastWorldViewQueried);
       mControlSystem.tick(dt);
       mpPyramid->resizeFire();
       mPhysicsSystem.tick(dt);

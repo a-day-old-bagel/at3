@@ -1,11 +1,13 @@
 
 #include "basicWalker.h"
+#include "topics.hpp"
 
 #define HUMAN_HEIGHT 1.83f
 #define HUMAN_WIDTH 0.5f
 #define HUMAN_DEPTH 0.3f
 
 using namespace ezecs;
+using namespace rtu::topics;
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"
@@ -60,6 +62,12 @@ namespace at3 {
                    {0.f, 0.f, -HUMAN_HEIGHT * 0.165f}),
                placement->getHorizRot(), glm::vec3(0.0f, 0.0f, 1.0f)),
            {HUMAN_WIDTH * 0.5f, HUMAN_DEPTH * 0.5f, HUMAN_HEIGHT * 0.5f});
+  }
+
+  void BasicWalker::makeActiveControl(void *nothing) {
+    publish("switch_to_walking_controls", (void*)&ctrlId);
+    publish("switch_to_mouse_controls", (void*)&camGimbalId);
+    publish("set_primary_camera", (void*)&mpCamera->mpCamera);
   }
 }
 #pragma clang diagnostic pop

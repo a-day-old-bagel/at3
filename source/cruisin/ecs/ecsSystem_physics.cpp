@@ -173,7 +173,8 @@ namespace at3 {
 
       float springForceOverMax = springForceLinear / maxSpringForce; // How far from equilibrium (0 to 1, 1 is far)
       ctrls->isGrounded = rayHitGoodGround; // not grounded if high in the air or on steep slope
-      ctrls->isGrounded &= fabs(springForceOverMax) < 1.f; // extra range check
+      ctrls->isGrounded &= fabs(springForceOverMax) < 1.f; // extra range checks
+      ctrls->isGrounded &= fabs(springForceOverMax) > -1.f;
       ctrls->isGrounded &= (! ctrls->jumpInProgress); // not grounded if jumping
 
       if (ctrls->isGrounded) { // Movement along ground - apply controls and a "stick to ground" force
@@ -188,6 +189,11 @@ namespace at3 {
         physics->rigidBody->applyImpulse({ctrls->horizForces.x * mvmntForceMagnitude,
                                           ctrls->horizForces.y * mvmntForceMagnitude,
                                           springForceFinal}, {0.f, 0.f, 0.f});
+
+        float extraZDamp = (sfomPow2 > 0.01f) ? 1.f : 2.f * sfom10Pow2 - pow(springForceOverMax * 10.f, 4);
+        btVector3 currVel = physics->rigidBody->getLinearVelocity();
+        physics->rigidBody->setLinearVelocity({currVel.x(), currVel.y(), currVel.z() * std::min(1.f, extraZDamp)});
+
       } else { // movement while in air - apply greatly reduced controls
         physics->rigidBody->applyImpulse({ctrls->horizForces.x * 0.02f,
                                           ctrls->horizForces.y * 0.02f, 0.f}, {0.f, 0.f, 0.f});

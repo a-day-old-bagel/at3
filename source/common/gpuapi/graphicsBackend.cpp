@@ -66,10 +66,10 @@ namespace at3 {
           } break;
         case SDL_KEYDOWN:
           switch (event.key.keysym.scancode) {
-            case SDL_SCANCODE_F: {
+            case SDL_SCANCODE_F1: {
               toggleFullscreen();
             } break;
-            case SDL_SCANCODE_V: {
+            case SDL_SCANCODE_F2: {
               Shaders::toggleEdgeView();
             } break;
             default: break;

@@ -4,6 +4,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include "duneBuggy.h"
+#include "topics.hpp"
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"
@@ -11,6 +12,7 @@
 #define WHEEL_RADIUS 1.5f
 
 using namespace ezecs;
+using namespace rtu::topics;
 
 namespace at3 {
 
@@ -104,6 +106,12 @@ namespace at3 {
 
   std::shared_ptr<PerspectiveCamera_> DuneBuggy::getCamPtr() {
     return mpCamera->mpCamera;
+  }
+
+  void DuneBuggy::makeActiveControl(void *nothing) {
+    publish("switch_to_track_controls", (void*)&ctrlId);
+    publish("switch_to_mouse_controls", (void*)&camGimbalId);
+    publish("set_primary_camera", (void*)&mpCamera->mpCamera);
   }
 
 }

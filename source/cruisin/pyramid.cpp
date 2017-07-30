@@ -1,11 +1,13 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include "pyramid.h"
+#include "topics.hpp"
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"
 
 using namespace ezecs;
+using namespace rtu::topics;
 
 static float pyrFireSize = 0.3f, pyrFireScale = 0.15f;
 static glm::mat4 pyrFireWiggle(const glm::mat4& transformIn, uint32_t time) {
@@ -104,6 +106,12 @@ namespace at3 {
 
   std::shared_ptr<PerspectiveCamera_> Pyramid::getCamPtr() {
     return mpCamera->mpCamera;
+  }
+
+  void Pyramid::makeActiveControl(void *nothing) {
+    publish("switch_to_pyramid_controls", (void*)&ctrlId);
+    publish("switch_to_mouse_controls", (void*)&camGimbalId);
+    publish("set_primary_camera", (void*)&mpCamera->mpCamera);
   }
 }
 #pragma clang diagnostic pop
