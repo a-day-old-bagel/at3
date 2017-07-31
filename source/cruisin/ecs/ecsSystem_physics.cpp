@@ -190,7 +190,9 @@ namespace at3 {
                                           ctrls->horizForces.y * mvmntForceMagnitude,
                                           springForceFinal}, {0.f, 0.f, 0.f});
 
-        float extraZDamp = (sfomPow2 > 0.01f) ? 1.f : 2.f * sfom10Pow2 - pow(springForceOverMax * 10.f, 4);
+//        float extraZDamp = (sfomPow2 > 0.01f) ? 1.f : 2.f * sfom10Pow2 - pow(springForceOverMax * 10.f, 4);
+        float extraZDamp = (sfomPow2 > 0.01f) ? 1.f : 2.f * fabs(springForceOverMax * 10.f) -
+                            pow(springForceOverMax * 10.f, 4);
         btVector3 currVel = physics->rigidBody->getLinearVelocity();
         physics->rigidBody->setLinearVelocity({currVel.x(), currVel.y(), currVel.z() * std::min(1.f, extraZDamp)});
 
