@@ -9,7 +9,6 @@ namespace at3 {
     if (userInputSubs.count(topic) != 0) {
       userInputSubs.erase(topic);
     }
-//    userInputSubs.try_emplace(topic, Subscription(topic, action));
     userInputSubs.emplace(std::piecewise_construct, std::make_tuple(topic), std::make_tuple(topic, action));
   }
 }

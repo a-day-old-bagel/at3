@@ -200,12 +200,15 @@ namespace at3 {
   class ActiveMousControl : public SwitchableControls {
       MouseControls *getComponent() {
         MouseControls *mouseControls = nullptr;
-        assert(SUCCESS == state->get_MouseControls(id, &mouseControls));
+        state->get_MouseControls(id, &mouseControls);
+        assert(mouseControls);
+        if (!mouseControls) { throw std::exception("whatever"); }
         return mouseControls;
       }
       Placement *getPlacement() {
         Placement *placement = nullptr;
-        assert(SUCCESS == state->get_Placement(id, &placement));
+        state->get_Placement(id, &placement);
+        assert(placement);
         return placement;
       }
       void mouseMove(void* sdlEvent) {
@@ -239,7 +242,8 @@ namespace at3 {
   class ActiveWalkControl : public SwitchableControls {
       PlayerControls *getComponent() {
         PlayerControls *playerControls = nullptr;
-        assert(SUCCESS == state->get_PlayerControls(id, &playerControls));
+        state->get_PlayerControls(id, &playerControls);
+        assert(playerControls);
         return playerControls;
       }
       void forwardOrBackward(float amount) { getComponent()->horizControl += glm::vec2(0.0f, amount); }
@@ -271,7 +275,8 @@ namespace at3 {
   class ActivePyrmControl : public SwitchableControls {
       PyramidControls *getComponent() {
         PyramidControls *pyramidControls = nullptr;
-        assert(SUCCESS == state->get_PyramidControls(id, &pyramidControls));
+        state->get_PyramidControls(id, &pyramidControls);
+        assert(pyramidControls);
         return pyramidControls;
       }
       void forwardOrBackward(float amount) { getComponent()->accel += glm::vec3(0.0f, amount, 0.f); }
@@ -302,12 +307,14 @@ namespace at3 {
   class ActiveTrakControl : public SwitchableControls {
       TrackControls *getComponent() {
         TrackControls *trackControls = nullptr;
-        assert(SUCCESS == state->get_TrackControls(id, &trackControls));
+        state->get_TrackControls(id, &trackControls);
+        assert(trackControls);
         return trackControls;
       }
       Physics *getPhysics() {
         Physics *physics = nullptr;
-        assert(SUCCESS == state->get_Physics(id, &physics));
+        state->get_Physics(id, &physics);
+        assert(physics);
         return physics;
       }
       void forwardOrBackward(float amount) {
