@@ -7,11 +7,11 @@
 
 namespace at3 {
 
-  class ActiveControl {
+  class OneToOneEventMap {
     private:
       std::unordered_map<std::string, rtu::topics::Subscription> userInputSubs;
     public:
-      ActiveControl() = default;
+      OneToOneEventMap() = default;
       void setAction(std::string topic, rtu::topics::Action action);
   };
 

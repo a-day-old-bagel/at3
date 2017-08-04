@@ -27,12 +27,12 @@
 #include <SDL.h>
 #include "ezecs.hpp"
 #include "topics.hpp"
-#include "activeControl.h"
+#include "oneToOneEventMap.h"
 
 using namespace ezecs;
 
 namespace at3 {
-  class SwitchableControls;
+  class SwitchableEntityAssociatedInputMap;
   class ControlSystem : public System<ControlSystem> {
       glm::mat4 lastKnownWorldView;
       glm::vec3 lastKnownLookVec;
@@ -43,17 +43,17 @@ namespace at3 {
       rtu::topics::Subscription switchToWalkCtrlSub;
       rtu::topics::Subscription switchToPyrmCtrlSub;
       rtu::topics::Subscription switchToTrakCtrlSub;
-      std::unique_ptr<SwitchableControls> currentCtrlKeys;
+      std::unique_ptr<SwitchableEntityAssociatedInputMap> currentCtrlKeys;
 
       rtu::topics::Subscription switchToMousCtrlSub;
-      std::unique_ptr<SwitchableControls> currentCtrlMous;
+      std::unique_ptr<SwitchableEntityAssociatedInputMap> currentCtrlMous;
 
       void updateLookInfos();
       void setWorldView(void* p_wv);
-      void switchToMousCtrl(void *id);
+      void switchToMouseCtrl(void *id);
       void switchToWalkCtrl(void* id);
-      void switchToPyrmCtrl(void* id);
-      void switchToTrakCtrl(void *id);
+      void switchToPyramidCtrl(void *id);
+      void switchToTrackCtrl(void *id);
 
     public:
       std::vector<compMask> requiredComponents = {
@@ -64,23 +64,22 @@ namespace at3 {
       ControlSystem(State* state);
       bool onInit();
       void onTick(float dt);
-      bool handleEvent(SDL_Event& event);
   };
 
   /*
-   * SwitchableControls is a base class for various control objects declared and defined in
+   * SwitchableEntityAssociatedInputMap is a base class for various control objects declared and defined in
    * ecsSystem_controls.cpp. It's purpose is to allow for user input to be routed to a certain
-   * active control interface or shared between control interfaces if necessary.
+   * active control interface (belonging to an entity) or shared between control interfaces if necessary.
    * ControlSystem has a single unique_ptr that points to one of these at a time, corresponding
    * to the entity currently being controlled by the player.
    */
-  class SwitchableControls : public ActiveControl {
+  class SwitchableEntityAssociatedInputMap : public OneToOneEventMap {
     protected:
       State *state;
       entityId id;
     public:
-      SwitchableControls(State *state, const entityId id) : state(state), id(id) { }
-      entityId getId() { return id; }
+      SwitchableEntityAssociatedInputMap(State *state, const entityId id);
+      entityId getId();
   };
 }
 

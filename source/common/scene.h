@@ -48,15 +48,6 @@ namespace at3 {
       void clear();
 
       /**
-       * An event percolates through the scene graph. If any object handles
-       * it, this function returns true.
-       *
-       * \param event An SDL event.
-       * \return True if handled, false if not.
-       */
-      bool handleEvent(const SDL_Event &event);
-
-      /**
        * Draws the scene graph recursively
        *
        * \param camera A Camera object
@@ -88,15 +79,6 @@ namespace at3 {
   template <typename EcsInterface>
   void Scene<EcsInterface>::clear() {
     m_objects.clear();
-  }
-
-  template <typename EcsInterface>
-  bool Scene<EcsInterface>::handleEvent(const SDL_Event &event) {
-    for (auto object : m_objects) {
-      if (object.second->handleEvent(event))
-        return true;
-    }
-    return false;
   }
 
   template <typename EcsInterface>

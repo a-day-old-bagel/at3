@@ -30,6 +30,7 @@
 #include "sceneObject.h"
 #include "bulletDebug.h"
 #include "dualityInterface.h"
+#include "topics.hpp"
 
 using namespace ezecs;
 
@@ -51,6 +52,8 @@ namespace at3 {
       btVehicleRaycaster * vehicleRaycaster;
       bool debugDrawMode = false;
 
+      rtu::topics::Subscription debugDrawToggleSub;
+
     public:
       std::vector<compMask> requiredComponents = {
               PHYSICS,
@@ -69,10 +72,10 @@ namespace at3 {
       bool onDiscoverTerrain(const entityId& id);
       bool onDiscoverTrackControls(const entityId& id);
       bool onForgetTrackControls(const entityId& id);
-      bool handleEvent(SDL_Event& event);
       void setDebugDrawer(std::shared_ptr<BulletDebug_> debug);
       btCollisionWorld::ClosestRayResultCallback rayTest(const btVector3 &start, const btVector3 &end);
       rayFuncType getRayFunc();
+      void toggleDebugDraw(void* nothing);
       // TODO: add removal logic for vehicles and wheels
   };
 }

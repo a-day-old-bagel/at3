@@ -1,6 +1,3 @@
-//
-// Created by volundr on 4/27/17.
-//
 
 #include <glm/gtc/matrix_transform.hpp>
 #include "duneBuggy.h"
@@ -47,6 +44,11 @@ namespace at3 {
     state.get_Physics(chassisId, &physics);
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
     physics->rigidBody->setFriction(0.2f);
+
+    // The slow stuff (CCD)
+    physics->rigidBody->setCcdMotionThreshold(1);
+    physics->rigidBody->setCcdSweptSphereRadius(0.2f);
+
     state.add_TrackControls(chassisId);
     TrackControls *trackControls;
     state.get_TrackControls(chassisId, &trackControls);

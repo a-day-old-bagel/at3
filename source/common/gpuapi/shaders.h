@@ -37,6 +37,6 @@ namespace at3 {
     DECLARE_SHADER(terrain);
 
       static void updateViewInfos(float fovy, int width, int height);
-      static void toggleEdgeView();
+      static void toggleEdgeView(void *nothing);
   };
 }

@@ -49,9 +49,9 @@ namespace at3 {
       : System(state),
         updateWvMatSub("primary_cam_wv", RTU_MTHD_DLGT(&ControlSystem::setWorldView, this)),
         switchToWalkCtrlSub("switch_to_walking_controls", RTU_MTHD_DLGT(&ControlSystem::switchToWalkCtrl, this)),
-        switchToPyrmCtrlSub("switch_to_pyramid_controls", RTU_MTHD_DLGT(&ControlSystem::switchToPyrmCtrl, this)),
-        switchToTrakCtrlSub("switch_to_track_controls", RTU_MTHD_DLGT(&ControlSystem::switchToTrakCtrl, this)),
-        switchToMousCtrlSub("switch_to_mouse_controls", RTU_MTHD_DLGT(&ControlSystem::switchToMousCtrl, this))
+        switchToPyrmCtrlSub("switch_to_pyramid_controls", RTU_MTHD_DLGT(&ControlSystem::switchToPyramidCtrl, this)),
+        switchToTrakCtrlSub("switch_to_track_controls", RTU_MTHD_DLGT(&ControlSystem::switchToTrackCtrl, this)),
+        switchToMousCtrlSub("switch_to_mouse_controls", RTU_MTHD_DLGT(&ControlSystem::switchToMouseCtrl, this))
   {
     name = "Control System";
   }
@@ -117,63 +117,6 @@ namespace at3 {
     }
   }
 
-  //TODO
-  //TODO ALL EVENTS MOVED INTO GAME OBJECTS, USE TOPICS
-  //TODO
-  //TODO
-  //TODO ALL EVENTS MOVED INTO GAME OBJECTS, USE TOPICS
-  //TODO
-  //TODO
-  //TODO ALL EVENTS MOVED INTO GAME OBJECTS, USE TOPICS
-  //TODO
-
-  bool ControlSystem::handleEvent(SDL_Event &event) {
-    switch (event.type) {
-      case SDL_MOUSEBUTTONDOWN:
-        // Make sure the window has grabbed the mouse cursor
-        if (SDL_GetGrabbedWindow() == nullptr) {
-          // Somehow obtain a pointer for the window
-          SDL_Window *window = SDL_GetWindowFromID(event.button.windowID);
-          if (window == nullptr)
-            break;
-          // Grab the mouse cursor
-          SDL_SetWindowGrab(window, SDL_TRUE);
-          #if (!SDL_VERSION_ATLEAST(2, 0, 4))
-            grabbedWindow = window;
-          #endif
-          SDL_SetRelativeMouseMode(SDL_TRUE);
-        }
-        break;
-      case SDL_MOUSEMOTION: {
-        if (SDL_GetRelativeMouseMode()) {
-          rtu::topics::publish("mouse_moved", (void *) &event);
-        }
-      }
-        break;
-      case SDL_KEYDOWN:
-        switch (event.key.keysym.scancode) {
-          case SDL_SCANCODE_ESCAPE: {
-            SDL_Window *window = SDL_GetGrabbedWindow();
-            if (window == nullptr)
-              break;
-            // Release the mouse cursor from the window on escape pressed
-            SDL_SetWindowGrab(window, SDL_FALSE);
-            #if !SDL_VERSION_ATLEAST(2, 0, 4)
-            grabbedWindow = nullptr;
-            #endif
-            SDL_SetRelativeMouseMode(SDL_FALSE);
-          }
-            break;
-          default:
-            return false; // could not handle it here
-        }
-        break;
-      default:
-        return false; // could not handle it here
-    }
-    return true; // handled it here
-  }
-
   void ControlSystem::updateLookInfos() {
     if (! lookInfoIsFresh) {
       glm::quat quat = glm::quat_cast(lastKnownWorldView);
@@ -197,12 +140,16 @@ namespace at3 {
    * events for each type of control interface managed in ControlSystem.
    */
 
-  class ActiveMousControl : public SwitchableControls {
+  SwitchableEntityAssociatedInputMap::SwitchableEntityAssociatedInputMap(State *state, const entityId id)
+      : state(state), id(id) { }
+
+  entityId SwitchableEntityAssociatedInputMap::getId() { return id; }
+
+  class ActiveMouseControl : public SwitchableEntityAssociatedInputMap {
       MouseControls *getComponent() {
         MouseControls *mouseControls = nullptr;
         state->get_MouseControls(id, &mouseControls);
         assert(mouseControls);
-        if (!mouseControls) { throw std::exception("whatever"); }
         return mouseControls;
       }
       Placement *getPlacement() {
@@ -231,15 +178,15 @@ namespace at3 {
         );
       }
     public:
-      ActiveMousControl(State *state, const entityId id) : SwitchableControls(state, id) {
-        setAction("mouse_moved", RTU_MTHD_DLGT(&ActiveMousControl::mouseMove, this));
+      ActiveMouseControl(State *state, const entityId id) : SwitchableEntityAssociatedInputMap(state, id) {
+        setAction("mouse_moved", RTU_MTHD_DLGT(&ActiveMouseControl::mouseMove, this));
       }
   };
-  void ControlSystem::switchToMousCtrl(void *id) {
-    currentCtrlMous = std::make_unique<ActiveMousControl>(state, *(entityId*)id);
+  void ControlSystem::switchToMouseCtrl(void *id) {
+    currentCtrlMous = std::make_unique<ActiveMouseControl>(state, *(entityId*)id);
   }
 
-  class ActiveWalkControl : public SwitchableControls {
+  class ActiveWalkControl : public SwitchableEntityAssociatedInputMap {
       PlayerControls *getComponent() {
         PlayerControls *playerControls = nullptr;
         state->get_PlayerControls(id, &playerControls);
@@ -259,7 +206,7 @@ namespace at3 {
       void key_run(void *nothing) { run(); }
       void key_jump(void *nothing) { jump(); }
     public:
-      ActiveWalkControl(State *state, const entityId id) : SwitchableControls(state, id) {
+      ActiveWalkControl(State *state, const entityId id) : SwitchableEntityAssociatedInputMap(state, id) {
         setAction("key_held_w", RTU_MTHD_DLGT(&ActiveWalkControl::key_forward, this));
         setAction("key_held_s", RTU_MTHD_DLGT(&ActiveWalkControl::key_backward, this));
         setAction("key_held_d", RTU_MTHD_DLGT(&ActiveWalkControl::key_right, this));
@@ -272,7 +219,7 @@ namespace at3 {
     currentCtrlKeys = std::make_unique<ActiveWalkControl>(state, *(entityId*)id);
   }
 
-  class ActivePyrmControl : public SwitchableControls {
+  class ActivePyramidControl : public SwitchableEntityAssociatedInputMap {
       PyramidControls *getComponent() {
         PyramidControls *pyramidControls = nullptr;
         state->get_PyramidControls(id, &pyramidControls);
@@ -291,20 +238,20 @@ namespace at3 {
       void key_up(void *nothing) { upOrDown(1.f); }
       void key_down(void *nothing) { upOrDown(-1.f); }
     public:
-      ActivePyrmControl(State *state, const entityId id) : SwitchableControls(state, id) {
-        setAction("key_held_w", RTU_MTHD_DLGT(&ActivePyrmControl::key_forward, this));
-        setAction("key_held_s", RTU_MTHD_DLGT(&ActivePyrmControl::key_backward, this));
-        setAction("key_held_d", RTU_MTHD_DLGT(&ActivePyrmControl::key_right, this));
-        setAction("key_held_a", RTU_MTHD_DLGT(&ActivePyrmControl::key_left, this));
-        setAction("key_held_lshift", RTU_MTHD_DLGT(&ActivePyrmControl::key_down, this));
-        setAction("key_held_space", RTU_MTHD_DLGT(&ActivePyrmControl::key_up, this));
+      ActivePyramidControl(State *state, const entityId id) : SwitchableEntityAssociatedInputMap(state, id) {
+        setAction("key_held_w", RTU_MTHD_DLGT(&ActivePyramidControl::key_forward, this));
+        setAction("key_held_s", RTU_MTHD_DLGT(&ActivePyramidControl::key_backward, this));
+        setAction("key_held_d", RTU_MTHD_DLGT(&ActivePyramidControl::key_right, this));
+        setAction("key_held_a", RTU_MTHD_DLGT(&ActivePyramidControl::key_left, this));
+        setAction("key_held_lshift", RTU_MTHD_DLGT(&ActivePyramidControl::key_down, this));
+        setAction("key_held_space", RTU_MTHD_DLGT(&ActivePyramidControl::key_up, this));
       }
   };
-  void ControlSystem::switchToPyrmCtrl(void *id) {
-    currentCtrlKeys = std::make_unique<ActivePyrmControl>(state, *(entityId*)id);
+  void ControlSystem::switchToPyramidCtrl(void *id) {
+    currentCtrlKeys = std::make_unique<ActivePyramidControl>(state, *(entityId*)id);
   }
 
-  class ActiveTrakControl : public SwitchableControls {
+  class ActiveTrackControl : public SwitchableEntityAssociatedInputMap {
       TrackControls *getComponent() {
         TrackControls *trackControls = nullptr;
         state->get_TrackControls(id, &trackControls);
@@ -339,17 +286,17 @@ namespace at3 {
       void key_brakeLeft(void *nothing) { brakeRightOrLeft(-1.f); }
       void key_flip(void *nothing) { flip(); }
     public:
-      ActiveTrakControl(State *state, const entityId id) : SwitchableControls(state, id) {
-        setAction("key_held_w", RTU_MTHD_DLGT(&ActiveTrakControl::key_forward, this));
-        setAction("key_held_s", RTU_MTHD_DLGT(&ActiveTrakControl::key_backward, this));
-        setAction("key_held_d", RTU_MTHD_DLGT(&ActiveTrakControl::key_right, this));
-        setAction("key_held_a", RTU_MTHD_DLGT(&ActiveTrakControl::key_left, this));
-        setAction("key_held_e", RTU_MTHD_DLGT(&ActiveTrakControl::key_brakeRight, this));
-        setAction("key_held_q", RTU_MTHD_DLGT(&ActiveTrakControl::key_brakeLeft, this));
-        setAction("key_down_f", RTU_MTHD_DLGT(&ActiveTrakControl::key_flip, this));
+      ActiveTrackControl(State *state, const entityId id) : SwitchableEntityAssociatedInputMap(state, id) {
+        setAction("key_held_w", RTU_MTHD_DLGT(&ActiveTrackControl::key_forward, this));
+        setAction("key_held_s", RTU_MTHD_DLGT(&ActiveTrackControl::key_backward, this));
+        setAction("key_held_d", RTU_MTHD_DLGT(&ActiveTrackControl::key_right, this));
+        setAction("key_held_a", RTU_MTHD_DLGT(&ActiveTrackControl::key_left, this));
+        setAction("key_held_e", RTU_MTHD_DLGT(&ActiveTrackControl::key_brakeRight, this));
+        setAction("key_held_q", RTU_MTHD_DLGT(&ActiveTrackControl::key_brakeLeft, this));
+        setAction("key_down_f", RTU_MTHD_DLGT(&ActiveTrackControl::key_flip, this));
       }
   };
-  void ControlSystem::switchToTrakCtrl(void *id) {
-    currentCtrlKeys = std::make_unique<ActiveTrakControl>(state, *(entityId*)id);
+  void ControlSystem::switchToTrackCtrl(void *id) {
+    currentCtrlKeys = std::make_unique<ActiveTrackControl>(state, *(entityId*)id);
   }
 }

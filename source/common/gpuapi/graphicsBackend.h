@@ -11,6 +11,7 @@
 #include "openglValidation.h"
 #include "shaders.h"
 #include "shaderProgram.h"
+#include "topics.hpp"
 
 namespace at3 {
   namespace graphicsBackend {
@@ -18,11 +19,12 @@ namespace at3 {
     void swap();
     void clear();
     void deInit();
-    bool handleEvent(const SDL_Event &event);
     bool setFullscreenMode(uint32_t mode);
-    void toggleFullscreen();
     float getAspect();
     void setFovy(float fovy);
+
+    void toggleFullscreen(void *nothing);
+    void handleWindowEvent(void *windowEvent);
 
     extern const char *applicationName;
     extern float currentFovY;

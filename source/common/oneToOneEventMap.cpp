@@ -1,11 +1,11 @@
 
-#include "activeControl.h"
+#include "oneToOneEventMap.h"
 
 using namespace rtu::topics;
 
 namespace at3 {
 
-  void ActiveControl::setAction(std::string topic, Action action) {
+  void OneToOneEventMap::setAction(std::string topic, Action action) {
     if (userInputSubs.count(topic) != 0) {
       userInputSubs.erase(topic);
     }

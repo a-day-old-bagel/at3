@@ -16,16 +16,6 @@
 
 namespace at3 {
 
-//  template<typename lastKeyCode>
-//  static bool anyPressed(const Uint8 *keyStates, lastKeyCode key) {
-//    return keyStates[key];
-//  }
-//
-//  template<typename firstKeyCode, typename... keyCode>
-//  static bool anyPressed(const Uint8 *keyStates, firstKeyCode firstKey, keyCode... keys) {
-//    return keyStates[firstKey] || anyPressed(keyStates, keys...);
-//  }
-
   template <typename EcsInterface> class Camera;
   template <typename EcsInterface> class Scene;
 
@@ -49,10 +39,6 @@ namespace at3 {
     public:
 
       Game();
-//      Game() : mEcsInterface(&mState),
-//        switchToCamSub("set_primary_camera", rtu::NewDelegate(&Game<EcsInterface,
-//            Derived>::setCamera).Create<Game<EcsInterface, Derived>::setCamera>(this))
-//      { SceneObject_::linkEcs(mEcsInterface); }
       virtual ~Game() { std::cout << "Game is destructing." << std::endl; };
 
       bool init(const char *appName, const char *settingsName);
@@ -60,7 +46,6 @@ namespace at3 {
       bool isQuit();
       void deInit();
 
-//      void setCamera(std::shared_ptr<Camera<EcsInterface>> camera);
       void setCamera(void *camPtr);
       std::shared_ptr<Camera<EcsInterface>> getCamera() { return mpCamera; }
   };
@@ -83,8 +68,7 @@ namespace at3 {
     derived().registerCustomSettings();
     settings::loadFromIni(mSettingsFileName.c_str());
     if (!graphicsBackend::init()) { return false; }
-    if (!derived().onInit()) { return false; }
-    return true;
+    return derived().onInit();
   }
 
   template <typename EcsInterface, typename Derived>
@@ -136,6 +120,22 @@ namespace at3 {
 #             endif
               SDL_SetRelativeMouseMode(SDL_FALSE);
             } break;
+
+              // SOME FUNCTION KEYS ARE RESERVED: They do not emit a key down signal, but rather
+              // the desired effect directly.
+            case SDL_SCANCODE_F1: graphicsBackend::toggleFullscreen(nullptr); break;
+            case SDL_SCANCODE_F2: Shaders::toggleEdgeView(nullptr); break;
+            case SDL_SCANCODE_F3: rtu::topics::publish("key_down_f3", nullptr); break;
+            case SDL_SCANCODE_F4: rtu::topics::publish("key_down_f4", nullptr); break;
+            case SDL_SCANCODE_F5: rtu::topics::publish("key_down_f5", nullptr); break;
+            case SDL_SCANCODE_F6: rtu::topics::publish("key_down_f6", nullptr); break;
+            case SDL_SCANCODE_F7: rtu::topics::publish("key_down_f7", nullptr); break;
+            case SDL_SCANCODE_F8: rtu::topics::publish("key_down_f8", nullptr); break;
+            case SDL_SCANCODE_F9: rtu::topics::publish("key_down_f9", nullptr); break;
+            case SDL_SCANCODE_F10: rtu::topics::publish("key_down_f10", nullptr); break;
+            case SDL_SCANCODE_F11: rtu::topics::publish("key_down_f11", nullptr); break;
+            case SDL_SCANCODE_F12: rtu::topics::publish("key_down_f12", nullptr); break;
+
             case SDL_SCANCODE_0: rtu::topics::publish("key_down_0", nullptr); break;
             case SDL_SCANCODE_1: rtu::topics::publish("key_down_1", nullptr); break;
             case SDL_SCANCODE_2: rtu::topics::publish("key_down_2", nullptr); break;
@@ -150,11 +150,28 @@ namespace at3 {
             case SDL_SCANCODE_SPACE: rtu::topics::publish("key_down_space", nullptr); break;
             default: break;
           } break;
+        case SDL_MOUSEBUTTONDOWN:
+          // Make sure the window has grabbed the mouse cursor
+          if (SDL_GetGrabbedWindow() == nullptr) {
+            // Somehow obtain a pointer for the window
+            SDL_Window *window = SDL_GetWindowFromID(event.button.windowID);
+            if (window == nullptr)
+              break;
+            // Grab the mouse cursor
+            SDL_SetWindowGrab(window, SDL_TRUE);
+#           if (!SDL_VERSION_ATLEAST(2, 0, 4))
+              grabbedWindow = window;
+#           endif
+            SDL_SetRelativeMouseMode(SDL_TRUE);
+          } break;
+        case SDL_MOUSEMOTION:
+          if (SDL_GetRelativeMouseMode()) {
+            rtu::topics::publish("mouse_moved", (void *) &event);
+          } break;
+        case SDL_WINDOWEVENT:
+          graphicsBackend::handleWindowEvent((void*)&event); break;
         default: break;
       }
-      if (graphicsBackend::handleEvent(event)) { continue; }  // Graphics backend handled it exclusively
-      if (derived().handleEvent(event)) { continue; }         // The derived object handled it exclusively
-      if (mScene.handleEvent(event)) { continue; }            // One of the scene objects handled it exclusively
     }
 
     // Get current keyboard state
@@ -189,10 +206,4 @@ namespace at3 {
     mpCamera = *camera;
     graphicsBackend::setFovy(mpCamera->getFovy());
   }
-
-//  template <typename EcsInterface, typename Derived>
-//  void Game<EcsInterface, Derived>::setCamera(std::shared_ptr<Camera<EcsInterface>> camera) {
-//    mpCamera = camera;
-//    graphicsBackend::setFovy(camera->getFovy());
-//  }
 }

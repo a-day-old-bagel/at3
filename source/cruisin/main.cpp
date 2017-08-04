@@ -105,7 +105,7 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
       glm::mat4 pyramidMat = glm::translate(ident, { 0.f, 0.f, 5.f });
       mpPyramid = std::make_unique<Pyramid> (mState, mScene, pyramidMat);
 
-      // a skybox-like background (but better than a literal sky box)
+      // a skybox-like background
       mpSkybox = std::make_shared<SkyBox_> ( );
       this->mScene.addObject(mpSkybox);
       mpSkybox->useCubeMap("assets/cubeMaps/sea.png");
@@ -133,11 +133,6 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
       settings::addCustom("cruisin_customSetting_i", &customSetting);
     }
 
-    bool handleEvent(SDL_Event& event) {
-      return // true if handled here, false otherwise
-          mControlSystem.handleEvent(event) ||
-          mPhysicsSystem.handleEvent(event);
-    }
     void onTick(float dt) {
       mControlSystem.tick(dt);
       mpPyramid->resizeFire();

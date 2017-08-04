@@ -89,18 +89,6 @@ namespace at3 {
       void removeChild(const SceneObject<EcsInterface> *address);
 
       /**
-       * Derived classes can implement this to receive an SDL event. All SDL
-       * events are passed to each of the top-level scene objects in the scene.
-       * Scene objects may choose to pass events to their children by calling
-       * this method on their children. By returning true, implementing classes
-       * can absorb the given event and mask it from handled elsewhere.
-       *
-       * \param event The current SDL event to be considered.
-       * \return True if the given event was handled, and false otherwise.
-       */
-      virtual bool handleEvent(const SDL_Event &event);
-
-      /**
        * Draws this scene object in the scene. The default behavior of this
        * method is to draw nothing.
        *
@@ -257,11 +245,6 @@ namespace at3 {
       m_parent->reverseTransformLookup(wv, m_inheritedDOF);
     }
 
-  }
-
-  template <typename EcsInterface>
-  bool SceneObject<EcsInterface>::handleEvent(const SDL_Event &event) {
-    return false;
   }
 
   template <typename EcsInterface>

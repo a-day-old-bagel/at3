@@ -98,7 +98,7 @@ namespace at3 {
     glUniform1f(shader->maxFieldViewDot(), maxFieldViewDot);            ASSERT_GL_ERROR();
   }
   bool Shaders::edgeView = false;
-  void Shaders::toggleEdgeView() {
+  void Shaders::toggleEdgeView(void *nothing) {
     edgeView = !edgeView;
     auto shader = Shaders::terrainShader();
     shader->use();

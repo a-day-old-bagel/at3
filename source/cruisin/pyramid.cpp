@@ -56,6 +56,10 @@ namespace at3 {
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
     physics->rigidBody->setDamping(0.1f, 0.8f);
 
+    // The slow stuff (CCD)
+    physics->rigidBody->setCcdMotionThreshold(1);
+    physics->rigidBody->setCcdSweptSphereRadius(0.2f);
+
     entityId topId = mpTop->getId();
     state.add_TransformFunction(topId, RTU_FUNC_DLGT(pyrTopRotate));
 

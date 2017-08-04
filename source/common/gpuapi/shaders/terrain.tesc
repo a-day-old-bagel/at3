@@ -91,7 +91,7 @@ void main(){
             float e2 = level(v3, v0);
             float e3 = level(v2, v3);
 
-            gl_TessLevelInner[0] = mix(e1, e2, 0.5);
+            gl_TessLevelInner[0] = mix(e1, e2, 0.5); // max instead? didn't seem to help.
             gl_TessLevelInner[1] = mix(e0, e3, 0.5);
             gl_TessLevelOuter[0] = e0;
             gl_TessLevelOuter[1] = e1;

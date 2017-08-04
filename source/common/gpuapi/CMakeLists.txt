@@ -19,6 +19,7 @@ target_link_libraries( ${AT3_TARGET_PREFIX}graphics
   SDL_vulkan
   epoxy_static
   ${OPENGL_LIBRARIES}
+  realtimeutils
   #fastnoise
   )
 target_include_directories( ${AT3_TARGET_PREFIX}graphics PUBLIC

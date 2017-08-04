@@ -72,7 +72,9 @@ namespace at3 {
     return false;
   }
 
-  PhysicsSystem::PhysicsSystem(State *state) : System(state) {
+  PhysicsSystem::PhysicsSystem(State *state) : System(state),
+      debugDrawToggleSub("key_down_f3", RTU_MTHD_DLGT(&PhysicsSystem::toggleDebugDraw, this))
+  {
     name = "Physics System";
   }
   PhysicsSystem::~PhysicsSystem() {
@@ -345,6 +347,10 @@ namespace at3 {
         physics->rigidBody->setAngularFactor({0.f, 0.f, 0.f});
         physics->rigidBody->setRestitution(0.f);
         physics->rigidBody->setFriction(0.f);
+
+        // the slow stuff (CCD)
+        physics->rigidBody->setCcdMotionThreshold(1);
+        physics->rigidBody->setCcdSweptSphereRadius(0.1f);
       } break;
       default: {
         physics->rigidBody->setRestitution(0.5f);
@@ -406,7 +412,7 @@ namespace at3 {
         terrain->sclZ });
     btTransform transform;
     transform.setFromOpenGLMatrix((btScalar *) &placement->mat);
-    btDefaultMotionState *terrainMotionState = new btDefaultMotionState(transform);
+    auto *terrainMotionState = new btDefaultMotionState(transform);
     btRigidBody::btRigidBodyConstructionInfo terrainRBCI(0, terrainMotionState, physics->shape, btVector3(0, 0, 0));
     physics->rigidBody = new btRigidBody(terrainRBCI);
     physics->rigidBody->setRestitution(0.5f);
@@ -443,23 +449,6 @@ namespace at3 {
     return true;
   }
 
-  bool PhysicsSystem::handleEvent(SDL_Event& event) {
-    switch (event.type) {
-      case SDL_KEYDOWN:
-        switch (event.key.keysym.scancode) {
-          case SDL_SCANCODE_R: {
-            debugDrawMode = !debugDrawMode;
-            break;
-          }
-          default:
-            return false; // could not handle it here
-        } break;
-      default:
-        return false; // could not handle it here
-    }
-    return true; // handled it here
-  }
-
   void PhysicsSystem::setDebugDrawer(std::shared_ptr<BulletDebug_> debug) {
     dynamicsWorld->setDebugDrawer(debug.get());
   }
@@ -472,6 +461,10 @@ namespace at3 {
 
   rayFuncType PhysicsSystem::getRayFunc() {
     return std::bind( &PhysicsSystem::rayTest, this, std::placeholders::_1, std::placeholders::_2 );
+  }
+
+  void PhysicsSystem::toggleDebugDraw(void* nothing) {
+    debugDrawMode = !debugDrawMode;
   }
 }
 
