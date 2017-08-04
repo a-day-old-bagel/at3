@@ -50,10 +50,21 @@ namespace at3 {
       std::shared_ptr<Camera<EcsInterface>> getCamera() { return mpCamera; }
   };
 
+  #define GAME_TYPE typename Game<EcsInterface, Derived>
+
+  template <typename EcsInterface, typename Derived>
+  using GameType = Game<EcsInterface, Derived>;
+
   template <typename EcsInterface, typename Derived>
   Game<EcsInterface, Derived>::Game() : mEcsInterface(&mState),
+
       switchToCamSub("set_primary_camera", rtu::NewDelegate(&Game<EcsInterface,
            Derived>::setCamera).Create<&Game<EcsInterface, Derived>::setCamera>(this))
+
+//        switchToCamSub("set_primary_camera", RTU_MTHD_DLGT(& GAME_TYPE ::setCamera, this))
+
+//        switchToCamSub("set_primary_camera", RTU_MTHD_DLGT((&Game<int, int>::setCamera), this))
+
   { SceneObject_::linkEcs(mEcsInterface); }
 
   template <typename EcsInterface, typename Derived>
