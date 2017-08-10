@@ -53,8 +53,8 @@ void main(){
         color = d2 * color + d1 * d2 * InnerLineColor;
     }
 
-    // add fog
-    color = mix(color, vec4(0.8, 0.82, 0.9, 1.0), clamp(gDepth * 0.0001, 0.0, 1.0));
+    // add fog TODO: uniform for visibility
+    color = mix(color, vec4(0.8, 0.84, 0.9, 1.0), clamp(gDepth * 0.000075, 0.0, 1.0));
 
     fragColor = color;
 }

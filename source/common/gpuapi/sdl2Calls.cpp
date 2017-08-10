@@ -20,7 +20,9 @@ namespace at3 {
             windowFlags |= SDL_WINDOW_FULLSCREEN;
           } break;
           case settings::graphics::WINDOWED:
-          default: break;
+          default: {
+            windowFlags |= SDL_WINDOW_RESIZABLE;
+          } break;
         }
         switch (settings::graphics::gpuApi) {
           case settings::graphics::VULKAN: {
@@ -50,7 +52,7 @@ namespace at3 {
         return true;
       }
       SDL_Window *window = nullptr;
-      uint32_t windowFlags = SDL_WINDOW_RESIZABLE;
+      uint32_t windowFlags = 0;
     }
   }
 }
