@@ -57,14 +57,7 @@ namespace at3 {
 
   template <typename EcsInterface, typename Derived>
   Game<EcsInterface, Derived>::Game() : mEcsInterface(&mState),
-
-      switchToCamSub("set_primary_camera", rtu::NewDelegate(&Game<EcsInterface,
-           Derived>::setCamera).Create<&Game<EcsInterface, Derived>::setCamera>(this))
-
-//        switchToCamSub("set_primary_camera", RTU_MTHD_DLGT(& GAME_TYPE ::setCamera, this))
-
-//        switchToCamSub("set_primary_camera", RTU_MTHD_DLGT((&Game<int, int>::setCamera), this))
-
+          switchToCamSub("set_primary_camera", RTU_MTHD_DLGT((&Game<EcsInterface, Derived>::setCamera), this))
   { SceneObject_::linkEcs(mEcsInterface); }
 
   template <typename EcsInterface, typename Derived>
