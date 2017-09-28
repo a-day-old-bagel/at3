@@ -106,10 +106,13 @@ namespace at3 {
       // provide the up vector
       playerControls->up = glm::quat_cast(placement->mat) * glm::vec3(0.f, 0.f, 1.f);
 
+      // TODO: fixme
+      // FIXME: rotation is a little off - try checking forward movement vector on steep hill.
+
       if (length(playerControls->horizControl) > 0.0f) {
         updateLookInfos();
         // Rotate the movement axis to the correct orientation
-        playerControls->horizForces = (playerControls->isRunning ? CHARA_RUN : CHARA_WALK) * dt *
+        playerControls->forces = (playerControls->isRunning ? CHARA_RUN : CHARA_WALK) * dt *
             glm::normalize(lastKnownHorizCtrlRot * glm::vec3(playerControls->horizControl, 0.f));
 
         playerControls->horizControl = glm::vec2();

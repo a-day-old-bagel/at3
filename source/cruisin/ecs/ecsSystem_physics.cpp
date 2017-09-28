@@ -188,25 +188,44 @@ namespace at3 {
         float dampingMagnitude = std::min(0.9999999f, 1.1f - sfomPow4);
         linDamp = dampingMagnitude;
         float springForceFinal = springForceMagnitude * ((0 < springForceLinear) - (springForceLinear < 0));
-        physics->rigidBody->applyImpulse({ctrls->horizForces.x * mvmntForceMagnitude,
-                                          ctrls->horizForces.y * mvmntForceMagnitude,
-                                          springForceFinal}, {0.f, 0.f, 0.f});
 
-//        float extraZDamp = (sfomPow2 > 0.01f) ? 1.f : 2.f * sfom10Pow2 - pow(springForceOverMax * 10.f, 4);
-        float extraZDamp = (sfomPow2 > 0.01f) ? 1.f : 2.f * fabs(springForceOverMax * 10.f) -
-                            pow(springForceOverMax * 10.f, 4);
-        btVector3 currVel = physics->rigidBody->getLinearVelocity();
-        physics->rigidBody->setLinearVelocity({currVel.x(), currVel.y(), currVel.z() * std::min(1.f, extraZDamp)});
+        // modify walking force to align with gradient of ground so as not to point into or out of the ground.
+        // this avoids "jiggling" as you walk up or down a hill, especially on slow hardware.
+        float origForceMag = glm::length(ctrls->forces);
+        ctrls->forces.z = -1 * ( ctrls->forces.x * groundSpringRayCallback.m_hitNormalWorld.x() +
+                                 ctrls->forces.y * groundSpringRayCallback.m_hitNormalWorld.y() ) ;
+
+//        std::cout << ctrls->forces.x << "\n" << ctrls->forces.y << "\n" << ctrls->forces.z << "\n\n";
+        if ( glm::length(ctrls->forces) ) {
+          ctrls->forces = origForceMag * glm::normalize(ctrls->forces);
+        }
+
+        // SOME DEBUG DRAW
+        btVector3 dbgDrawStart = groundSpringRayCallback.m_hitPointWorld + btVector3(0.f, 0.f, 2.25f);
+        dynamicsWorld->getDebugDrawer()->drawLine( dbgDrawStart,
+            { dbgDrawStart + groundSpringRayCallback.m_hitNormalWorld }, {1.f, 0.f, 1.f});
+        dynamicsWorld->getDebugDrawer()->drawLine( dbgDrawStart,
+            { dbgDrawStart + btVector3(ctrls->forces.x, ctrls->forces.y, ctrls->forces.z) }, {1.f, 1.f, 0.f});
+
+        physics->rigidBody->applyImpulse({ctrls->forces.x * mvmntForceMagnitude,
+                                          ctrls->forces.y * mvmntForceMagnitude,
+                                          ctrls->forces.z * mvmntForceMagnitude + springForceFinal }, {0.f, 0.f, 0.f});
+
+////        float extraZDamp = (sfomPow2 > 0.01f) ? 1.f : 2.f * sfom10Pow2 - pow(springForceOverMax * 10.f, 4);
+//        float extraZDamp = (sfomPow2 > 0.01f) ? 1.f : 2.f * fabs(springForceOverMax * 10.f) -
+//                            pow(springForceOverMax * 10.f, 4);
+//        btVector3 currVel = physics->rigidBody->getLinearVelocity();
+//        physics->rigidBody->setLinearVelocity({currVel.x(), currVel.y(), currVel.z() * std::min(1.f, extraZDamp)});
 
       } else { // movement while in air - apply greatly reduced controls
-        physics->rigidBody->applyImpulse({ctrls->horizForces.x * 0.02f,
-                                          ctrls->horizForces.y * 0.02f, 0.f}, {0.f, 0.f, 0.f});
+        physics->rigidBody->applyImpulse({ctrls->forces.x * 0.02f,
+                                          ctrls->forces.y * 0.02f, 0.f}, {0.f, 0.f, 0.f});
       }
 
       physics->rigidBody->setDamping(linDamp, angDamp); // Set damping
 
       // zero controls
-      ctrls->horizForces = glm::vec2();
+      ctrls->forces = glm::vec3();
       ctrls->jumpRequested = false;
       ctrls->isRunning = false;
     }

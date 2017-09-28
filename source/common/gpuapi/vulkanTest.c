@@ -1,6 +1,7 @@
 #include "vulkanTest.h"
 #include <SDL_vulkan.h>
 #include <assert.h>
+#include <string.h>
 
 #ifdef _WIN32
 #include <windows.h>

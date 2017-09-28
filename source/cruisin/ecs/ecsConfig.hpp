@@ -127,8 +127,8 @@ namespace {
   EZECS_COMPONENT_DEPENDENCIES(TrackControls, Physics)
 
   struct PlayerControls : public Component<PlayerControls> {
-    glm::vec2 horizControl, horizForces;
-    glm::vec3 up;
+    glm::vec2 horizControl;
+    glm::vec3 forces, up;
     float lastJumpZVel = 0.f;
     bool jumpRequested = false;
     bool jumpInProgress = false;
