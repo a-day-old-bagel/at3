@@ -62,6 +62,7 @@ namespace {
     glm::vec3 getLookAt();
     float getHorizRot();
     glm::mat3 getHorizRotMat();
+    glm::quat getQuat();
   };
 
   struct TransformFunction : public Component<TransformFunction> {
@@ -179,6 +180,10 @@ namespace {
 
   glm::mat3 Placement::getHorizRotMat() {
     return glm::mat3(glm::rotate(getHorizRot(), glm::vec3(0.f, 0.f, 1.f)));
+  }
+
+  glm::quat Placement::getQuat() {
+    return glm::quat_cast(mat);
   }
 
   TransformFunction::TransformFunction(transformFunc func)

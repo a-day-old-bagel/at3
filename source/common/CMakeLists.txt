@@ -4,7 +4,7 @@ add_subdirectory( global )
 add_subdirectory( gpuapi )
 
 add_library( ${AT3_TARGET_PREFIX}common STATIC
-  oneToOneEventMap.cpp oneToOneEventMap.h
+  eventResponseMap.cpp eventResponseMap.h
   camera.h
   debug.h
   game.h

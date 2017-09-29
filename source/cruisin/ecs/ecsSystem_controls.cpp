@@ -107,16 +107,29 @@ namespace at3 {
       playerControls->up = glm::quat_cast(placement->mat) * glm::vec3(0.f, 0.f, 1.f);
 
       // TODO: fixme
-      // FIXME: rotation is a little off - try checking forward movement vector on steep hill.
+      // FIXME: rotation is a little off - try checking forward movement vector.
 
       if (length(playerControls->horizControl) > 0.0f) {
         updateLookInfos();
         // Rotate the movement axis to the correct orientation
         playerControls->forces = (playerControls->isRunning ? CHARA_RUN : CHARA_WALK) * dt *
             glm::normalize(lastKnownHorizCtrlRot * glm::vec3(playerControls->horizControl, 0.f));
-
+        // Clear the input
         playerControls->horizControl = glm::vec2();
       }
+
+      // Some debug drawing
+//      glm::quat quat = glm::quat_cast(lastKnownWorldView);
+//      lastKnownLookVec = quat * glm::vec3(0.f, 1.0, 0.f);
+//      glm::vec3 horizLookDir(lastKnownLookVec.x, lastKnownLookVec.y, 0.f);
+//      horizLookDir = glm::normalize(horizLookDir);
+//      lastKnownLookVec = quat * glm::vec3(0.f, 0.0, -1.f);
+      glm::vec3 look = placement->getHorizRotMat() * glm::vec3(0.f, 1.f, 0.f);
+      glm::vec2 lookHoriz = glm::normalize(glm::vec2(look.x, look.y));
+      glm::vec3 begin = placement->getTranslation() + glm::vec3(0.f, 0.f, 1.25f);
+      float lineArgs[9] = {begin.x, begin.y, begin.z, begin.x + lookHoriz.x,
+                           begin.y + lookHoriz.y, begin.z, 0.f, 1.f, 1.f};
+      rtu::topics::publish("draw_debug_line", (void*)lineArgs);
     }
   }
 
@@ -143,12 +156,12 @@ namespace at3 {
    * events for each type of control interface managed in ControlSystem.
    */
 
-  SwitchableEntityAssociatedInputMap::SwitchableEntityAssociatedInputMap(State *state, const entityId id)
+  EntityAssociatedERM::EntityAssociatedERM(State *state, const entityId id)
       : state(state), id(id) { }
 
-  entityId SwitchableEntityAssociatedInputMap::getId() { return id; }
+  entityId EntityAssociatedERM::getId() { return id; }
 
-  class ActiveMouseControl : public SwitchableEntityAssociatedInputMap {
+  class ActiveMouseControl : public EntityAssociatedERM {
       MouseControls *getComponent() {
         MouseControls *mouseControls = nullptr;
         state->get_MouseControls(id, &mouseControls);
@@ -181,7 +194,7 @@ namespace at3 {
         );
       }
     public:
-      ActiveMouseControl(State *state, const entityId id) : SwitchableEntityAssociatedInputMap(state, id) {
+      ActiveMouseControl(State *state, const entityId id) : EntityAssociatedERM(state, id) {
         setAction("mouse_moved", RTU_MTHD_DLGT(&ActiveMouseControl::mouseMove, this));
       }
   };
@@ -189,7 +202,7 @@ namespace at3 {
     currentCtrlMous = std::make_unique<ActiveMouseControl>(state, *(entityId*)id);
   }
 
-  class ActiveWalkControl : public SwitchableEntityAssociatedInputMap {
+  class ActiveWalkControl : public EntityAssociatedERM {
       PlayerControls *getComponent() {
         PlayerControls *playerControls = nullptr;
         state->get_PlayerControls(id, &playerControls);
@@ -209,7 +222,7 @@ namespace at3 {
       void key_run(void *nothing) { run(); }
       void key_jump(void *nothing) { jump(); }
     public:
-      ActiveWalkControl(State *state, const entityId id) : SwitchableEntityAssociatedInputMap(state, id) {
+      ActiveWalkControl(State *state, const entityId id) : EntityAssociatedERM(state, id) {
         setAction("key_held_w", RTU_MTHD_DLGT(&ActiveWalkControl::key_forward, this));
         setAction("key_held_s", RTU_MTHD_DLGT(&ActiveWalkControl::key_backward, this));
         setAction("key_held_d", RTU_MTHD_DLGT(&ActiveWalkControl::key_right, this));
@@ -222,7 +235,7 @@ namespace at3 {
     currentCtrlKeys = std::make_unique<ActiveWalkControl>(state, *(entityId*)id);
   }
 
-  class ActivePyramidControl : public SwitchableEntityAssociatedInputMap {
+  class ActivePyramidControl : public EntityAssociatedERM {
       PyramidControls *getComponent() {
         PyramidControls *pyramidControls = nullptr;
         state->get_PyramidControls(id, &pyramidControls);
@@ -241,7 +254,7 @@ namespace at3 {
       void key_up(void *nothing) { upOrDown(1.f); }
       void key_down(void *nothing) { upOrDown(-1.f); }
     public:
-      ActivePyramidControl(State *state, const entityId id) : SwitchableEntityAssociatedInputMap(state, id) {
+      ActivePyramidControl(State *state, const entityId id) : EntityAssociatedERM(state, id) {
         setAction("key_held_w", RTU_MTHD_DLGT(&ActivePyramidControl::key_forward, this));
         setAction("key_held_s", RTU_MTHD_DLGT(&ActivePyramidControl::key_backward, this));
         setAction("key_held_d", RTU_MTHD_DLGT(&ActivePyramidControl::key_right, this));
@@ -254,7 +267,7 @@ namespace at3 {
     currentCtrlKeys = std::make_unique<ActivePyramidControl>(state, *(entityId*)id);
   }
 
-  class ActiveTrackControl : public SwitchableEntityAssociatedInputMap {
+  class ActiveTrackControl : public EntityAssociatedERM {
       TrackControls *getComponent() {
         TrackControls *trackControls = nullptr;
         state->get_TrackControls(id, &trackControls);
@@ -289,7 +302,7 @@ namespace at3 {
       void key_brakeLeft(void *nothing) { brakeRightOrLeft(-1.f); }
       void key_flip(void *nothing) { flip(); }
     public:
-      ActiveTrackControl(State *state, const entityId id) : SwitchableEntityAssociatedInputMap(state, id) {
+      ActiveTrackControl(State *state, const entityId id) : EntityAssociatedERM(state, id) {
         setAction("key_held_w", RTU_MTHD_DLGT(&ActiveTrackControl::key_forward, this));
         setAction("key_held_s", RTU_MTHD_DLGT(&ActiveTrackControl::key_backward, this));
         setAction("key_held_d", RTU_MTHD_DLGT(&ActiveTrackControl::key_right, this));

@@ -13,6 +13,8 @@ namespace at3 {
     private:
       Scene_* mpScene;
       std::shared_ptr<BulletDebug_> mpBulletDebug;
+      rtu::topics::Subscription lineDrawRequestSubscription;
+      void fulfillDrawLineRequest(void* args);
       void addToScene();
     public:
       DebugStuff(Scene_ &scene, PhysicsSystem* physicsSystem);
