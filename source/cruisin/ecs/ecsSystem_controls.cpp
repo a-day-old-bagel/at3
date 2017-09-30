@@ -157,7 +157,7 @@ namespace at3 {
    */
 
   EntityAssociatedERM::EntityAssociatedERM(State *state, const entityId id)
-      : state(state), id(id) { }
+      : EventResponseMap(), state(state), id(id) { }
 
   entityId EntityAssociatedERM::getId() { return id; }
 
