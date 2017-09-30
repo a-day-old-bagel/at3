@@ -117,31 +117,17 @@ namespace at3 {
         // Clear the input
         playerControls->horizControl = glm::vec2();
       }
-
-      // Some debug drawing
-//      glm::quat quat = glm::quat_cast(lastKnownWorldView);
-//      lastKnownLookVec = quat * glm::vec3(0.f, 1.0, 0.f);
-//      glm::vec3 horizLookDir(lastKnownLookVec.x, lastKnownLookVec.y, 0.f);
-//      horizLookDir = glm::normalize(horizLookDir);
-//      lastKnownLookVec = quat * glm::vec3(0.f, 0.0, -1.f);
-      glm::vec3 look = placement->getHorizRotMat() * glm::vec3(0.f, 1.f, 0.f);
-      glm::vec2 lookHoriz = glm::normalize(glm::vec2(look.x, look.y));
-      glm::vec3 begin = placement->getTranslation() + glm::vec3(0.f, 0.f, 1.25f);
-      float lineArgs[9] = {begin.x, begin.y, begin.z, begin.x + lookHoriz.x,
-                           begin.y + lookHoriz.y, begin.z, 0.f, 1.f, 1.f};
-      rtu::topics::publish("draw_debug_line", (void*)lineArgs);
     }
   }
 
   void ControlSystem::updateLookInfos() {
     if (! lookInfoIsFresh) {
-      glm::quat quat = glm::quat_cast(lastKnownWorldView);
-      lastKnownLookVec = quat * glm::vec3(0.f, 1.0, 0.f);
-      glm::vec3 horizLookDir(lastKnownLookVec.x, 0.f, lastKnownLookVec.z);
-      horizLookDir = glm::normalize(horizLookDir);
-      float rotZ = acosf(glm::dot({0.f, 0.f, -1.f}, horizLookDir)) * (lastKnownLookVec.x < 0.f ? -1.f : 1.f);
-      lastKnownHorizCtrlRot = glm::mat3(glm::rotate(rotZ, glm::vec3(0.f, 0.f, 1.f)));
-      lookInfoIsFresh = true;
+      float sinPitch = -lastKnownWorldView[2][0];
+      float cosPitch = sqrt(1 - sinPitch*sinPitch);
+      float sinYaw = lastKnownWorldView[1][0] / cosPitch;
+      float cosYaw = lastKnownWorldView[0][0] / cosPitch;
+      float yaw   = atan2f(sinYaw, cosYaw);
+      lastKnownHorizCtrlRot = glm::mat3(glm::rotate(yaw, glm::vec3(0.f, 0.f, 1.f)));
     }
   }
 
