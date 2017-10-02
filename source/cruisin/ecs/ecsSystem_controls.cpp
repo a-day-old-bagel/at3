@@ -22,6 +22,10 @@
  */
 #include "ecsSystem_controls.h"
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "TemplateArgumentsIssues"
+#pragma ide diagnostic ignored "IncompatibleTypes"
+
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/transform.hpp"
 #include "glm/gtx/matrix_decompose.hpp"
@@ -302,3 +306,5 @@ namespace at3 {
     currentCtrlKeys = std::make_unique<ActiveTrackControl>(state, *(entityId*)id);
   }
 }
+
+#pragma clang diagnostic pop
