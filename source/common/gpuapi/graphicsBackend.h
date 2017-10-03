@@ -2,7 +2,6 @@
 #pragma once
 
 #include <epoxy/gl.h>
-#include <SDL_vulkan.h>
 #include <SDL.h>
 
 #include "settings.h"
@@ -45,10 +44,10 @@ namespace at3 {
       void swap();
       void clear();
 
-      extern PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback;
-      extern PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallback;
-      extern VkDebugReportCallbackEXT msg_callback;
-      extern PFN_vkDebugReportMessageEXT DebugReportMessage;
+//      extern PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback;
+//      extern PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallback;
+//      extern VkDebugReportCallbackEXT msg_callback;
+//      extern PFN_vkDebugReportMessageEXT DebugReportMessage;
     }
   }
 }

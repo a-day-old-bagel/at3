@@ -1,3 +1,9 @@
+/*
+ * This code was written while following the tutorial found at vulkan-tutorial.com.
+ * Therefore, some of this code may closely resemble code written by the author of that website.
+ * Where that is the case, credit belongs to that author and nobody is claiming otherwise.
+ */
+
 #pragma once
 
 #include <iostream>
@@ -20,12 +26,9 @@
 #include <SDL.h>
 #include <vulkan/vulkan.h>
 
-#include "loadedTexture.h"
-
-extern const int WIDTH;
-extern const int HEIGHT;
 extern const std::string MODEL_PATH;
 extern const std::string TEXTURE_PATH;
+
 extern const std::vector<const char*> validationLayers;
 extern const std::vector<const char*> deviceExtensions;
 extern const bool enableValidationLayers;
@@ -76,9 +79,13 @@ struct UniformBufferObject {
 
 class VulkanBackend {
   public:
-    void run();
+    explicit VulkanBackend(SDL_Window *window);
+    virtual ~VulkanBackend();
+    void step();
 
   private:
+
+    SDL_Window* window;
 
     VkInstance instance;
     VkDebugReportCallbackEXT callback;
@@ -131,12 +138,9 @@ class VulkanBackend {
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;
 
-    void initWindow();
     void initVulkan();
-    void mainLoop();
     void cleanupSwapChain();
     void cleanup();
-    static void onWindowResized(GLFWwindow* window, int width, int height);
     void recreateSwapChain();
     void createInstance();
     void setupDebugCallback();
@@ -194,5 +198,3 @@ class VulkanBackend {
                                                         uint64_t obj, size_t location, int32_t code,
                                                         const char* layerPrefix, const char* msg, void* userData);
 };
-
-int vulkanMain();

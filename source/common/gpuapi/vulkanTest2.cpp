@@ -1,9 +1,19 @@
+/*
+ * This code is being written while following the tutorial found at vulkan-tutorial.com.
+ * Therefore, some of this code may closely resemble code written by the author of that website.
+ * Where that is the case, credit belongs to that author and nobody is claiming otherwise.
+ */
+
+#include <SDL_vulkan.h>
+#include "stb_image.h"
 #include "vulkanTest2.h"
 
-const int WIDTH = 800;
-const int HEIGHT = 600;
-const std::string MODEL_PATH = "models/chalet.obj";
-const std::string TEXTURE_PATH = "textures/chalet.jpg";
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
+const std::string MODEL_PATH = "assets/models/chalet.obj";
+const std::string TEXTURE_PATH = "assets/textures/chalet.jpg";
+
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_LUNARG_standard_validation"
 };
@@ -37,7 +47,7 @@ bool QueueFamilyIndices::isComplete() {
     }
 
 
-static VkVertexInputBindingDescription Vertex::getBindingDescription() {
+VkVertexInputBindingDescription Vertex::getBindingDescription() {
   VkVertexInputBindingDescription bindingDescription = {};
   bindingDescription.binding = 0;
   bindingDescription.stride = sizeof(Vertex);
@@ -46,7 +56,7 @@ static VkVertexInputBindingDescription Vertex::getBindingDescription() {
   return bindingDescription;
 }
 
-static std::array<VkVertexInputAttributeDescription, 3> Vertex::getAttributeDescriptions() {
+std::array<VkVertexInputAttributeDescription, 3> Vertex::getAttributeDescriptions() {
   std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions = {};
 
   attributeDescriptions[0].binding = 0;
@@ -73,21 +83,16 @@ bool Vertex::operator ==(const Vertex& other) const {
 
 
 
-void VulkanBackend::run() {
-  initWindow();
+VulkanBackend::VulkanBackend(SDL_Window *window) : window(window) {
   initVulkan();
-  mainLoop();
+}
+VulkanBackend::~VulkanBackend() {
+  vkDeviceWaitIdle(device);
   cleanup();
 }
-void VulkanBackend::initWindow() {
-  glfwInit();
-
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-  window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
-
-  glfwSetWindowUserPointer(window, this);
-  glfwSetWindowSizeCallback(window, VulkanBackend::onWindowResized);
+void VulkanBackend::step() {
+  updateUniformBuffer();
+  drawFrame();
 }
 void VulkanBackend::initVulkan() {
   createInstance();
@@ -114,16 +119,6 @@ void VulkanBackend::initVulkan() {
   createDescriptorSet();
   createCommandBuffers();
   createSemaphores();
-}
-void VulkanBackend::mainLoop() {
-  while (!glfwWindowShouldClose(window)) {
-    glfwPollEvents();
-
-    updateUniformBuffer();
-    drawFrame();
-  }
-
-  vkDeviceWaitIdle(device);
 }
 void VulkanBackend::cleanupSwapChain() {
   vkDestroyImageView(device, depthImageView, nullptr);
@@ -177,15 +172,8 @@ void VulkanBackend::cleanup() {
   vkDestroySurfaceKHR(instance, surface, nullptr);
   vkDestroyInstance(instance, nullptr);
 
-  glfwDestroyWindow(window);
-
-  glfwTerminate();
-}
-static void VulkanBackend::onWindowResized(GLFWwindow* window, int width, int height) {
-  if (width == 0 || height == 0) return;
-
-  VulkanBackend* app = reinterpret_cast<VulkanBackend*>(glfwGetWindowUserPointer(window));
-  app->recreateSwapChain();
+//  glfwDestroyWindow(window);
+//  glfwTerminate();
 }
 void VulkanBackend::recreateSwapChain() {
   vkDeviceWaitIdle(device);
@@ -207,7 +195,7 @@ void VulkanBackend::createInstance() {
 
   VkApplicationInfo appInfo = {};
   appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-  appInfo.pApplicationName = "Hello Triangle";
+  appInfo.pApplicationName = "Vulkan Application";
   appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
   appInfo.pEngineName = "No Engine";
   appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -245,7 +233,7 @@ void VulkanBackend::setupDebugCallback() {
   }
 }
 void VulkanBackend::createSurface() {
-  if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
+  if (!SDL_CreateVulkanSurface(window, instance, &surface)) {
     throw std::runtime_error("failed to create window surface!");
   }
 }
@@ -455,8 +443,8 @@ void VulkanBackend::createDescriptorSetLayout() {
   }
 }
 void VulkanBackend::createGraphicsPipeline() {
-  auto vertShaderCode = readFile("shaders/vert.spv");
-  auto fragShaderCode = readFile("shaders/frag.spv");
+  auto vertShaderCode = readFile("assets/vulkanTestShaders/vert.spv");
+  auto fragShaderCode = readFile("assets/vulkanTestShaders/frag.spv");
 
   VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
   VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -845,7 +833,8 @@ void VulkanBackend::loadModel() {
   std::string err;
 
   if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, MODEL_PATH.c_str())) {
-    throw std::runtime_error(err);
+    std::string error = std::string("tinyobj: ") + err;
+    throw std::runtime_error(error.c_str());
   }
 
   std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
@@ -1236,7 +1225,7 @@ VkExtent2D VulkanBackend::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capab
     return capabilities.currentExtent;
   } else {
     int width, height;
-    glfwGetWindowSize(window, &width, &height);
+    SDL_GetWindowSize(window, &width, &height);
 
     VkExtent2D actualExtent = {
         static_cast<uint32_t>(width),
@@ -1337,16 +1326,23 @@ QueueFamilyIndices VulkanBackend::findQueueFamilies(VkPhysicalDevice device) {
 std::vector<const char*> VulkanBackend::getRequiredExtensions() {
   std::vector<const char*> extensions;
 
-  unsigned int glfwExtensionCount = 0;
-  const char** glfwExtensions;
-  glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-  for (unsigned int i = 0; i < glfwExtensionCount; i++) {
-    extensions.push_back(glfwExtensions[i]);
-  }
-
+  uint32_t extensionCount = 0;
+  const char* extensionNames[64];
   if (enableValidationLayers) {
-    extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+    extensionNames[extensionCount++] = VK_EXT_DEBUG_REPORT_EXTENSION_NAME;
+  }
+  extensionNames[extensionCount++] = VK_KHR_SURFACE_EXTENSION_NAME;
+
+  unsigned c = 64 - extensionCount;
+  if (!SDL_GetVulkanInstanceExtensions(&c, &extensionNames[extensionCount])) {
+    std::string error = std::string("SDL_GetVulkanInstanceExtensions failed: ") +
+                        std::string(SDL_GetError());
+    throw std::runtime_error(error.c_str());
+  }
+  extensionCount += c;
+
+  for (unsigned int i = 0; i < extensionCount; i++) {
+    extensions.push_back(extensionNames[i]);
   }
 
   return extensions;
@@ -1375,7 +1371,7 @@ bool VulkanBackend::checkValidationLayerSupport() {
 
   return true;
 }
-static std::vector<char> VulkanBackend::readFile(const std::string& filename) {
+std::vector<char> VulkanBackend::readFile(const std::string& filename) {
   std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
   if (!file.is_open()) {
@@ -1392,24 +1388,17 @@ static std::vector<char> VulkanBackend::readFile(const std::string& filename) {
 
   return buffer;
 }
-static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanBackend::debugCallback(
+VKAPI_ATTR VkBool32 VKAPI_CALL VulkanBackend::debugCallback(
     VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code,
     const char* layerPrefix, const char* msg, void* userData) {
     std::cerr << "validation layer: " << msg << std::endl;
 
     return VK_FALSE;
-  }
-
-
-int vulkanMain() {
-  VulkanBackend app;
-
-  try {
-    app.run();
-  } catch (const std::runtime_error& e) {
-    std::cerr << e.what() << std::endl;
-    return EXIT_FAILURE;
-  }
-
-  return EXIT_SUCCESS;
 }
+
+//void VulkanBackend::onWindowResized(GLFWwindow* window, int width, int height) {
+//  if (width == 0 || height == 0) return;
+//
+//  VulkanBackend* app = reinterpret_cast<VulkanBackend*>(glfwGetWindowUserPointer(window));
+//  app->recreateSwapChain();
+//}
