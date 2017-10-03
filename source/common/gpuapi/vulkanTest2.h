@@ -74,7 +74,7 @@ struct UniformBufferObject {
     glm::mat4 proj;
 };
 
-class HelloTriangleApplication {
+class VulkanBackend {
   public:
     void run();
 
