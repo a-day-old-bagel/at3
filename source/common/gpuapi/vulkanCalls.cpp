@@ -1,33 +1,33 @@
 
 #include <iostream>
 #include "graphicsBackend.h"
-#include "vulkanTest.h"
-#include "vulkanTest2.h"
+#include "vulkanBackend.h"
 
 namespace at3 {
   namespace graphicsBackend {
     namespace vulkan {
       bool init() {
 
-//        vulkan_main(sdl2::window, CreateDebugReportCallback, DestroyDebugReportCallback,
-//                    msg_callback, DebugReportMessage);
-
-        VulkanBackend vkbe(sdl2::window);
-
-        for (;;) {
-          {
-            SDL_Event event;
-            SDL_bool done = SDL_FALSE;
-            while (SDL_PollEvent(&event)) {
-              switch (event.type) {
-                case SDL_QUIT:
-                  done = SDL_TRUE;
-                  break;
+        try {
+          VulkanBackend vkbe(sdl2::window);
+          for (;;) {
+            {
+              SDL_Event event;
+              SDL_bool done = SDL_FALSE;
+              while (SDL_PollEvent(&event)) {
+                switch (event.type) {
+                  case SDL_QUIT:
+                    done = SDL_TRUE;
+                    break;
+                }
               }
+              if (done) break;
             }
-            if (done) break;
+            vkbe.step();
           }
-          vkbe.step();
+        } catch (const std::runtime_error& e) {
+          std::cerr << e.what() << std::endl;
+          return false;
         }
 
         fprintf(stderr, "This was a test - the Vulkan API is not yet fully supported!\n");

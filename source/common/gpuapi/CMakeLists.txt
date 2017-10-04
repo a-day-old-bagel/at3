@@ -12,8 +12,7 @@ add_library( ${AT3_TARGET_PREFIX}graphics STATIC
   shaders.cpp shaders.h
   tiny_obj_loader.h
   vulkanCalls.cpp
-  vulkanTest.c vulkanTest.h
-  vulkanTest2.cpp vulkanTest2.h
+  vulkanBackend.cpp vulkanBackend.h
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}graphics
   ${AT3_TARGET_PREFIX}global
