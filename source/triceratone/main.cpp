@@ -28,7 +28,7 @@ using namespace at3;
 using namespace ezecs;
 using namespace rtu::topics;
 
-class CruisinGame : public Game<DualityInterface, CruisinGame> {
+class Triceratone : public Game<DualityInterface, Triceratone> {
 
     ControlSystem     mControlSystem;
     AnimationSystem   mAnimationSystem;
@@ -45,12 +45,12 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
 
   public:
 
-    CruisinGame()
+    Triceratone()
         : mControlSystem(&mState),
           mAnimationSystem(&mState),
           mPhysicsSystem(&mState) { }
 
-    ~CruisinGame() {
+    ~Triceratone() {
       mScene.clear();
     }
 
@@ -68,7 +68,7 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
 
       // a terrain
       TerrainObject_::initTextures();
-      mpTerrain = std::make_shared<TerrainObject_> (ident, -5000.f, 5000.f, -5000.f, 5000.f, -300, 100);
+      mpTerrain = std::make_shared<TerrainObject_> (ident, -5000.f, 5000.f, -5000.f, 5000.f, -40, -10);
       this->mScene.addObject(mpTerrain);
 
       // the player
@@ -121,7 +121,7 @@ class CruisinGame : public Game<DualityInterface, CruisinGame> {
 
 int main(int argc, char **argv) {
 
-  CruisinGame game;
+  Triceratone game;
 
   std::cout << std::endl << "Game is initializing..." << std::endl;
   if ( ! game.init("cruisin", "at3_cruisin_settings.ini")) {

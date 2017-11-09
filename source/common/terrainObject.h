@@ -135,18 +135,17 @@ namespace at3 {
   template <typename EcsInterface>
   float TerrainObject<EcsInterface>::m_getNoise(float x, float y) {
 
+    // noiseGen.GetNoise generally returns between -1 and 1.
+
     noiseGen.SetNoiseType(FastNoise::Cellular);
-    noiseGen.SetFractalType(FastNoise::RigidMulti);
+    noiseGen.SetFractalType(FastNoise::Billow);
     noiseGen.SetInterp(FastNoise::Quintic);
-    float value = 2.f * ( noiseGen.GetNoise(x, y) );
-//    float value = 2.f * (
-//        noiseGen.GetNoise(x, y) * 0.5f +
-//        noiseGen.GetNoise(x * 0.5f /*+ 15000*/, y * 0.5f /*+ 15000*/) +
-//        noiseGen.GetNoise(x * 0.25f /*- 1500*/, y * 0.25f /*- 1500*/));
+    float value = noiseGen.GetNoise(x * 20.f, y * 20.f);
+    value = (value > 0.25f) ? 1.f : 0.f;
+
 //    noiseGen.SetNoiseType(FastNoise::SimplexFractal);
 //    noiseGen.SetFractalType(FastNoise::Billow);
-//    noiseGen.SetInterp(FastNoise::Quintic);
-//    value *= (1.f - noiseGen.GetNoise(x * 0.2f, y * 0.2f));
+//    value = value + value * (noiseGen.GetNoise(x * 20.f, y * 20.f) + 1.f);
 
     return value;
   }
