@@ -135,17 +135,18 @@ namespace at3 {
   template <typename EcsInterface>
   float TerrainObject<EcsInterface>::m_getNoise(float x, float y) {
 
-    noiseGen.SetNoiseType(FastNoise::SimplexFractal);
-    noiseGen.SetFractalType(FastNoise::FBM);
+    noiseGen.SetNoiseType(FastNoise::Cellular);
+    noiseGen.SetFractalType(FastNoise::RigidMulti);
     noiseGen.SetInterp(FastNoise::Quintic);
-    float value = 2.f * (
-        noiseGen.GetNoise(x, y) * 0.5f +
-        noiseGen.GetNoise(x * 0.5f /*+ 15000*/, y * 0.5f /*+ 15000*/) +
-        noiseGen.GetNoise(x * 0.25f /*- 1500*/, y * 0.25f /*- 1500*/));
-    noiseGen.SetNoiseType(FastNoise::SimplexFractal);
-    noiseGen.SetFractalType(FastNoise::Billow);
-    noiseGen.SetInterp(FastNoise::Quintic);
-    value *= (1.f - noiseGen.GetNoise(x * 0.2f, y * 0.2f));
+    float value = 2.f * ( noiseGen.GetNoise(x, y) );
+//    float value = 2.f * (
+//        noiseGen.GetNoise(x, y) * 0.5f +
+//        noiseGen.GetNoise(x * 0.5f /*+ 15000*/, y * 0.5f /*+ 15000*/) +
+//        noiseGen.GetNoise(x * 0.25f /*- 1500*/, y * 0.25f /*- 1500*/));
+//    noiseGen.SetNoiseType(FastNoise::SimplexFractal);
+//    noiseGen.SetFractalType(FastNoise::Billow);
+//    noiseGen.SetInterp(FastNoise::Quintic);
+//    value *= (1.f - noiseGen.GetNoise(x * 0.2f, y * 0.2f));
 
     return value;
   }
