@@ -37,7 +37,7 @@ namespace at3 {
     state.add_TransformFunction(bodyId, RTU_MTHD_DLGT(&BasicWalker::bodyVisualTransform, this));
     mpPhysicsBody->addChild(mpVisualBody);
 
-    mpCamera = std::make_shared<ThirdPersonCamera_> (10.f, 0.f, 0.f);
+    mpCamera = std::make_shared<ThirdPersonCamera_> (0.f, 5.f, (float) M_PI * 0.5f);
     mpPhysicsBody->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
 
     ctrlId = physicalId;

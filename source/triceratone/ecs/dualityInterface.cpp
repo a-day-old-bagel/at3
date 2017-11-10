@@ -111,7 +111,7 @@ namespace at3 {
     perspective->far = far;
   }
 
-  void DualityInterface::addTerrain(const ezecs::entityId &id, const glm::mat4 &transform, floatVecPtr const heights,
+  void DualityInterface::addTerrain(const ezecs::entityId &id, const glm::mat4 &transform, floatVecPtr heights,
                                 const size_t resX, const size_t resY, const float sclX, const float sclY,
                                 const float sclZ, const float minZ, const float maxZ) {
     addTransform(id, transform);

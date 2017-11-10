@@ -68,19 +68,19 @@ class Triceratone : public Game<DualityInterface, Triceratone> {
 
       // a terrain
       TerrainObject_::initTextures();
-      mpTerrain = std::make_shared<TerrainObject_> (ident, -5000.f, 5000.f, -5000.f, 5000.f, -40, -10);
+      mpTerrain = std::make_shared<TerrainObject_> (ident, -5000.f, 5000.f, -5000.f, 5000.f, 0, 100);
       this->mScene.addObject(mpTerrain);
 
       // the player
-      glm::mat4 playerMat = glm::translate(ident, { 0.f, -100.f, 0.f});
+      glm::mat4 playerMat = glm::translate(ident, { 0.f, -10.f, 100.f});
       mpPlayer = std::make_unique<BasicWalker> (mState, mScene, playerMat);
 
       // a buggy
-      glm::mat4 buggyMat = glm::translate(ident, { 0.f, -290.f, 0.f });
+      glm::mat4 buggyMat = glm::translate(ident, { 0.f, 10.f, 100.f });
       mpDuneBuggy = std::make_unique<DuneBuggy> (mState, mScene, buggyMat);
 
       // a flying pyramid
-      glm::mat4 pyramidMat = glm::translate(ident, { 0.f, 0.f, 5.f });
+      glm::mat4 pyramidMat = glm::translate(ident, { 0.f, 0.f, 100.f });
       mpPyramid = std::make_unique<Pyramid> (mState, mScene, pyramidMat);
 
       // a skybox-like background

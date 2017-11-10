@@ -404,6 +404,9 @@ namespace at3 {
         PHY_FLOAT,                  // PHY_ScalarType heightDataType
         false                       // bool flipQuadEdges
     );
+
+    std::cout << "phys found: " << terrain->heights->at(0) << std::endl;
+
     physics->shape->setLocalScaling({
         terrain->sclX / (float)terrain->resX,
         terrain->sclY / (float)terrain->resY,

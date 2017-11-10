@@ -23,7 +23,7 @@ namespace at3 {
     public:
       typedef ezecs::entityId EcsId;
       typedef ezecs::State State;
-      DualityInterface(ezecs::State* state);
+      explicit DualityInterface(ezecs::State* state);
       ezecs::entityId createEntity();
       void destroyEntity(const ezecs::entityId& id);
 
@@ -35,16 +35,15 @@ namespace at3 {
       bool hasTransformFunction(const ezecs::entityId& id);
       glm::mat4 getTransformFunction(const ezecs::entityId& id);
 
-      void addPerspective(const ezecs::entityId &id, const float fovy, const float near, const float far);
+      void addPerspective(const ezecs::entityId &id, float fovy, float near, float far);
       float getFovy(const ezecs::entityId& id);
       float getFovyPrev(const ezecs::entityId& id);
       float getNear(const ezecs::entityId& id);
       float getFar(const ezecs::entityId& id);
-      void setFar(const ezecs::entityId &id, const float far);
+      void setFar(const ezecs::entityId &id, float far);
 
-      void addTerrain(const ezecs::entityId &id, const glm::mat4 &transform, ezecs::floatVecPtr const heights,
-                      const size_t resX, const size_t resY, const float sclX, const float sclY, const float sclZ,
-                      const float minZ, const float maxZ);
+      void addTerrain(const ezecs::entityId &id, const glm::mat4 &transform, ezecs::floatVecPtr heights,
+                      size_t resX, size_t resY, float sclX, float sclY, float sclZ, float minZ, float maxZ);
 
       void addMouseControl(const ezecs::entityId& id);
   };

@@ -74,7 +74,6 @@ namespace at3 {
     m_genMesh();
     glm::vec2 newZInfo = m_genMaps(xSize, ySize, zSize);
     float newZSize = zSize / (newZInfo.y - newZInfo.x);
-    float newZCenter = zCenter - ((newZInfo.x + newZInfo.y) * 0.5f);
 
     glm::mat4 translated = glm::translate(transform, {xCenter, yCenter, zCenter});
 
@@ -143,45 +142,36 @@ namespace at3 {
     float value = noiseGen.GetNoise(x * 20.f, y * 20.f);
     value = (value > 0.25f) ? 1.f : 0.f;
 
-//    noiseGen.SetNoiseType(FastNoise::SimplexFractal);
-//    noiseGen.SetFractalType(FastNoise::Billow);
-//    value = value + value * (noiseGen.GetNoise(x * 20.f, y * 20.f) + 1.f);
+    noiseGen.SetNoiseType(FastNoise::SimplexFractal);
+    value = value + value * (noiseGen.GetNoise(x * 5.f, y * 5.f) + 1.f);
+
+    noiseGen.SetFractalType(FastNoise::FBM);
+    value += 2.f * noiseGen.GetNoise(x, y);
 
     return value;
   }
 
+# define AT(x,y) (((y) * resX) + (x))
+
   template <typename EcsInterface>
   glm::vec2 TerrainObject<EcsInterface>::m_genTerrain(std::vector<uint8_t> &diffuse, std::vector<float> &terrain,
                                                              float xScale, float yScale, float zScale) {
+
     // TODO: make use of zScale
     bool minMaxInit = false;
     float min = 0, max = 0;
-    float ds = 1.0f;
+    size_t ds = 1;
     size_t y, x;
-//    #pragma omp parallel for private(y, x)
+
+    // Generate heights at each (x, y)
     for (y = 0; y < resY; ++y) {
       for (x = 0; x < resX; ++x) {
         float nx = x * xScale * 0.05f / resX;
         float ny = y * yScale * 0.05f / resY;
-        float height = m_getNoise(nx,ny);
-        // FIXME: normal calculation is not physically based and is wrong (should be ds * 2 for x and y components)?
-        glm::vec3 normal = glm::cross(
-            glm::vec3(ds /** 0.12f*/, 0.f, m_getNoise(nx + ds, ny) - m_getNoise(nx - ds, ny)),
-            glm::vec3(0.f, ds /** 0.12f*/, m_getNoise(nx, ny + ds) - m_getNoise(nx, ny - ds))
-        );
-        normal = glm::normalize(normal);
-        // fill terrain texture data
-        terrain.at(((y * resX) + x) * 4 + 0) = normal.x;
-        terrain.at(((y * resX) + x) * 4 + 1) = normal.y;
-        terrain.at(((y * resX) + x) * 4 + 2) = normal.z;
-        terrain.at(((y * resX) + x) * 4 + 3) = height;
-        // fill diffuse texture data
-        diffuse.at(((y * resX) + x) * 4 + 0) = (uint8_t)(255.f * abs(normal.x));
-        diffuse.at(((y * resX) + x) * 4 + 1) = (uint8_t)(255.f * abs(normal.y));
-        diffuse.at(((y * resX) + x) * 4 + 2) = (uint8_t)(96.f  * abs(normal.z));
-        diffuse.at(((y * resX) + x) * 4 + 3) = 255;
-        // keep the terrain heights around for physics
-        heights.at((y * resX) + x) = height;
+        float height = m_getNoise(nx, ny);
+        // create the circular flat area in center of map
+//        if ( sqrt(pow(resX / 2 - fabs(x), 2) + pow(resY / 2 - fabs(y), 2)) < 100) { height = 0.f; }
+        heights.at(AT(x,y)) = height;
         if (!minMaxInit) {
           min = height;
           max = height;
@@ -192,8 +182,46 @@ namespace at3 {
         }
       }
     }
+
+    // Scale heights to match the desired min/max
+    float zScaleFactor = zScale / (max - min);
+    for (auto & height : heights) {
+      height -= min;
+      height *= zScaleFactor;
+    }
+    max = (max - min) * zScaleFactor;
+    min = 0;
+
+    // Use heights to generate normal and diffuse color at each (x, y)
+    for (y = 0; y < resY; ++y) {
+      for (x = 0; x < resX; ++x) {
+        size_t xPositive = (x == resX - 1) ? x : x + ds;
+        size_t xNegative = (x == 0) ? x : x - ds;
+        size_t yPositive = (y == resY - 1) ? y : y + ds;
+        size_t yNegative = (y == 0) ? y : y - ds;
+        glm::vec3 normal = glm::cross(
+            glm::vec3(ds * 2, 0.f, heights.at(AT(xPositive, y)) - heights.at(AT(xNegative, y))),
+            glm::vec3(0.f, ds * 2, heights.at(AT(x, yPositive)) - heights.at(AT(x, yNegative)))
+        );
+        normal = glm::normalize(normal);
+        // fill terrain texture data
+        terrain.at(AT(x, y) * 4 + 0) = normal.x;
+        terrain.at(AT(x, y) * 4 + 1) = normal.y;
+        terrain.at(AT(x, y) * 4 + 2) = normal.z;
+        terrain.at(AT(x, y) * 4 + 3) = heights.at(AT(x,y));
+        // fill diffuse texture data
+        diffuse.at(AT(x, y) * 4 + 0) = (uint8_t) (255.f * abs(normal.x));
+        diffuse.at(AT(x, y) * 4 + 1) = (uint8_t) (255.f * abs(normal.y));
+        diffuse.at(AT(x, y) * 4 + 2) = (uint8_t) (96.f * abs(normal.z));
+        diffuse.at(AT(x, y) * 4 + 3) = 255;
+      }
+    }
+
+    // Return min/max of heights FIXME: This should no longer be necessary since it's already scaled above.
     return glm::vec2(min, max);
   }
+
+# undef AT
 
   template <typename EcsInterface>
   glm::vec2 TerrainObject<EcsInterface>::m_genMaps(float xScale, float yScale, float zScale) {
