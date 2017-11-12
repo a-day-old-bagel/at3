@@ -23,6 +23,7 @@ namespace at3 {
       GLuint m_vertexBuffer, m_indexBuffer,  m_diffuse, m_terrain;
       size_t m_numIndices;
       float lodFidelity = 0.02f, maxPatchSize = 150;
+      float noiseCenterX, noiseCenterY;
       size_t numPatchesX, numPatchesY, resX = 2048, resY = 2048;
       std::vector<float> heights;
 
@@ -39,7 +40,7 @@ namespace at3 {
           const glm::mat4 &projection);
 
       FastNoise noiseGen;
-      float m_getNoise(float x, float y);
+      float m_getHeight(float x, float y);
       glm::vec2 m_genTerrain(std::vector<uint8_t> &diffuse, std::vector<float> &terrain,
                              float xScale, float yScale, float zScale);
 
@@ -132,19 +133,65 @@ namespace at3 {
   }
 
   template <typename EcsInterface>
-  float TerrainObject<EcsInterface>::m_getNoise(float x, float y) {
+  float TerrainObject<EcsInterface>::m_getHeight(float x, float y) {
 
     // noiseGen.GetNoise generally returns between -1 and 1.
 
+    // odd outcroppings of rock form a maze
+    float minWallHeight = 3.f;
     noiseGen.SetNoiseType(FastNoise::Cellular);
     noiseGen.SetFractalType(FastNoise::Billow);
     noiseGen.SetInterp(FastNoise::Quintic);
     float value = noiseGen.GetNoise(x * 20.f, y * 20.f);
-    value = (value > 0.25f) ? 1.f : 0.f;
+    value = (value > 0.25f) ? std::max(value * minWallHeight * 2, minWallHeight) : 0.f;
 
+    // Add shape to tops of outcroppings
     noiseGen.SetNoiseType(FastNoise::SimplexFractal);
     value = value + value * (noiseGen.GetNoise(x * 5.f, y * 5.f) + 1.f);
 
+    // create the crater area
+    float distToCenterX = noiseCenterX - x;
+    float distToCenterY = noiseCenterY - y;
+    float radius = sqrt(distToCenterX * distToCenterX + distToCenterY * distToCenterY);
+    float craterRadius = 50.f;
+    float fringeCraterRadius = craterRadius * 2.f;
+    float cleanCraterRadius = craterRadius * 0.95f;
+    float dirtyCraterRadius = craterRadius * 1.15f;
+    if (radius < fringeCraterRadius) {
+      // This will be filled in below and become the final value.
+      float craterValue = 0.f;
+      // a shallow parabolic crater to be applied to walkable terrain
+      float craterDepression = -(craterRadius * craterRadius - radius * radius) * 0.005f;
+      if (value) {
+        // a slightly deeper parabolic crater offset upwards to be applied to outcroppings at the fringe
+        float outCrop = std::min(value, -(cleanCraterRadius * cleanCraterRadius - radius * radius) * 0.0055f);
+        if (radius > dirtyCraterRadius) {
+          craterValue = outCrop;
+        } else if (radius < cleanCraterRadius) {
+          craterValue = craterDepression;
+        } else {
+          float interp =(-cos((float)M_PI * ( (radius - cleanCraterRadius)
+                                              / (dirtyCraterRadius - cleanCraterRadius))) + 1.f) * 0.5f;
+          craterValue = (1.f - interp) * craterDepression + interp * outCrop;
+        }
+      } else {
+        craterValue = std::min(craterDepression, value);
+        if (radius > craterRadius) {
+          // add a debris ring by elevating walkable terrain near the fringe
+          float debrisRadiusFactor = 2.f; // widens the berm.
+          float debrisRaduis = (float)M_PI * debrisRadiusFactor; // radius of berm (peak to edge)
+          float distFromDebris = fabs(craterRadius + debrisRaduis - radius); // from peak
+          if (distFromDebris < debrisRaduis) {
+            float interp = (radius - craterRadius) / (debrisRaduis * 2);
+            craterValue = interp * (cos(distFromDebris / debrisRadiusFactor) + 1.f)
+                        + (1.f - interp) * craterDepression;
+          }
+        }
+      }
+      value = craterValue;
+    } // crater area finished
+
+    // Add smooth rolling shape to all areas of map
     noiseGen.SetFractalType(FastNoise::FBM);
     value += 2.f * noiseGen.GetNoise(x, y);
 
@@ -163,14 +210,18 @@ namespace at3 {
     size_t ds = 1;
     size_t y, x;
 
+    float noiseScaleFactor = 0.05f;
+
+    // Set point where the center of the crater will be formed in terrain (for maze maps)
+    noiseCenterX = 0.5f * xScale * noiseScaleFactor;
+    noiseCenterY = 0.5f * yScale * noiseScaleFactor;
+
     // Generate heights at each (x, y)
     for (y = 0; y < resY; ++y) {
       for (x = 0; x < resX; ++x) {
-        float nx = x * xScale * 0.05f / resX;
-        float ny = y * yScale * 0.05f / resY;
-        float height = m_getNoise(nx, ny);
-        // create the circular flat area in center of map
-//        if ( sqrt(pow(resX / 2 - fabs(x), 2) + pow(resY / 2 - fabs(y), 2)) < 100) { height = 0.f; }
+        float nx = x * xScale * noiseScaleFactor / resX;
+        float ny = y * yScale * noiseScaleFactor / resY;
+        float height = m_getHeight(nx, ny);
         heights.at(AT(x,y)) = height;
         if (!minMaxInit) {
           min = height;

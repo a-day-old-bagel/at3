@@ -32,6 +32,7 @@ void spherify(inout vec4 v0, inout vec4 v1) {
     float len = distance(v0, v1);
     v0 = center;
     v1 = center;
+    // FIXME: is length of horiz line double what it should be?
     v0.x -= len;
     v1.x += len;
 }
@@ -91,8 +92,10 @@ void main(){
             float e2 = level(v3, v0);
             float e3 = level(v2, v3);
 
-            gl_TessLevelInner[0] = mix(e1, e2, 0.5); // max instead? didn't seem to help.
-            gl_TessLevelInner[1] = mix(e0, e3, 0.5);
+            float maxLevel = max(max(e0, e1), max(e2, e3));
+
+            gl_TessLevelInner[0] = maxLevel; // mix(e1, e2, 0.5);
+            gl_TessLevelInner[1] = maxLevel; // mix(e0, e3, 0.5);
             gl_TessLevelOuter[0] = e0;
             gl_TessLevelOuter[1] = e1;
             gl_TessLevelOuter[2] = e2;
