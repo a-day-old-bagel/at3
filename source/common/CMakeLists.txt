@@ -18,6 +18,7 @@ add_library( ${AT3_TARGET_PREFIX}common STATIC
   transform.cpp transform.h
   transformRAII.cpp transformRAII.h
   transformStack.cpp transformStack.h
+  textureView.cpp textureView.h
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}common
   ${AT3_TARGET_PREFIX}graphics

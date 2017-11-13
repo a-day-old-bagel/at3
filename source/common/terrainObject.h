@@ -15,6 +15,7 @@
 #include "openglValidation.h"
 #include "shaderProgram.h"
 #include "shaders.h"
+#include "textureView.h"
 
 namespace at3 {
   template <typename EcsInterface>
@@ -26,6 +27,7 @@ namespace at3 {
       float noiseCenterX, noiseCenterY;
       size_t numPatchesX, numPatchesY, resX = 2048, resY = 2048;
       std::vector<float> heights;
+      TextureView textureView;
 
       // TODO: move these into some kind of texture repo.
       static std::shared_ptr<LoadedTexture> grass;
@@ -85,6 +87,8 @@ namespace at3 {
     glm::mat4 centeredTransform = glm::translate(scaledTransform, {0.f, 0.f, (newZInfo.x + newZInfo.y) * -0.5f});
 
     SCENE_ECS->setTransform(SCENE_ID, centeredTransform);
+
+    textureView.viewTextureUnit(1);
 
   }
 
@@ -164,7 +168,7 @@ namespace at3 {
       float craterDepression = -(craterRadius * craterRadius - radius * radius) * 0.005f;
       if (value) {
         // a slightly deeper parabolic crater offset upwards to be applied to outcroppings at the fringe
-        float outCrop = std::min(value, -(cleanCraterRadius * cleanCraterRadius - radius * radius) * 0.0055f);
+        float outCrop = std::min(value, -(cleanCraterRadius * cleanCraterRadius - radius * radius) * 0.0052f);
         if (radius > dirtyCraterRadius) {
           craterValue = outCrop;
         } else if (radius < cleanCraterRadius) {
@@ -434,6 +438,8 @@ namespace at3 {
         GL_UNSIGNED_SHORT,  // type
         0  // indices
     );                                                                 ASSERT_GL_ERROR();
+
+//    textureView.draw();
   }
 
   template <typename EcsInterface>

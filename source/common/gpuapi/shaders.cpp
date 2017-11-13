@@ -81,6 +81,10 @@ namespace at3 {
 # include "shaders_terrain.geom.c"
   DEFINE_SHADER_TESS(terrain)
 
+# include "shaders_textureView.vert.c"
+# include "shaders_textureView.frag.c"
+  DEFINE_SHADER(textureView)
+
 
   void Shaders::updateViewInfos(float fovy, int width, int height) {
     // at 0 field of view, a normalized dot product of 1 must be achieved between the forward view vector and

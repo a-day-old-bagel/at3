@@ -36,6 +36,9 @@ namespace at3 {
     /** shader for drawing LOD terrain */
     DECLARE_SHADER(terrain);
 
+    /** shader for drawing a texture view pane **/
+    DECLARE_SHADER(textureView);
+
       static void updateViewInfos(float fovy, int width, int height);
       static void toggleEdgeView(void *nothing);
   };
