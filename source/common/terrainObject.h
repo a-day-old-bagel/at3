@@ -16,6 +16,7 @@
 #include "shaderProgram.h"
 #include "shaders.h"
 #include "textureView.h"
+#include "imageProcessing.h"
 
 namespace at3 {
   template <typename EcsInterface>
@@ -281,10 +282,13 @@ namespace at3 {
   template <typename EcsInterface>
   glm::vec2 TerrainObject<EcsInterface>::m_genMaps(float xScale, float yScale, float zScale) {
 
+    Kernel gauss = gaussianBlur(1, 5);
+
+    ImageFloatMono terrain2;
     std::vector<float> terrain;
     std::vector<uint8_t> diffuse;
 
-    heights.resize(resY * resX);
+//    heights.resize(resY * resX);
     terrain.resize(resY * resX * 4);
     diffuse.resize(resY * resX * 4);
 
