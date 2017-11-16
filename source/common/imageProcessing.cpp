@@ -4,37 +4,35 @@
 #include "imageProcessing.h"
 
 namespace at3 {
-  size_t ImageFloatMono::size() {
-    return values.size();
-  }
-  float &ImageFloatMono::at(int x, int y) {
-    assert(x >= 0 && y >= 0);
-    return values.at(y * resX + x);
-  }
-  float ImageFloatMono::zeroValue() {
-    return 0;
-  }
 
-  size_t ImageFloatBi::size() {
-    return values.size();
-  }
-  glm::vec2 & ImageFloatBi::at(int x, int y) {
-    assert(x >= 0 && y >= 0);
-    return values.at(y * resX + x);
-  }
-  glm::vec2 ImageFloatBi::zeroValue() {
-    return glm::vec2();
-  }
+//  float ImageFloatMono::zeroValue() {
+//    return 0;
+//  }
+//  float *ImageFloatMono::data() {
+//    return values.data();
+//  }
+//  size_t ImageFloatMono::size() {
+//    return values.size();
+//  }
+//  float &ImageFloatMono::at(int x, int y) {
+//    assert(x >= 0 && y >= 0);
+//    return values.at(y * resX + x);
+//  }
+//  void ImageFloatMono::setValues(std::vector<float> &values, size_t resX, size_t resY) {
+//    this->values = values;
+//    this->resX = resX;
+//    this->resY = resY;
+//  }
 
   Kernel::Kernel(std::vector<double> weights) {
     auto matrixSideLength = (size_t)sqrt(weights.size());
     if (weights.size() != matrixSideLength * matrixSideLength) {
-      std::_Xinvalid_argument("Kernel must have a square number of kermits to form a square convolution matrix");
+      throw std::runtime_error("Kernel must have a square number of kermits to form a square convolution matrix");
     }
     if (matrixSideLength % 2 == 0) {
-      std::_Xinvalid_argument("Kernel convolution matrix must have an odd side length");
+      throw std::runtime_error("Kernel convolution matrix must have an odd side length");
     }
-    int cornerIndex = matrixSideLength / 2;
+    int cornerIndex = (int)matrixSideLength / 2;
     for (int y = cornerIndex; y >= -cornerIndex; --y) {
       for (int x = -cornerIndex; x <= cornerIndex; ++x) {
         size_t kermitIndex = (x + cornerIndex) + (cornerIndex - y) * matrixSideLength;

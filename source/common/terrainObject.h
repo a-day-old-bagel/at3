@@ -22,7 +22,7 @@ namespace at3 {
   template <typename EcsInterface>
   class TerrainObject : public SceneObject<EcsInterface> {
     private:
-      GLuint m_vertexBuffer, m_indexBuffer,  m_diffuse, m_terrain;
+      GLuint m_vertexBuffer, m_indexBuffer, m_diffuse, m_terrain, m_test;
       size_t m_numIndices;
       float lodFidelity = 0.02f, maxPatchSize = 150;
       float noiseCenterX, noiseCenterY;
@@ -89,7 +89,7 @@ namespace at3 {
 
     SCENE_ECS->setTransform(SCENE_ID, centeredTransform);
 
-    textureView.viewTextureUnit(1);
+    textureView.viewTextureUnit(5);
 
   }
 
@@ -282,17 +282,63 @@ namespace at3 {
   template <typename EcsInterface>
   glm::vec2 TerrainObject<EcsInterface>::m_genMaps(float xScale, float yScale, float zScale) {
 
-    Kernel gauss = gaussianBlur(1, 5);
-
-    ImageFloatMono terrain2;
     std::vector<float> terrain;
     std::vector<uint8_t> diffuse;
 
-//    heights.resize(resY * resX);
+    heights.resize(resY * resX);
     terrain.resize(resY * resX * 4);
     diffuse.resize(resY * resX * 4);
 
     glm::vec2 newZInfo = m_genTerrain(diffuse, terrain, xScale, yScale, zScale);
+
+    Kernel gauss15 = gaussianBlur(1,5);
+    Kernel sobelX3 ({
+         3, 0,  -3,
+        10, 0, -10,
+         3, 0,  -3
+    });
+    Kernel sobelY3 ({
+         3,  10,  3,
+         0,   0,  0,
+        -3, -10, -3
+    });
+    Kernel sobelX5 ({
+        1,  2, 0,  -2, -1,
+        4,  8, 0,  -8, -4,
+        6, 12, 0, -12, -6,
+        4,  8, 0,  -8, -4,
+        1,  2, 0,  -2, -1,
+    });
+    Kernel sobelY5 ({
+         1,  4,   6,  4,  1,
+         2,  8,  12,  8,  2,
+         0,  0,   0,  0,  0,
+        -2, -8, -12, -8, -2,
+        -1, -4,  -6, -4, -1,
+    });
+
+    Image<float> terrainEdgeX;
+    Image<float> terrainEdgeY;
+    terrainEdgeX.setValues(&heights, resX, resY);
+
+    terrainEdgeX.applyKernel(gauss15);
+    terrainEdgeY.setValues(terrainEdgeX.getValues(), resX, resY);
+
+    terrainEdgeX.applyKernel(sobelX3);
+    terrainEdgeY.applyKernel(sobelY3);
+
+    float edgeThreshold = 10;
+    std::vector<float> edges (resX * resY);
+    for (size_t y = 0; y < resY; ++y) {
+      for (size_t x = 0; x < resX; ++x) {
+        float x2 = terrainEdgeX.at(x,y) * terrainEdgeX.at(x,y);
+        float y2 = terrainEdgeY.at(x,y) * terrainEdgeY.at(x,y);
+        float edgeX2 = x2 > edgeThreshold ? x2 : 0.f;
+        float edgeY2 = y2 > edgeThreshold ? y2 : 0.f;
+        edges.at(y * resX + x) = sqrt(edgeX2 + edgeY2);
+      }
+    }
+
 
     // Create the terrain texture object in the GL
     glGenTextures(1, &m_terrain);                                            FORCE_ASSERT_GL_ERROR();
@@ -328,6 +374,27 @@ namespace at3 {
         GL_RGBA,  // format
         GL_UNSIGNED_BYTE,  // type
         diffuse.data()  // data
+    );                                                                       FORCE_ASSERT_GL_ERROR();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);        FORCE_ASSERT_GL_ERROR();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);        FORCE_ASSERT_GL_ERROR();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);     FORCE_ASSERT_GL_ERROR();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);     FORCE_ASSERT_GL_ERROR();
+
+
+    // Create the terrain texture object in the GL
+    glGenTextures(1, &m_test);                                               FORCE_ASSERT_GL_ERROR();
+    glBindTexture(GL_TEXTURE_2D, m_test);                                    FORCE_ASSERT_GL_ERROR();
+    // Copy the image to the GL
+    glTexImage2D(
+        GL_TEXTURE_2D,  // target
+        0,  // level
+        GL_R32F,  // internal format
+        (GLsizei)resX,  // width
+        (GLsizei)resY,  // height
+        0,  // border
+        GL_RED,  // format
+        GL_FLOAT,  // type
+        edges.data()  // data
     );                                                                       FORCE_ASSERT_GL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);        FORCE_ASSERT_GL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);        FORCE_ASSERT_GL_ERROR();
@@ -443,6 +510,8 @@ namespace at3 {
         0  // indices
     );                                                                 ASSERT_GL_ERROR();
 
+    glActiveTexture(GL_TEXTURE5);                                      ASSERT_GL_ERROR();
+    glBindTexture(GL_TEXTURE_2D, m_test);
 //    textureView.draw();
   }
 
