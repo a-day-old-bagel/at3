@@ -27,7 +27,8 @@ namespace at3 {
       float lodFidelity = 0.02f, maxPatchSize = 150;
       float noiseCenterX, noiseCenterY;
       size_t numPatchesX, numPatchesY, resX = 2048, resY = 2048;
-      std::vector<float> heights;
+      Image<float> heights;
+      Image<float> edges;
       TextureView textureView;
 
       // TODO: move these into some kind of texture repo.
@@ -81,7 +82,8 @@ namespace at3 {
 
     glm::mat4 translated = glm::translate(transform, {xCenter, yCenter, zCenter});
 
-    SCENE_ECS->addTerrain(SCENE_ID, translated, &heights, resX, resY, xSize, ySize, newZSize, newZInfo.x, newZInfo.y);
+    SCENE_ECS->addTerrain(SCENE_ID, translated, heights.getValues(),
+                          resX, resY, xSize, ySize, newZSize, newZInfo.x, newZInfo.y);
 
     // at this point system callbacks have fired, and it's safe to set a scale matrix FIXME: This hack.
     glm::mat4 scaledTransform = glm::scale(translated, {xSize, ySize, newZSize});
@@ -227,7 +229,7 @@ namespace at3 {
         float nx = x * xScale * noiseScaleFactor / resX;
         float ny = y * yScale * noiseScaleFactor / resY;
         float height = m_getHeight(nx, ny);
-        heights.at(AT(x,y)) = height;
+        heights.at(x,y) = height;
         if (!minMaxInit) {
           min = height;
           max = height;
@@ -241,30 +243,28 @@ namespace at3 {
 
     // Scale heights to match the desired min/max
     float zScaleFactor = zScale / (max - min);
-    for (auto & height : heights) {
+    for (auto & height : *heights.getValues()) {
       height -= min;
       height *= zScaleFactor;
     }
     max = (max - min) * zScaleFactor;
     min = 0;
 
+    Image<float> gradX = sobelGradientX(heights);
+    Image<float> gradY = sobelGradientY(heights);
+
     // Use heights to generate normal and diffuse color at each (x, y)
     for (y = 0; y < resY; ++y) {
       for (x = 0; x < resX; ++x) {
-        size_t xPositive = (x == resX - 1) ? x : x + ds;
-        size_t xNegative = (x == 0) ? x : x - ds;
-        size_t yPositive = (y == resY - 1) ? y : y + ds;
-        size_t yNegative = (y == 0) ? y : y - ds;
-        glm::vec3 normal = glm::cross(
-            glm::vec3(ds * 2, 0.f, heights.at(AT(xPositive, y)) - heights.at(AT(xNegative, y))),
-            glm::vec3(0.f, ds * 2, heights.at(AT(x, yPositive)) - heights.at(AT(x, yNegative)))
-        );
+        // FIXME: check normals for correctness
+        glm::vec3 normal = glm::vec3(gradX.at(x, y), gradY.at(x, y), 2.f);
+
         normal = glm::normalize(normal);
         // fill terrain texture data
         terrain.at(AT(x, y) * 4 + 0) = normal.x;
         terrain.at(AT(x, y) * 4 + 1) = normal.y;
         terrain.at(AT(x, y) * 4 + 2) = normal.z;
-        terrain.at(AT(x, y) * 4 + 3) = heights.at(AT(x,y));
+        terrain.at(AT(x, y) * 4 + 3) = heights.at(x,y);
         // fill diffuse texture data
         diffuse.at(AT(x, y) * 4 + 0) = (uint8_t) (255.f * abs(normal.x));
         diffuse.at(AT(x, y) * 4 + 1) = (uint8_t) (255.f * abs(normal.y));
@@ -272,6 +272,8 @@ namespace at3 {
         diffuse.at(AT(x, y) * 4 + 3) = 255;
       }
     }
+
+    edges = sobelEdgeMono(gradX, gradY, 10);
 
     // Return min/max of heights FIXME: This should no longer be necessary since it's already scaled above.
     return glm::vec2(min, max);
@@ -285,60 +287,11 @@ namespace at3 {
     std::vector<float> terrain;
     std::vector<uint8_t> diffuse;
 
-    heights.resize(resY * resX);
+    heights.resize(resX, resY);
     terrain.resize(resY * resX * 4);
     diffuse.resize(resY * resX * 4);
 
     glm::vec2 newZInfo = m_genTerrain(diffuse, terrain, xScale, yScale, zScale);
-
-    Kernel gauss15 = gaussianBlur(1,5);
-    Kernel sobelX3 ({
-         3, 0,  -3,
-        10, 0, -10,
-         3, 0,  -3
-    });
-    Kernel sobelY3 ({
-         3,  10,  3,
-         0,   0,  0,
-        -3, -10, -3
-    });
-    Kernel sobelX5 ({
-        1,  2, 0,  -2, -1,
-        4,  8, 0,  -8, -4,
-        6, 12, 0, -12, -6,
-        4,  8, 0,  -8, -4,
-        1,  2, 0,  -2, -1,
-    });
-    Kernel sobelY5 ({
-         1,  4,   6,  4,  1,
-         2,  8,  12,  8,  2,
-         0,  0,   0,  0,  0,
-        -2, -8, -12, -8, -2,
-        -1, -4,  -6, -4, -1,
-    });
-
-    Image<float> terrainEdgeX;
-    Image<float> terrainEdgeY;
-    terrainEdgeX.setValues(&heights, resX, resY);
-
-    terrainEdgeX.applyKernel(gauss15);
-    terrainEdgeY.setValues(terrainEdgeX.getValues(), resX, resY);
-
-    terrainEdgeX.applyKernel(sobelX3);
-    terrainEdgeY.applyKernel(sobelY3);
-
-    float edgeThreshold = 10;
-    std::vector<float> edges (resX * resY);
-    for (size_t y = 0; y < resY; ++y) {
-      for (size_t x = 0; x < resX; ++x) {
-        float x2 = terrainEdgeX.at(x,y) * terrainEdgeX.at(x,y);
-        float y2 = terrainEdgeY.at(x,y) * terrainEdgeY.at(x,y);
-        float edgeX2 = x2 > edgeThreshold ? x2 : 0.f;
-        float edgeY2 = y2 > edgeThreshold ? y2 : 0.f;
-        edges.at(y * resX + x) = sqrt(edgeX2 + edgeY2);
-      }
-    }
-
 
     // Create the terrain texture object in the GL
     glGenTextures(1, &m_terrain);                                            FORCE_ASSERT_GL_ERROR();
@@ -512,7 +465,7 @@ namespace at3 {
 
     glActiveTexture(GL_TEXTURE5);                                      ASSERT_GL_ERROR();
     glBindTexture(GL_TEXTURE_2D, m_test);
-//    textureView.draw();
+    textureView.draw();
   }
 
   template <typename EcsInterface>
