@@ -3,17 +3,20 @@
 //
 
 #include "textureView.h"
+#include "settings.h"
 
 namespace at3 {
   TextureView::TextureView() {
     // generate a quad that covers part of the screen
+    float y = 1.f;
+    float x = y * (settings::graphics::windowDimX / settings::graphics::windowDimY);
     float corners[18] = {
-        -1.f , -1.f , 0.f,
-         0.7f, -1.f , 0.f,
-        -1.f ,  0.7f, 0.f,
-        -1.f ,  0.7f, 0.f,
-         0.7f, -1.f , 0.f,
-         0.7f,  0.7f, 0.f
+        -1.f, -1.f, 0.f,
+           x, -1.f, 0.f,
+        -1.f,    y, 0.f,
+        -1.f,    y, 0.f,
+           x, -1.f, 0.f,
+           x,    y, 0.f
     };
     float texCorners[12] = {
         0.f, 1.f,

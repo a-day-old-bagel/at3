@@ -48,6 +48,27 @@ namespace at3 {
       glm::vec2 m_genTerrain(std::vector<uint8_t> &diffuse, std::vector<float> &terrain,
                              float xScale, float yScale, float zScale);
 
+
+
+
+
+      typedef struct {
+          float pos[3], color[3];
+      } Point;
+      typedef struct {
+          Point vertices[2];
+      } Line;
+      std::vector<Line> m_lines;
+      bool m_linesChanged = false;
+      GLuint m_lineBuffer;
+      void m_drawLine( const glm::vec3 &a, const glm::vec3 &b, const glm::vec3 &color );
+      void m_updateLines();
+
+
+
+
+
+
     public:
       TerrainObject(const glm::mat4 &transform,
                     float xMin, float xMax, float yMin, float yMax, float zMin, float zMax);
@@ -76,8 +97,8 @@ namespace at3 {
 
     // TODO: dynamic res and fidelity picking?
 
-    m_genMesh();
     glm::vec2 newZInfo = m_genMaps(xSize, ySize, zSize);
+    m_genMesh();
     float newZSize = zSize / (newZInfo.y - newZInfo.x);
 
     glm::mat4 translated = glm::translate(transform, {xCenter, yCenter, zCenter});
@@ -98,6 +119,8 @@ namespace at3 {
   template <typename EcsInterface>
   TerrainObject<EcsInterface>::~TerrainObject() { }
 
+# define AT(x,y) (((y) * resX) + (x))
+
   template <typename EcsInterface>
   void TerrainObject<EcsInterface>::m_genMesh() {
     size_t strideY = numPatchesX + 1;
@@ -117,6 +140,18 @@ namespace at3 {
         indices.push_back((uint16_t)(strideY *  y      + x + 1));
       }
     }
+
+    for (size_t y = 0; y < resY; ++y) {
+      for (size_t x = 0; x < resX; ++x) {
+        if (edges.at(x, y)) {
+          float fx = (float) x / (float) resX - 0.5f;
+          float fy = (float) y / (float) resY - 0.5f;
+          float h = heights.at(x, y);
+          m_drawLine( glm::vec3(fx, fy, h), glm::vec3(fx, fy, h + 10.f), glm::vec3(1, 1, 1) );
+        }
+      }
+    }
+    m_updateLines();
 
     // Copy the vertices buffer to the GL
     glGenBuffers(1, &m_vertexBuffer);                              FORCE_ASSERT_GL_ERROR();
@@ -204,8 +239,6 @@ namespace at3 {
 
     return value;
   }
-
-# define AT(x,y) (((y) * resX) + (x))
 
   template <typename EcsInterface>
   glm::vec2 TerrainObject<EcsInterface>::m_genTerrain(std::vector<uint8_t> &diffuse, std::vector<float> &terrain,
@@ -357,6 +390,51 @@ namespace at3 {
     return newZInfo;
   }
 
+
+
+
+
+  template <typename EcsInterface>
+  void TerrainObject<EcsInterface>::m_drawLine(
+      const glm::vec3 &a,
+      const glm::vec3 &b,
+      const glm::vec3 &color) {
+    Line line;
+    line.vertices[0].pos[0] = a.x;
+    line.vertices[0].pos[1] = a.y;
+    line.vertices[0].pos[2] = a.z;
+    line.vertices[0].color[0] = color.x;
+    line.vertices[0].color[1] = color.y;
+    line.vertices[0].color[2] = color.z;
+    line.vertices[1].pos[0] = b.x;
+    line.vertices[1].pos[1] = b.y;
+    line.vertices[1].pos[2] = b.z;
+    line.vertices[1].color[0] = color.x;
+    line.vertices[1].color[1] = color.y;
+    line.vertices[1].color[2] = color.z;
+    m_lines.push_back(line);
+    m_linesChanged = true;
+  }
+
+  template<typename EcsInterface>
+  void TerrainObject<EcsInterface>::m_updateLines() {
+    // Upload the lines to the GL
+    glBindBuffer(GL_ARRAY_BUFFER, m_lineBuffer);
+    ASSERT_GL_ERROR();
+    glBufferData(
+        GL_ARRAY_BUFFER,               // target
+        m_lines.size() * sizeof(Line), // size
+        m_lines.data(),                // data
+        GL_STATIC_DRAW                 // usage
+    );
+    ASSERT_GL_ERROR();
+  }
+
+
+
+
+
+
   template <typename EcsInterface>
   void TerrainObject<EcsInterface>::m_drawSurface(
       const glm::mat4 &modelView,
@@ -463,9 +541,81 @@ namespace at3 {
         0  // indices
     );                                                                 ASSERT_GL_ERROR();
 
+
+
+
+
+
+
     glActiveTexture(GL_TEXTURE5);                                      ASSERT_GL_ERROR();
     glBindTexture(GL_TEXTURE_2D, m_test);
-    textureView.draw();
+//    textureView.draw();
+
+
+
+
+
+
+    if (m_linesChanged) {
+      m_updateLines();
+      m_linesChanged = false;
+    }
+
+    auto shader2 = Shaders::wireframeShader();
+    shader2->use();
+
+    assert(shader2->modelViewLocation() != -1);
+    glUniformMatrix4fv(
+        shader2->modelViewLocation(), // location
+        1,                           // count
+        0,                           // transpose
+        glm::value_ptr(modelView)    // value
+    );
+    ASSERT_GL_ERROR();
+    assert(shader2->projectionLocation() != -1);
+    glUniformMatrix4fv(
+        shader2->projectionLocation(), // location
+        1,                            // count
+        0,                            // transpose
+        glm::value_ptr(projection)    // value
+    );
+    ASSERT_GL_ERROR();
+
+    glBindBuffer(GL_ARRAY_BUFFER, m_lineBuffer);
+    ASSERT_GL_ERROR();
+    assert(shader2->vertPositionLocation() != -1);
+    glEnableVertexAttribArray(shader2->vertPositionLocation());
+    ASSERT_GL_ERROR();
+    glVertexAttribPointer(
+        shader2->vertPositionLocation(), // index
+        3,                              // size
+        GL_FLOAT,                       // type
+        0,                              // normalized
+        sizeof(Point),             // stride
+        &(((Point *) 0)->pos[0])   // pointer
+    );
+    ASSERT_GL_ERROR();
+    assert(shader2->vertColorLocation() != -1);
+    glEnableVertexAttribArray(shader2->vertColorLocation());
+    ASSERT_GL_ERROR();
+    glVertexAttribPointer(
+        shader2->vertColorLocation(),    // index
+        3,                              // size
+        GL_FLOAT,                       // type
+        0,                              // normalized
+        sizeof(Point),             // stride
+        &(((Point *) 0)->color[0]) // pointer
+    );
+    ASSERT_GL_ERROR();
+
+    glLineWidth(1.0f);
+    ASSERT_GL_ERROR();
+    glDrawArrays(
+        GL_LINE_STRIP,          // mode
+        0,                 // first
+        m_lines.size() * 2 // count
+    );
+    ASSERT_GL_ERROR();
   }
 
   template <typename EcsInterface>
