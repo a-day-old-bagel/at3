@@ -147,7 +147,7 @@ namespace at3 {
           float fx = (float) x / (float) resX - 0.5f;
           float fy = (float) y / (float) resY - 0.5f;
           float h = heights.at(x, y);
-          m_drawLine( glm::vec3(fx, fy, h), glm::vec3(fx, fy, h + 10.f), glm::vec3(1, 1, 1) );
+          m_drawLine( glm::vec3(fx, fy, h), glm::vec3(fx, fy, h + 10.f), glm::vec3(0, 0, 1) );
         }
       }
     }
@@ -611,7 +611,7 @@ namespace at3 {
     glLineWidth(1.0f);
     ASSERT_GL_ERROR();
     glDrawArrays(
-        GL_LINE_STRIP,          // mode
+        GL_LINES,          // mode
         0,                 // first
         m_lines.size() * 2 // count
     );
