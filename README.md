@@ -1,2 +1,2 @@
 # at3
-## A third attempt.
+This is a C++/OpenGL/Vulkan sandbox that I use to build my graphics and AI-related projects. I'm in the process of making it fit for public consumption, or in other words, it's not currently fun to read or well documented for a newcomer. Among the branches you can find some of the projects listed on my website.
