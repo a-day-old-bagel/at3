@@ -36,8 +36,8 @@ namespace at3 {
       static std::shared_ptr<LoadedTexture> cliff0;
       static std::shared_ptr<LoadedTexture> cliff1;
 
-      void m_genMesh();
-      glm::vec2 m_genMaps(float xScale, float yScale, float zScale);
+      void m_genMesh(std::vector<float> &terrain);
+      glm::vec2 m_genMaps(std::vector<float> &terrain, float xScale, float yScale, float zScale);
 
       void m_drawSurface(
           const glm::mat4 &modelView,
@@ -97,8 +97,10 @@ namespace at3 {
 
     // TODO: dynamic res and fidelity picking?
 
-    glm::vec2 newZInfo = m_genMaps(xSize, ySize, zSize);
-    m_genMesh();
+    std::vector<float> terrain(resY * resX * 4);
+//    terrain.resize(resY * resX * 4);
+    glm::vec2 newZInfo = m_genMaps(terrain, xSize, ySize, zSize);
+    m_genMesh(terrain);
     float newZSize = zSize / (newZInfo.y - newZInfo.x);
 
     glm::mat4 translated = glm::translate(transform, {xCenter, yCenter, zCenter});
@@ -122,7 +124,7 @@ namespace at3 {
 # define AT(x,y) (((y) * resX) + (x))
 
   template <typename EcsInterface>
-  void TerrainObject<EcsInterface>::m_genMesh() {
+  void TerrainObject<EcsInterface>::m_genMesh(std::vector<float> &terrain) {
     size_t strideY = numPatchesX + 1;
     std::vector<float> verts;
     for (size_t y = 0; y < numPatchesY + 1; ++y) {
@@ -141,13 +143,21 @@ namespace at3 {
       }
     }
 
+    std::cout << std::endl << std::endl
+              << terrain.at(AT(3, 3) * 4 + 0) << std::endl
+              << terrain.at(AT(3, 3) * 4 + 1) << std::endl
+              << terrain.at(AT(3, 3) * 4 + 2) << std::endl << std::endl;
+
     for (size_t y = 0; y < resY; ++y) {
       for (size_t x = 0; x < resX; ++x) {
         if (edges.at(x, y)) {
-          float fx = (float) x / (float) resX - 0.5f;
-          float fy = (float) y / (float) resY - 0.5f;
-          float h = heights.at(x, y);
-          m_drawLine( glm::vec3(fx, fy, h), glm::vec3(fx, fy, h + 10.f), glm::vec3(0, 0, 1) );
+          float x0 = (float) x / (float) resX - 0.5f;
+          float y0 = (float) y / (float) resY - 0.5f;
+          float z0 = heights.at(x, y);
+          float dx = terrain.at(AT(x, y) * 4 + 0) / (float) resX;
+          float dy = terrain.at(AT(x, y) * 4 + 1) / (float) resY;
+          float dz = terrain.at(AT(x, y) * 4 + 2);
+          m_drawLine( glm::vec3(x0, y0, z0), glm::vec3(x0 + dx, y0 + dy, z0 + dz), glm::vec3(0, 0, 1) );
         }
       }
     }
@@ -306,6 +316,11 @@ namespace at3 {
       }
     }
 
+    std::cout << std::endl << std::endl
+              << terrain.at(AT(3, 3) * 4 + 0) << std::endl
+              << terrain.at(AT(3, 3) * 4 + 1) << std::endl
+              << terrain.at(AT(3, 3) * 4 + 2) << std::endl << std::endl;
+
     edges = sobelEdgeMono(gradX, gradY, 10);
 
     // Return min/max of heights FIXME: This should no longer be necessary since it's already scaled above.
@@ -315,13 +330,12 @@ namespace at3 {
 # undef AT
 
   template <typename EcsInterface>
-  glm::vec2 TerrainObject<EcsInterface>::m_genMaps(float xScale, float yScale, float zScale) {
+  glm::vec2
+  TerrainObject<EcsInterface>::m_genMaps(std::vector<float> &terrain, float xScale, float yScale, float zScale) {
 
-    std::vector<float> terrain;
     std::vector<uint8_t> diffuse;
 
     heights.resize(resX, resY);
-    terrain.resize(resY * resX * 4);
     diffuse.resize(resY * resX * 4);
 
     glm::vec2 newZInfo = m_genTerrain(diffuse, terrain, xScale, yScale, zScale);
