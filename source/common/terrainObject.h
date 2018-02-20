@@ -1,3 +1,14 @@
+/*
+ * TODO: Hough Transform or Radon Transform
+ * Right now the normals are shown for each pixel of the heightmap.
+ * The cliffs are also edge-detected in the hight map, so we know where those are.
+ * Lines that characterize the cliff faces need to be found, so that large flat planes can be generated
+ * parallel to the cliffs but away from the face of each cliff by enough to cover them.
+ * These planes will be the basis for cosmetic rock face props and other things.
+ * To find lines in the edge-detected image, a fast Hough transform seems like a good bet.
+ * Use the normals to optimize the voting part of the HT, and look into kernel-based HT.
+ */
+
 #pragma once
 
 #include <epoxy/gl.h>
