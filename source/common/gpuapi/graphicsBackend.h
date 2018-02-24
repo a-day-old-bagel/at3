@@ -11,6 +11,7 @@
 #include "shaders.h"
 #include "shaderProgram.h"
 #include "topics.hpp"
+#include "vulkanBackend.h"
 
 namespace at3 {
   namespace graphicsBackend {
@@ -43,6 +44,7 @@ namespace at3 {
       bool init();
       void swap();
       void clear();
+      extern std::unique_ptr<VulkanBackend> vkbe;
 
 //      extern PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback;
 //      extern PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallback;

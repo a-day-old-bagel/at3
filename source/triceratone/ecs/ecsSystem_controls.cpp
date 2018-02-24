@@ -15,6 +15,7 @@
 #define TRACK_TORQUE 100.f
 #define CHARA_WALK 100.f
 #define CHARA_RUN 250.f
+#define FREE_SPEED 5.f
 
 using namespace rtu::topics;
 
@@ -34,7 +35,8 @@ namespace at3 {
         switchToWalkCtrlSub("switch_to_walking_controls", RTU_MTHD_DLGT(&ControlSystem::switchToWalkCtrl, this)),
         switchToPyrmCtrlSub("switch_to_pyramid_controls", RTU_MTHD_DLGT(&ControlSystem::switchToPyramidCtrl, this)),
         switchToTrakCtrlSub("switch_to_track_controls", RTU_MTHD_DLGT(&ControlSystem::switchToTrackCtrl, this)),
-        switchToMousCtrlSub("switch_to_mouse_controls", RTU_MTHD_DLGT(&ControlSystem::switchToMouseCtrl, this))
+        switchToMousCtrlSub("switch_to_mouse_controls", RTU_MTHD_DLGT(&ControlSystem::switchToMouseCtrl, this)),
+        switchToFreeCtrlSub("switch_to_free_controls", RTU_MTHD_DLGT(&ControlSystem::switchToFreeCtrl, this))
   {
     name = "Control System";
   }
@@ -99,6 +101,26 @@ namespace at3 {
             glm::normalize(lastKnownHorizCtrlRot * glm::vec3(playerControls->horizControl, 0.f));
         // Clear the input
         playerControls->horizControl = glm::vec2();
+      }
+    }
+    for (auto id: (registries[3].ids)) { // Free Control
+      FreeControls *freeControls;
+      state->get_FreeControls(id, &freeControls);
+
+      if (length(freeControls->control) > 0.0f) {
+        Placement *placement;
+        state->get_Placement(id, &placement);
+
+        // Rotate the movement axis to the correct orientation
+        // TODO: Figure out math to avoid inverse; use lastKnownHorizCtrlRot, etc.
+        glm::vec3 movement = FREE_SPEED * dt * glm::normalize(
+            glm::inverse(glm::mat3(lastKnownWorldView)) * freeControls->control);
+
+        placement->mat[3][0] += movement.x;
+        placement->mat[3][1] += movement.y;
+        placement->mat[3][2] += movement.z;
+
+        freeControls->control = glm::vec3();
       }
     }
   }
@@ -283,6 +305,38 @@ namespace at3 {
   };
   void ControlSystem::switchToTrackCtrl(void *id) {
     currentCtrlKeys = std::make_unique<ActiveTrackControl>(state, *(entityId*)id);
+  }
+
+  class ActiveFreeControl : public EntityAssociatedERM {
+      FreeControls *getComponent() {
+        FreeControls *freeControls = nullptr;
+        state->get_FreeControls(id, &freeControls);
+        assert(freeControls);
+        return freeControls;
+      }
+      void forwardOrBackward(float amount) { getComponent()->control += glm::vec3(0.f, 0.f, amount); }
+      void rightOrLeft(float amount) { getComponent()->control += glm::vec3(amount, 0.f, 0.f); }
+      void upOrDown(float amount) { getComponent()->control += glm::vec3(0.f, amount, 0.f); }
+
+      // These are used as actions for "key held" topic subscriptions
+      void key_forward(void *nothing) { forwardOrBackward(-1.f); }
+      void key_backward(void *nothing) { forwardOrBackward(1.f); }
+      void key_right(void *nothing) { rightOrLeft(1.f); }
+      void key_left(void *nothing) { rightOrLeft(-1.f); }
+      void key_up(void *nothing) { upOrDown(1.f); }
+      void key_down(void *nothing) { upOrDown(-1.f); }
+    public:
+      ActiveFreeControl(State *state, const entityId id) : EntityAssociatedERM(state, id) {
+        setAction("key_held_w", RTU_MTHD_DLGT(&ActiveFreeControl::key_forward, this));
+        setAction("key_held_s", RTU_MTHD_DLGT(&ActiveFreeControl::key_backward, this));
+        setAction("key_held_d", RTU_MTHD_DLGT(&ActiveFreeControl::key_right, this));
+        setAction("key_held_a", RTU_MTHD_DLGT(&ActiveFreeControl::key_left, this));
+        setAction("key_held_lshift", RTU_MTHD_DLGT(&ActiveFreeControl::key_down, this));
+        setAction("key_held_space", RTU_MTHD_DLGT(&ActiveFreeControl::key_up, this));
+      }
+  };
+  void ControlSystem::switchToFreeCtrl(void *id) {
+    currentCtrlKeys = std::make_unique<ActiveFreeControl>(state, *(entityId*)id);
   }
 }
 

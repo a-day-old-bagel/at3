@@ -132,6 +132,8 @@ class VulkanBackend {
     std::vector<bool> commandBufferSubmitted;
     uint32_t currentCommandBuffer = 0;
 
+    UniformBufferObject ubo;
+
     void initVulkan();
     void cleanupSwapChain();
     void cleanup();
@@ -175,7 +177,7 @@ class VulkanBackend {
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     void createCommandBuffers();
     void createSemaphores();
-    void updateUniformBuffer();
+    void updateUniformBuffer(void *matrix);
     void drawFrame();
     VkShaderModule createShaderModule(const std::vector<char>& code);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);

@@ -19,7 +19,15 @@ namespace at3 {
         }
       }
       if(success) {
-        Shaders::updateViewInfos(currentFovY, settings::graphics::windowDimX, settings::graphics::windowDimY);
+        switch (settings::graphics::gpuApi) {
+          case settings::graphics::OPENGL_OPENCL:
+            Shaders::updateViewInfos(currentFovY, settings::graphics::windowDimX, settings::graphics::windowDimY);
+            break;
+          case settings::graphics::VULKAN:
+            break;
+          default:
+            break;
+        }
         setFullscreenMode(settings::graphics::fullscreen);
       }
       return success;
@@ -89,8 +97,16 @@ namespace at3 {
         case SDL_WINDOWEVENT_SIZE_CHANGED: {
           settings::graphics::windowDimX = (uint32_t) event->window.data1;
           settings::graphics::windowDimY = (uint32_t) event->window.data2;
-          glViewport(0, 0, settings::graphics::windowDimX, settings::graphics::windowDimY);
-          Shaders::updateViewInfos(currentFovY, settings::graphics::windowDimX, settings::graphics::windowDimY);
+          switch (settings::graphics::gpuApi) {
+            case settings::graphics::OPENGL_OPENCL: {
+              glViewport(0, 0, settings::graphics::windowDimX, settings::graphics::windowDimY);
+              Shaders::updateViewInfos(currentFovY, settings::graphics::windowDimX, settings::graphics::windowDimY);
+            } break;
+            case settings::graphics::VULKAN:
+              break;
+            default:
+              break;
+          }
           std::cout << "Window size changed to: " << settings::graphics::windowDimX << "x"
                     << settings::graphics::windowDimY << std::endl;
         } break;
@@ -113,7 +129,15 @@ namespace at3 {
     }
     void setFovy(float fovy) {
       graphicsBackend::currentFovY = fovy;
-      Shaders::updateViewInfos(fovy, settings::graphics::windowDimX, settings::graphics::windowDimY);
+      switch (settings::graphics::gpuApi) {
+        case settings::graphics::OPENGL_OPENCL:
+          Shaders::updateViewInfos(fovy, settings::graphics::windowDimX, settings::graphics::windowDimY);
+          break;
+        case settings::graphics::VULKAN:
+          break;
+        default:
+          break;
+      }
     }
 
     const char *applicationName = nullptr;

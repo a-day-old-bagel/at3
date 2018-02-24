@@ -118,6 +118,12 @@ namespace {
   };
   EZECS_COMPONENT_DEPENDENCIES(PlayerControls, Physics)
 
+  struct FreeControls : public Component<FreeControls> {
+    glm::vec3 control;
+    FreeControls();
+  };
+  EZECS_COMPONENT_DEPENDENCIES(FreeControls, Placement)
+
   struct MouseControls : public Component<MouseControls> {
     float sinOfVertTolerance = 0.5;
     bool invertedX, invertedY;
@@ -198,6 +204,8 @@ namespace {
   TrackControls::TrackControls() {}
 
   PlayerControls::PlayerControls() {}
+
+  FreeControls::FreeControls() {}
 
   MouseControls::MouseControls(bool invertedX, bool invertedY)
       : invertedX(invertedX), invertedY(invertedY) { }

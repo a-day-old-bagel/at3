@@ -14,14 +14,18 @@
 #include <set>
 #include <unordered_map>
 #include <map>
+#include <memory>
 
 #include <SDL_vulkan.h>
 #include "stb_image.h"
 #include "vulkanBackend.h"
+#include "topics.hpp"
+#include "settings.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
-
 #include <tiny_obj_loader.h>
+
+using namespace rtu::topics;
 
 const std::string MODEL_PATH = "assets/models/chalet.obj";
 const std::string TEXTURE_PATH = "assets/textures/chalet.jpg";
@@ -98,6 +102,7 @@ bool Vertex::operator==(const Vertex &other) const {
 
 VulkanBackend::VulkanBackend(SDL_Window *window) : window(window) {
   initVulkan();
+  updateUniformBuffer(nullptr);
 }
 
 VulkanBackend::~VulkanBackend() {
@@ -106,7 +111,6 @@ VulkanBackend::~VulkanBackend() {
 }
 
 void VulkanBackend::step() {
-  updateUniformBuffer();
   drawFrame();
 }
 
@@ -427,7 +431,7 @@ void VulkanBackend::createRenderPass() {
   VkAttachmentDescription colorAttachment = {};
   colorAttachment.format = swapChainImageFormat;
   colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-  colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
   colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
   colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -1211,22 +1215,21 @@ void VulkanBackend::createSemaphores() {
   }
 }
 
-void VulkanBackend::updateUniformBuffer() {
-  static auto startTime = std::chrono::high_resolution_clock::now();
+void VulkanBackend::updateUniformBuffer(void *matrix) {
+  static std::unique_ptr<Subscription> wvUpdate =
+      std::make_unique<Subscription>("primary_cam_wv", RTU_MTHD_DLGT(&VulkanBackend::updateUniformBuffer, this));
 
-  auto currentTime = std::chrono::high_resolution_clock::now();
-  float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.0f;
-
-  UniformBufferObject ubo = {};
-  ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-  ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-  ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10.0f);
-  ubo.proj[1][1] *= -1;
-
-  void *data;
-  vkMapMemory(device, uniformBufferMemory, 0, sizeof(ubo), 0, &data);
-  memcpy(data, &ubo, sizeof(ubo));
-  vkUnmapMemory(device, uniformBufferMemory);
+  if (matrix) {
+    ubo.model = glm::mat4(1.f);
+    ubo.view = *((glm::mat4 *) matrix);
+    ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f,
+                                10.0f);
+    ubo.proj[1][1] *= -1;
+    void *data;
+    vkMapMemory(device, uniformBufferMemory, 0, sizeof(ubo), 0, &data);
+    memcpy(data, &ubo, sizeof(ubo));
+    vkUnmapMemory(device, uniformBufferMemory);
+  }
 }
 
 void VulkanBackend::drawFrame() {
@@ -1325,11 +1328,13 @@ VkSurfaceFormatKHR VulkanBackend::chooseSwapSurfaceFormat(
 VkPresentModeKHR VulkanBackend::chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes) {
   VkPresentModeKHR bestMode = VK_PRESENT_MODE_FIFO_KHR;
 
-  for (const auto &availablePresentMode : availablePresentModes) {
-    if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-      return availablePresentMode;
-    } else if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
-      bestMode = availablePresentMode;
+  if (!at3::settings::graphics::vulkan::forceFifo) {
+    for (const auto &availablePresentMode : availablePresentModes) {
+      if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+        return availablePresentMode;
+      } else if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+        bestMode = availablePresentMode;
+      }
     }
   }
 

@@ -17,6 +17,11 @@ namespace at3 {
       float fovy = 1.1f;
       float near = 0.1f;
       float far = 10000.f;
+
+      namespace vulkan {
+        bool forceFifo = false;
+      }
+
     }
 
     // The settings registry contains mappings from setting name to memory location.
@@ -66,6 +71,7 @@ namespace at3 {
       registry.insert(std::make_pair( "graphics_win_dimy_u", &graphics::windowDimY));
       registry.insert(std::make_pair( "graphics_win_posx_i", &graphics::windowPosX));
       registry.insert(std::make_pair( "graphics_win_posy_i", &graphics::windowPosY));
+      registry.insert(std::make_pair( "graphics_vk_forceFifo_b", &graphics::vulkan::forceFifo));
 
       // Now add the custom entries after - they will never overwrite the standard ones.
       registry.insert(customRegistry.begin(), customRegistry.end());
@@ -108,6 +114,7 @@ namespace at3 {
                 CASE_CHAR_TYPE('u', uint32_t)
                 CASE_CHAR_TYPE('i', int32_t)
                 CASE_CHAR_TYPE('f', float)
+                CASE_CHAR_TYPE('b', bool)
 
                 default: {
                   reportProblem << "Encountered user setting with invalid type postfix: "
@@ -163,6 +170,7 @@ namespace at3 {
           CASE_CHAR_TYPE('u', uint32_t)
           CASE_CHAR_TYPE('i', int32_t)
           CASE_CHAR_TYPE('f', float)
+          CASE_CHAR_TYPE('b', bool)
 
           default: {
             reportProblem << "Did not save user setting (invalid type postfix): "

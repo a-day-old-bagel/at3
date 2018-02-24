@@ -28,7 +28,7 @@ namespace at3 {
 
     private:
       EcsInterface mEcsInterface;
-      std::shared_ptr<Camera<EcsInterface>> mpCamera;
+      std::shared_ptr<Camera<EcsInterface>> mpCamera = nullptr;
       float mLastTime = 0.f;
       std::string mSettingsFileName;
       bool mIsQuit = false;
@@ -97,11 +97,14 @@ namespace at3 {
     // If this is first frame, make sure timing doesn't cause problems
     if (mLastTime == 0.0f) {
       // FIXME: Try to make sure this doesn't ever produce a dt of 0.
+      // TODO: Actually, just use the std::chrono stuff and use its "now" function
       mLastTime = (float)(std::min((Uint32)0, SDL_GetTicks() - 1)) * TIME_MULTIPLIER_MS;
     }
 
     // Update the world-view matrix topic
-    rtu::topics::publish("primary_cam_wv", (void*)&mpCamera->lastWorldViewQueried);
+    if (mpCamera) {
+      rtu::topics::publish("primary_cam_wv", (void *) &mpCamera->lastWorldViewQueried);
+    }
 
     // Poll SDL events
     SDL_Event event;

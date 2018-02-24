@@ -34,6 +34,11 @@ class Triceratone : public Game<DualityInterface, Triceratone> {
     AnimationSystem   mAnimationSystem;
     PhysicsSystem     mPhysicsSystem;
 
+    std::shared_ptr<SceneObject_> mpPlayer;
+    std::shared_ptr<PerspectiveCamera_> mpCamera;
+
+/*
+
     std::unique_ptr<Subscription> key1Sub, key2Sub, key3Sub;
 
     std::shared_ptr<SkyBox_>         mpSkybox;
@@ -42,6 +47,7 @@ class Triceratone : public Game<DualityInterface, Triceratone> {
     std::unique_ptr<Pyramid>         mpPyramid;
     std::unique_ptr<DuneBuggy>       mpDuneBuggy;
     std::shared_ptr<DebugStuff>      mpDebugStuff;
+*/
 
   public:
 
@@ -65,6 +71,30 @@ class Triceratone : public Game<DualityInterface, Triceratone> {
 
       // an identity matrix
       glm::mat4 ident;
+
+
+
+
+
+      glm::mat4 start = glm::rotate(glm::translate(ident, {0.f, 0.f, 5.f}), 0.f, {1.0f, 0.0f, 0.0f});
+      mpPlayer = std::make_shared<SceneObject_>();
+      entityId playerId = mpPlayer->getId();
+      mState.add_Placement(playerId, start);
+      mState.add_FreeControls(playerId);
+      mpCamera = std::make_shared<PerspectiveCamera_> (ident);
+      entityId camId = mpCamera->getId();
+      mState.add_MouseControls(camId, false, false);
+      mpPlayer->addChild(mpCamera);
+      mScene.addObject(mpPlayer);
+      publish("set_primary_camera", (void*)&mpCamera);
+      publish("switch_to_free_controls", (void*)&playerId);
+      publish("switch_to_mouse_controls", (void*)&camId);
+
+
+
+
+
+      /*
 
       // a terrain
       TerrainObject_::initTextures();
@@ -103,6 +133,8 @@ class Triceratone : public Game<DualityInterface, Triceratone> {
       // test out some music
       // mpDebugStuff->queueMusic();
 
+      */
+
       return true;
     }
 
@@ -113,7 +145,7 @@ class Triceratone : public Game<DualityInterface, Triceratone> {
 
     void onTick(float dt) {
       mControlSystem.tick(dt);
-      mpPyramid->resizeFire();
+//      mpPyramid->resizeFire();
       mPhysicsSystem.tick(dt);
       mAnimationSystem.tick(dt);
     }

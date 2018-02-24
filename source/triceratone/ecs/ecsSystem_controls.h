@@ -14,7 +14,6 @@ namespace at3 {
   class EntityAssociatedERM;
   class ControlSystem : public System<ControlSystem> {
       glm::mat4 lastKnownWorldView;
-      glm::vec3 lastKnownLookVec;
       glm::mat3 lastKnownHorizCtrlRot;
       bool lookInfoIsFresh = false;
 
@@ -22,6 +21,7 @@ namespace at3 {
       rtu::topics::Subscription switchToWalkCtrlSub;
       rtu::topics::Subscription switchToPyrmCtrlSub;
       rtu::topics::Subscription switchToTrakCtrlSub;
+      rtu::topics::Subscription switchToFreeCtrlSub;
       std::unique_ptr<EntityAssociatedERM> currentCtrlKeys;
 
       rtu::topics::Subscription switchToMousCtrlSub;
@@ -33,12 +33,14 @@ namespace at3 {
       void switchToWalkCtrl(void* id);
       void switchToPyramidCtrl(void *id);
       void switchToTrackCtrl(void *id);
+      void switchToFreeCtrl(void *id);
 
     public:
       std::vector<compMask> requiredComponents = {
               PYRAMIDCONTROLS,
               TRACKCONTROLS,
-              PLAYERCONTROLS
+              PLAYERCONTROLS,
+              FREECONTROLS
       };
       ControlSystem(State* state);
       bool onInit();

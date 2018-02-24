@@ -23,6 +23,11 @@ namespace at3 {
       extern uint32_t windowDimX, windowDimY;
       extern int32_t windowPosX, windowPosY;
       extern float fovy, near, far;
+
+      namespace vulkan {
+        extern bool forceFifo;
+      }
+
     }
 
     bool addCustom(const char *name, void *data);
