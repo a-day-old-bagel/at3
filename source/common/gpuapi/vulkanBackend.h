@@ -6,23 +6,13 @@
 
 #pragma once
 
-#include <iostream>
-#include <fstream>
-#include <stdexcept>
-#include <algorithm>
-#include <chrono>
-#include <vector>
-#include <cstring>
-#include <array>
-#include <set>
-#include <unordered_map>
-
 #define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
 
+#include <vector>
 #include <SDL.h>
 #include <vulkan/vulkan.h>
 
@@ -138,6 +128,10 @@ class VulkanBackend {
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;
 
+    std::vector<VkFence> commandBufferFences;
+    std::vector<bool> commandBufferSubmitted;
+    uint32_t currentCommandBuffer = 0;
+
     void initVulkan();
     void cleanupSwapChain();
     void cleanup();
@@ -149,6 +143,7 @@ class VulkanBackend {
     void createLogicalDevice();
     void createSwapChain();
     void createImageViews();
+    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
     void createRenderPass();
     void createDescriptorSetLayout();
     void createGraphicsPipeline();
@@ -162,7 +157,6 @@ class VulkanBackend {
     void createTextureImage();
     void createTextureImageView();
     void createTextureSampler();
-    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                      VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
@@ -185,10 +179,10 @@ class VulkanBackend {
     void drawFrame();
     VkShaderModule createShaderModule(const std::vector<char>& code);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> availablePresentModes);
+    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
-    bool isDeviceSuitable(VkPhysicalDevice device);
+    int rateDeviceSuitability(VkPhysicalDevice device);
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
     std::vector<const char*> getRequiredExtensions();
