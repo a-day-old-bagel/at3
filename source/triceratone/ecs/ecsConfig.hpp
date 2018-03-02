@@ -120,6 +120,7 @@ namespace {
 
   struct FreeControls : public Component<FreeControls> {
     glm::vec3 control;
+    int x10 = 0;
     FreeControls();
   };
   EZECS_COMPONENT_DEPENDENCIES(FreeControls, Placement)

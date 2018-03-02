@@ -16,64 +16,42 @@
 #include <SDL.h>
 #include <vulkan/vulkan.h>
 
-extern const std::string MODEL_PATH;
-extern const std::string TEXTURE_PATH;
-
-extern const std::vector<const char*> validationLayers;
-extern const std::vector<const char*> deviceExtensions;
-extern const bool enableValidationLayers;
-
-VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo,
-                                      const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback);
-
-void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback,
-                                   const VkAllocationCallbacks* pAllocator);
-
-struct QueueFamilyIndices {
-    int graphicsFamily = -1;
-    int presentFamily = -1;
-
-    bool isComplete();
-};
-
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
-
-struct Vertex {
-    glm::vec3 pos;
-    glm::vec3 color;
-    glm::vec2 texCoord;
-
-    static VkVertexInputBindingDescription getBindingDescription();
-    static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions();
-    bool operator==(const Vertex& other) const;
-};
-
-namespace std {
-  template<> struct hash<Vertex> {
-      size_t operator()(Vertex const& vertex) const {
-        return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
-               (hash<glm::vec2>()(vertex.texCoord) << 1);
-      }
-  };
-}
-
-struct UniformBufferObject {
-    glm::mat4 model;
-    glm::mat4 view;
-    glm::mat4 proj;
-};
-
 class VulkanBackend {
   public:
     explicit VulkanBackend(SDL_Window *window);
     virtual ~VulkanBackend();
     void step();
 
+    struct Vertex {
+        glm::vec3 pos;
+        glm::vec3 color;
+        glm::vec2 texCoord;
+
+        static VkVertexInputBindingDescription getBindingDescription();
+        static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions();
+        bool operator==(const Vertex& other) const;
+    };
+
   private:
+
+    struct QueueFamilyIndices {
+        int graphicsFamily = -1;
+        int presentFamily = -1;
+
+        bool isComplete();
+    };
+
+    struct SwapChainSupportDetails {
+        VkSurfaceCapabilitiesKHR capabilities;
+        std::vector<VkSurfaceFormatKHR> formats;
+        std::vector<VkPresentModeKHR> presentModes;
+    };
+
+    struct UniformBufferObject {
+        glm::mat4 model;
+        glm::mat4 view;
+        glm::mat4 proj;
+    };
 
     SDL_Window* window;
 
@@ -194,3 +172,12 @@ class VulkanBackend {
                                                         uint64_t obj, size_t location, int32_t code,
                                                         const char* layerPrefix, const char* msg, void* userData);
 };
+
+namespace std {
+  template<> struct hash<VulkanBackend::Vertex> {
+      size_t operator()(VulkanBackend::Vertex const& vertex) const {
+        return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
+               (hash<glm::vec2>()(vertex.texCoord) << 1);
+      }
+  };
+}

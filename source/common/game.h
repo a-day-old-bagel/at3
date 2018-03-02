@@ -191,8 +191,11 @@ namespace at3 {
     RTU_DO_ON_KEYS(rtu::topics::publish("key_held_e", nullptr), keyStates, SDL_SCANCODE_E)
     RTU_DO_ON_KEYS(rtu::topics::publish("key_held_q", nullptr), keyStates, SDL_SCANCODE_Q)
     RTU_DO_ON_KEYS(rtu::topics::publish("key_held_f", nullptr), keyStates, SDL_SCANCODE_F)
+    RTU_DO_ON_KEYS(rtu::topics::publish("key_held_c", nullptr), keyStates, SDL_SCANCODE_C)
     RTU_DO_ON_KEYS(rtu::topics::publish("key_held_space", nullptr), keyStates, SDL_SCANCODE_SPACE)
     RTU_DO_ON_KEYS(rtu::topics::publish("key_held_lshift", nullptr), keyStates, SDL_SCANCODE_LSHIFT)
+    RTU_DO_ON_KEYS(rtu::topics::publish("key_held_lalt", nullptr), keyStates, SDL_SCANCODE_LALT)
+    RTU_DO_ON_KEYS(rtu::topics::publish("key_held_lctrl", nullptr), keyStates, SDL_SCANCODE_LCTRL)
 
     // Update logic given the time since the last frame was drawn TODO: SDL_GetTicks may be too granular
     float currentTime = (float)SDL_GetTicks() * TIME_MULTIPLIER_MS;

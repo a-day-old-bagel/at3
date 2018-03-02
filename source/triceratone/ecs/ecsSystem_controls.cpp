@@ -112,8 +112,8 @@ namespace at3 {
         state->get_Placement(id, &placement);
 
         // Rotate the movement axis to the correct orientation
-        // TODO: Figure out math to avoid inverse; use lastKnownHorizCtrlRot, etc.
-        glm::vec3 movement = FREE_SPEED * dt * glm::normalize(
+        // TODO: Figure out math to avoid inverse; use lastKnownHorizCtrlRot, etc? Or better not?
+        glm::vec3 movement = FREE_SPEED * pow(10.f, freeControls->x10) * dt * glm::normalize(
             glm::inverse(glm::mat3(lastKnownWorldView)) * freeControls->control);
 
         placement->mat[3][0] += movement.x;
@@ -121,6 +121,9 @@ namespace at3 {
         placement->mat[3][2] += movement.z;
 
         freeControls->control = glm::vec3();
+      }
+      if (freeControls->x10) {
+        freeControls->x10 = 0;
       }
     }
   }
@@ -317,6 +320,7 @@ namespace at3 {
       void forwardOrBackward(float amount) { getComponent()->control += glm::vec3(0.f, 0.f, amount); }
       void rightOrLeft(float amount) { getComponent()->control += glm::vec3(amount, 0.f, 0.f); }
       void upOrDown(float amount) { getComponent()->control += glm::vec3(0.f, amount, 0.f); }
+      void faster() { getComponent()->x10++; }
 
       // These are used as actions for "key held" topic subscriptions
       void key_forward(void *nothing) { forwardOrBackward(-1.f); }
@@ -325,14 +329,18 @@ namespace at3 {
       void key_left(void *nothing) { rightOrLeft(-1.f); }
       void key_up(void *nothing) { upOrDown(1.f); }
       void key_down(void *nothing) { upOrDown(-1.f); }
+      void key_faster(void *nothing) { faster(); }
     public:
       ActiveFreeControl(State *state, const entityId id) : EntityAssociatedERM(state, id) {
         setAction("key_held_w", RTU_MTHD_DLGT(&ActiveFreeControl::key_forward, this));
         setAction("key_held_s", RTU_MTHD_DLGT(&ActiveFreeControl::key_backward, this));
         setAction("key_held_d", RTU_MTHD_DLGT(&ActiveFreeControl::key_right, this));
         setAction("key_held_a", RTU_MTHD_DLGT(&ActiveFreeControl::key_left, this));
-        setAction("key_held_lshift", RTU_MTHD_DLGT(&ActiveFreeControl::key_down, this));
+        setAction("key_held_c", RTU_MTHD_DLGT(&ActiveFreeControl::key_down, this));
         setAction("key_held_space", RTU_MTHD_DLGT(&ActiveFreeControl::key_up, this));
+        setAction("key_held_lshift", RTU_MTHD_DLGT(&ActiveFreeControl::key_faster, this));
+        setAction("key_held_lalt", RTU_MTHD_DLGT(&ActiveFreeControl::key_faster, this));
+        setAction("key_held_lctrl", RTU_MTHD_DLGT(&ActiveFreeControl::key_faster, this));
       }
   };
   void ControlSystem::switchToFreeCtrl(void *id) {

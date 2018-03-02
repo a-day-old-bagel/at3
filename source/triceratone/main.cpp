@@ -34,12 +34,11 @@ class Triceratone : public Game<DualityInterface, Triceratone> {
     AnimationSystem   mAnimationSystem;
     PhysicsSystem     mPhysicsSystem;
 
-    std::shared_ptr<SceneObject_> mpPlayer;
+    std::shared_ptr<SceneObject_> mpFreeCam;
     std::shared_ptr<PerspectiveCamera_> mpCamera;
 
-/*
 
-    std::unique_ptr<Subscription> key1Sub, key2Sub, key3Sub;
+    std::unique_ptr<Subscription> key0Sub, key1Sub, key2Sub, key3Sub;
 
     std::shared_ptr<SkyBox_>         mpSkybox;
     std::shared_ptr<TerrainObject_>  mpTerrain;
@@ -47,7 +46,7 @@ class Triceratone : public Game<DualityInterface, Triceratone> {
     std::unique_ptr<Pyramid>         mpPyramid;
     std::unique_ptr<DuneBuggy>       mpDuneBuggy;
     std::shared_ptr<DebugStuff>      mpDebugStuff;
-*/
+
 
   public:
 
@@ -77,63 +76,63 @@ class Triceratone : public Game<DualityInterface, Triceratone> {
 
 
       glm::mat4 start = glm::rotate(glm::translate(ident, {0.f, 0.f, 5.f}), 0.f, {1.0f, 0.0f, 0.0f});
-      mpPlayer = std::make_shared<SceneObject_>();
-      entityId playerId = mpPlayer->getId();
-      mState.add_Placement(playerId, start);
-      mState.add_FreeControls(playerId);
+      mpFreeCam = std::make_shared<SceneObject_>();
+      mState.add_Placement(mpFreeCam->getId(), start);
+      mState.add_FreeControls(mpFreeCam->getId());
       mpCamera = std::make_shared<PerspectiveCamera_> (ident);
-      entityId camId = mpCamera->getId();
-      mState.add_MouseControls(camId, false, false);
-      mpPlayer->addChild(mpCamera);
-      mScene.addObject(mpPlayer);
-      publish("set_primary_camera", (void*)&mpCamera);
-      publish("switch_to_free_controls", (void*)&playerId);
-      publish("switch_to_mouse_controls", (void*)&camId);
+      mState.add_MouseControls(mpCamera->getId(), false, false);
+      mpFreeCam->addChild(mpCamera);
+      mScene.addObject(mpFreeCam);
+      makeFreeCamActiveControl(nullptr);
 
 
 
 
 
-      /*
+      if (settings::graphics::gpuApi == settings::graphics::OPENGL_OPENCL) {
 
-      // a terrain
-      TerrainObject_::initTextures();
-      mpTerrain = std::make_shared<TerrainObject_> (ident, -5000.f, 5000.f, -5000.f, 5000.f, -10, 140);
-      this->mScene.addObject(mpTerrain);
+        // a terrain
+        TerrainObject_::initTextures();
+        mpTerrain = std::make_shared<TerrainObject_>(ident, -5000.f, 5000.f, -5000.f, 5000.f, -10, 140);
+        this->mScene.addObject(mpTerrain);
 
-      // the player
-      glm::mat4 playerMat = glm::translate(ident, { 0.f, -10.f, 0.f});
-      mpPlayer = std::make_unique<BasicWalker> (mState, mScene, playerMat);
+        // the player
+        glm::mat4 playerMat = glm::translate(ident, {0.f, -10.f, 0.f});
+        mpPlayer = std::make_unique<BasicWalker>(mState, mScene, playerMat);
 
-      // a buggy
-      glm::mat4 buggyMat = glm::translate(ident, { 0.f, 10.f, 0.f });
-      mpDuneBuggy = std::make_unique<DuneBuggy> (mState, mScene, buggyMat);
+        // a buggy
+        glm::mat4 buggyMat = glm::translate(ident, {0.f, 10.f, 0.f});
+        mpDuneBuggy = std::make_unique<DuneBuggy>(mState, mScene, buggyMat);
 
-      // a flying pyramid
-      glm::mat4 pyramidMat = glm::translate(ident, { 0.f, 0.f, 0.f });
-      mpPyramid = std::make_unique<Pyramid> (mState, mScene, pyramidMat);
+        // a flying pyramid
+        glm::mat4 pyramidMat = glm::translate(ident, {0.f, 0.f, 0.f});
+        mpPyramid = std::make_unique<Pyramid>(mState, mScene, pyramidMat);
 
-      // a skybox-like background
-      mpSkybox = std::make_shared<SkyBox_> ( );
-      this->mScene.addObject(mpSkybox);
-      mpSkybox->useCubeMap("assets/cubeMaps/sea.png");
+        // a skybox-like background
+        mpSkybox = std::make_shared<SkyBox_>();
+        this->mScene.addObject(mpSkybox);
+        mpSkybox->useCubeMap("assets/cubeMaps/sea.png");
 
-      // Set up control switching, start as player entity.
-      mpPlayer->makeActiveControl(nullptr);
-      key1Sub =
-          std::make_unique<Subscription>("key_down_1", RTU_MTHD_DLGT(&BasicWalker::makeActiveControl, mpPlayer.get()));
-      key2Sub =
-          std::make_unique<Subscription>("key_down_2", RTU_MTHD_DLGT(&DuneBuggy::makeActiveControl, mpDuneBuggy.get()));
-      key3Sub =
-          std::make_unique<Subscription>("key_down_3", RTU_MTHD_DLGT(&Pyramid::makeActiveControl, mpPyramid.get()));
+        // Set up control switching, start as player entity.
+        key0Sub =
+            std::make_unique<Subscription>("key_down_0", RTU_MTHD_DLGT(&Triceratone::makeFreeCamActiveControl, this));
+        key1Sub =
+            std::make_unique<Subscription>("key_down_1",
+                                           RTU_MTHD_DLGT(&BasicWalker::makeActiveControl, mpPlayer.get()));
+        key2Sub =
+            std::make_unique<Subscription>("key_down_2",
+                                           RTU_MTHD_DLGT(&DuneBuggy::makeActiveControl, mpDuneBuggy.get()));
+        key3Sub =
+            std::make_unique<Subscription>("key_down_3", RTU_MTHD_DLGT(&Pyramid::makeActiveControl, mpPyramid.get()));
 
-      // some debug-draw features
-      mpDebugStuff = std::make_shared<DebugStuff> (mScene, &mPhysicsSystem);
+        // some debug-draw features
+        mpDebugStuff = std::make_shared<DebugStuff>(mScene, &mPhysicsSystem);
 
-      // test out some music
-      // mpDebugStuff->queueMusic();
+        // test out some music
+        // mpDebugStuff->queueMusic();
 
-      */
+      }
+
 
       return true;
     }
@@ -145,9 +144,19 @@ class Triceratone : public Game<DualityInterface, Triceratone> {
 
     void onTick(float dt) {
       mControlSystem.tick(dt);
-//      mpPyramid->resizeFire();
+      if (settings::graphics::gpuApi == settings::graphics::OPENGL_OPENCL) {
+        mpPyramid->resizeFire();
+      }
       mPhysicsSystem.tick(dt);
       mAnimationSystem.tick(dt);
+    }
+
+    void makeFreeCamActiveControl(void *nothing) {
+      publish("set_primary_camera", (void*)&mpCamera);
+      entityId freeCamId = mpFreeCam->getId();
+      publish("switch_to_free_controls", (void*)&freeCamId);
+      entityId camId = mpCamera->getId();
+      publish("switch_to_mouse_controls", (void*)&camId);
     }
 };
 

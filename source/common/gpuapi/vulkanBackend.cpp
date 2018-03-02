@@ -60,12 +60,12 @@ void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT
   }
 }
 
-bool QueueFamilyIndices::isComplete() {
+bool VulkanBackend::QueueFamilyIndices::isComplete() {
   return graphicsFamily >= 0 && presentFamily >= 0;
 }
 
 
-VkVertexInputBindingDescription Vertex::getBindingDescription() {
+VkVertexInputBindingDescription VulkanBackend::Vertex::getBindingDescription() {
   VkVertexInputBindingDescription bindingDescription = {};
   bindingDescription.binding = 0;
   bindingDescription.stride = sizeof(Vertex);
@@ -74,7 +74,7 @@ VkVertexInputBindingDescription Vertex::getBindingDescription() {
   return bindingDescription;
 }
 
-std::array<VkVertexInputAttributeDescription, 3> Vertex::getAttributeDescriptions() {
+std::array<VkVertexInputAttributeDescription, 3> VulkanBackend::Vertex::getAttributeDescriptions() {
   std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions = {};
 
   attributeDescriptions[0].binding = 0;
@@ -95,7 +95,7 @@ std::array<VkVertexInputAttributeDescription, 3> Vertex::getAttributeDescription
   return attributeDescriptions;
 }
 
-bool Vertex::operator==(const Vertex &other) const {
+bool VulkanBackend::Vertex::operator==(const VulkanBackend::Vertex &other) const {
   return pos == other.pos && color == other.color && texCoord == other.texCoord;
 }
 
@@ -1362,7 +1362,7 @@ VkExtent2D VulkanBackend::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capab
   }
 }
 
-SwapChainSupportDetails VulkanBackend::querySwapChainSupport(VkPhysicalDevice device) {
+VulkanBackend::SwapChainSupportDetails VulkanBackend::querySwapChainSupport(VkPhysicalDevice device) {
   SwapChainSupportDetails details;
 
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
@@ -1448,7 +1448,7 @@ bool VulkanBackend::checkDeviceExtensionSupport(VkPhysicalDevice device) {
   return requiredExtensions.empty();
 }
 
-QueueFamilyIndices VulkanBackend::findQueueFamilies(VkPhysicalDevice device) {
+VulkanBackend::QueueFamilyIndices VulkanBackend::findQueueFamilies(VkPhysicalDevice device) {
   QueueFamilyIndices indices;
 
   uint32_t queueFamilyCount = 0;
