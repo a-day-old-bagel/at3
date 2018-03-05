@@ -1,6 +1,4 @@
 
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
-
 add_library( ${AT3_TARGET_PREFIX}graphics STATIC
   graphicsBackend.cpp graphicsBackend.h
   loadedTexture.cpp loadedTexture.h

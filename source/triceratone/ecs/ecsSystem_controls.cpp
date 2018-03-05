@@ -113,7 +113,7 @@ namespace at3 {
 
         // Rotate the movement axis to the correct orientation
         // TODO: Figure out math to avoid inverse; use lastKnownHorizCtrlRot, etc? Or better not?
-        glm::vec3 movement = FREE_SPEED * pow(10.f, freeControls->x10) * dt * glm::normalize(
+        glm::vec3 movement = (float)(FREE_SPEED * pow(10.f, freeControls->x10) * dt) * glm::normalize(
             glm::inverse(glm::mat3(lastKnownWorldView)) * freeControls->control);
 
         placement->mat[3][0] += movement.x;
