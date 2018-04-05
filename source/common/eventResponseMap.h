@@ -13,6 +13,7 @@ namespace at3 {
     public:
       EventResponseMap() = default;
       void setAction(std::string topic, rtu::topics::Action action);
+      void setAction(std::string topic, rtu::topics::SimpleAction simpleAction);
   };
 
 }

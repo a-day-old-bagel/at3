@@ -1,6 +1,5 @@
 
-#ifndef ECSSYSTEM_MOVEMENT_H
-#define ECSSYSTEM_MOVEMENT_H
+#pragma once
 
 #include "ezecs.hpp"
 
@@ -17,5 +16,3 @@ namespace at3 {
       void onTick(float dt);
   };
 }
-
-#endif //ECSSYSTEM_MOVEMENT_H

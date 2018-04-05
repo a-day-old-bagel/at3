@@ -1,6 +1,5 @@
 
-#ifndef ECSSYSTEM_WASDCONTROLS_H
-#define ECSSYSTEM_WASDCONTROLS_H
+#pragma once
 
 #include <memory>
 #include <SDL.h>
@@ -63,5 +62,3 @@ namespace at3 {
       entityId getId();
   };
 }
-
-#endif //ECSSYSTEM_WASDCONTROLS_H

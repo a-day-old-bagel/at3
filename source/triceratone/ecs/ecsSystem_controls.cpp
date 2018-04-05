@@ -1,4 +1,5 @@
 
+#include <global/settings.h>
 #include "ecsSystem_controls.h"
 
 #pragma clang diagnostic push
@@ -9,7 +10,6 @@
 #include "glm/gtx/transform.hpp"
 #include "glm/gtx/matrix_decompose.hpp"
 
-#define MOUSE_SENSITIVITY 0.1f
 #define PYR_SIDE_ACCEL 2500.f
 #define PYR_UP_ACCEL 4000.f
 #define TRACK_TORQUE 100.f
@@ -177,13 +177,13 @@ namespace at3 {
         float inversionValue = (mouseControls->invertedX ? 1.f : -1.f);
         placement->mat = glm::rotate(
             glm::mat4(),
-            (float)event->motion.xrel * MOUSE_SENSITIVITY * ((float) M_PI / 180.0f) * inversionValue,
+            (float)event->motion.xrel * settings::controls::mouseSpeed * ((float) M_PI / 180.0f) * inversionValue,
             { 0.0f, 0.0f, 1.0f }
         ) * placement->mat;
         inversionValue = (mouseControls->invertedY ? 1.f : -1.f);
         placement->mat = placement->mat * glm::rotate(
             glm::mat4(),
-            (float)event->motion.yrel * MOUSE_SENSITIVITY * ((float) M_PI / 180.0f) * inversionValue,
+            (float)event->motion.yrel * settings::controls::mouseSpeed * ((float) M_PI / 180.0f) * inversionValue,
             { 1.0f, 0.0f, 0.0f }
         );
       }
@@ -209,12 +209,12 @@ namespace at3 {
       void jump() { getComponent()->jumpRequested = true; }
 
       // These are used as actions for "key held" topic subscriptions
-      void key_forward(void *nothing) { forwardOrBackward(1.f); }
-      void key_backward(void *nothing) { forwardOrBackward(-1.f); }
-      void key_right(void *nothing) { rightOrLeft(1.f); }
-      void key_left(void *nothing) { rightOrLeft(-1.f); }
-      void key_run(void *nothing) { run(); }
-      void key_jump(void *nothing) { jump(); }
+      void key_forward() { forwardOrBackward(1.f); }
+      void key_backward() { forwardOrBackward(-1.f); }
+      void key_right() { rightOrLeft(1.f); }
+      void key_left() { rightOrLeft(-1.f); }
+      void key_run() { run(); }
+      void key_jump() { jump(); }
     public:
       ActiveWalkControl(State *state, const entityId id) : EntityAssociatedERM(state, id) {
         setAction("key_held_w", RTU_MTHD_DLGT(&ActiveWalkControl::key_forward, this));
@@ -241,12 +241,12 @@ namespace at3 {
       void upOrDown(float amount) { getComponent()->accel += glm::vec3(0.f, 0.f, amount); }
 
       // These are used as actions for "key held" topic subscriptions
-      void key_forward(void *nothing) { forwardOrBackward(1.f); }
-      void key_backward(void *nothing) { forwardOrBackward(-1.f); }
-      void key_right(void *nothing) { rightOrLeft(1.f); }
-      void key_left(void *nothing) { rightOrLeft(-1.f); }
-      void key_up(void *nothing) { upOrDown(1.f); }
-      void key_down(void *nothing) { upOrDown(-1.f); }
+      void key_forward() { forwardOrBackward(1.f); }
+      void key_backward() { forwardOrBackward(-1.f); }
+      void key_right() { rightOrLeft(1.f); }
+      void key_left() { rightOrLeft(-1.f); }
+      void key_up() { upOrDown(1.f); }
+      void key_down() { upOrDown(-1.f); }
     public:
       ActivePyramidControl(State *state, const entityId id) : EntityAssociatedERM(state, id) {
         setAction("key_held_w", RTU_MTHD_DLGT(&ActivePyramidControl::key_forward, this));
@@ -288,13 +288,13 @@ namespace at3 {
       }
 
       // These are used as actions for "key held" topic subscriptions
-      void key_forward(void *nothing) { forwardOrBackward(1.f); }
-      void key_backward(void *nothing) { forwardOrBackward(-1.f); }
-      void key_right(void *nothing) { rightOrLeft(1.f); }
-      void key_left(void *nothing) { rightOrLeft(-1.f); }
-      void key_brakeRight(void *nothing) { brakeRightOrLeft(1.f); }
-      void key_brakeLeft(void *nothing) { brakeRightOrLeft(-1.f); }
-      void key_flip(void *nothing) { flip(); }
+      void key_forward() { forwardOrBackward(1.f); }
+      void key_backward() { forwardOrBackward(-1.f); }
+      void key_right() { rightOrLeft(1.f); }
+      void key_left() { rightOrLeft(-1.f); }
+      void key_brakeRight() { brakeRightOrLeft(1.f); }
+      void key_brakeLeft() { brakeRightOrLeft(-1.f); }
+      void key_flip() { flip(); }
     public:
       ActiveTrackControl(State *state, const entityId id) : EntityAssociatedERM(state, id) {
         setAction("key_held_w", RTU_MTHD_DLGT(&ActiveTrackControl::key_forward, this));
@@ -323,13 +323,13 @@ namespace at3 {
       void faster() { getComponent()->x10++; }
 
       // These are used as actions for "key held" topic subscriptions
-      void key_forward(void *nothing) { forwardOrBackward(-1.f); }
-      void key_backward(void *nothing) { forwardOrBackward(1.f); }
-      void key_right(void *nothing) { rightOrLeft(1.f); }
-      void key_left(void *nothing) { rightOrLeft(-1.f); }
-      void key_up(void *nothing) { upOrDown(1.f); }
-      void key_down(void *nothing) { upOrDown(-1.f); }
-      void key_faster(void *nothing) { faster(); }
+      void key_forward() { forwardOrBackward(-1.f); }
+      void key_backward() { forwardOrBackward(1.f); }
+      void key_right() { rightOrLeft(1.f); }
+      void key_left() { rightOrLeft(-1.f); }
+      void key_up() { upOrDown(1.f); }
+      void key_down() { upOrDown(-1.f); }
+      void key_faster() { faster(); }
     public:
       ActiveFreeControl(State *state, const entityId id) : EntityAssociatedERM(state, id) {
         setAction("key_held_w", RTU_MTHD_DLGT(&ActiveFreeControl::key_forward, this));

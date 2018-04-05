@@ -21,7 +21,10 @@ namespace at3 {
       namespace vulkan {
         bool forceFifo = false;
       }
+    }
 
+    namespace controls {
+      float mouseSpeed = 0.04f;
     }
 
     // The settings registry contains mappings from setting name to memory location.
@@ -32,9 +35,9 @@ namespace at3 {
     /**
      * addCustomSetting
      * defines a desired mapping from a name that might appear in the ini to a location
-     * in memory. It should go without saying that these memory addresses must remain
-     * valid throughout the duration of time between the loadFromIni call to the
-     * final saveToIni call, presumably about the entire lifetime of the program.
+     * in memory. These memory addresses must be static and remain valid throughout the
+     * duration of time between the loadFromIni call to the final saveToIni call,
+     * presumably about the entire lifetime of the program.
      *
      * When an ini is saved, the entries will be arranged alphabetically.
      * A variable name in the ini must be formatted such that the LAST LETTER of the

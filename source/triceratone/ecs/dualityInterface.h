@@ -1,6 +1,5 @@
 
-#ifndef AT3_ECSINTERFACE_H
-#define AT3_ECSINTERFACE_H
+#pragma once
 
 #include <glm/glm.hpp>
 #include "ezecs.hpp"
@@ -59,5 +58,3 @@ namespace at3 {
   typedef BulletDebug<DualityInterface> BulletDebug_;
 
 }
-
-#endif //AT3_ECSINTERFACE_H

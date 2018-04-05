@@ -25,7 +25,7 @@ target_include_directories( ${AT3_TARGET_PREFIX}graphics PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}
   )
-set_property( TARGET ${AT3_TARGET_PREFIX}graphics PROPERTY CXX_STANDARD 11 )
+set_property( TARGET ${AT3_TARGET_PREFIX}graphics PROPERTY CXX_STANDARD 17 )
 set_property( TARGET ${AT3_TARGET_PREFIX}graphics PROPERTY CXX_STANDARD_REQUIRED ON )
 
 # Convert shaders to C files

@@ -111,9 +111,9 @@ namespace at3 {
   }
 
   void DuneBuggy::makeActiveControl(void *nothing) {
-    publish("switch_to_track_controls", (void*)&ctrlId);
-    publish("switch_to_mouse_controls", (void*)&camGimbalId);
-    publish("set_primary_camera", (void*)&mpCamera->mpCamera);
+    publish<entityId>("switch_to_track_controls", ctrlId);
+    publish<entityId>("switch_to_mouse_controls", camGimbalId);
+    publish<std::shared_ptr<PerspectiveCamera_>>("set_primary_camera", mpCamera->mpCamera);
   }
 
 }

@@ -27,7 +27,10 @@ namespace at3 {
       namespace vulkan {
         extern bool forceFifo;
       }
+    }
 
+    namespace controls {
+      extern float mouseSpeed;
     }
 
     bool addCustom(const char *name, void *data);

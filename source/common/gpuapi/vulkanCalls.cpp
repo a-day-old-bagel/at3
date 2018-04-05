@@ -1,14 +1,13 @@
 
 #include <iostream>
 #include "graphicsBackend.h"
-#include "utilities.h"
 
 namespace at3 {
   namespace graphicsBackend {
     namespace vulkan {
       bool init() {
         try {
-          vkbe = make_unique<VulkanBackend>(sdl2::window);
+          vkbe = std::make_unique<VulkanBackend>(sdl2::window);
         } catch (const std::runtime_error& e) {
           std::cerr << e.what() << std::endl;
           return false;

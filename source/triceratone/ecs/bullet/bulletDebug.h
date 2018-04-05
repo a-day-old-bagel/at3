@@ -2,8 +2,7 @@
 // Created by volundr on 4/2/17.
 //
 
-#ifndef AT3_BULLETDEBUGDRAWER_H
-#define AT3_BULLETDEBUGDRAWER_H
+#pragma once
 
 #include <epoxy/gl.h>
 #include <vector>
@@ -322,5 +321,3 @@ namespace at3 {
     }
   }
 }
-
-#endif //AT3_BULLETDEBUG_H

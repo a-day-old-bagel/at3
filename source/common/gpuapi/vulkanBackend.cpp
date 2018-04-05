@@ -20,7 +20,6 @@
 #include "vulkanBackend.h"
 #include "topics.hpp"
 #include "settings.h"
-#include "utilities.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
@@ -1217,7 +1216,7 @@ void VulkanBackend::createSemaphores() {
 
 void VulkanBackend::updateUniformBuffer(void *matrix) {
   static std::unique_ptr<Subscription> wvUpdate =
-      at3::make_unique<Subscription>("primary_cam_wv", RTU_MTHD_DLGT(&VulkanBackend::updateUniformBuffer, this));
+      std::make_unique<Subscription>("primary_cam_wv", RTU_MTHD_DLGT(&VulkanBackend::updateUniformBuffer, this));
 
   if (matrix) {
     ubo.model = glm::mat4(1.f);

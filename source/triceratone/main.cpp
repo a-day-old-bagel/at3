@@ -37,7 +37,6 @@ class Triceratone : public Game<DualityInterface, Triceratone> {
     std::shared_ptr<SceneObject_> mpFreeCam;
     std::shared_ptr<PerspectiveCamera_> mpCamera;
 
-
     std::unique_ptr<Subscription> key0Sub, key1Sub, key2Sub, key3Sub;
 
     std::shared_ptr<SkyBox_>         mpSkybox;
@@ -83,7 +82,7 @@ class Triceratone : public Game<DualityInterface, Triceratone> {
       mState.add_MouseControls(mpCamera->getId(), false, false);
       mpFreeCam->addChild(mpCamera);
       mScene.addObject(mpFreeCam);
-      makeFreeCamActiveControl(nullptr);
+      makeFreeCamActiveControl();
 
 
 
@@ -113,17 +112,11 @@ class Triceratone : public Game<DualityInterface, Triceratone> {
         this->mScene.addObject(mpSkybox);
         mpSkybox->useCubeMap("assets/cubeMaps/sea.png");
 
-        // Set up control switching, start as player entity.
-        key0Sub =
-            std::make_unique<Subscription>("key_down_0", RTU_MTHD_DLGT(&Triceratone::makeFreeCamActiveControl, this));
-        key1Sub =
-            std::make_unique<Subscription>("key_down_1",
-                                           RTU_MTHD_DLGT(&BasicWalker::makeActiveControl, mpPlayer.get()));
-        key2Sub =
-            std::make_unique<Subscription>("key_down_2",
-                                           RTU_MTHD_DLGT(&DuneBuggy::makeActiveControl, mpDuneBuggy.get()));
-        key3Sub =
-            std::make_unique<Subscription>("key_down_3", RTU_MTHD_DLGT(&Pyramid::makeActiveControl, mpPyramid.get()));
+        // Set up control switching subscriptions
+        key0Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_0", Triceratone::makeFreeCamActiveControl, this);
+        key1Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_1", BasicWalker::makeActiveControl, mpPlayer.get());
+        key2Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_2", DuneBuggy::makeActiveControl, mpDuneBuggy.get());
+        key3Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_3", Pyramid::makeActiveControl, mpPyramid.get());
 
         // some debug-draw features
         mpDebugStuff = std::make_shared<DebugStuff>(mScene, &mPhysicsSystem);
@@ -151,12 +144,10 @@ class Triceratone : public Game<DualityInterface, Triceratone> {
       mAnimationSystem.tick(dt);
     }
 
-    void makeFreeCamActiveControl(void *nothing) {
-      publish("set_primary_camera", (void*)&mpCamera);
-      entityId freeCamId = mpFreeCam->getId();
-      publish("switch_to_free_controls", (void*)&freeCamId);
-      entityId camId = mpCamera->getId();
-      publish("switch_to_mouse_controls", (void*)&camId);
+    void makeFreeCamActiveControl() {
+      publish<std::shared_ptr<PerspectiveCamera_>>("set_primary_camera", mpCamera);
+      publish<entityId>("switch_to_free_controls", mpFreeCam->getId());
+      publish<entityId>("switch_to_mouse_controls", mpCamera->getId());
     }
 };
 
@@ -170,7 +161,7 @@ int main(int argc, char **argv) {
   }
 
   std::cout << std::endl << "Game has started." << std::endl;
-  while (!game.isQuit()) {
+  while ( ! game.isQuit()) {
     game.tick();
   }
 
