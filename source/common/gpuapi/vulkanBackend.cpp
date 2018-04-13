@@ -15,7 +15,7 @@
 #include <map>
 #include <memory>
 
-#include <SDL_vulkan.h>
+#include <SDLvulkan.h>
 #include "stb_image.h"
 #include "vulkanBackend.h"
 #include "topics.hpp"
@@ -1222,7 +1222,7 @@ void VulkanBackend::updateUniformBuffer(void *matrix) {
     ubo.model = glm::mat4(1.f);
     ubo.view = *((glm::mat4 *) matrix);
     ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f,
-                                10.0f);
+                                1000.0f);
     ubo.proj[1][1] *= -1;
     void *data;
     vkMapMemory(device, uniformBufferMemory, 0, sizeof(ubo), 0, &data);
