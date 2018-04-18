@@ -195,6 +195,12 @@ void VulkanBackend::cleanup() {
 }
 
 void VulkanBackend::recreateSwapChain() {
+  int width, height;
+  SDL_GetWindowSize(window, &width, &height);
+  if (width <=0 || height <= 0) {
+    return;
+  }
+
   vkDeviceWaitIdle(device);
 
   cleanupSwapChain();
