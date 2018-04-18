@@ -3,10 +3,12 @@
 #include <SDL_video.h>
 #include "settings.h"
 
+#define AT3_VERBOSE_SETTINGS 0
+
 namespace at3 {
   namespace settings {
 
-    // These are default settings. They can be overwritten at runtime with an ini file.
+    // Hard values given here are just default values. They are be overwritten at runtime with the ini file.
     namespace graphics {
       uint32_t gpuApi = OPENGL_OPENCL;
       uint32_t fullscreen = WINDOWED;
@@ -75,14 +77,15 @@ namespace at3 {
       registry.insert(std::make_pair( "graphics_win_posx_i", &graphics::windowPosX));
       registry.insert(std::make_pair( "graphics_win_posy_i", &graphics::windowPosY));
       registry.insert(std::make_pair( "graphics_vk_forceFifo_b", &graphics::vulkan::forceFifo));
+      registry.insert(std::make_pair( "controls_mouse_speed_f", &controls::mouseSpeed));
 
       // Now add the custom entries after - they will never overwrite the standard ones.
       registry.insert(customRegistry.begin(), customRegistry.end());
       customRegistry.clear();
     }
 
-    // This is used in the functions below.
-#   define CASE_CHAR_TYPE(c, t) case c: ini >> (*(( t *) registry.at(settingName))); break;
+    // This is used in the function below.
+#   define CASE_CHAR_TYPE_READ(c, t) case c: ini >> (*(( t *) registry.at(settingName))); break;
 
     /**
      * Attempts to read a user settings ini file. This call is designed to only be made once
@@ -114,10 +117,10 @@ namespace at3 {
 
                 // Add an entry for any other types you want to support here and in 'saveToIni'.
                 // make sure the type can be read from a stream with the >> operator correctly.
-                CASE_CHAR_TYPE('u', uint32_t)
-                CASE_CHAR_TYPE('i', int32_t)
-                CASE_CHAR_TYPE('f', float)
-                CASE_CHAR_TYPE('b', bool)
+                CASE_CHAR_TYPE_READ('u', uint32_t)
+                CASE_CHAR_TYPE_READ('i', int32_t)
+                CASE_CHAR_TYPE_READ('f', float)
+                CASE_CHAR_TYPE_READ('b', bool)
 
                 default: {
                   reportProblem << "Encountered user setting with invalid type postfix: "
@@ -143,15 +146,19 @@ namespace at3 {
         }
       }
       if (!workedFlawlessly) {
-        reportProblem << "Some user settings may have failed to load!" << std::endl;
+        reportProblem << "If this is not your first time running, user settings may have failed to load!" << std::endl;
       }
-      fprintf(stdout, "\n%s%s\n", reportNormal.str().c_str(), reportProblem.str().c_str());
+
+#     if AT3_VERBOSE_SETTINGS
+      fprintf(stdout, "\n%s", reportNormal.str().c_str());
+#     endif
+      fprintf(stderr, "\n%s\n", reportProblem.str().c_str());
+
       return workedFlawlessly;
     }
 
-    // This is being redefined for the function below.
-#   undef CASE_CHAR_TYPE
-#   define CASE_CHAR_TYPE(c, t) case c: ini << settingName << " " \
+    // This is being defined for the function below.
+#   define CASE_CHAR_TYPE_WRITE(c, t) case c: ini << settingName << " " \
                                 << (*(( t *) pair.second)) << std::endl; break;
 
     /**
@@ -170,10 +177,10 @@ namespace at3 {
 
           // Add an entry for any other types you want to support here and in 'loadFromIni'.
           // make sure the type can be written to a stream with the << operator correctly.
-          CASE_CHAR_TYPE('u', uint32_t)
-          CASE_CHAR_TYPE('i', int32_t)
-          CASE_CHAR_TYPE('f', float)
-          CASE_CHAR_TYPE('b', bool)
+          CASE_CHAR_TYPE_WRITE('u', uint32_t)
+          CASE_CHAR_TYPE_WRITE('i', int32_t)
+          CASE_CHAR_TYPE_WRITE('f', float)
+          CASE_CHAR_TYPE_WRITE('b', bool)
 
           default: {
             reportProblem << "Did not save user setting (invalid type postfix): "
@@ -186,12 +193,13 @@ namespace at3 {
       if (!workedFlawlessly) {
         reportProblem << "Some user settings may may not have been saved!" << std::endl;
       }
-      fprintf(stdout, "\n%s%s", reportNormal.str().c_str(), reportProblem.str().c_str());
+
+#     if AT3_VERBOSE_SETTINGS
+      fprintf(stdout, "\n%s", reportNormal.str().c_str());
+#     endif
+      fprintf(stderr, "\n%s\n", reportProblem.str().c_str());
+
       return workedFlawlessly;
     }
-
-    // This was used in the functions above.
-#   undef CASE_CHAR_TYPE
-
   }
 }

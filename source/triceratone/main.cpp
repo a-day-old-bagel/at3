@@ -132,7 +132,7 @@ class Triceratone : public Game<DualityInterface, Triceratone> {
 
     int32_t customSetting = 1337;
     virtual void registerCustomSettings() {
-      settings::addCustom("cruisin_customSetting_i", &customSetting);
+      settings::addCustom("triceratone_customSetting_i", &customSetting);
     }
 
     void onTick(float dt) {
@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
   Triceratone game;
 
   std::cout << std::endl << "Game is initializing..." << std::endl;
-  if ( ! game.init("cruisin", "at3_cruisin_settings.ini")) {
+  if ( ! game.init("triceratone", "at3_triceratone_settings.ini")) {
     return -1;
   }
 
