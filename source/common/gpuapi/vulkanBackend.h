@@ -12,9 +12,13 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_FORCE_CXX14     // stupid GLM
-#undef GLM_HAS_CXX11_STL
-#define GLM_HAS_CXX11_STL 1 // stupid GLM
+
+#if defined(__clang__)
+  #define GLM_FORCE_CXX14     // stupid GLM
+  #undef GLM_HAS_CXX11_STL
+  #define GLM_HAS_CXX11_STL 1 // stupid GLM
+#endif
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>

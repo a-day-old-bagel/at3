@@ -20,7 +20,7 @@ add_subdirectory( libepoxy )
 list( APPEND ${AT3_TARGET_PREFIX}external_includes
   ./libepoxy/include
   ./libepoxy/registry
-  ${CMAKE_CURRENT_BINARY_DIR}/extern/libepoxy/include
+  ${CMAKE_CURRENT_BINARY_DIR}/libepoxy/include
   )
 list( APPEND ${AT3_TARGET_PREFIX}extra_definitions
   ${epoxy_DEFINITIONS}
@@ -51,7 +51,7 @@ option( ASSIMP_BUILD_OBJ_IMPORTER "build obj importer" TRUE )
 option( ASSIMP_BUILD_COLLADA_IMPORTER "build collada (dae) importer" TRUE )
 add_subdirectory( assimp )
 list( APPEND ${AT3_TARGET_PREFIX}external_includes
-  ${CMAKE_BINARY_DIR}/external/assimp/include
+  ${CMAKE_CURRENT_BINARY_DIR}/assimp/include
   )
 
 # BULLET
@@ -103,14 +103,6 @@ option( XXD_STATIC_LIB "Build a static lib of xxd" ON )
 option( XXD_EXECUTABLE "Build xxd as an executable" OFF )
 add_subdirectory( xxd )
 
-# GLM
-add_subdirectory( glm )
-
-# STB
-list( APPEND ${AT3_TARGET_PREFIX}external_includes
-  ./stb
-  )
-
 # FASTNOISE
 add_library( fastnoise STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/fastnoise/FastNoise.cpp
@@ -128,7 +120,6 @@ add_library( ${AT3_TARGET_PREFIX}external INTERFACE )
 target_include_directories( ${AT3_TARGET_PREFIX}external INTERFACE SYSTEM
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/assimp/include
-#  ${CMAKE_CURRENT_SOURCE_DIR}/argh
   ${CMAKE_CURRENT_SOURCE_DIR}/rapidjson/include
   ${CMAKE_CURRENT_SOURCE_DIR}/stb
   ${CMAKE_CURRENT_SOURCE_DIR}/glm
@@ -145,7 +136,6 @@ target_link_libraries( ${AT3_TARGET_PREFIX}external INTERFACE
   ${${AT3_TARGET_PREFIX}bullet_libs}
   spirv-cross-glsl
   fastnoise
-  glm
   )
 target_compile_definitions( ${AT3_TARGET_PREFIX}external INTERFACE
   ${${AT3_TARGET_PREFIX}extra_definitions}

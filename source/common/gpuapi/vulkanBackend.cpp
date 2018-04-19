@@ -36,9 +36,9 @@ const std::vector<const char *> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 #ifdef NDEBUG
-const bool enableValidationLayers = false;
+static const bool useValidationLayers = false;
 #else
-const bool useValidationLayers = true;
+static const bool useValidationLayers = true;
 #endif
 
 VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT *pCreateInfo,
