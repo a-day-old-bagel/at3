@@ -58,7 +58,7 @@ foreach ( glsl_source ${at3_glsl_sources} )
     OUTPUT ${c_output}
     COMMAND ${CMAKE_COMMAND} -E make_directory "${at3_spv_c_dir}/"
     COMMAND xxd -include ${spv_file_name} > ${c_output}
-    DEPENDS ${at3_glsl_sources} ${spv_output} xxd_static
+    DEPENDS ${at3_glsl_sources} ${spv_output} xxd
     WORKING_DIRECTORY "${at3_spv_dir}"
   )
   list( APPEND at3_spv_c_headers ${c_output} )
@@ -123,7 +123,7 @@ foreach ( glsl_source ${at3_old_glsl_sources} )
     OUTPUT ${c_output}
     COMMAND ${CMAKE_COMMAND} -E make_directory "${at3_spv_c_dir}/"
     COMMAND xxd -include ${FILE_NAME} > ${c_output}
-    DEPENDS ${at3_old_glsl_sources} ${glsl_source} xxd_static
+    DEPENDS ${at3_old_glsl_sources} ${glsl_source} xxd
     WORKING_DIRECTORY "${at3_glsl_dir_old}"
   )
   list( APPEND at3_glsl_c_shaders ${c_output} )

@@ -155,17 +155,17 @@ int main(int argc, char **argv) {
 
   Triceratone game;
 
-  std::cout << std::endl << "Game is initializing..." << std::endl;
+  std::cout << std::endl << "AT3 is initializing..." << std::endl;
   if ( ! game.init("triceratone", "at3_triceratone_settings.ini")) {
     return -1;
   }
 
-  std::cout << std::endl << "Game has started." << std::endl;
+  std::cout << std::endl << "AT3 has started." << std::endl;
   while ( ! game.isQuit()) {
     game.tick();
   }
 
-  std::cout << std::endl << "Game has finished." << std::endl;
+  std::cout << std::endl << "AT3 has finished." << std::endl;
   return 0;
 }
 
