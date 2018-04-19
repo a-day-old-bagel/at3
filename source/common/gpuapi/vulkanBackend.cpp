@@ -38,7 +38,7 @@ const std::vector<const char *> deviceExtensions = {
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else
-const bool enableValidationLayers = true;
+const bool useValidationLayers = true;
 #endif
 
 VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT *pCreateInfo,
@@ -215,7 +215,7 @@ void VulkanBackend::recreateSwapChain() {
 }
 
 void VulkanBackend::createInstance() {
-  if (enableValidationLayers && !checkValidationLayerSupport()) {
+  if (useValidationLayers && !checkValidationLayerSupport()) {
     throw std::runtime_error("validation layers requested, but not available!");
   }
 
@@ -235,7 +235,7 @@ void VulkanBackend::createInstance() {
   createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
   createInfo.ppEnabledExtensionNames = extensions.data();
 
-  if (enableValidationLayers) {
+  if (useValidationLayers) {
     createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
     createInfo.ppEnabledLayerNames = validationLayers.data();
   } else {
@@ -248,7 +248,7 @@ void VulkanBackend::createInstance() {
 }
 
 void VulkanBackend::setupDebugCallback() {
-  if (!enableValidationLayers) return;
+  if (!useValidationLayers) return;
 
   VkDebugReportCallbackCreateInfoEXT createInfo = {};
   createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
@@ -331,7 +331,7 @@ void VulkanBackend::createLogicalDevice() {
   createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
   createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-  if (enableValidationLayers) {
+  if (useValidationLayers) {
     createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
     createInfo.ppEnabledLayerNames = validationLayers.data();
   } else {
@@ -516,12 +516,39 @@ void VulkanBackend::createDescriptorSetLayout() {
   }
 }
 
-void VulkanBackend::createGraphicsPipeline() {
-  auto vertShaderCode = readFile("assets/vulkanTestShaders/vert.spv");
-  auto fragShaderCode = readFile("assets/vulkanTestShaders/frag.spv");
+VkShaderModule VulkanBackend::createShaderModule(unsigned char *data, unsigned int length) {
+  VkShaderModuleCreateInfo info;
+  info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+  info.flags = 0u;
+  info.pNext = nullptr;
 
-  VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-  VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+  // data for vulkan is stored in uint32_t - temporarily copy it to a container that respects that alignment
+  std::vector<uint32_t> codeAligned;
+  codeAligned.resize((uint32_t)(length / sizeof(uint32_t) + 1));
+
+  memcpy(&codeAligned[0], data, length);
+  info.pCode = &codeAligned[0];
+  info.codeSize = length;
+
+  if (length % 4 != 0) {
+    printf("Invalid data size for .spv file -> are you sure that it compiled correctly?\n");
+  }
+
+  VkShaderModule module;
+  VkResult res = vkCreateShaderModule(device, &info, nullptr, &module);
+  if (res != VK_SUCCESS) {
+    printf("Failed to create shader module!\n");
+  }
+  return module;
+}
+
+# include "shader_depth.vert.spv.c"
+# include "shader_depth.frag.spv.c"
+
+void VulkanBackend::createGraphicsPipeline() {
+
+  VkShaderModule vertShaderModule = createShaderModule(shader_depth_vert_spv, shader_depth_vert_spv_len);
+  VkShaderModule fragShaderModule = createShaderModule(shader_depth_frag_spv, shader_depth_frag_spv_len);
 
   VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
   vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -1490,7 +1517,7 @@ std::vector<const char *> VulkanBackend::getRequiredExtensions() {
 
   uint32_t extensionCount = 0;
   const char *extensionNames[64];
-  if (enableValidationLayers) {
+  if (useValidationLayers) {
     extensionNames[extensionCount++] = VK_EXT_DEBUG_REPORT_EXTENSION_NAME;
   }
   extensionNames[extensionCount++] = VK_KHR_SURFACE_EXTENSION_NAME;
@@ -1505,6 +1532,7 @@ std::vector<const char *> VulkanBackend::getRequiredExtensions() {
 
   for (unsigned int i = 0; i < extensionCount; i++) {
     extensions.push_back(extensionNames[i]);
+    printf("@@@ %s\n", extensionNames[i]);
   }
 
   return extensions;

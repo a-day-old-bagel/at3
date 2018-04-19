@@ -8,6 +8,11 @@ namespace at3 {
       bool init() {
         try {
           vkbe = std::make_unique<VulkanBackend>(sdl2::window);
+
+          VulkanContextCreateInfo contextCreateInfo;
+          contextCreateInfo.window = sdl2::window;
+          vkc = std::make_unique<VulkanContext>(contextCreateInfo);
+
         } catch (const std::runtime_error& e) {
           std::cerr << e.what() << std::endl;
           return false;
@@ -25,10 +30,7 @@ namespace at3 {
 
       }
       std::unique_ptr<VulkanBackend> vkbe;
-//      PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback;
-//      PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallback;
-//      VkDebugReportCallbackEXT msg_callback;
-//      PFN_vkDebugReportMessageEXT DebugReportMessage;
+      std::unique_ptr<VulkanContext> vkc;
     }
   }
 }

@@ -1,0 +1,4 @@
+The code in this directory has been adapted from original work by Kyle Halladay.
+It's licensed under the MIT license (see LICENSE)
+
+I've changed it considerably, and I'm using it to learn more about Vulkan as I work to improve my own code.

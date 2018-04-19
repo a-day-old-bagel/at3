@@ -8,7 +8,7 @@ namespace at3 {
     bool result = false;
     GLenum error;
     while ((error = glGetError()) != GL_NO_ERROR) {
-      fprintf(stderr, "GL error: '%s'",
+      fprintf(stderr, "GL error: '%s'\n",
               glErrorToString(error));
       result = true;
     }

@@ -106,12 +106,12 @@ namespace at3 {
     int force_channels = 4;
     unsigned char *image_data = stbi_load(file_name.c_str(), &x, &y, &n, force_channels);
     if (!image_data) {
-      fprintf(stderr, "Failed to load texture file: '%s'.\n", file_name);
+      fprintf(stderr, "Failed to load texture file: '%s'.\n", file_name.c_str());
       return 1;
     }
     // non-power-of-2 dimensions check
     if ((x & (x - 1)) != 0 || (y & (y - 1)) != 0) {
-      fprintf(stderr, "Texture not power of two: '%s'.\n", file_name);
+      fprintf(stderr, "Texture not power of two: '%s'.\n", file_name.c_str());
       return 1;
     }
     // copy image data into 'target' side of cube map
@@ -123,11 +123,9 @@ namespace at3 {
   LoadedTexture::LoadedTexture(const std::string &textureFile, RequestedType requestedType) {
     switch (requestedType) {
       case SINGLE: {
-        printf("Loading texture: %s\n", textureFile.c_str());
         loadSingleTexture(textureFile);
       } break;
       case CUBE: {
-        printf("Loading cube map: %s\n", textureFile.c_str());
         loadCubeTexture(textureFile);
       } break;
       default: break;

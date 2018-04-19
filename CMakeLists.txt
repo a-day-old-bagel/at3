@@ -5,18 +5,15 @@ set( CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 set( CMAKE_DISABLE_IN_SOURCE_BUILD ON )
 set( CMAKE_DISABLE_SOURCE_CHANGES ON )
 
-# Build third-party libraries that are already set up for cmake
-# This call works best before the "project" call is made.
-include( cmake/buildThirdParty.cmake )
+# Use C++17 everywhere
+set( CMAKE_CXX_STANDARD 17 )
+set( CMAKE_CXX_STANDARD_REQUIRED ON )
 
-# Define project name, version, language, and target name prefix
+# Name the project and set a prefix for naming internal targets and variables
 project( at3 VERSION 0.01.01.01 LANGUAGES CXX C )
 set( AT3_TARGET_PREFIX at3_ )
 
-# Include third-party libraries that the user has installed on their system
-include( cmake/findSystemLibs.cmake )
-
-# Build third-party libraries that required custom targets to be made
+# Build and assemble third-party dependencies
 add_subdirectory( "./extern" )
 
 # Build this project's targets

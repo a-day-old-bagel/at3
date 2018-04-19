@@ -4,10 +4,17 @@
  * Where that is the case, credit belongs to that author and nobody is claiming otherwise.
  */
 
+//#define GLM_ENABLE_EXPERIMENTAL
+//#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+//#define GLM_LANG_STL11_FORCED
+
 #pragma once
 
 #define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_CXX14     // stupid GLM
+#undef GLM_HAS_CXX11_STL
+#define GLM_HAS_CXX11_STL 1 // stupid GLM
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
@@ -126,6 +133,9 @@ class VulkanBackend {
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
     void createRenderPass();
     void createDescriptorSetLayout();
+
+    VkShaderModule createShaderModule(unsigned char *data, unsigned int length);
+
     void createGraphicsPipeline();
     void createFramebuffers();
     void createCommandPool();

@@ -39,7 +39,7 @@ namespace at3 {
     public:
 
       Game();
-      virtual ~Game() { std::cout << "Game is destructing." << std::endl; };
+      virtual ~Game() = default;
 
       bool init(const char *appName, const char *settingsName);
       void tick();
@@ -50,7 +50,7 @@ namespace at3 {
       std::shared_ptr<Camera<EcsInterface>> getCamera() { return mpCamera; }
   };
 
-  #define GAME_TYPE typename Game<EcsInterface, Derived>
+//  #define GAME_TYPE typename Game<EcsInterface, Derived>
 
   template <typename EcsInterface, typename Derived>
   using GameType = Game<EcsInterface, Derived>;
@@ -103,7 +103,6 @@ namespace at3 {
 
     // Update the world-view matrix topic
     if (mpCamera) {
-//      rtu::topics::publish("primary_cam_wv", (void *) &mpCamera->lastWorldViewQueried);
       rtu::topics::publish<glm::mat4>("primary_cam_wv", mpCamera->lastWorldViewQueried);
     }
 
@@ -174,7 +173,6 @@ namespace at3 {
           } break;
         case SDL_MOUSEMOTION:
           if (SDL_GetRelativeMouseMode()) {
-//            rtu::topics::publish("mouse_moved", (void *) &event);
             rtu::topics::publish<SDL_Event>("mouse_moved", event);
           } break;
         case SDL_WINDOWEVENT:

@@ -154,10 +154,10 @@ namespace at3 {
       }
     }
 
-    std::cout << std::endl << std::endl
-              << terrain.at(AT(3, 3) * 4 + 0) << std::endl
-              << terrain.at(AT(3, 3) * 4 + 1) << std::endl
-              << terrain.at(AT(3, 3) * 4 + 2) << std::endl << std::endl;
+//    std::cout << std::endl << std::endl
+//              << terrain.at(AT(3, 3) * 4 + 0) << std::endl
+//              << terrain.at(AT(3, 3) * 4 + 1) << std::endl
+//              << terrain.at(AT(3, 3) * 4 + 2) << std::endl << std::endl;
 
     for (size_t y = 0; y < resY; ++y) {
       for (size_t x = 0; x < resX; ++x) {
@@ -172,6 +172,7 @@ namespace at3 {
         }
       }
     }
+    glGenBuffers(1, &m_lineBuffer);                              FORCE_ASSERT_GL_ERROR();
     m_updateLines();
 
     // Copy the vertices buffer to the GL
@@ -327,10 +328,10 @@ namespace at3 {
       }
     }
 
-    std::cout << std::endl << std::endl
-              << terrain.at(AT(3, 3) * 4 + 0) << std::endl
-              << terrain.at(AT(3, 3) * 4 + 1) << std::endl
-              << terrain.at(AT(3, 3) * 4 + 2) << std::endl << std::endl;
+//    std::cout << std::endl << std::endl
+//              << terrain.at(AT(3, 3) * 4 + 0) << std::endl
+//              << terrain.at(AT(3, 3) * 4 + 1) << std::endl
+//              << terrain.at(AT(3, 3) * 4 + 2) << std::endl << std::endl;
 
     edges = sobelEdgeMono(gradX, gradY, 10);
 
@@ -453,6 +454,7 @@ namespace at3 {
         GL_STATIC_DRAW                 // usage
     );
     ASSERT_GL_ERROR();
+//    DISCARD_GL_ERROR(); // This keeps erroring for some reason, but this code is all temporary anyway.
   }
 
 

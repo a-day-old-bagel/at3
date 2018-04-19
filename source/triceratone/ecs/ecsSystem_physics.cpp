@@ -174,7 +174,6 @@ namespace at3 {
         ctrls->forces.z = -1 * ( ctrls->forces.x * groundSpringRayCallback.m_hitNormalWorld.x() +
                                  ctrls->forces.y * groundSpringRayCallback.m_hitNormalWorld.y() ) ;
 
-//        std::cout << ctrls->forces.x << "\n" << ctrls->forces.y << "\n" << ctrls->forces.z << "\n\n";
         if ( glm::length(ctrls->forces) ) {
           ctrls->forces = origForceMag * glm::normalize(ctrls->forces);
         }
@@ -265,7 +264,6 @@ namespace at3 {
   }
 
   void PhysicsSystem::deInit() {
-    std::cout << name << " is de-initializing" << std::endl;
 	  // onForget will be called for each remaining id
     std::vector<entityId> ids = registries[1].ids;
     for (auto id : ids) {
@@ -404,8 +402,6 @@ namespace at3 {
         PHY_FLOAT,                  // PHY_ScalarType heightDataType
         false                       // bool flipQuadEdges
     );
-
-    std::cout << "phys found: " << terrain->heights->at(0) << std::endl;
 
     physics->shape->setLocalScaling({
         terrain->sclX / (float)terrain->resX,

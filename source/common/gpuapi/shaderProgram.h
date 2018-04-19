@@ -27,11 +27,11 @@ namespace at3 {
       static void m_linkShaderProgram(GLuint shaderProgram);
 
       void m_init(const char *vert, unsigned int vert_len, const char *frag, unsigned int frag_len);
-    
+
       void m_init(const char *vert, unsigned int vert_len, const char *frag, unsigned int frag_len,
                   const char *tesc, unsigned int tesc_len, const char *tese, unsigned int tese_len,
                   const char *geom, unsigned int geom_len);
-      
+
       void m_readCode(const std::string &path, char **code, unsigned int *code_len);
 
     protected:
@@ -40,8 +40,7 @@ namespace at3 {
        * register attribute and/or uniform locations immediately after the shader
        * program has been linked.
        */
-      // FIXME: This virtual call cannot be made in the constructor... I should
-      //        just remove this.
+      // FIXME: This virtual call cannot be made in the constructor... I should just remove this.
       virtual void initLocations();
 
     public:

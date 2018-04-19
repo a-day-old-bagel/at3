@@ -59,9 +59,7 @@ namespace at3 {
   };
 
   template <typename EcsInterface>
-  Scene<EcsInterface>::~Scene() {
-    printf("Scene is destructing.\n");
-  }
+  Scene<EcsInterface>::~Scene() = default;
 
   template <typename EcsInterface>
   void Scene<EcsInterface>::addObject(std::shared_ptr<SceneObject<EcsInterface>> object) {

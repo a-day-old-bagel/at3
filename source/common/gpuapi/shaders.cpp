@@ -5,7 +5,8 @@
 #include "openglValidation.h"
 
 namespace at3 {
-# define SHADER_DIR shaders
+//# define SHADER_DIR shaders
+# define SHADER_DIR
 
 # define CAT(a, b) a ## b
 
@@ -14,10 +15,10 @@ namespace at3 {
     static std::shared_ptr<ShaderProgram> instance = \
       std::shared_ptr<ShaderProgram>( \
           new ShaderProgram( \
-            (const char *)CAT(dir, _ ## shader ## _vert), \
-            CAT(dir, _ ## shader ## _vert_len), \
-            (const char *)CAT(dir, _ ## shader ## _frag), \
-            CAT(dir, _ ## shader ## _frag_len) \
+            (const char *)CAT(dir, shader ## _vert), \
+            CAT(dir, shader ## _vert_len), \
+            (const char *)CAT(dir, shader ## _frag), \
+            CAT(dir, shader ## _frag_len) \
             )); \
     return instance; \
   }
@@ -26,63 +27,63 @@ namespace at3 {
       static std::shared_ptr<ShaderProgram> instance = \
         std::shared_ptr<ShaderProgram>( \
           new ShaderProgram( \
-            (const char *)CAT(dir, _ ## shader ## _vert), \
-            CAT(dir, _ ## shader ## _vert_len), \
-            (const char *)CAT(dir, _ ## shader ## _frag), \
-            CAT(dir, _ ## shader ## _frag_len), \
-            (const char *)CAT(dir, _ ## shader ## _tesc), \
-            CAT(dir, _ ## shader ## _tesc_len), \
-            (const char *)CAT(dir, _ ## shader ## _tese), \
-            CAT(dir, _ ## shader ## _tese_len), \
-            (const char *)CAT(dir, _ ## shader ## _geom), \
-            CAT(dir, _ ## shader ## _geom_len) \
+            (const char *)CAT(dir, shader ## _vert), \
+            CAT(dir, shader ## _vert_len), \
+            (const char *)CAT(dir, shader ## _frag), \
+            CAT(dir, shader ## _frag_len), \
+            (const char *)CAT(dir, shader ## _tesc), \
+            CAT(dir, shader ## _tesc_len), \
+            (const char *)CAT(dir, shader ## _tese), \
+            CAT(dir, shader ## _tese_len), \
+            (const char *)CAT(dir, shader ## _geom), \
+            CAT(dir, shader ## _geom_len) \
             )); \
     return instance; \
   }
 # define DEFINE_SHADER(shader) DEFINE_SHADER_BASE(shader, SHADER_DIR)
 # define DEFINE_SHADER_TESS(shader) DEFINE_SHADER_BASE_TESS(shader, SHADER_DIR)
 
-# include "shaders_billboard.vert.c"
-# include "shaders_billboard.frag.c"
+# include "billboard.vert.c"
+# include "billboard.frag.c"
   DEFINE_SHADER(billboard)
 
-# include "shaders_billboardPoint.vert.c"
-# include "shaders_billboardPoint.frag.c"
+# include "billboardPoint.vert.c"
+# include "billboardPoint.frag.c"
   DEFINE_SHADER(billboardPoint)
 
-# include "shaders_gouraud.vert.c"
-# include "shaders_gouraud.frag.c"
+# include "gouraud.vert.c"
+# include "gouraud.frag.c"
   DEFINE_SHADER(gouraud)
 
-# include "shaders_wireframe.vert.c"
-# include "shaders_wireframe.frag.c"
+# include "wireframe.vert.c"
+# include "wireframe.frag.c"
   DEFINE_SHADER(wireframe)
 
-# include "shaders_textureFullbright.vert.c"
-# include "shaders_textureFullbright.frag.c"
+# include "textureFullbright.vert.c"
+# include "textureFullbright.frag.c"
   DEFINE_SHADER(textureFullbright)
 
-# include "shaders_textureSunny.vert.c"
-# include "shaders_textureSunny.frag.c"
+# include "textureSunny.vert.c"
+# include "textureSunny.frag.c"
   DEFINE_SHADER(textureSunny)
 
-# include "shaders_noTextureSunny.vert.c"
-# include "shaders_noTextureSunny.frag.c"
+# include "noTextureSunny.vert.c"
+# include "noTextureSunny.frag.c"
   DEFINE_SHADER(noTextureSunny)
 
-# include "shaders_skyQuad.vert.c"
-# include "shaders_skyQuad.frag.c"
+# include "skyQuad.vert.c"
+# include "skyQuad.frag.c"
   DEFINE_SHADER(skyQuad)
 
-# include "shaders_terrain.vert.c"
-# include "shaders_terrain.tesc.c"
-# include "shaders_terrain.tese.c"
-# include "shaders_terrain.frag.c"
-# include "shaders_terrain.geom.c"
+# include "terrain.vert.c"
+# include "terrain.tesc.c"
+# include "terrain.tese.c"
+# include "terrain.frag.c"
+# include "terrain.geom.c"
   DEFINE_SHADER_TESS(terrain)
 
-# include "shaders_textureView.vert.c"
-# include "shaders_textureView.frag.c"
+# include "textureView.vert.c"
+# include "textureView.frag.c"
   DEFINE_SHADER(textureView)
 
 

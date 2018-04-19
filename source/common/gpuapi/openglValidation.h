@@ -32,6 +32,8 @@
   if (checkGlError(__FILE__, __LINE__)) \
     assert(false);
 
+#define DISCARD_GL_ERROR() checkGlError(__FILE__, __LINE__)
+
 #endif  // DISABLE_CHECK_GL_ERROR
 
 namespace at3 {
