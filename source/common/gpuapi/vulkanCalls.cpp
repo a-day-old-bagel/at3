@@ -7,9 +7,9 @@ namespace at3 {
     namespace vulkan {
       bool init() {
         try {
-          vkbe = std::make_unique<VulkanBackend>(sdl2::window);
+//          vkbe = std::make_unique<VulkanBackend>(sdl2::window);
 
-          VulkanContextCreateInfo contextCreateInfo;
+          VulkanContextCreateInfo contextCreateInfo = VulkanContextCreateInfo::defaults();
           contextCreateInfo.window = sdl2::window;
           vkc = std::make_unique<VulkanContext>(contextCreateInfo);
 
@@ -21,13 +21,17 @@ namespace at3 {
       }
       void swap() {
         try {
-          vkbe->step();
+//          vkbe->step();
+          vkc->step();
         } catch (const std::runtime_error& e) {
           std::cerr << e.what() << std::endl;
         }
       }
       void clear() {
 
+      }
+      void handleWindowSizeChange() {
+        vkc->reInitRendering();
       }
       std::unique_ptr<VulkanBackend> vkbe;
       std::unique_ptr<VulkanContext> vkc;

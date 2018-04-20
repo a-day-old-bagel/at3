@@ -1363,11 +1363,17 @@ VkPresentModeKHR VulkanBackend::chooseSwapPresentMode(const std::vector<VkPresen
   if (!at3::settings::graphics::vulkan::forceFifo) {
     for (const auto &availablePresentMode : availablePresentModes) {
       if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+        printf("Using mailbox present mode (triple buffering).\n");
         return availablePresentMode;
       } else if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
         bestMode = availablePresentMode;
       }
     }
+  }
+  if (bestMode == VK_PRESENT_MODE_FIFO_KHR) {
+    printf("Using FIFO present mode (double buffering).\n");
+  } else if (bestMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+    printf("Using IMMEDIATE present mode.\n");
   }
 
   return bestMode;

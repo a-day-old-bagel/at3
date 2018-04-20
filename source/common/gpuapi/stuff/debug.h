@@ -28,8 +28,5 @@
       fprintf(stdout, "CHECK FAILED: %s:%d:%s " format "\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__);  \
       raise(SIGTRAP);                                                                                       \
     }
-#   ifndef _DEBUG
-#     define _DEBUG true // Since the rest of the code uses this VS define, lets define it for non-VS users
-#   endif
 # endif
 #endif

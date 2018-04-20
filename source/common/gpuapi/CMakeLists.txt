@@ -14,12 +14,12 @@ add_library( ${AT3_TARGET_PREFIX}graphics STATIC
   tiny_obj_loader.h
   vulkanCalls.cpp
   vulkanBackend.cpp vulkanBackend.h
-  vulkanContext.h vulkanContext.cpp
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}graphics
   ${AT3_TARGET_PREFIX}external
   ${AT3_TARGET_PREFIX}global
   ${AT3_TARGET_PREFIX}include_shaders
+  ${AT3_TARGET_PREFIX}vulkan
   )
 target_include_directories( ${AT3_TARGET_PREFIX}graphics PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}

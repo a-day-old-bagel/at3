@@ -26,15 +26,12 @@ struct FPSData
 
 void startTiming(TimeSpan& span)
 {
-//	span.start = OS::getMilliseconds();
-//	span.end = OS::getMilliseconds();
   span.start = SDL_GetTicks();
   span.end = SDL_GetTicks();
 }
 
 double endTiming(TimeSpan& span)
 {
-//	span.end = OS::getMilliseconds();
 	span.end = SDL_GetTicks();
 	return span.end - span.start;
 }

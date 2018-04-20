@@ -6,15 +6,18 @@
 #include "camera.h"
 
 struct DrawCall {
-    vkh::MeshAsset mesh;
+    at3::MeshAsset mesh;
     uint32_t uboIdx;
 };
 
-void initRendering(vkh::VkhContext &, uint32_t num);
+void initRendering(at3::VkhContext &, uint32_t num);
 
-//void cleanupRendering(vkh::VkhContext &);
+//void cleanupRendering(at3::VkhContext &);
 
-void updateUBOs(vkh::VkhContext &, Camera::Cam &cam);
+void updateUBOs(at3::VkhContext &, Camera::Cam &cam);
 
-void render(vkh::VkhContext &, Camera::Cam &camera, const std::vector<vkh::MeshAsset> &drawCalls,
+void render(at3::VkhContext &, Camera::Cam &camera, const std::vector<at3::MeshAsset> &drawCalls,
+            const std::vector<uint32_t> &uboIdx);
+
+void render(at3::VkhContext &ctxt, const glm::mat4 &wvMat, const std::vector<at3::MeshAsset> &drawCalls,
             const std::vector<uint32_t> &uboIdx);

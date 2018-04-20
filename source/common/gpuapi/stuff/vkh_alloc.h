@@ -4,10 +4,11 @@
 #include <cstdlib>
 #include "vkh.h"
 #include "vkh_types.h"
+#include "vkh_initializers.h"
 
 //Simple Passthrough allocator -> sub allocators responsible for actually parcelling out memory
 
-namespace vkh::allocators::passthrough
+namespace at3::allocators::passthrough
 {
 	struct AllocatorState
 	{
@@ -52,7 +53,7 @@ namespace vkh::allocators::passthrough
 		state.totalAllocs++;
 		state.memTypeAllocSizes[createInfo.memoryTypeIndex] += createInfo.size;
 
-		VkMemoryAllocateInfo allocInfo = vkh::memoryAllocateInfo(createInfo.size, createInfo.memoryTypeIndex);
+		VkMemoryAllocateInfo allocInfo = at3::memoryAllocateInfo(createInfo.size, createInfo.memoryTypeIndex);
 		VkResult res = vkAllocateMemory(state.context->device, &allocInfo, nullptr, &(outAlloc.handle));
 
 		outAlloc.size = createInfo.size;
@@ -83,7 +84,7 @@ namespace vkh::allocators::passthrough
 	}
 }
 
-namespace vkh::allocators::pool
+namespace at3::allocators::pool
 {
 	struct OffsetSize { uint64_t offset; uint64_t size; };
 	struct BlockSpanIndexPair { uint32_t blockIdx; uint32_t spanIdx; };
@@ -144,7 +145,7 @@ namespace vkh::allocators::pool
 		VkDeviceSize newPoolSize = size * 2;
 		newPoolSize = newPoolSize < state.memoryBlockMinSize ? state.memoryBlockMinSize : newPoolSize;
 
-		VkMemoryAllocateInfo info = vkh::memoryAllocateInfo(newPoolSize, memoryType);
+		VkMemoryAllocateInfo info = at3::memoryAllocateInfo(newPoolSize, memoryType);
 
 		DeviceMemoryBlock newBlock = {};
 		VkResult res = vkAllocateMemory(state.context->device, &info, nullptr, &newBlock.mem.handle);

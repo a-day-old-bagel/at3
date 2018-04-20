@@ -103,6 +103,7 @@ namespace at3 {
               Shaders::updateViewInfos(currentFovY, settings::graphics::windowDimX, settings::graphics::windowDimY);
             } break;
             case settings::graphics::VULKAN:
+              vulkan::handleWindowSizeChange();
               break;
             default:
               break;

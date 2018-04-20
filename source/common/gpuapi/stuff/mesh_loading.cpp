@@ -10,15 +10,26 @@
 #include "config.h"
 
 
+
+#if USE_AT3_COORDS
+#if COMBINE_MESHES
+static const int defaultFlags =  aiProcess_JoinIdenticalVertices | aiProcess_PreTransformVertices | aiProcess_Triangulate;
+#else
+static const int defaultFlags = aiProcess_Triangulate;
+#endif
+#else
 #if COMBINE_MESHES
 static const int defaultFlags =  aiProcess_JoinIdenticalVertices | aiProcess_PreTransformVertices | aiProcess_FlipWindingOrder | aiProcess_Triangulate;
 #else
 static const int defaultFlags = aiProcess_FlipWindingOrder | aiProcess_Triangulate;
 #endif
+#endif
 
-std::vector<vkh::MeshAsset> loadMesh(const char* filepath, bool combineSubMeshes, vkh::VkhContext& ctxt)
+
+
+std::vector<at3::MeshAsset> loadMesh(const char* filepath, bool combineSubMeshes, at3::VkhContext& ctxt)
 {
-	using namespace vkh;
+	using namespace at3;
 	std::vector<MeshAsset> outMeshes;
 
 	const VertexRenderData* globalVertLayout = Mesh::vertexRenderData();
@@ -136,13 +147,13 @@ std::vector<vkh::MeshAsset> loadMesh(const char* filepath, bool combineSubMeshes
 
 			if (!combineSubMeshes)
 			{
-				vkh::Mesh::make(outMeshes[mIdx], ctxt, vertexBuffer.data(), numVerts, indexBuffer.data(), indexBuffer.size());
+				at3::Mesh::make(outMeshes[mIdx], ctxt, vertexBuffer.data(), numVerts, indexBuffer.data(), indexBuffer.size());
 			}
 		}
 
 		if (combineSubMeshes)
 		{
-			vkh::Mesh::make(outMeshes[0], ctxt, vertexBuffer.data(), numVerts, indexBuffer.data(), indexBuffer.size());
+			at3::Mesh::make(outMeshes[0], ctxt, vertexBuffer.data(), numVerts, indexBuffer.data(), indexBuffer.size());
 		}
 	}
 

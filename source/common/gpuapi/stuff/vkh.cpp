@@ -1,7 +1,7 @@
 #include <cstring>
 #include "vkh.h"
 
-namespace vkh
+namespace at3
 {
 	void createDescriptorPool(VkDescriptorPool& outPool, const VkDevice& device, std::vector<VkDescriptorType>& descriptorTypes, std::vector<uint32_t>& maxDescriptors)
 	{
@@ -397,9 +397,9 @@ namespace vkh
 	void copyDataToBuffer(VkBuffer* buffer, uint32_t dataSize, uint32_t dstOffset, char* data, VkhContext& ctxt)
 	{
 		VkBuffer stagingBuffer;
-		vkh::Allocation stagingMemory;
+		at3::Allocation stagingMemory;
 
-		vkh::createBuffer(stagingBuffer,
+		at3::createBuffer(stagingBuffer,
 			stagingMemory,
 			dataSize,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -414,12 +414,12 @@ namespace vkh
 
 		vkUnmapMemory(ctxt.device, stagingMemory.handle);
 
-		vkh::VkhCommandBuffer scratch = vkh::beginScratchCommandBuffer(vkh::ECommandPoolType::Transfer, ctxt);
-		vkh::copyBuffer(stagingBuffer, *buffer, dataSize, 0, dstOffset, scratch);
-		vkh::submitScratchCommandBuffer(scratch);
+		at3::VkhCommandBuffer scratch = at3::beginScratchCommandBuffer(at3::ECommandPoolType::Transfer, ctxt);
+		at3::copyBuffer(stagingBuffer, *buffer, dataSize, 0, dstOffset, scratch);
+		at3::submitScratchCommandBuffer(scratch);
 
 		vkDestroyBuffer(ctxt.device, stagingBuffer, 0);
-		vkh::freeDeviceMemory(stagingMemory);
+		at3::freeDeviceMemory(stagingMemory);
 
 	}
 

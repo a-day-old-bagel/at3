@@ -6,7 +6,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 
-namespace vkh
+namespace at3
 {
 	enum class EMeshVertexAttribute : uint8_t
 	{
@@ -43,7 +43,7 @@ namespace vkh
 	};
 }
 
-namespace vkh::Mesh
+namespace at3::Mesh
 {
 	void setGlobalVertexLayout(std::vector<EMeshVertexAttribute> layout);
 

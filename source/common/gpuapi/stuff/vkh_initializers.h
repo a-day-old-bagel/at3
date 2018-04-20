@@ -2,7 +2,7 @@
 #pragma once
 #include "vkh.h"
 
-namespace vkh
+namespace at3
 {
 	inline VkPipelineShaderStageCreateInfo shaderPipelineStageCreateInfo(VkShaderStageFlagBits stage)
 	{
@@ -69,7 +69,7 @@ namespace vkh
 		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 		samplerInfo.unnormalizedCoordinates = VK_FALSE;
 
-		//mostly for pcf? 
+		//mostly for pcf?
 		samplerInfo.compareEnable = VK_FALSE;
 		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
 

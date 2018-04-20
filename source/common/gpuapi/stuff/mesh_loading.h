@@ -3,4 +3,4 @@
 #include "vkh.h"
 #include "vkh_mesh.h"
 
-std::vector<vkh::MeshAsset> loadMesh(const char* filepath, bool combineSubMeshes, vkh::VkhContext& ctxt);
+std::vector<at3::MeshAsset> loadMesh(const char* filepath, bool combineSubMeshes, at3::VkhContext& ctxt);

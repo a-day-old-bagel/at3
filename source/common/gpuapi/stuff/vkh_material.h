@@ -17,7 +17,7 @@
 #endif
 
 
-namespace vkh
+namespace at3
 {
 	struct GlobalShaderData
 	{
@@ -34,7 +34,7 @@ namespace vkh
 	struct GlobalShaderDataStore
 	{
 		//storage for global shader data
-		vkh::Allocation			mem;
+		at3::Allocation			mem;
 		VkBuffer				buffer;
 		GlobalShaderData		shaderData;
 		uint32_t				size;

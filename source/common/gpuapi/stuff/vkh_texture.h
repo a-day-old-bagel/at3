@@ -1,15 +1,14 @@
 #pragma once
 #include "vkh.h"
-#include <stdint.h>
-#define STB_IMAGE_IMPLEMENTATION
+#include <cstdint>
 #include <stb/stb_image.h>
 
-namespace vkh
+namespace at3
 {
 	struct TextureAsset
 	{
 		VkImage image;
-		vkh::Allocation deviceMemory;
+		at3::Allocation deviceMemory;
 		VkImageView view;
 		VkFormat format;
 
@@ -19,7 +18,7 @@ namespace vkh
 	};
 }
 
-namespace vkh::Texture
+namespace at3::Texture
 {
 	void make(TextureAsset& outAsset, const char* filepath, VkhContext& ctxt)
 	{
@@ -35,7 +34,7 @@ namespace vkh::Texture
 		VkDeviceSize imageSize = texWidth * texHeight * 4;
 
 		VkBuffer stagingBuffer;
-		vkh::Allocation stagingBufferMemory;
+		at3::Allocation stagingBufferMemory;
 
 		createBuffer(stagingBuffer,
 			stagingBufferMemory,
@@ -67,14 +66,14 @@ namespace vkh::Texture
 		allocMemoryForImage(t.deviceMemory, t.image, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ctxt);
 		vkBindImageMemory(ctxt.device, t.image, t.deviceMemory.handle, t.deviceMemory.offset);
 
-		vkh::transitionImageLayout(t.image, t.format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, ctxt);
-		vkh::copyBufferToImage(stagingBuffer, t.image, t.width, t.height, ctxt);
+		at3::transitionImageLayout(t.image, t.format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, ctxt);
+		at3::copyBufferToImage(stagingBuffer, t.image, t.width, t.height, ctxt);
 
-		vkh::transitionImageLayout(t.image, t.format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, ctxt);
+		at3::transitionImageLayout(t.image, t.format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, ctxt);
 
-		vkh::createImageView(t.view, t.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, t.image, ctxt.device);
+		at3::createImageView(t.view, t.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, t.image, ctxt.device);
 
 		vkDestroyBuffer(ctxt.device, stagingBuffer, nullptr);
-		vkh::freeDeviceMemory(stagingBufferMemory);
+		at3::freeDeviceMemory(stagingBufferMemory);
 	}
 }

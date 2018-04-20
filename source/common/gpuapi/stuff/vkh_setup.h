@@ -7,8 +7,12 @@
 #include "vkh.h"
 #include "vkh_alloc.h"
 #include "os_sdl2.h"
+#include "config.h"
 
-namespace vkh {
+#include <SDLvulkan.h>
+#include "settings.h"
+
+namespace at3 {
   struct VkhContextCreateInfo {
       std::vector<VkDescriptorType> types;
       std::vector<uint32_t> typeCounts;
@@ -66,7 +70,7 @@ namespace vkh {
     std::vector<const char *> validationLayers;
     std::vector<bool> layersAvailable;
 
-#if _DEBUG
+#ifndef NDEBUG
     printf("Starting up with validation layers enabled: \n");
 
     const char *layerNames = "VK_LAYER_LUNARG_standard_validation";
@@ -111,30 +115,51 @@ namespace vkh {
     std::vector<const char *> requiredExtensions;
     std::vector<bool> extensionsPresent;
 
-    const char **sdlVkExtensions = nullptr;
-    uint32_t sdlVkExtensionCount = 0;
 
-    // Query the extensions requested by SDL_vulkan
-    bool success = SDL_Vulkan_GetInstanceExtensions(ctxt.window, &sdlVkExtensionCount, NULL);
-    checkf(success, "SDL_Vulkan_GetInstanceExtensions(): %s\n", SDL_GetError());
-
-    sdlVkExtensions = (const char **) SDL_malloc(sizeof(const char *) * sdlVkExtensionCount);
-    checkf(sdlVkExtensions, "Out of memory.\n");
-
-    success = SDL_Vulkan_GetInstanceExtensions(ctxt.window, &sdlVkExtensionCount, sdlVkExtensions);
-    checkf(success, "SDL_Vulkan_GetInstanceExtensions(): %s\n", SDL_GetError());
-
-    // require the extensions requested by SDL_vulkan
-    for (uint32_t i = 0; i < sdlVkExtensionCount; ++i) {
-      requiredExtensions.push_back(sdlVkExtensions[i]);
+#   if USE_CUSTOM_SDL_VULKAN
+      requiredExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
       extensionsPresent.push_back(false);
-    }
-    SDL_free((void *) sdlVkExtensions);
 
-#if _DEBUG // TODO: Migrate to using debug_utils extension instead of deprecated debug_report
-    // require the debug extensions
+      uint32_t extCount = 0;
+      const char *extensionNames[64];
+      unsigned c = 64 - extCount;
+      if (!SDL_GetVulkanInstanceExtensions(&c, &extensionNames[extCount])) {
+        std::string error = std::string("SDL_GetVulkanInstanceExtensions failed: ") +
+                            std::string(SDL_GetError());
+        throw std::runtime_error(error.c_str());
+      }
+      extCount += c;
+
+      for (unsigned int i = 0; i < extCount; i++) {
+        requiredExtensions.push_back(extensionNames[i]);
+        extensionsPresent.push_back(false);
+      }
+#   else
+      const char **sdlVkExtensions = nullptr;
+      uint32_t sdlVkExtensionCount = 0;
+
+      // Query the extensions requested by SDL_vulkan
+      bool success = SDL_Vulkan_GetInstanceExtensions(ctxt.window, &sdlVkExtensionCount, NULL);
+      checkf(success, "SDL_Vulkan_GetInstanceExtensions(): %s\n", SDL_GetError());
+
+      sdlVkExtensions = (const char **) SDL_malloc(sizeof(const char *) * sdlVkExtensionCount);
+      checkf(sdlVkExtensions, "Out of memory.\n");
+
+      success = SDL_Vulkan_GetInstanceExtensions(ctxt.window, &sdlVkExtensionCount, sdlVkExtensions);
+      checkf(success, "SDL_Vulkan_GetInstanceExtensions(): %s\n", SDL_GetError());
+
+      // require the extensions requested by SDL_vulkan
+      for (uint32_t i = 0; i < sdlVkExtensionCount; ++i) {
+        requiredExtensions.push_back(sdlVkExtensions[i]);
+        extensionsPresent.push_back(false);
+      }
+      SDL_free((void *) sdlVkExtensions);
+#   endif
+
+
+
+#ifndef NDEBUG // TODO: Migrate to using debug_utils extension instead of deprecated debug_report
     requiredExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-//    requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     extensionsPresent.push_back(false);
 #endif
 
@@ -187,19 +212,23 @@ namespace vkh {
   }
 
   void createSurface(VkhContext &ctxt) {
-//    bool success = SDL_Vulkan_CreateSurface(ctxt.window, ctxt.instance, &ctxt.surface.surface);
-    bool success = SDL_Vulkan_CreateSurface(ctxt.window, ctxt.instance, &ctxt.surface.surface);
-    checkf(success, "SDL_Vulkan_CreateSurface(): %s\n", SDL_GetError());
-    if (!success) {
-      ctxt.surface.surface = VK_NULL_HANDLE;
-    }
+#   if USE_CUSTOM_SDL_VULKAN
+      bool success = SDL_CreateVulkanSurface(ctxt.window, ctxt.instance, &ctxt.surface.surface);
+#   else
+      bool success = SDL_Vulkan_CreateSurface(ctxt.window, ctxt.instance, &ctxt.surface.surface);
+#   endif
+      checkf(success, "SDL_Vulkan_CreateSurface(): %s\n", SDL_GetError());
+      if (!success) {
+        ctxt.surface.surface = VK_NULL_HANDLE;
+      }
   }
 
   void createDebugCallback(VkhContext &ctxt) {
-#if _DEBUG
+#ifndef NDEBUG
     VkDebugReportCallbackCreateInfoEXT createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-    createInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+    createInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT |
+                       VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
     createInfo.pfnCallback = debugCallback;
 
     PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback = VK_NULL_HANDLE;
@@ -426,7 +455,7 @@ namespace vkh {
 
     std::vector<const char *> validationLayers;
 
-#ifndef _DEBUG
+#ifdef NDEBUG
     const bool enableValidationLayers = false;
 #else
     const bool enableValidationLayers = true;
@@ -507,20 +536,23 @@ namespace vkh {
       desiredFormat = physDevice.swapChainSupport.formats[0];
     }
 
-    //present mode - VK_PRESENT_MODE_MAILBOX_KHR is for triple buffering, VK_PRESENT_MODE_FIFO_KHR is double, VK_PRESENT_MODE_IMMEDIATE_KHR is single
-    //VK_PRESENT_MODE_FIFO_KHR  is guaranteed to be available.
-    //let's prefer triple buffering, and fall back to double if it isn't supported
-
+    // Prefer triple buffering, then immediate mode. Allow forced FIFO if user wants VSYNC.
     desiredPresentMode = VK_PRESENT_MODE_FIFO_KHR;
-    for (uint32_t i = 0; i < physDevice.swapChainSupport.presentModes.size(); ++i) {
-      const auto &availablePresentMode = physDevice.swapChainSupport.presentModes[i];
-      if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-        desiredPresentMode = availablePresentMode;
-        printf("Using mailbox present mode (triple buffering).\n");
+    if (!at3::settings::graphics::vulkan::forceFifo) {
+      for (const auto &availablePresentMode : physDevice.swapChainSupport.presentModes) {
+        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+          desiredPresentMode = availablePresentMode;
+          printf("Using mailbox present mode (triple buffering).\n");
+          break;
+        } else if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+          desiredPresentMode = availablePresentMode;
+        }
       }
     }
     if (desiredPresentMode == VK_PRESENT_MODE_FIFO_KHR) {
       printf("Using FIFO present mode (double buffering).\n");
+    } else if (desiredPresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+      printf("Using IMMEDIATE present mode.\n");
     }
 
     //update physdevice for new surface size
@@ -627,7 +659,7 @@ namespace vkh {
     createPhysicalDevice(ctxt);
     createLogicalDevice(ctxt);
 
-    vkh::allocators::pool::activate(&ctxt);
+    at3::allocators::pool::activate(&ctxt);
 
     createSwapchainForSurface(ctxt); // window size is needed here
 

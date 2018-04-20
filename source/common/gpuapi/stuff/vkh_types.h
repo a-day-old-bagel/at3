@@ -5,7 +5,8 @@
 #include <vulkan/vk_sdk_platform.h>
 #include <vector>
 
-namespace vkh {
+namespace at3 {
+
   struct VkhContext;
 
   enum ECommandPoolType {
@@ -93,11 +94,11 @@ namespace vkh {
   struct VkhRenderingData {
       std::vector<VkFramebuffer> frameBuffers;
       std::vector<VkCommandBuffer> commandBuffers;
-      vkh::VkhRenderBuffer depthBuffer;
+      at3::VkhRenderBuffer depthBuffer;
       VkRenderPass mainRenderPass;
 
       VkBuffer ubo;
-      vkh::Allocation uboAlloc;
+      at3::Allocation uboAlloc;
   };
 
   struct VkhMatData {

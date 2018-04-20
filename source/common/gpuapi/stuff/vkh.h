@@ -7,7 +7,7 @@
 
 #include "vkh_types.h"
 
-namespace vkh {
+namespace at3 {
   void createDescriptorPool(VkDescriptorPool &outPool, const VkDevice &device,
                             std::vector<VkDescriptorType> &descriptorTypes, std::vector<uint32_t> &maxDescriptors);
   void createImageView(VkImageView &outView, VkFormat imageFormat, VkImageAspectFlags aspectMask, uint32_t mipCount,

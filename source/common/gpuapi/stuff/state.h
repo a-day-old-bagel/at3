@@ -16,8 +16,8 @@ class VkbbState {
 
   public:
 
-    vkh::VkhContext context;
-    std::vector<vkh::MeshAsset> testMesh;
+    at3::VkhContext context;
+    std::vector<at3::MeshAsset> testMesh;
     std::vector<uint32_t> uboIdx;
     Camera::Cam worldCamera;
     bool running = true;
@@ -37,7 +37,7 @@ class VkbbState {
       keyF = SUBSCRIBE_EVENT("key_down_f", onDownF);
       windowResize = SUBSCRIBE_EVENT("window_resized", reInitRendering);
 
-      vkh::VkhContextCreateInfo ctxtInfo = {};
+      at3::VkhContextCreateInfo ctxtInfo = {};
       ctxtInfo.types.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
       ctxtInfo.types.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
       ctxtInfo.types.push_back(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
@@ -83,15 +83,15 @@ class VkbbState {
     void reInitRendering() {
       vkDeviceWaitIdle(context.device);
       cleanupRendering();
-      vkh::getWindowSize(context);
-      vkh::createSwapchainForSurface(context);
+      at3::getWindowSize(context);
+      at3::createSwapchainForSurface(context);
       initRendering(context, (uint32_t)testMesh.size());
     }
 
     void cleanupRendering() {
       vkDestroyImageView(context.device, context.renderData.depthBuffer.view, nullptr);
       vkDestroyImage(context.device, context.renderData.depthBuffer.handle, nullptr);
-      vkh::allocators::pool::free(context.renderData.depthBuffer.imageMemory);
+      at3::allocators::pool::free(context.renderData.depthBuffer.imageMemory);
 
       for (size_t i = 0; i < context.renderData.frameBuffers.size(); i++) {
         vkDestroyFramebuffer(context.device, context.renderData.frameBuffers[i], nullptr);

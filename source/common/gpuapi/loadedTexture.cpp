@@ -1,7 +1,7 @@
 
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_ONLY_PNG
-#define STBI_ONLY_JPEG
+//#define STB_IMAGE_IMPLEMENTATION
+//#define STBI_ONLY_PNG
+//#define STBI_ONLY_JPEG
 #include "stb_image.h"
 #include "loadedTexture.h"
 #include "openglValidation.h"

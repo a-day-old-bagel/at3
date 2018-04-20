@@ -45,6 +45,7 @@ namespace at3 {
       bool init();
       void swap();
       void clear();
+      void handleWindowSizeChange();
       extern std::unique_ptr<VulkanBackend> vkbe;
       extern std::unique_ptr<VulkanContext> vkc;
     }
