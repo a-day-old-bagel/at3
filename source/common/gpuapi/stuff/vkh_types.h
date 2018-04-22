@@ -94,6 +94,7 @@ namespace at3 {
   struct VkhRenderingData {
       std::vector<VkFramebuffer> frameBuffers;
       std::vector<VkCommandBuffer> commandBuffers;
+      std::vector<bool> firstFrame;
       at3::VkhRenderBuffer depthBuffer;
       VkRenderPass mainRenderPass;
 

@@ -1,7 +1,12 @@
 
 #pragma once
 
+#include "config.h"
+
 #define GLM_FORCE_RADIANS
+#if USE_AT3_COORDS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#endif
 #include <glm/glm.hpp>
 #include <cstdint>
 #include "vkh.h"

@@ -17,12 +17,12 @@
 
 namespace at3 {
 
-  class DualityInterface {
+  class EntityComponentSystemInterface {
       ezecs::State* state;
     public:
       typedef ezecs::entityId EcsId;
       typedef ezecs::State State;
-      explicit DualityInterface(ezecs::State* state);
+      explicit EntityComponentSystemInterface(ezecs::State* state);
       ezecs::entityId createEntity();
       void destroyEntity(const ezecs::entityId& id);
 
@@ -47,14 +47,14 @@ namespace at3 {
       void addMouseControl(const ezecs::entityId& id);
   };
 
-  typedef Scene<DualityInterface> Scene_;
-  typedef SceneObject<DualityInterface> SceneObject_;
-  typedef PerspectiveCamera<DualityInterface> PerspectiveCamera_;
-  typedef ThirdPersonCamera<DualityInterface> ThirdPersonCamera_;
-  typedef SkyBox<DualityInterface> SkyBox_;
-  typedef MeshObject<DualityInterface> MeshObject_;
-  typedef TerrainObject<DualityInterface> TerrainObject_;
-  typedef Debug<DualityInterface> Debug_;
-  typedef BulletDebug<DualityInterface> BulletDebug_;
+  typedef Scene<EntityComponentSystemInterface> Scene_;
+  typedef SceneObject<EntityComponentSystemInterface> SceneObject_;
+  typedef PerspectiveCamera<EntityComponentSystemInterface> PerspectiveCamera_;
+  typedef ThirdPersonCamera<EntityComponentSystemInterface> ThirdPersonCamera_;
+  typedef SkyBox<EntityComponentSystemInterface> SkyBox_;
+  typedef MeshObject<EntityComponentSystemInterface> MeshObject_;
+  typedef TerrainObject<EntityComponentSystemInterface> TerrainObject_;
+  typedef Debug<EntityComponentSystemInterface> Debug_;
+  typedef BulletDebug<EntityComponentSystemInterface> BulletDebug_;
 
 }

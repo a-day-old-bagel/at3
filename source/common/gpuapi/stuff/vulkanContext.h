@@ -24,6 +24,7 @@ namespace at3 {
       std::vector<uint32_t> uboIdx;
       glm::mat4 currentWvMat;
       std::unique_ptr<rtu::topics::Subscription> wvUpdate;
+      std::unique_ptr<rtu::topics::Subscription> windowResize;
 
       void cleanupRendering();
 

@@ -5,7 +5,7 @@
 #pragma once
 
 #include <vector>
-#include "dualityInterface.h"
+#include "ecsInterface.h"
 #include "ezecs.hpp"
 #include "scene.h"
 #include "meshObject.h"

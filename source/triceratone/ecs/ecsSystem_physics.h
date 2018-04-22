@@ -7,7 +7,7 @@
 #include "ezecs.hpp"
 #include "sceneObject.h"
 #include "bulletDebug.h"
-#include "dualityInterface.h"
+#include "ecsInterface.h"
 #include "topics.hpp"
 
 using namespace ezecs;

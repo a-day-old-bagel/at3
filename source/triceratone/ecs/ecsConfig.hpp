@@ -3,7 +3,7 @@
 #define EZECS_ECSCONFIG_HPP
 
 // This doesn't really matter - it's just so IDE parsers can see the Component base class and stuff (for editing only).
-#include "../../../extern/ezecs/source/ecsComponents.hpp"
+//#include "../../../extern/ezecs/source/ecsComponents.hpp"
 
 // BEGIN INCLUDES
 
@@ -36,12 +36,18 @@ namespace {
         0, 0, 1, 0,
         0, 0, 0, 1
     };
+    glm::mat4 absMat {
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    };
     Placement(glm::mat4 mat);
-    glm::vec3 getTranslation();
-    glm::vec3 getLookAt();
-    float getHorizRot();
-    glm::mat3 getHorizRotMat();
-    glm::quat getQuat();
+    glm::vec3 getTranslation(bool abs = false);
+    glm::vec3 getLookAt(bool abs = false);
+    float getHorizRot(bool abs = false);
+    glm::mat3 getHorizRotMat(bool abs = false);
+    glm::quat getQuat(bool abs = false);
   };
 
   struct TransformFunction : public Component<TransformFunction> {
@@ -147,29 +153,30 @@ namespace {
   Placement::Placement(glm::mat4 mat)
       : mat(mat) { }
 
-  glm::vec3 Placement::getTranslation() {
-    return glm::vec3(mat[3][0], mat[3][1], mat[3][2]);
+  glm::vec3 Placement::getTranslation(bool abs) {
+    return abs ? glm::vec3(absMat[3][0], absMat[3][1], absMat[3][2]) :
+                 glm::vec3(   mat[3][0],    mat[3][1],    mat[3][2]);
   }
 
-  glm::vec3 Placement::getLookAt() {
-    glm::vec4 lookAt = mat * glm::vec4(0.f, 1.f, 0.f, 0.f);
+  glm::vec3 Placement::getLookAt(bool abs) {
+    glm::vec4 lookAt = (abs ? absMat : mat) * glm::vec4(0.f, 1.f, 0.f, 0.f);
     return glm::vec3(lookAt.x, lookAt.y, lookAt.z);
   }
 
-  float Placement::getHorizRot() {
-    glm::quat latestQuat = glm::quat_cast(mat);
+  float Placement::getHorizRot(bool abs) {
+    glm::quat latestQuat = glm::quat_cast( abs ? absMat : mat );
     glm::vec3 latestLook = latestQuat * glm::vec3(0.f, 1.0, 0.f);
     glm::vec3 latestHorizLook(latestLook.x, latestLook.y, 0.f);
     latestHorizLook = glm::normalize(latestHorizLook);
     return acosf(glm::dot({0.f, 1.f, 0.f}, latestHorizLook)) * (latestLook.x < 0.f ? 1.f : -1.f);
   }
 
-  glm::mat3 Placement::getHorizRotMat() {
-    return glm::mat3(glm::rotate(getHorizRot(), glm::vec3(0.f, 0.f, 1.f)));
+  glm::mat3 Placement::getHorizRotMat(bool abs) {
+    return glm::mat3(glm::rotate(getHorizRot(abs), glm::vec3(0.f, 0.f, 1.f)));
   }
 
-  glm::quat Placement::getQuat() {
-    return glm::quat_cast(mat);
+  glm::quat Placement::getQuat(bool abs) {
+    return glm::quat_cast( abs ? absMat : mat );
   }
 
   TransformFunction::TransformFunction(transformFunc func)

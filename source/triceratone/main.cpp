@@ -9,7 +9,7 @@
 #include "settings.h"
 #include "topics.hpp"
 #include "ezecs.hpp"
-#include "dualityInterface.h"
+#include "ecsInterface.h"
 #include "game.h"
 
 #include "ecsSystem_animation.h"
@@ -28,7 +28,7 @@ using namespace at3;
 using namespace ezecs;
 using namespace rtu::topics;
 
-class Triceratone : public Game<DualityInterface, Triceratone> {
+class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
 
     ControlSystem     mControlSystem;
     AnimationSystem   mAnimationSystem;

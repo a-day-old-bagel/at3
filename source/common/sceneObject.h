@@ -8,7 +8,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "transformRAII.h"
-#include "sceneObject.h"
+//#include "sceneObject.h"
 
 #define SCENE_ SceneObject<EcsInterface>::
 #define SCENE_ECS SceneObject<EcsInterface>::ecs

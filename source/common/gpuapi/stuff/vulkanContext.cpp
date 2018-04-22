@@ -7,6 +7,8 @@
 #include "dataStore.h"
 #include "mesh_loading.h"
 
+#define SUBSCRIBE_TOPIC(e,x) std::make_unique<rtu::topics::Subscription>(e, RTU_MTHD_DLGT(&VulkanContext::x, this));
+
 namespace at3 {
 
   VulkanContextCreateInfo VulkanContextCreateInfo::defaults() {
@@ -29,9 +31,8 @@ namespace at3 {
 
   VulkanContext::VulkanContext(VulkanContextCreateInfo info) {
 
-    wvUpdate =
-        std::make_unique<rtu::topics::Subscription>(
-            "primary_cam_wv", RTU_MTHD_DLGT(&VulkanContext::updateWvMat, this));
+    wvUpdate = SUBSCRIBE_TOPIC("primary_cam_wv", updateWvMat);
+    windowResize = SUBSCRIBE_TOPIC("window_resized", reInitRendering);
 
     // Init the vulkan instance, device, pools, etc.
 
@@ -74,8 +75,21 @@ namespace at3 {
     meshLayout.push_back(EMeshVertexAttribute::NORMAL);
     Mesh::setGlobalVertexLayout(meshLayout);
 
+
+
 //    testMesh = loadMesh("./meshes/sponza.obj", false, guts);
-    testMesh = loadMesh("./assets/models/ArmyPilot/ArmyPilot.obj", false, guts);
+//    testMesh = loadMesh("./assets/models/ArmyPilot/ArmyPilot.obj", false, guts);
+
+    testMesh = loadMesh("./assets/models/pyramid_bottom.dae", false, guts);
+
+    auto top = loadMesh("./assets/models/pyramid_top.dae", false, guts);
+    testMesh.insert(testMesh.end(), top.begin(), top.end());
+    auto thrusters = loadMesh("./assets/models/pyramid_thrusters.dae", false, guts);
+    testMesh.insert(testMesh.end(), thrusters.begin(), thrusters.end());
+    auto thrusterFlames = loadMesh("./assets/models/pyramid_thruster_flames.dae", false, guts);
+    testMesh.insert(testMesh.end(), thrusterFlames.begin(), thrusterFlames.end());
+
+
 
     uboIdx.resize(testMesh.size());
     printf("Num meshes: %lu\n", testMesh.size());

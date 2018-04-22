@@ -1,10 +1,15 @@
 #pragma once
+
+#include <vector>
+#include "config.h"
 #include "vkh.h"
 
 #define GLM_FORCE_RADIANS
-//#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#if USE_AT3_COORDS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#endif
 #include <glm/glm.hpp>
-#include <vector>
+
 
 namespace at3
 {

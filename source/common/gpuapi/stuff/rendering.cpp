@@ -1,5 +1,11 @@
 
 #include "config.h"
+
+#if USE_AT3_COORDS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#endif
+#define GLM_FORCE_RADIANS
+
 #include "dataStore.h"
 #include "rendering.h"
 #include "vkh_material.h"
@@ -7,10 +13,6 @@
 #include "vkh_types.h"
 #include "topics.hpp"
 
-#define GLM_FORCE_RADIANS
-#if USE_AT3_COORDS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#endif
 #include <glm/gtx/transform.hpp>
 #include <glm/glm.hpp>
 
@@ -45,6 +47,8 @@ void initRendering(at3::VkhContext &ctxt, uint32_t num) {
     at3::createCommandBuffer(ctxt.renderData.commandBuffers[i], ctxt.gfxCommandPool, ctxt.device);
   }
   loadUBOTestMaterial(ctxt, num);
+
+  ctxt.renderData.firstFrame = std::vector<bool>(swapChainImageCount, true);
 }
 
 void loadUBOTestMaterial(at3::VkhContext &ctxt, int num) {
@@ -504,9 +508,13 @@ void render(at3::VkhContext &ctxt, const glm::mat4 &wvMat, const std::vector<at3
   }
   float timestampFrequency = ctxt.gpu.deviceProps.limits.timestampPeriod;
 
-
-  vkGetQueryPoolResults(ctxt.device, ctxt.queryPool, 1, 1, sizeof(uint32_t), &end, 0, VK_QUERY_RESULT_WAIT_BIT);
-  vkGetQueryPoolResults(ctxt.device, ctxt.queryPool, 0, 1, sizeof(uint32_t), &begin, 0, VK_QUERY_RESULT_WAIT_BIT);
+  // A "firstFrame" bool is easier than setting up more synchronization objects.
+  if (ctxt.renderData.firstFrame[imageIndex]) {
+    ctxt.renderData.firstFrame[imageIndex] = false;
+  } else {
+    vkGetQueryPoolResults(ctxt.device, ctxt.queryPool, 1, 1, sizeof(uint32_t), &end, 0, VK_QUERY_RESULT_WAIT_BIT);
+    vkGetQueryPoolResults(ctxt.device, ctxt.queryPool, 0, 1, sizeof(uint32_t), &begin, 0, VK_QUERY_RESULT_WAIT_BIT);
+  }
   uint32_t diff = end - begin;
   totalTime += (diff) / (float)1e6;
 #endif

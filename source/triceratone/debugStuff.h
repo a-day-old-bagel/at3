@@ -2,7 +2,7 @@
 #pragma once
 
 #include <vector>
-#include "dualityInterface.h"
+#include "ecsInterface.h"
 #include "scene.h"
 #include "debug.h"
 #include "ecsSystem_physics.h"

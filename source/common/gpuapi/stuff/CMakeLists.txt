@@ -1,7 +1,6 @@
 
 add_library( ${AT3_TARGET_PREFIX}vulkan STATIC
   camera.cpp camera.h
-  Common.h
   config.h
   dataStore.h dataStore.cpp
   debug.h
@@ -35,7 +34,6 @@ add_dependencies( ${AT3_TARGET_PREFIX}vulkan
 
 add_executable( ${AT3_TARGET_PREFIX}vulkan_demo
   camera.cpp camera.h
-  Common.h
   config.h
   dataStore.h dataStore.cpp
   debug.h

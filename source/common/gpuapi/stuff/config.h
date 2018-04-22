@@ -11,7 +11,7 @@
 // There's a validation error when you use DEVICE_LOCAL and PERSISTENT_STAGING_BUFFER, at the call
 // vkFlushMappedMemoryRanges. If you switch, you debug.
 #define DEVICE_LOCAL 0
-#define PRINT_VK_FRAMETIMES 0
+#define PRINT_VK_FRAMETIMES 1
 #define PERSISTENT_STAGING_BUFFER 0
 #define COPY_ON_MAIN_COMMANDBUFFER 0
 #define COMBINE_MESHES 0

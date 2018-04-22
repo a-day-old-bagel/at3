@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Common.h"
+#include "vkh_setup.h"
 #include "camera.h"
 #include "rendering.h"
 #include "topics.hpp"
