@@ -4,6 +4,7 @@
 #include "vkh.h"
 #include "config.h"
 #include "state.h"
+#include "os_sdl2.h"
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"

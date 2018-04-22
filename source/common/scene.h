@@ -51,11 +51,20 @@ namespace at3 {
        * Draws the scene graph recursively
        *
        * \param camera A Camera object
+       * \param debug Indicates that object should draw with debug information
+       */
+      void draw(Camera<EcsInterface> &camera, bool debug = false) const;
+
+      /**
+       * For any objects with transform data, updateAbsoluteTransformCaches traverses the graph,
+       * storing each object's absolute world transform where the rendering process can find it.
+       *
+       * \param camera A Camera object
        * \param aspect The aspect ratio
        * \param alpha Currently unused, since Bullet does its own interpolation
        * \param debug Indicates that object should draw with debug information
        */
-      void draw(Camera<EcsInterface> &camera, bool debug = false) const;
+      void updateAbsoluteTransformCaches() const;
   };
 
   template <typename EcsInterface>
@@ -96,6 +105,18 @@ namespace at3 {
           worldView,
           projection,
           debug);
+    }
+  }
+
+  template <typename EcsInterface>
+  void Scene<EcsInterface>::updateAbsoluteTransformCaches() const
+  {
+    // Transform stack starts out empty
+    TransformStack modelWorld;
+
+    // draw each top level object
+    for (auto object : this->m_objects) {
+      object.second->m_traverseAndCache(modelWorld);
     }
   }
 }

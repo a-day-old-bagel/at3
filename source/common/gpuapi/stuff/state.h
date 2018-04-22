@@ -1,10 +1,14 @@
 #pragma once
 
+#include <SDLvulkan.h>
+#include <SDL_events.h>
+#include "vkh_alloc.h"
 #include "vkh_setup.h"
 #include "camera.h"
 #include "rendering.h"
 #include "topics.hpp"
 #include "keyInput.hpp"
+#include "timing.h"
 
 #define SUBSCRIBE_EVENT(e,x) std::make_unique<rtu::topics::Subscription>(e, RTU_MTHD_DLGT(&VkbbState::x, this));
 

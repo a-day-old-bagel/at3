@@ -15,6 +15,11 @@
 #include "vulkanContext.h"
 
 namespace at3 {
+
+  struct FakeScene {
+
+  };
+
   namespace graphicsBackend {
     bool init();
     void swap();
@@ -47,7 +52,7 @@ namespace at3 {
       void clear();
       void handleWindowSizeChange();
       extern std::unique_ptr<VulkanBackend> vkbe;
-      extern std::unique_ptr<VulkanContext> vkc;
+//      extern std::unique_ptr<VulkanContext<FakeScene>> vkc;
     }
   }
 }

@@ -10,6 +10,7 @@
 #include <iostream>
 
 //#include "graphicsBackend.h"
+#include "vulkanContext.h"
 #include "debug.h"
 #include "scene.h"
 #include "keyInput.hpp"
@@ -28,6 +29,7 @@ namespace at3 {
 
     private:
       EcsInterface mEcsInterface;
+      std::unique_ptr<VulkanContext<EcsInterface>> vkc;
       std::shared_ptr<Camera<EcsInterface>> mpCamera = nullptr;
       float mLastTime = 0.f;
       std::string mSettingsFileName;
@@ -71,7 +73,21 @@ namespace at3 {
     graphicsBackend::applicationName = appName;
     derived().registerCustomSettings();
     settings::loadFromIni(mSettingsFileName.c_str());
-    if (!graphicsBackend::init()) { return false; }
+
+    switch (settings::graphics::gpuApi) {
+      case settings::graphics::OPENGL_OPENCL: {
+        if (!graphicsBackend::init()) { return false; }
+      } break;
+      case settings::graphics::VULKAN: {
+        if (!graphicsBackend::init()) { return false; }
+        VulkanContextCreateInfo<EcsInterface> contextCreateInfo = VulkanContextCreateInfo<EcsInterface>::defaults();
+        contextCreateInfo.window = graphicsBackend::sdl2::window;
+        contextCreateInfo.ecs = &mEcsInterface;
+        vkc = std::make_unique<VulkanContext<EcsInterface>>(contextCreateInfo);
+      }
+      default: break;
+    }
+
     return derived().onInit();
   }
 
@@ -92,7 +108,13 @@ namespace at3 {
   void Game<EcsInterface, Derived>::tick() {
 
     // Previous draw now finished, put it on screen
-    graphicsBackend::swap();
+    switch (settings::graphics::gpuApi) {
+      case settings::graphics::OPENGL_OPENCL: { graphicsBackend::swap(); } break;
+      case settings::graphics::VULKAN: { vkc->step(); } break;
+      default: break;
+    }
+
+
 
     // If this is first frame, make sure timing doesn't cause problems
     if (mLastTime == 0.0f) {
@@ -103,7 +125,18 @@ namespace at3 {
 
     // Update the world-view matrix topic
     if (mpCamera) {
-      rtu::topics::publish<glm::mat4>("primary_cam_wv", mpCamera->lastWorldViewQueried);
+
+
+      switch (settings::graphics::gpuApi) {
+        case settings::graphics::OPENGL_OPENCL: {
+          rtu::topics::publish<glm::mat4>("primary_cam_wv", mpCamera->lastWorldViewQueried);
+        } break;
+        case settings::graphics::VULKAN: {
+          rtu::topics::publish<glm::mat4>("primary_cam_wv", mpCamera->worldView());
+          mScene.updateAbsoluteTransformCaches(); break;
+        }
+        default: break;
+      }
     }
 
     // Poll SDL events
@@ -176,7 +209,34 @@ namespace at3 {
             rtu::topics::publish<SDL_Event>("mouse_moved", event);
           } break;
         case SDL_WINDOWEVENT:
-          graphicsBackend::handleWindowEvent((void*)&event); break;
+          switch (settings::graphics::gpuApi) {
+            case settings::graphics::OPENGL_OPENCL: {
+              graphicsBackend::handleWindowEvent((void*)&event);
+            } break;
+            case settings::graphics::VULKAN: {
+              switch (event.window.event) {
+                case SDL_WINDOWEVENT_SIZE_CHANGED: {
+                  settings::graphics::windowDimX = (uint32_t) event.window.data1;
+                  settings::graphics::windowDimY = (uint32_t) event.window.data2;
+                  vkc->reInitRendering();
+                  std::cout << "Window size changed to: " << settings::graphics::windowDimX << "x"
+                            << settings::graphics::windowDimY << std::endl;
+                } break;
+                case SDL_WINDOWEVENT_MOVED: {
+                  settings::graphics::windowPosX = event.window.data1;
+                  settings::graphics::windowPosY = event.window.data2;
+                } break;
+                case SDL_WINDOWEVENT_MAXIMIZED: {
+                  settings::graphics::fullscreen = settings::graphics::MAXIMIZED;
+                } break;
+                case SDL_WINDOWEVENT_RESTORED: {
+                  settings::graphics::fullscreen = settings::graphics::WINDOWED;
+                } break;
+                default: break;
+              }
+            } break;
+            default: break;
+          }
         default: break;
       }
     }
@@ -206,7 +266,11 @@ namespace at3 {
     // Clear the graphics scene and begin redraw if a camera is assigned
     graphicsBackend::clear();
     if (mpCamera) {
-      mScene.draw(*mpCamera, false);
+      switch (settings::graphics::gpuApi) {
+        case settings::graphics::OPENGL_OPENCL: mScene.draw(*mpCamera, false); break;
+        case settings::graphics::VULKAN: mScene.updateAbsoluteTransformCaches(); break;
+        default: break;
+      }
     }
   }
 

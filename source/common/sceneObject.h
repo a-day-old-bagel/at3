@@ -16,6 +16,7 @@
 
 namespace at3 {
   class Transform;
+
   /**
    * This abstract class defines a typical object in a 3D graphics scene.
    *
@@ -24,14 +25,14 @@ namespace at3 {
    * orientation from the previous frame so that they may be interpolated with
    * the appropriate alpha value when it comes time to draw the scene object.
    */
-  template <typename EcsInterface>
+  template<typename EcsInterface>
   class SceneObject {
     private:
       std::unordered_map<
-        const SceneObject<EcsInterface> *,
-        std::shared_ptr<SceneObject<EcsInterface>>
-        > m_children;
-      SceneObject<EcsInterface>* m_parent = NULL;
+          const SceneObject<EcsInterface> *,
+          std::shared_ptr<SceneObject<EcsInterface>>
+      > m_children;
+      SceneObject<EcsInterface> *m_parent = NULL;
       int m_inheritedDOF = ALL;
 
     public:
@@ -98,8 +99,6 @@ namespace at3 {
        * position and orientation of the camera currently being used.
        * \param projection The view-space to projection-space transform for
        * the camera that is currently being used.
-       * \param alpha The simulation keyframe weight for animating this object
-       * between keyframes.
        * \param debug Flag indicating whether or not debug information is to be
        * drawn.
        *
@@ -116,6 +115,14 @@ namespace at3 {
       void m_draw(Transform &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
                   bool debug);
 
+      /**
+       * Caches this scene object's absolute world transform inside it's ECS transform component.
+       * This is done by traversing the scene graph. This objects children will inherit its transform.
+       *
+       * @param modelWorld
+       */
+      virtual void m_traverseAndCache(Transform &modelWorld);
+
       void reverseTransformLookup(glm::mat4 &wv, int whichDOFs = ALL) const;
 
       /**
@@ -127,30 +134,30 @@ namespace at3 {
       /**
        *
        */
-      static void linkEcs(EcsInterface& ecs);
+      static void linkEcs(EcsInterface &ecs);
   };
 
-  template <typename EcsInterface>
+  template<typename EcsInterface>
   EcsInterface *SceneObject<EcsInterface>::ecs = NULL;
 
-  template <typename EcsInterface>
+  template<typename EcsInterface>
   SceneObject<EcsInterface>::SceneObject() {
     id = ecs->createEntity();
   }
 
-  template <typename EcsInterface>
+  template<typename EcsInterface>
   SceneObject<EcsInterface>::~SceneObject() {
     ecs->destroyEntity(id);
   }
 
-  template <typename EcsInterface>
+  template<typename EcsInterface>
   void SceneObject<EcsInterface>::addChild(std::shared_ptr<SceneObject> child, int inheritedDOF /* = ALL */) {
     m_children.insert({child.get(), child});
     child.get()->m_parent = this;
     child.get()->m_inheritedDOF = inheritedDOF;
   }
 
-  template <typename EcsInterface>
+  template<typename EcsInterface>
   void SceneObject<EcsInterface>::removeChild(const SceneObject *address) {
     auto iterator = m_children.find(address);
     assert(iterator != m_children.end());
@@ -159,15 +166,14 @@ namespace at3 {
     m_children.erase(iterator);
   }
 
-  template <typename EcsInterface>
+  template<typename EcsInterface>
   bool SceneObject<EcsInterface>::hasChild(const SceneObject *address) {
     return m_children.find(address) != m_children.end();
   }
 
-  template <typename EcsInterface>
+  template<typename EcsInterface>
   void SceneObject<EcsInterface>::m_draw(Transform &modelWorld, const glm::mat4 &worldView,
-      const glm::mat4 &projection, bool debug)
-  {
+                                         const glm::mat4 &projection, bool debug) {
     TransformRAII mw(modelWorld);
     glm::mat4 myTransform;
     bool hasTransform = false;
@@ -188,31 +194,81 @@ namespace at3 {
           if (hasTransform) { break; }
           TransformRAII mw_transOnly(modelWorld);
           mw_transOnly *= glm::mat4({
-                              1,                 0,                 0, 0,
-                              0,                 1,                 0, 0,
-                              0,                 0,                 1, 0,
-              myTransform[3][0], myTransform[3][1], myTransform[3][2], 1
-          });
+                                        1, 0, 0, 0,
+                                        0, 1, 0, 0,
+                                        0, 0, 1, 0,
+                                        myTransform[3][0], myTransform[3][1], myTransform[3][2], 1
+                                    });
           child.second->m_draw(mw_transOnly, worldView, projection, debug);
-        } return;
+        }
+          return;
         case WITHOUT_TRANSLATION: {
           if (hasTransform) { break; }
           TransformRAII mw_noTrans(modelWorld);
           mw_noTrans *= glm::mat4({
-              myTransform[0][0], myTransform[0][1], myTransform[0][2], 0,
-              myTransform[1][0], myTransform[1][1], myTransform[1][2], 0,
-              myTransform[2][0], myTransform[2][1], myTransform[2][2], 0,
-                              0,                 0,                 0, 1
-          });
+                                      myTransform[0][0], myTransform[0][1], myTransform[0][2], 0,
+                                      myTransform[1][0], myTransform[1][1], myTransform[1][2], 0,
+                                      myTransform[2][0], myTransform[2][1], myTransform[2][2], 0,
+                                      0, 0, 0, 1
+                                  });
           child.second->m_draw(mw_noTrans, worldView, projection, debug);
-        } return;
-        default: break;
+        }
+          return;
+        default:
+          break;
       }
       child.second->m_draw(mw, worldView, projection, debug);
     }
   }
 
-  template <typename EcsInterface>
+  template<typename EcsInterface>
+  void SceneObject<EcsInterface>::m_traverseAndCache(Transform &modelWorld) {
+    TransformRAII mw(modelWorld);
+    glm::mat4 myTransform;
+    bool hasTransform = false;
+
+    if (ecs->hasTransform(id)) {
+      myTransform = ecs->getTransform(id);
+      mw *= myTransform;
+      ecs->setAbsTransform(id, mw.peek());
+      hasTransform = true;
+    }
+
+    // Draw our children
+    for (auto child : m_children) {
+      switch (child.second->m_inheritedDOF) {
+        case TRANSLATION_ONLY: {
+          if (hasTransform) { break; }
+          TransformRAII mw_transOnly(modelWorld);
+          mw_transOnly *= glm::mat4({
+                                        1, 0, 0, 0,
+                                        0, 1, 0, 0,
+                                        0, 0, 1, 0,
+                                        myTransform[3][0], myTransform[3][1], myTransform[3][2], 1
+                                    });
+          child.second->m_traverseAndCache(mw_transOnly);
+        }
+          return;
+        case WITHOUT_TRANSLATION: {
+          if (hasTransform) { break; }
+          TransformRAII mw_noTrans(modelWorld);
+          mw_noTrans *= glm::mat4({
+                                      myTransform[0][0], myTransform[0][1], myTransform[0][2], 0,
+                                      myTransform[1][0], myTransform[1][1], myTransform[1][2], 0,
+                                      myTransform[2][0], myTransform[2][1], myTransform[2][2], 0,
+                                      0, 0, 0, 1
+                                  });
+          child.second->m_traverseAndCache(mw_noTrans);
+        }
+          return;
+        default:
+          break;
+      }
+      child.second->m_traverseAndCache(mw);
+    }
+  }
+
+  template<typename EcsInterface>
   void SceneObject<EcsInterface>::reverseTransformLookup(glm::mat4 &wv, int whichDOFs /* = ALL */) const {
 
     if (ecs->hasTransform(id)) {
@@ -220,23 +276,26 @@ namespace at3 {
       switch (whichDOFs) {
         case TRANSLATION_ONLY: {
           wv *= glm::inverse(glm::mat4({
-                                1,                   0,                   0, 0,
-                                0,                   1,                   0, 0,
-                                0,                   0,                   1, 0,
-              fullTransform[3][0], fullTransform[3][1], fullTransform[3][2], 1
-          }));
-        } break;
+                                           1, 0, 0, 0,
+                                           0, 1, 0, 0,
+                                           0, 0, 1, 0,
+                                           fullTransform[3][0], fullTransform[3][1], fullTransform[3][2], 1
+                                       }));
+        }
+          break;
         case WITHOUT_TRANSLATION: {
           wv *= glm::inverse(glm::mat4({
-              fullTransform[0][0], fullTransform[0][1], fullTransform[0][2], 0,
-              fullTransform[1][0], fullTransform[1][1], fullTransform[1][2], 0,
-              fullTransform[2][0], fullTransform[2][1], fullTransform[2][2], 0,
-                                0,                   0,                   0, 1
-          }));
-        } break;
+                                           fullTransform[0][0], fullTransform[0][1], fullTransform[0][2], 0,
+                                           fullTransform[1][0], fullTransform[1][1], fullTransform[1][2], 0,
+                                           fullTransform[2][0], fullTransform[2][1], fullTransform[2][2], 0,
+                                           0, 0, 0, 1
+                                       }));
+        }
+          break;
         default: {
           wv *= glm::inverse(fullTransform);
-        } break;
+        }
+          break;
       }
     }
 
@@ -246,17 +305,17 @@ namespace at3 {
 
   }
 
-  template <typename EcsInterface>
-  void SceneObject<EcsInterface>::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
-                    bool debug) { }
+  template<typename EcsInterface>
+  void SceneObject<EcsInterface>::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView,
+                                       const glm::mat4 &projection, bool debug) { }
 
-  template <typename EcsInterface>
+  template<typename EcsInterface>
   typename EcsInterface::EcsId SceneObject<EcsInterface>::getId() const {
     return id;
   }
 
-  template <typename EcsInterface>
-  void SceneObject<EcsInterface>::linkEcs(EcsInterface& ecs) {
+  template<typename EcsInterface>
+  void SceneObject<EcsInterface>::linkEcs(EcsInterface &ecs) {
     SCENE_ECS = &ecs;
   }
 }

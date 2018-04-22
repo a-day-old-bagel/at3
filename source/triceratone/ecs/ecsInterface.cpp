@@ -52,6 +52,22 @@ namespace at3 {
     placement->mat = transform;
   }
 
+  glm::mat4 EntityComponentSystemInterface::getAbsTransform(const entityId &id) {
+    Placement *placement;
+    ezecs::CompOpReturn status = state->get_Placement(id, &placement);
+    EZECS_CHECK_PRINT(EZECS_ERR(status));
+    assert(status == ezecs::SUCCESS);
+    return placement->absMat;
+  }
+
+  void EntityComponentSystemInterface::setAbsTransform(const ezecs::entityId &id, const glm::mat4 &transform) {
+    Placement *placement;
+    ezecs::CompOpReturn status = state->get_Placement(id, &placement);
+    EZECS_CHECK_PRINT(EZECS_ERR(status));
+    assert(status == ezecs::SUCCESS);
+    placement->absMat = transform;
+  }
+
   bool EntityComponentSystemInterface::hasTransformFunction(const entityId &id) {
     compMask compsPresent = state->getComponents(id);
     assert(compsPresent);

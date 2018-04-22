@@ -10,15 +10,15 @@ add_library( ${AT3_TARGET_PREFIX}vulkan STATIC
   shader_inputs.h
   timing.h
   vkh.cpp vkh.h
-  vkh_alloc.h
+  vkh_alloc.cpp vkh_alloc.h
   vkh_initializers.h
   vkh_material.cpp vkh_material.h
   vkh_mesh.cpp vkh_mesh.h
-  vkh_setup.h
+  vkh_setup.cpp vkh_setup.h
   vkh_texture.h
   vkh_types.h
   os_sdl2.h state.h
-  vulkanContext.h vulkanContext.cpp
+  vulkanContext.h #vulkanContext.cpp
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}vulkan
   ${AT3_TARGET_PREFIX}external

@@ -30,6 +30,8 @@ namespace at3 {
       bool hasTransform(const ezecs::entityId& id);
       glm::mat4 getTransform(const ezecs::entityId& id);
       void setTransform(const ezecs::entityId& id, const glm::mat4& transform);
+      glm::mat4 getAbsTransform(const ezecs::entityId& id);
+      void setAbsTransform(const ezecs::entityId& id, const glm::mat4& transform);
 
       bool hasTransformFunction(const ezecs::entityId& id);
       glm::mat4 getTransformFunction(const ezecs::entityId& id);
