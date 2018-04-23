@@ -11,7 +11,7 @@
 #include <cstdint>
 #include <deque>
 
-#include "config.h"
+#include "configuration.h"
 #include "vkh.h"
 #include "shader_inputs.h"
 
@@ -32,6 +32,7 @@ namespace at3 {
         VkBuffer buf;
         at3::Allocation alloc;
         std::deque<uint32_t> freeIndices;
+        uint32_t index;
 
 #       if DEVICE_LOCAL
 #         if PERSISTENT_STAGING_BUFFER
@@ -96,8 +97,10 @@ namespace at3 {
           page.freeIndices.push_back(i);
         }
 
+        page.index = (uint32_t)pages.size();
+
         pages.push_back(page);
-        return pages[pages.size() - 1];
+        return pages[page.index];
       }
 
     public:
@@ -145,14 +148,13 @@ namespace at3 {
         if (!p) {
           p = &createNewPage();
           newPage = true;
-          printf("New UBO page created: %lu\n", pages.size() - 1);
         }
 
         uint32_t slot = p->freeIndices.front();
         p->freeIndices.pop_front();
 
-        outIdx = slot << 3;
-        outIdx += (slot / countPerPage);
+        outIdx = slot << 16;
+        outIdx += p->index;
 
         return newPage ? NEWPAGE : SUCCESS;
       }
@@ -186,33 +188,14 @@ namespace at3 {
         for (auto pair : meshAssets) {
           for (auto mesh : pair.second) {
             for (auto instance : mesh.instances) {
-              glm::uint32 uboSlot = instance.uboIdx >> 3;
-              glm::uint32 uboPage = instance.uboIdx & 0x7;
+              glm::uint32 uboSlot = instance.uboIdx >> 16;
+              glm::uint32 uboPage = instance.uboIdx & 0xFFFF;
               glm::mat4 modelViewMatrix = viewMatrix * ecs->getAbsTransform(instance.id);
               objPtrs[uboPage][uboSlot].model = projMatrix * modelViewMatrix;
               objPtrs[uboPage][uboSlot].normal = glm::transpose(glm::inverse(modelViewMatrix));
             }
           }
         }
-
-//        for (uint32_t p = 0; p < pages.size(); ++p) {
-//          UBOPage page = pages[p];
-//          VShaderInput *objPtr = (VShaderInput *) page.map;
-//
-//          for (uint32_t i = 0; i < countPerPage; ++i) {
-//            objPtr[i].model = projMatrix * viewMatrix;
-//            objPtr[i].normal = glm::transpose(glm::inverse(viewMatrix));
-//          }
-//
-//          VkMappedMemoryRange curRange = {};
-//          curRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-//          curRange.memory = page.alloc.handle;
-//          curRange.offset = page.alloc.offset;
-//          curRange.size = page.alloc.size;
-//          curRange.pNext = nullptr;
-//
-//          rangesToUpdate[p] = curRange;
-//        }
 
 #       if !DEVICE_LOCAL || PERSISTENT_STAGING_BUFFER
           vkFlushMappedMemoryRanges(ctxt.device, rangesToUpdate.size(), rangesToUpdate.data());

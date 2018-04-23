@@ -27,13 +27,13 @@ namespace at3 {
                                                  (float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f)), {0.105f, 0.105f, 0.15f});
 
     mpBase = std::make_shared<MeshObjectVk_> (context,
-        "pyramid_bottom.dae", "pyramid_bottom.png", transform, MeshObjectVk_::SUNNY);
+        "pyramid_bottom", "pyramid_bottom.png", transform, MeshObjectVk_::SUNNY);
     mpTop = std::make_shared<MeshObjectVk_> (context,
-        "pyramid_top.dae", "pyramid_top_new.png", ident, MeshObjectVk_::SUNNY);
+        "pyramid_top", "pyramid_top_new.png", ident, MeshObjectVk_::SUNNY);
     mpThrusters = std::make_shared<MeshObjectVk_> (context,
-        "pyramid_thrusters.dae", "thrusters.png", ident, MeshObjectVk_::SUNNY);
+        "pyramid_thrusters", "thrusters.png", ident, MeshObjectVk_::SUNNY);
     mpFire = std::make_shared<MeshObjectVk_> (context,
-        "pyramid_thruster_flames.dae", "pyramid_flames.png",
+        "pyramid_thruster_flames", "pyramid_flames.png",
         pyrFirMat, MeshObjectVk_::FULLBRIGHT);
 
     entityId bottomId = mpBase->getId();
@@ -99,7 +99,7 @@ namespace at3 {
     mpState->get_Placement(mpBase->getId(), &source);
     glm::mat4 sourceMat = glm::translate(source->mat, {0.f, 0.f, 3.f});
     mvpSpheres.push_back(std::shared_ptr<MeshObjectVk_>(
-        new MeshObjectVk_(vkc, "sphere.dae", "pyramid_flames.png",
+        new MeshObjectVk_(vkc, "sphere", "pyramid_flames.png",
                         sourceMat, MeshObjectVk_::FULLBRIGHT)));
     float sphereRadius = 1.0f;
     mpState->add_Physics(mvpSpheres.back()->getId(), 5.f, &sphereRadius, Physics::SPHERE);

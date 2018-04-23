@@ -1,5 +1,5 @@
 
-#include "config.h"
+#include "configuration.h"
 
 #include "rendering.h"
 #include "vkh_material.h"
@@ -17,8 +17,6 @@
 void createMainRenderPass(at3::VkhContext &ctxt);
 
 void createDepthBuffer(at3::VkhContext &ctxt);
-
-void loadDebugMaterial(at3::VkhContext &ctxt);
 
 void loadUBOTestMaterial(at3::VkhContext &ctxt, int num);
 
@@ -43,7 +41,6 @@ void initRendering(at3::VkhContext &ctxt, uint32_t num) {
 void updateDescriptorSets(at3::VkhContext &ctxt, at3::DataStore *dataStore) {
 
   size_t oldNumPages = ctxt.matData.descSets.size();
-//  size_t newNumPages = ubo_store::getNumPages();
   size_t newNumPages = dataStore->getNumPages();
 
   ctxt.matData.descSets.resize(newNumPages);
@@ -70,8 +67,6 @@ void updateDescriptorSets(at3::VkhContext &ctxt, at3::DataStore *dataStore) {
     ctxt.setWrite.pImageInfo = 0;
 
     vkUpdateDescriptorSets(ctxt.device, 1, &ctxt.setWrite, 0, nullptr);
-
-    printf("Descriptor set created for page: %lu\n", i);
   }
 }
 
@@ -99,18 +94,6 @@ void loadUBOTestMaterial(at3::VkhContext &ctxt, int num) {
   at3::createBasicMaterial(ubo_array_vert_spv, ubo_array_vert_spv_len,
                            static_sun_frag_spv, static_sun_frag_spv_len, ctxt, createInfo);
 
-}
-
-void loadDebugMaterial(at3::VkhContext &ctxt) {
-  at3::VkhMaterialCreateInfo createInfo = {};
-  createInfo.outPipeline = &ctxt.matData.graphicsPipeline;
-  createInfo.outPipelineLayout = &ctxt.matData.pipelineLayout;
-  createInfo.renderPass = ctxt.renderData.mainRenderPass;
-  createInfo.pushConstantStages = VK_SHADER_STAGE_VERTEX_BIT;
-  createInfo.pushConstantRange = sizeof(glm::mat4) * 2;
-  at3::createBasicMaterial(common_vert_vert_spv, common_vert_vert_spv_len, debug_normals_frag_spv,
-                           debug_normals_frag_spv_len,
-                           ctxt, createInfo);
 }
 
 void createDepthBuffer(at3::VkhContext &ctxt) {

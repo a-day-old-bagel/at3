@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "config.h"
+#include "configuration.h"
 #include "vkh.h"
 
 #define GLM_FORCE_RADIANS
@@ -189,8 +189,6 @@ namespace at3::Mesh {
         }
       }
     }
-
     make<EcsInterface>(outAsset, ctxt, verts.data(), 4, &indices[0], 6);
-    //	free(verts);
   }
 }

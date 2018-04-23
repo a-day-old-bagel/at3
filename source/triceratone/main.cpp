@@ -92,8 +92,8 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
 
 
       if (settings::graphics::gpuApi == settings::graphics::VULKAN) {
-        mpTestObj0 = std::make_shared<MeshObjectVk_>(mVulkan.get(), "pyramid_bottom.dae", start);
-        mpTestObj1 = std::make_shared<MeshObjectVk_>(mVulkan.get(), "pyramid_top.dae", start);
+        mpTestObj0 = std::make_shared<MeshObjectVk_>(mVulkan.get(), "pyramid_bottom", start);
+        mpTestObj1 = std::make_shared<MeshObjectVk_>(mVulkan.get(), "pyramid_top", start);
         mpTestObj0->addChild(mpTestObj1);
         mScene.addObject(mpTestObj0);
 
@@ -157,10 +157,17 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
     }
 
     void onTick(float dt) {
+
       mControlSystem.tick(dt);
+
       if (settings::graphics::gpuApi == settings::graphics::OPENGL_OPENCL) {
         mpPyramid->resizeFire();
       }
+      if (settings::graphics::gpuApi == settings::graphics::VULKAN) {
+        // TODO: Not working for some reason
+        mpPyramidVk->resizeFire();
+      }
+
       mPhysicsSystem.tick(dt);
       mAnimationSystem.tick(dt);
     }

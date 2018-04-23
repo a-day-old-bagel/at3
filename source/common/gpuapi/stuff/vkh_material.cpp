@@ -1,5 +1,5 @@
 #include "vkh_material.h"
-#include "config.h"
+#include "configuration.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG

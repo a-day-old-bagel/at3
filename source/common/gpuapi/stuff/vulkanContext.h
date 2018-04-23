@@ -3,13 +3,13 @@
 
 #include <unordered_map>
 #include <string>
-#include <experimental/filesystem>
 
 #include "vkh_types.h"
 #include "vkh_mesh.h"
 #include "topics.hpp"
+#include "utilities.h"
 
-#include "config.h"
+#include "configuration.h"
 #include "vkh_setup.h"
 #include "rendering.h"
 #include "dataStore.h"
@@ -17,8 +17,6 @@
 #include "vkh_alloc.h"
 
 #define SUBSCRIBE_TOPIC(e,x) std::make_unique<rtu::topics::Subscription>(e, RTU_MTHD_DLGT(&VulkanContext::x, this));
-
-namespace fs = std::experimental::filesystem;
 
 namespace at3 {
 
@@ -134,9 +132,8 @@ namespace at3 {
     // TODO: Handle the multiple-objects-in-one-file case (true -> false)?
     for (auto & path : fs::directory_iterator("./assets/models/")) {
       if (fs::is_directory(path)) { continue; }
-      printf("\n%s -> %s\n", path.path().filename().c_str(), path.path().c_str()); //fs::absolute(path).c_str());
-      meshAssets.emplace(path.path().filename(),
-                         loadMesh<EcsInterface>(path.path().c_str(), true, guts));
+      printf("\n%s -> %s\n", getFileNameOnly(path).c_str(), getFileNameRelative(path).c_str());
+      meshAssets.emplace(getFileNameOnly(path), loadMesh<EcsInterface>(getFileNameRelative(path).c_str(), true, guts));
     }
 
     printf("Num meshes: %lu\n", meshAssets.size());

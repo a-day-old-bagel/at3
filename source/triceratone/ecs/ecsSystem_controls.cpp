@@ -59,6 +59,9 @@ namespace at3 {
       // provide the up vector
       pyramidControls->up = glm::quat_cast(placement->mat) * glm::vec3(0.f, 0.f, 1.f);
 
+      // zero control forces
+      pyramidControls->force = glm::vec3();
+
       if (length(pyramidControls->accel) > 0.0f) {
         updateLookInfos();
         // Rotate the movement axis to the correct orientation

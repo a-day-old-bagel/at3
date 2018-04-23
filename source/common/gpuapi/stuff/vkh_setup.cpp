@@ -6,7 +6,7 @@
 #include <algorithm>
 #include "vkh.h"
 #include "vkh_alloc.h"
-#include "config.h"
+#include "configuration.h"
 
 #include "settings.h"
 

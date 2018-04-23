@@ -15,17 +15,9 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/glm.hpp>
 
-template <typename EcsInterface>
-struct DrawCall {
-    at3::MeshAsset<EcsInterface> mesh;
-    uint32_t uboIdx;
-};
-
 void initRendering(at3::VkhContext &, uint32_t num);
 
 void updateDescriptorSets(at3::VkhContext &ctxt, at3::DataStore *dataStore);
-
-//void cleanupRendering(at3::VkhContext &);
 
 template <typename EcsInterface>
 void render(at3::VkhContext &ctxt, at3::DataStore* dataStore, const glm::mat4 &wvMat,
@@ -103,8 +95,8 @@ void render(at3::VkhContext &ctxt, at3::DataStore* dataStore, const glm::mat4 &w
   for (auto pair : meshAssets) {
     for (auto mesh : pair.second) {
       for (auto instance : mesh.instances) {
-        glm::uint32 uboSlot = instance.uboIdx >> 3;
-        glm::uint32 uboPage = instance.uboIdx & 0x7;
+        glm::uint32 uboSlot = instance.uboIdx >> 16;
+        glm::uint32 uboPage = instance.uboIdx & 0xFFFF;
 
         if (currentlyBound != uboPage) {
           vkCmdBindDescriptorSets(ctxt.renderData.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,

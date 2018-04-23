@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include "ezecs.hpp"
 
+#include "configuration.h"
 #include "scene.h"
 #include "sceneObject.h"
 #include "perspectiveCamera.h"

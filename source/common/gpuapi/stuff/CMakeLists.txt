@@ -1,6 +1,5 @@
 
 add_library( ${AT3_TARGET_PREFIX}vulkan STATIC
-  config.h
   dataStore.h
   debug.h
   material_loading.h

@@ -6,7 +6,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
 
-#include "config.h"
+#include "configuration.h"
 #include "vkh.h"
 #include "vkh_mesh.h"
 #include "mesh_loading.h"

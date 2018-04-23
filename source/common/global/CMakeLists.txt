@@ -1,6 +1,8 @@
 
 add_library( ${AT3_TARGET_PREFIX}global STATIC
+  configuration.h
   settings.cpp settings.h
+  utilities.cpp utilities.h
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}global
   ${AT3_TARGET_PREFIX}external

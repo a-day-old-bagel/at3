@@ -6,6 +6,8 @@
 #include <map>
 #include <vector>
 
+#include "configuration.h"
+
 namespace at3 {
   namespace settings {
 

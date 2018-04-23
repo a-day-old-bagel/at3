@@ -108,9 +108,6 @@ namespace at3 {
       physics->rigidBody->applyImpulse({ctrls->force.x, ctrls->force.y, ctrls->force.z},
                                        btVector3(ctrls->up.x, ctrls->up.y, ctrls->up.z) * 0.05f);
 
-      // zero control forces
-      ctrls->force = glm::vec3();
-
       // Custom constraint to keep the pyramid up FixMe: this sometimes gets stuck in a horizontal position?
       glm::vec3 up{0.f, 0.f, 1.f};
       float tip = glm::dot(ctrls->up, up);
