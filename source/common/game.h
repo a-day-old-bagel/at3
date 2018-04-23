@@ -26,10 +26,10 @@ namespace at3 {
     protected:
       typename EcsInterface::State mState;
       Scene<EcsInterface> mScene;
+      std::unique_ptr<VulkanContext<EcsInterface>> mVulkan;
 
     private:
       EcsInterface mEcsInterface;
-      std::unique_ptr<VulkanContext<EcsInterface>> vkc;
       std::shared_ptr<Camera<EcsInterface>> mpCamera = nullptr;
       float mLastTime = 0.f;
       std::string mSettingsFileName;
@@ -83,7 +83,7 @@ namespace at3 {
         VulkanContextCreateInfo<EcsInterface> contextCreateInfo = VulkanContextCreateInfo<EcsInterface>::defaults();
         contextCreateInfo.window = graphicsBackend::sdl2::window;
         contextCreateInfo.ecs = &mEcsInterface;
-        vkc = std::make_unique<VulkanContext<EcsInterface>>(contextCreateInfo);
+        mVulkan = std::make_unique<VulkanContext<EcsInterface>>(contextCreateInfo);
       }
       default: break;
     }
@@ -110,11 +110,8 @@ namespace at3 {
     // Previous draw now finished, put it on screen
     switch (settings::graphics::gpuApi) {
       case settings::graphics::OPENGL_OPENCL: { graphicsBackend::swap(); } break;
-      case settings::graphics::VULKAN: { vkc->step(); } break;
       default: break;
     }
-
-
 
     // If this is first frame, make sure timing doesn't cause problems
     if (mLastTime == 0.0f) {
@@ -125,16 +122,10 @@ namespace at3 {
 
     // Update the world-view matrix topic
     if (mpCamera) {
-
-
       switch (settings::graphics::gpuApi) {
         case settings::graphics::OPENGL_OPENCL: {
           rtu::topics::publish<glm::mat4>("primary_cam_wv", mpCamera->lastWorldViewQueried);
         } break;
-        case settings::graphics::VULKAN: {
-          rtu::topics::publish<glm::mat4>("primary_cam_wv", mpCamera->worldView());
-          mScene.updateAbsoluteTransformCaches(); break;
-        }
         default: break;
       }
     }
@@ -218,7 +209,7 @@ namespace at3 {
                 case SDL_WINDOWEVENT_SIZE_CHANGED: {
                   settings::graphics::windowDimX = (uint32_t) event.window.data1;
                   settings::graphics::windowDimY = (uint32_t) event.window.data2;
-                  vkc->reInitRendering();
+                  mVulkan->reInitRendering();
                   std::cout << "Window size changed to: " << settings::graphics::windowDimX << "x"
                             << settings::graphics::windowDimY << std::endl;
                 } break;
@@ -268,7 +259,11 @@ namespace at3 {
     if (mpCamera) {
       switch (settings::graphics::gpuApi) {
         case settings::graphics::OPENGL_OPENCL: mScene.draw(*mpCamera, false); break;
-        case settings::graphics::VULKAN: mScene.updateAbsoluteTransformCaches(); break;
+        case settings::graphics::VULKAN: {
+          rtu::topics::publish<glm::mat4>("primary_cam_wv", mpCamera->worldView());
+          mScene.updateAbsoluteTransformCaches();
+          mVulkan->step();
+        } break;
         default: break;
       }
     }

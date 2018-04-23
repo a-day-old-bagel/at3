@@ -32,6 +32,11 @@ namespace at3 {
 
       rtu::topics::Subscription debugDrawToggleSub;
 
+      // Ground objects
+      btCollisionShape* planeShape;
+      btDefaultMotionState* groundMotionState;
+      btRigidBody* groundRigidBody;
+
     public:
       std::vector<compMask> requiredComponents = {
               PHYSICS,

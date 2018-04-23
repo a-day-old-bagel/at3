@@ -40,6 +40,4 @@ namespace at3 {
 
   void getWindowSize(VkhContext &ctxt);
 
-  void initContext(VkhContextCreateInfo &info, const char *appName, VkhContext &ctxt);
-
 }

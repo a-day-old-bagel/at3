@@ -71,15 +71,9 @@ add_custom_target(
 
 
 
-# Compile the reflection program and Generate reflections of each spv binary.
-# Add <experimental/filesystem> linker flags if necessary
-if ( MSVC )
-else ( MSVC )
-  list( APPEND at3_extra_linker_flags stdc++fs )
-endif ( MSVC )
-# compile the stuff in ShaderPipeline
+# Compile spvReflect
 add_executable( ${AT3_TARGET_PREFIX}spvReflect spvReflect.cpp )
-target_link_libraries( ${AT3_TARGET_PREFIX}spvReflect ${AT3_TARGET_PREFIX}external ${at3_extra_linker_flags} )
+target_link_libraries( ${AT3_TARGET_PREFIX}spvReflect ${AT3_TARGET_PREFIX}external )
 add_dependencies( ${AT3_TARGET_PREFIX}spvReflect at3_gpuInfo_conf at3_glsl_to_spv_to_c )
 message( STATUS "Will compile SPV in ${at3_spv_dir} to REFL in ${at3_refl_dir}" )
 set( spvReflect $<TARGET_FILE:${AT3_TARGET_PREFIX}spvReflect> )

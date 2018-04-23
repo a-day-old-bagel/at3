@@ -114,6 +114,12 @@ target_include_directories( fastnoise PUBLIC
 
 # TODO: Look again at runtime compiled C++
 
+# Add <experimental/filesystem> and other linker flags if necessary
+if ( MSVC )
+else ( MSVC )
+  list( APPEND ${AT3_TARGET_PREFIX}extra_linker_flags stdc++fs )
+endif ( MSVC )
+
 # Assemble the external dependencies together into a linkable interface that also automatically includes all
 # the necessary directories
 add_library( ${AT3_TARGET_PREFIX}external INTERFACE )
@@ -136,6 +142,7 @@ target_link_libraries( ${AT3_TARGET_PREFIX}external INTERFACE
   ${${AT3_TARGET_PREFIX}bullet_libs}
   spirv-cross-glsl
   fastnoise
+  ${${AT3_TARGET_PREFIX}extra_linker_flags}
   )
 target_compile_definitions( ${AT3_TARGET_PREFIX}external INTERFACE
   ${${AT3_TARGET_PREFIX}extra_definitions}

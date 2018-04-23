@@ -6,7 +6,6 @@
 #include <algorithm>
 #include "vkh.h"
 #include "vkh_alloc.h"
-#include "os_sdl2.h"
 #include "config.h"
 
 #include "settings.h"
@@ -638,41 +637,5 @@ namespace at3 {
     printf("Window size is %ux%u.\n", width, height);
     ctxt.windowWidth = width;
     ctxt.windowHeight = height;
-  }
-
-  void initContext(VkhContextCreateInfo &info, const char *appName, VkhContext &ctxt) {
-    sdl::WindowCreateInfo sdlWindowCreateInfo;
-    sdlWindowCreateInfo.width = ctxt.windowWidth;
-    sdlWindowCreateInfo.height = ctxt.windowHeight;
-    ctxt.window = sdl::init(sdlWindowCreateInfo);
-    getWindowSize(ctxt); // in case we got the window size we deserve
-
-    createInstance(ctxt, appName);
-    createDebugCallback(ctxt);
-
-    createSurface(ctxt);
-    createPhysicalDevice(ctxt);
-    createLogicalDevice(ctxt);
-
-    at3::allocators::pool::activate(&ctxt);
-
-    createSwapchainForSurface(ctxt); // window size is needed here
-
-    createCommandPool(ctxt.gfxCommandPool, ctxt.device, ctxt.gpu, ctxt.gpu.graphicsQueueFamilyIdx);
-    createCommandPool(ctxt.transferCommandPool, ctxt.device, ctxt.gpu, ctxt.gpu.transferQueueFamilyIdx);
-    createCommandPool(ctxt.presentCommandPool, ctxt.device, ctxt.gpu, ctxt.gpu.presentQueueFamilyIdx);
-
-    createDescriptorPool(ctxt.descriptorPool, ctxt.device, info.types, info.typeCounts);
-
-    createVkSemaphore(ctxt.imageAvailableSemaphore, ctxt.device);
-    createVkSemaphore(ctxt.renderFinishedSemaphore, ctxt.device);
-
-    createQueryPool(ctxt.queryPool, ctxt.device, 10);
-
-    ctxt.frameFences.resize(ctxt.swapChain.imageViews.size());
-
-    for (uint32_t i = 0; i < ctxt.frameFences.size(); ++i) {
-      createFence(ctxt.frameFences[i], ctxt.device);
-    }
   }
 }

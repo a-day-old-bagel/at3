@@ -81,6 +81,19 @@ namespace at3 {
     // set up ghost object collision detection
     dynamicsWorld->getPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
 
+    if (settings::graphics::gpuApi == settings::graphics::VULKAN) {
+      // Create a ground object
+      planeShape = new btStaticPlaneShape(btVector3(0.f, 0.f, 1.f), 0.f);
+      groundMotionState = new btDefaultMotionState(btTransform(
+          btQuaternion(0.f, 0.f, 0.f, 1.f),
+          btVector3(0.f, 0.f, 0.f)));
+      btRigidBody::btRigidBodyConstructionInfo groundRigidBodyCI(0, groundMotionState, planeShape, btVector3(0, 0, 0));
+      groundRigidBody = new btRigidBody(groundRigidBodyCI);
+      groundRigidBody->setRestitution(0.5f);
+      groundRigidBody->setFriction(1.f);
+      dynamicsWorld->addRigidBody(groundRigidBody);
+    }
+
     return true;
   }
 

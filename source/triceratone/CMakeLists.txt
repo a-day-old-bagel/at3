@@ -5,6 +5,7 @@ add_executable( ${TARGET_NAME}
   main.cpp
   duneBuggy.cpp duneBuggy.h
   pyramid.cpp pyramid.h
+  pyramidVk.cpp pyramidVk.h
   debugStuff.cpp debugStuff.h
   basicWalker.cpp basicWalker.h
   )

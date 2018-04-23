@@ -17,6 +17,7 @@ add_library( ${AT3_TARGET_PREFIX}common STATIC
   debug.h
   game.h
   meshObject.h
+  meshObjectVk.h
   perspectiveCamera.h
   scene.h
   sceneObject.h

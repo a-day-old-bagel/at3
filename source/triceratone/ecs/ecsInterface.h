@@ -10,6 +10,7 @@
 #include "thirdPersonCamera.h"
 #include "skyBox.h"
 #include "meshObject.h"
+#include "meshObjectVk.h"
 #include "terrainObject.h"
 #include "debug.h"
 
@@ -55,6 +56,7 @@ namespace at3 {
   typedef ThirdPersonCamera<EntityComponentSystemInterface> ThirdPersonCamera_;
   typedef SkyBox<EntityComponentSystemInterface> SkyBox_;
   typedef MeshObject<EntityComponentSystemInterface> MeshObject_;
+  typedef MeshObjectVk<EntityComponentSystemInterface> MeshObjectVk_;
   typedef TerrainObject<EntityComponentSystemInterface> TerrainObject_;
   typedef Debug<EntityComponentSystemInterface> Debug_;
   typedef BulletDebug<EntityComponentSystemInterface> BulletDebug_;

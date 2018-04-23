@@ -2,8 +2,9 @@
 #pragma once
 
 #include <unordered_map>
-
 #include <string>
+#include <experimental/filesystem>
+
 #include "vkh_types.h"
 #include "vkh_mesh.h"
 #include "topics.hpp"
@@ -16,6 +17,8 @@
 #include "vkh_alloc.h"
 
 #define SUBSCRIBE_TOPIC(e,x) std::make_unique<rtu::topics::Subscription>(e, RTU_MTHD_DLGT(&VulkanContext::x, this));
+
+namespace fs = std::experimental::filesystem;
 
 namespace at3 {
 
@@ -39,8 +42,10 @@ namespace at3 {
 
       EcsInterface *ecs;
       VkhContext guts;
-      std::vector<MeshAsset> testMeshes;
-      std::vector<uint32_t> uboIdx;
+      std::unique_ptr<DataStore> uboData;
+
+      std::unordered_map<std::string, std::vector<MeshAsset<EcsInterface>>> meshAssets;
+
       glm::mat4 currentWvMat;
       std::unique_ptr<rtu::topics::Subscription> wvUpdate;
       std::unique_ptr<rtu::topics::Subscription> windowResize;
@@ -53,6 +58,7 @@ namespace at3 {
       void updateWvMat(void* data);
       void step();
       void reInitRendering();
+      void registerMeshInstance(const std::string &meshFileName, const typename EcsInterface::EcsId id);
 
   };
 
@@ -124,35 +130,21 @@ namespace at3 {
     meshLayout.push_back(EMeshVertexAttribute::NORMAL);
     Mesh::setGlobalVertexLayout(meshLayout);
 
-
-
-//    testMesh = loadMesh("./meshes/sponza.obj", false, guts);
-//    testMesh = loadMesh("./assets/models/ArmyPilot/ArmyPilot.obj", false, guts);
-
-    testMeshes = loadMesh("./assets/models/pyramid_bottom.dae", false, guts);
-
-    auto top = loadMesh("./assets/models/pyramid_top.dae", false, guts);
-    testMeshes.insert(testMeshes.end(), top.begin(), top.end());
-    auto thrusters = loadMesh("./assets/models/pyramid_thrusters.dae", false, guts);
-    testMeshes.insert(testMeshes.end(), thrusters.begin(), thrusters.end());
-    auto thrusterFlames = loadMesh("./assets/models/pyramid_thruster_flames.dae", false, guts);
-    testMeshes.insert(testMeshes.end(), thrusterFlames.begin(), thrusterFlames.end());
-
-
-
-    uboIdx.resize(testMeshes.size());
-    printf("Num meshes: %lu\n", testMeshes.size());
-    ubo_store::init(guts);
-
-    for (uint32_t i = 0; i < testMeshes.size(); ++i) {
-      bool didAcquire = ubo_store::acquire(uboIdx[i]);
-      checkf(didAcquire, "Error acquiring ubo index");
+    // Open every mesh in the mesh directory
+    // TODO: Handle the multiple-objects-in-one-file case (true -> false)?
+    for (auto & path : fs::directory_iterator("./assets/models/")) {
+      if (fs::is_directory(path)) { continue; }
+      printf("\n%s -> %s\n", path.path().filename().c_str(), path.path().c_str()); //fs::absolute(path).c_str());
+      meshAssets.emplace(path.path().filename(),
+                         loadMesh<EcsInterface>(path.path().c_str(), true, guts));
     }
+
+    printf("Num meshes: %lu\n", meshAssets.size());
+    uboData = std::make_unique<DataStore>(guts);
 
     // Init the vulkan swapchain, pipeline, etc.
 
-    initRendering(guts, (uint32_t)testMeshes.size());
-
+    initRendering(guts, (uint32_t)meshAssets.size());
   }
 
   template <typename EcsInterface>
@@ -168,7 +160,7 @@ namespace at3 {
 
   template <typename EcsInterface>
   void VulkanContext<EcsInterface>::step() {
-    render(guts, currentWvMat, testMeshes, uboIdx);
+    render<EcsInterface>(guts, uboData.get(), currentWvMat, meshAssets, ecs);
   }
 
   template <typename EcsInterface>
@@ -177,7 +169,7 @@ namespace at3 {
     cleanupRendering();
     getWindowSize(guts);
     createSwapchainForSurface(guts);
-    initRendering(guts, (uint32_t)testMeshes.size());
+    initRendering(guts, (uint32_t)meshAssets.size());
   }
 
   template <typename EcsInterface>
@@ -203,5 +195,20 @@ namespace at3 {
     }
 
     vkDestroySwapchainKHR(guts.device, guts.swapChain.swapChain, nullptr);
+  }
+
+  template<typename EcsInterface>
+  void VulkanContext<EcsInterface>::registerMeshInstance(const std::string &meshFileName,
+                                                         const typename EcsInterface::EcsId id) {
+    for (auto &mesh : meshAssets.at(meshFileName)) {
+      MeshInstance<EcsInterface> instance;
+      DataStore::AcquireStatus didAcquire = uboData->acquire(instance.uboIdx);
+      checkf(didAcquire != DataStore::AcquireStatus::FAILURE, "Error acquiring ubo index");
+      if (didAcquire == DataStore::AcquireStatus::NEWPAGE) {
+        updateDescriptorSets(guts, uboData.get());
+      }
+      instance.id = id;
+      mesh.instances.push_back(instance);
+    }
   }
 }

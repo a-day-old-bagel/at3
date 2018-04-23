@@ -19,6 +19,7 @@
 #include "basicWalker.h"
 #include "duneBuggy.h"
 #include "pyramid.h"
+#include "pyramidVk.h"
 #include "debugStuff.h"
 
 #pragma clang diagnostic push
@@ -36,8 +37,9 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
 
     std::shared_ptr<SceneObject_> mpFreeCam;
     std::shared_ptr<PerspectiveCamera_> mpCamera;
-    std::shared_ptr<SceneObject_> mpTestObj0;
-    std::shared_ptr<SceneObject_> mpTestObj1;
+    std::shared_ptr<MeshObjectVk_> mpTestObj0;
+    std::shared_ptr<MeshObjectVk_> mpTestObj1;
+    std::unique_ptr<PyramidVk> mpPyramidVk;
 
     std::unique_ptr<Subscription> key0Sub, key1Sub, key2Sub, key3Sub;
 
@@ -86,12 +88,22 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       mScene.addObject(mpFreeCam);
       makeFreeCamActiveControl();
 
-      mpTestObj0 = std::make_shared<SceneObject_>();
-      mState.add_Placement(mpTestObj0->getId(), start);
-      mpTestObj1 = std::make_shared<SceneObject_>();
-      mState.add_Placement(mpTestObj1->getId(), start);
-      mpTestObj0->addChild(mpTestObj1);
-      mScene.addObject(mpTestObj0);
+
+
+
+      if (settings::graphics::gpuApi == settings::graphics::VULKAN) {
+        mpTestObj0 = std::make_shared<MeshObjectVk_>(mVulkan.get(), "pyramid_bottom.dae", start);
+        mpTestObj1 = std::make_shared<MeshObjectVk_>(mVulkan.get(), "pyramid_top.dae", start);
+        mpTestObj0->addChild(mpTestObj1);
+        mScene.addObject(mpTestObj0);
+
+        glm::mat4 pyramidMat = glm::translate(ident, {0.f, 0.f, 0.f});
+        mpPyramidVk = std::make_unique<PyramidVk>(mState, mVulkan.get(), mScene, pyramidMat);
+
+        key0Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_0", Triceratone::makeFreeCamActiveControl, this);
+        key1Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_1", PyramidVk::makeActiveControl, mpPyramidVk.get());
+        key2Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_f", PyramidVk::spawnSphere, mpPyramidVk.get());
+      }
 
 
 
@@ -151,10 +163,6 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       }
       mPhysicsSystem.tick(dt);
       mAnimationSystem.tick(dt);
-
-//      Placement *placement;
-//      mState.get_Placement(mpCamera->id, &placement);
-//      std::cout << placement->absMat[3][0] << std::endl;
     }
 
     void makeFreeCamActiveControl() {
