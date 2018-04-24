@@ -32,7 +32,10 @@ namespace at3 {
   template <typename EcsInterface>
   glm::mat4 Camera<EcsInterface>::worldView() {
     glm::mat4 wv;
-    SCENE_ reverseTransformLookup(wv);
+
+    // TODO: Reinvestigate this horrible crap
+    SCENE_ reverseTransformLookup(wv, true, true, SceneObject<EcsInterface>::InheritedDOF::ALL);
+
     lastWorldViewQueried = wv;
     return wv;
   }

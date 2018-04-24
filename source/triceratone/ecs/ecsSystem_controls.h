@@ -42,6 +42,7 @@ namespace at3 {
               FREECONTROLS
       };
       ControlSystem(State* state);
+      ~ControlSystem();
       bool onInit();
       void onTick(float dt);
   };

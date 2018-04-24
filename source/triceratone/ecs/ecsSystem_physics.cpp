@@ -12,6 +12,7 @@
 #define HUMAN_WIDTH 0.5f
 #define CHARA_JUMP 8.f
 #define CHARA_JUMP_COOLDOWN_MS 800
+#define CHARA_MIDAIR_FACTOR 0.f // 0.02f
 #define TRACK_VACANT_BRAKE 0.5f
 
 #pragma clang diagnostic push
@@ -119,6 +120,8 @@ namespace at3 {
     }
 
     // PlayerControls
+    // TODO: fire multiple rays and average, or create a kinematic body (0 mass, recalc inertia) to which to anchor
+    //       the capsule when it lands from a height (point to point constraint, AKA ball joint, maybe)
     for (auto id : registries[4].ids) {
       PlayerControls *ctrls;
       state->get_PlayerControls(id, &ctrls);
@@ -141,14 +144,20 @@ namespace at3 {
       bool isInJumpRange = springForceLinear > -rayLength * 0.2f;
       bool rayHitGoodGround = groundSpringRayCallback.hasHit();
 
+      // store the linear spring force as offset from equilibrium
+      ctrls->equilibriumOffset = springForceLinear;
+
       // steep ground is not good ground
       if (groundSpringRayCallback.m_hitNormalWorld.z() < 0.5) {
         rayHitGoodGround = false;
       }
 
+      // get vertical velocity
+      float zVel = physics->rigidBody->getLinearVelocity().z();
+
       // Handle jumping
       if (ctrls->jumpInProgress) {
-        float zVel = physics->rigidBody->getLinearVelocity().z();
+//        float zVel = physics->rigidBody->getLinearVelocity().z();
         if (zVel > ctrls->lastJumpZVel) {
           ctrls->jumpInProgress = false;
         } else {
@@ -170,13 +179,14 @@ namespace at3 {
       ctrls->isGrounded &= (! ctrls->jumpInProgress); // not grounded if jumping
 
       if (ctrls->isGrounded) { // Movement along ground - apply controls and a "stick to ground" force
-        float sfomPow2 = pow(springForceOverMax, 2);
-        float sfomPow4 = pow(springForceOverMax, 4);
-        float sfom10Pow2 = pow(springForceOverMax * 10.f, 2);
+        float sfomPow2 = (float)pow(springForceOverMax, 2);
+        float sfomPow4 = (float)pow(springForceOverMax, 4);
+        float sfom10Pow2 = (float)pow(springForceOverMax * 10.f, 2);
         float springForceMagnitude = (1.0f - sfomPow2) - std::max(0.f, 1.f - sfom10Pow2);
-        float mvmntForceMagnitude = std::max(0.02f, 0.8f - sfomPow2);
+        float mvmntForceMagnitude = std::max(CHARA_MIDAIR_FACTOR, 1.f - sfomPow2);
         float dampingMagnitude = std::min(0.9999999f, 1.1f - sfomPow4);
         linDamp = dampingMagnitude;
+
         float springForceFinal = springForceMagnitude * ((0 < springForceLinear) - (springForceLinear < 0));
 
         // modify walking force to align with gradient of ground so as not to point into or out of the ground.
@@ -205,15 +215,9 @@ namespace at3 {
                                           ctrls->forces.y * mvmntForceMagnitude,
                                           ctrls->forces.z * mvmntForceMagnitude + springForceFinal }, {0.f, 0.f, 0.f});
 
-////        float extraZDamp = (sfomPow2 > 0.01f) ? 1.f : 2.f * sfom10Pow2 - pow(springForceOverMax * 10.f, 4);
-//        float extraZDamp = (sfomPow2 > 0.01f) ? 1.f : 2.f * fabs(springForceOverMax * 10.f) -
-//                            pow(springForceOverMax * 10.f, 4);
-//        btVector3 currVel = physics->rigidBody->getLinearVelocity();
-//        physics->rigidBody->setLinearVelocity({currVel.x(), currVel.y(), currVel.z() * std::min(1.f, extraZDamp)});
-
       } else { // movement while in air - apply greatly reduced controls
-        physics->rigidBody->applyImpulse({ctrls->forces.x * 0.02f,
-                                          ctrls->forces.y * 0.02f, 0.f}, {0.f, 0.f, 0.f});
+        physics->rigidBody->applyImpulse({ctrls->forces.x * CHARA_MIDAIR_FACTOR,
+                                          ctrls->forces.y * CHARA_MIDAIR_FACTOR, 0.f}, {0.f, 0.f, 0.f});
       }
 
       physics->rigidBody->setDamping(linDamp, angDamp); // Set damping

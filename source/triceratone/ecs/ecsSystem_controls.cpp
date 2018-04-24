@@ -40,6 +40,10 @@ namespace at3 {
   {
     name = "Control System";
   }
+  ControlSystem::~ControlSystem() {
+    currentCtrlKeys.reset();
+    currentCtrlMous.reset();
+  }
 
   bool ControlSystem::onInit() {
     return true;
@@ -268,8 +272,7 @@ namespace at3 {
       TrackControls *getComponent() {
         TrackControls *trackControls = nullptr;
         state->get_TrackControls(id, &trackControls);
-        assert(trackControls);
-        return trackControls;
+        return trackControls; // may return nullptr
       }
       Physics *getPhysics() {
         Physics *physics = nullptr;
@@ -310,7 +313,10 @@ namespace at3 {
         getComponent()->hasDriver = true;
       }
       ~ActiveTrackControl() override {
-        getComponent()->hasDriver = false;
+        TrackControls *controls = getComponent();
+        if (controls) {
+          getComponent()->hasDriver = false;
+        }
       }
   };
   void ControlSystem::switchToTrackCtrl(void *id) {

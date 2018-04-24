@@ -2,6 +2,7 @@
 
 #define USE_CUSTOM_SDL_VULKAN 1
 #define USE_AT3_COORDS 1
+#define AT3_DEBUG_WINDOW_EVENTS 0
 
 // There's a validation error when you use DEVICE_LOCAL and PERSISTENT_STAGING_BUFFER, at the call
 // vkFlushMappedMemoryRanges. If you switch, you debug.

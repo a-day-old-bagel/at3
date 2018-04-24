@@ -117,6 +117,7 @@ namespace {
     glm::vec2 horizControl;
     glm::vec3 forces, up;
     float lastJumpZVel = 0.f;
+    float equilibriumOffset = 0.f;
     bool jumpRequested = false;
     bool jumpInProgress = false;
     bool isGrounded = false;

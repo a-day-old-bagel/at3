@@ -216,13 +216,54 @@ namespace at3 {
                 case SDL_WINDOWEVENT_MOVED: {
                   settings::graphics::windowPosX = event.window.data1;
                   settings::graphics::windowPosY = event.window.data2;
+                  printf("SDL_WINDOWEVENT_MOVED\n");
                 } break;
                 case SDL_WINDOWEVENT_MAXIMIZED: {
                   settings::graphics::fullscreen = settings::graphics::MAXIMIZED;
+                  printf("SDL_WINDOWEVENT_MAXIMIZED\n");
                 } break;
                 case SDL_WINDOWEVENT_RESTORED: {
                   settings::graphics::fullscreen = settings::graphics::WINDOWED;
+                  printf("SDL_WINDOWEVENT_RESTORED\n");
                 } break;
+#               if AT3_DEBUG_WINDOW_EVENTS
+                case SDL_WINDOWEVENT_SHOWN: {
+                  printf("SDL_WINDOWEVENT_SHOWN\n");
+                } break;
+                case SDL_WINDOWEVENT_HIDDEN: {
+                  printf("SDL_WINDOWEVENT_HIDDEN\n");
+                } break;
+                case SDL_WINDOWEVENT_EXPOSED: {
+                  printf("SDL_WINDOWEVENT_EXPOSED\n");
+                } break;
+                case SDL_WINDOWEVENT_RESIZED: {
+                  printf("SDL_WINDOWEVENT_RESIZED\n");
+                } break;
+                case SDL_WINDOWEVENT_MINIMIZED: {
+                  printf("SDL_WINDOWEVENT_MINIMIZED\n");
+                } break;
+                case SDL_WINDOWEVENT_ENTER: {
+                  printf("SDL_WINDOWEVENT_ENTER\n");
+                } break;
+                case SDL_WINDOWEVENT_LEAVE: {
+                  printf("SDL_WINDOWEVENT_LEAVE\n");
+                } break;
+                case SDL_WINDOWEVENT_FOCUS_GAINED: {
+                  printf("SDL_WINDOWEVENT_FOCUS_GAINED\n");
+                } break;
+                case SDL_WINDOWEVENT_FOCUS_LOST: {
+                  printf("SDL_WINDOWEVENT_FOCUS_LOST\n");
+                } break;
+                case SDL_WINDOWEVENT_CLOSE: {
+                  printf("SDL_WINDOWEVENT_CLOSE\n");
+                } break;
+                case SDL_WINDOWEVENT_TAKE_FOCUS: {
+                  printf("SDL_WINDOWEVENT_TAKE_FOCUS\n");
+                } break;
+                case SDL_WINDOWEVENT_HIT_TEST: {
+                  printf("SDL_WINDOWEVENT_HIT_TEST\n");
+                } break;
+#               endif
                 default: break;
               }
             } break;
@@ -256,6 +297,7 @@ namespace at3 {
 
     // Clear the graphics scene and begin redraw if a camera is assigned
     graphicsBackend::clear();
+
     if (mpCamera) {
       switch (settings::graphics::gpuApi) {
         case settings::graphics::OPENGL_OPENCL: mScene.draw(*mpCamera, false); break;

@@ -123,7 +123,8 @@ namespace at3 {
        */
       virtual void m_traverseAndCache(Transform &modelWorld);
 
-      void reverseTransformLookup(glm::mat4 &wv, int whichDOFs = ALL) const;
+      void reverseTransformLookup(glm::mat4 &wv, bool forceTraverse = false, bool includeTransFunc = true,
+                                        int whichDOFs = ALL) const;
 
       /**
        * Get ID
@@ -200,8 +201,7 @@ namespace at3 {
                                         myTransform[3][0], myTransform[3][1], myTransform[3][2], 1
                                     });
           child.second->m_draw(mw_transOnly, worldView, projection, debug);
-        }
-          return;
+        } return;
         case WITHOUT_TRANSLATION: {
           if (hasTransform) { break; }
           TransformRAII mw_noTrans(modelWorld);
@@ -212,8 +212,7 @@ namespace at3 {
                                       0, 0, 0, 1
                                   });
           child.second->m_draw(mw_noTrans, worldView, projection, debug);
-        }
-          return;
+        } return;
         default:
           break;
       }
@@ -230,13 +229,10 @@ namespace at3 {
     if (ecs->hasTransform(id)) {
       myTransform = ecs->getTransform(id);
       mw *= myTransform;
-//      if (SCENE_ECS->hasTransformFunction(SCENE_ID)) {
-//        ecs->setAbsTransform(id, mw.peek() * SCENE_ECS->getTransformFunction(SCENE_ID));
       if (ecs->hasTransformFunction(id)) {
-        ecs->setAbsTransform(id, mw.peek() * ecs->getTransformFunction(id));
-      } else {
-        ecs->setAbsTransform(id, mw.peek());
+        mw *= ecs->getTransformFunction(id);
       }
+      ecs->setAbsTransform(id, mw.peek());
       hasTransform = true;
     }
 
@@ -272,43 +268,106 @@ namespace at3 {
       }
       child.second->m_traverseAndCache(mw);
     }
+
+//    // Draw our children TODO: Why isn't this way correct? Why are there returns after each case above? Does the above case limit objects to one child each? The same goes for m_draw...
+//    for (auto child : m_children) {
+//      switch (child.second->m_inheritedDOF) {
+//        case TRANSLATION_ONLY: {
+//          if (hasTransform) { break; }
+//          TransformRAII mw_transOnly(modelWorld);
+//          mw_transOnly *= glm::mat4({
+//                                        1, 0, 0, 0,
+//                                        0, 1, 0, 0,
+//                                        0, 0, 1, 0,
+//                                        myTransform[3][0], myTransform[3][1], myTransform[3][2], 1
+//                                    });
+//          child.second->m_traverseAndCache(mw_transOnly);
+//        } break;
+//        case WITHOUT_TRANSLATION: {
+//          if (hasTransform) { break; }
+//          TransformRAII mw_noTrans(modelWorld);
+//          mw_noTrans *= glm::mat4({
+//                                      myTransform[0][0], myTransform[0][1], myTransform[0][2], 0,
+//                                      myTransform[1][0], myTransform[1][1], myTransform[1][2], 0,
+//                                      myTransform[2][0], myTransform[2][1], myTransform[2][2], 0,
+//                                      0, 0, 0, 1
+//                                  });
+//          child.second->m_traverseAndCache(mw_noTrans);
+//        } break;
+//        default: {
+//          child.second->m_traverseAndCache(mw);
+//        } break;
+//      }
+//    }
+
   }
 
   template<typename EcsInterface>
-  void SceneObject<EcsInterface>::reverseTransformLookup(glm::mat4 &wv, int whichDOFs /* = ALL */) const {
+  void SceneObject<EcsInterface>::reverseTransformLookup(glm::mat4 &wv, bool forceTraverse, bool includeTransFunc,
+                                                           int whichDOFs) const {
+    if ( ! forceTraverse) {
+      if ( ! includeTransFunc) {
+        printf("SceneObject::reverseTransformLookup: forceTraverse is set to false, so includeTransFunc is ignored.\n");
+      }
+      if (ecs->hasTransform(id)) {
+        glm::mat4 fullTransform = ecs->getAbsTransform(id);
+        switch (whichDOFs) {
+          case TRANSLATION_ONLY: {
+            wv *= glm::inverse(glm::mat4({
+                                             1, 0, 0, 0,
+                                             0, 1, 0, 0,
+                                             0, 0, 1, 0,
+                                             fullTransform[3][0], fullTransform[3][1], fullTransform[3][2], 1
+                                         }));
+          } break;
+          case WITHOUT_TRANSLATION: {
+            wv *= glm::inverse(glm::mat4({
+                                             fullTransform[0][0], fullTransform[0][1], fullTransform[0][2], 0,
+                                             fullTransform[1][0], fullTransform[1][1], fullTransform[1][2], 0,
+                                             fullTransform[2][0], fullTransform[2][1], fullTransform[2][2], 0,
+                                             0, 0, 0, 1
+                                         }));
+          } break;
+          default: {
+            wv *= glm::inverse(fullTransform);
+          } break;
+        }
+      } else if (m_parent != NULL) {
+        m_parent->reverseTransformLookup(wv, forceTraverse, includeTransFunc, m_inheritedDOF);
+      }
+    } else { // the way that actually works for the camera :(
+      if (ecs->hasTransform(id)) {
+        glm::mat4 fullTransform = ecs->getTransform(id);
+        if (includeTransFunc && ecs->hasTransformFunction(id)) {
+          fullTransform *= ecs->getTransformFunction(id);
+        }
+        switch (whichDOFs) {
+          case TRANSLATION_ONLY: {
+            wv *= glm::inverse(glm::mat4({
+                                             1, 0, 0, 0,
+                                             0, 1, 0, 0,
+                                             0, 0, 1, 0,
+                                             fullTransform[3][0], fullTransform[3][1], fullTransform[3][2], 1
+                                         }));
+          } break;
+          case WITHOUT_TRANSLATION: {
+            wv *= glm::inverse(glm::mat4({
+                                             fullTransform[0][0], fullTransform[0][1], fullTransform[0][2], 0,
+                                             fullTransform[1][0], fullTransform[1][1], fullTransform[1][2], 0,
+                                             fullTransform[2][0], fullTransform[2][1], fullTransform[2][2], 0,
+                                             0, 0, 0, 1
+                                         }));
+          } break;
+          default: {
+            wv *= glm::inverse(fullTransform);
+          } break;
+        }
+      }
 
-    if (ecs->hasTransform(id)) {
-      glm::mat4 fullTransform = ecs->getTransform(id);
-      switch (whichDOFs) {
-        case TRANSLATION_ONLY: {
-          wv *= glm::inverse(glm::mat4({
-                                           1, 0, 0, 0,
-                                           0, 1, 0, 0,
-                                           0, 0, 1, 0,
-                                           fullTransform[3][0], fullTransform[3][1], fullTransform[3][2], 1
-                                       }));
-        }
-          break;
-        case WITHOUT_TRANSLATION: {
-          wv *= glm::inverse(glm::mat4({
-                                           fullTransform[0][0], fullTransform[0][1], fullTransform[0][2], 0,
-                                           fullTransform[1][0], fullTransform[1][1], fullTransform[1][2], 0,
-                                           fullTransform[2][0], fullTransform[2][1], fullTransform[2][2], 0,
-                                           0, 0, 0, 1
-                                       }));
-        }
-          break;
-        default: {
-          wv *= glm::inverse(fullTransform);
-        }
-          break;
+      if (m_parent != NULL) {
+        m_parent->reverseTransformLookup(wv, forceTraverse, includeTransFunc, m_inheritedDOF);
       }
     }
-
-    if (m_parent != NULL) {
-      m_parent->reverseTransformLookup(wv, m_inheritedDOF);
-    }
-
   }
 
   template<typename EcsInterface>

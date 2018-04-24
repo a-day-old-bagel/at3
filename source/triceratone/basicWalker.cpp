@@ -1,6 +1,6 @@
 
 #include "basicWalker.h"
-#include "topics.hpp"
+#include <memory> #include "topics.hpp"
 
 #define HUMAN_HEIGHT 1.83f
 #define HUMAN_WIDTH 0.5f
@@ -38,7 +38,8 @@ namespace at3 {
     mpPhysicsBody->addChild(mpVisualBody);
 
     mpCamera = std::make_shared<ThirdPersonCamera_> (0.f, 5.f, (float) M_PI * 0.5f);
-    mpPhysicsBody->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
+//    mpPhysicsBody->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
+    mpVisualBody->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
 
     ctrlId = physicalId;
     camGimbalId = mpCamera->mpCamGimbal->getId();
@@ -53,15 +54,28 @@ namespace at3 {
   }
 
   glm::mat4 BasicWalker::bodyVisualTransform(const glm::mat4 &transformIn, uint32_t time) {
-    Placement *placement;
-    mpState->get_Placement(mpCamera->mpCamGimbal->getId(), &placement);
+    Placement *camPlacement;
+    mpState->get_Placement(mpCamera->mpCamGimbal->getId(), &camPlacement);
+    PlayerControls *controls;
+    mpState->get_PlayerControls(mpPhysicsBody->getId(), &controls);
+
+    float correction = controls->equilibriumOffset;
+    float correctionThresholdHigh = -1.f;
+    float correctionThresholdLow = 0.f;
+    if (correction < correctionThresholdHigh) {
+      correction = 0.f;
+    } else if (correction < correctionThresholdLow) {
+      float range = correctionThresholdHigh - correctionThresholdLow;
+      correction *= pow((correctionThresholdHigh - correction) / range, 2);
+    }
+
     return glm::scale(
-               glm::rotate(
-                   glm::translate(
-                       glm::mat4(),
-                   {0.f, 0.f, -HUMAN_HEIGHT * 0.165f}),
-               placement->getHorizRot(), glm::vec3(0.0f, 0.0f, 1.0f)),
-           {HUMAN_WIDTH * 0.5f, HUMAN_DEPTH * 0.5f, HUMAN_HEIGHT * 0.5f});
+        glm::rotate(
+            glm::translate(
+                glm::mat4(),
+                {0.f, 0.f, -HUMAN_HEIGHT * 0.165f + correction}),
+            camPlacement->getHorizRot(), glm::vec3(0.0f, 0.0f, 1.0f)),
+        {HUMAN_WIDTH * 0.5f, HUMAN_DEPTH * 0.5f, HUMAN_HEIGHT * 0.5f});
   }
 
   void BasicWalker::makeActiveControl(void *nothing) {
