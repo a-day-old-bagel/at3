@@ -59,6 +59,7 @@ namespace at3 {
       entityId id;
     public:
       EntityAssociatedERM(State *state, entityId id);
+      virtual ~EntityAssociatedERM() = default;
       entityId getId();
   };
 }

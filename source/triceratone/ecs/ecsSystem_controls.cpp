@@ -307,6 +307,10 @@ namespace at3 {
         setAction("key_held_e", RTU_MTHD_DLGT(&ActiveTrackControl::key_brakeRight, this));
         setAction("key_held_q", RTU_MTHD_DLGT(&ActiveTrackControl::key_brakeLeft, this));
         setAction("key_down_f", RTU_MTHD_DLGT(&ActiveTrackControl::key_flip, this));
+        getComponent()->hasDriver = true;
+      }
+      ~ActiveTrackControl() override {
+        getComponent()->hasDriver = false;
       }
   };
   void ControlSystem::switchToTrackCtrl(void *id) {

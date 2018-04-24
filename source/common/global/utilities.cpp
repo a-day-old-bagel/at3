@@ -1,8 +1,8 @@
 #include "utilities.h"
 
-std::string getFileNameOnly(const fs::_Directory_iterator<std::true_type>::value_type &path) {
+std::string getFileNameOnly(PATH_TYPE &path) {
   return path.path().stem().string();
 }
-std::string getFileNameRelative(const fs::_Directory_iterator<std::true_type>::value_type &path) {
+std::string getFileNameRelative(PATH_TYPE &path) {
   return path.path().string();
 }

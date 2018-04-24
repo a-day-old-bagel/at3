@@ -17,7 +17,9 @@
 #include "ecsSystem_physics.h"
 
 #include "basicWalker.h"
+#include "basicWalkerVk.h"
 #include "duneBuggy.h"
+#include "duneBuggyVk.h"
 #include "pyramid.h"
 #include "pyramidVk.h"
 #include "debugStuff.h"
@@ -40,8 +42,10 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
     std::shared_ptr<MeshObjectVk_> mpTestObj0;
     std::shared_ptr<MeshObjectVk_> mpTestObj1;
     std::unique_ptr<PyramidVk> mpPyramidVk;
+    std::unique_ptr<DuneBuggyVk> mpDuneBuggyVk;
+    std::unique_ptr<BasicWalkerVk> mpPlayerVk;
 
-    std::unique_ptr<Subscription> key0Sub, key1Sub, key2Sub, key3Sub;
+    std::unique_ptr<Subscription> keyFSub, key0Sub, key1Sub, key2Sub, key3Sub;
 
     std::shared_ptr<SkyBox_>         mpSkybox;
     std::shared_ptr<TerrainObject_>  mpTerrain;
@@ -97,12 +101,20 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
         mpTestObj0->addChild(mpTestObj1);
         mScene.addObject(mpTestObj0);
 
+        glm::mat4 playerMat = glm::translate(ident, {0.f, -10.f, 0.f});
+        mpPlayerVk = std::make_unique<BasicWalkerVk>(mState, mVulkan.get(), mScene, playerMat);
+
+        glm::mat4 buggyMat = glm::translate(ident, {0.f, 10.f, 0.f});
+        mpDuneBuggyVk = std::make_unique<DuneBuggyVk>(mState, mVulkan.get(), mScene, buggyMat);
+
         glm::mat4 pyramidMat = glm::translate(ident, {0.f, 0.f, 0.f});
         mpPyramidVk = std::make_unique<PyramidVk>(mState, mVulkan.get(), mScene, pyramidMat);
 
         key0Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_0", Triceratone::makeFreeCamActiveControl, this);
-        key1Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_1", PyramidVk::makeActiveControl, mpPyramidVk.get());
-        key2Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_f", PyramidVk::spawnSphere, mpPyramidVk.get());
+        key1Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_1", BasicWalkerVk::makeActiveControl, mpPlayerVk.get());
+        key2Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_2", DuneBuggyVk::makeActiveControl, mpDuneBuggyVk.get());
+        key3Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_3", PyramidVk::makeActiveControl, mpPyramidVk.get());
+        keyFSub = RTU_MAKE_SUB_UNIQUEPTR("key_down_f", PyramidVk::spawnSphere, mpPyramidVk.get());
       }
 
 

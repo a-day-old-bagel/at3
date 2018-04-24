@@ -105,6 +105,7 @@ namespace {
     glm::vec2 control;
     glm::vec2 brakes;
     glm::vec2 torque;
+    bool hasDriver = false;
     std::vector<WheelInfo> wheels;
     btRaycastVehicle *vehicle;
     btRaycastVehicle::btVehicleTuning tuning;

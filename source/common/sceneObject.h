@@ -230,8 +230,10 @@ namespace at3 {
     if (ecs->hasTransform(id)) {
       myTransform = ecs->getTransform(id);
       mw *= myTransform;
-      if (SCENE_ECS->hasTransformFunction(SCENE_ID)) {
-        ecs->setAbsTransform(id, mw.peek() * SCENE_ECS->getTransformFunction(SCENE_ID));
+//      if (SCENE_ECS->hasTransformFunction(SCENE_ID)) {
+//        ecs->setAbsTransform(id, mw.peek() * SCENE_ECS->getTransformFunction(SCENE_ID));
+      if (ecs->hasTransformFunction(id)) {
+        ecs->setAbsTransform(id, mw.peek() * ecs->getTransformFunction(id));
       } else {
         ecs->setAbsTransform(id, mw.peek());
       }

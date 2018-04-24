@@ -4,10 +4,12 @@ add_subdirectory( "./ecs" )
 add_executable( ${TARGET_NAME}
   main.cpp
   duneBuggy.cpp duneBuggy.h
+  duneBuggyVk.cpp duneBuggyVk.h
   pyramid.cpp pyramid.h
   pyramidVk.cpp pyramidVk.h
   debugStuff.cpp debugStuff.h
   basicWalker.cpp basicWalker.h
+  basicWalkerVk.cpp basicWalkerVk.h
   )
 target_link_libraries( ${TARGET_NAME}
   ${TARGET_NAME}_systems

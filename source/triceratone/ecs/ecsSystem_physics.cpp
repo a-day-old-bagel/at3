@@ -12,6 +12,7 @@
 #define HUMAN_WIDTH 0.5f
 #define CHARA_JUMP 8.f
 #define CHARA_JUMP_COOLDOWN_MS 800
+#define TRACK_VACANT_BRAKE 0.5f
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "IncompatibleTypes"
@@ -189,11 +190,16 @@ namespace at3 {
         }
 
         // SOME DEBUG DRAW
-        btVector3 dbgDrawStart = groundSpringRayCallback.m_hitPointWorld + btVector3(0.f, 0.f, 2.25f);
-        dynamicsWorld->getDebugDrawer()->drawLine( dbgDrawStart,
-            { dbgDrawStart + groundSpringRayCallback.m_hitNormalWorld }, {1.f, 0.f, 1.f});
-        dynamicsWorld->getDebugDrawer()->drawLine( dbgDrawStart,
-            { dbgDrawStart + btVector3(ctrls->forces.x, ctrls->forces.y, ctrls->forces.z) }, {1.f, 1.f, 0.f});
+        if (settings::graphics::gpuApi == settings::graphics::OPENGL_OPENCL) {
+          btVector3 dbgDrawStart = groundSpringRayCallback.m_hitPointWorld + btVector3(0.f, 0.f, 2.25f);
+          dynamicsWorld->getDebugDrawer()->drawLine(dbgDrawStart,
+                                                    {dbgDrawStart + groundSpringRayCallback.m_hitNormalWorld},
+                                                    {1.f, 0.f, 1.f});
+          dynamicsWorld->getDebugDrawer()->drawLine(dbgDrawStart,
+                                                    {dbgDrawStart +
+                                                     btVector3(ctrls->forces.x, ctrls->forces.y, ctrls->forces.z)},
+                                                    {1.f, 1.f, 0.f});
+        }
 
         physics->rigidBody->applyImpulse({ctrls->forces.x * mvmntForceMagnitude,
                                           ctrls->forces.y * mvmntForceMagnitude,
@@ -227,15 +233,36 @@ namespace at3 {
       TrackControls *trackControls;
       state->get_TrackControls(id, &trackControls);
       //Todo: put engine force application *before* the sim update, with wheel update after?
-      for (size_t i = 0; i < trackControls->wheels.size(); ++i) {
-        if (trackControls->wheels.at(i).leftOrRight < 0) {
-          trackControls->vehicle->applyEngineForce(trackControls->torque.x, trackControls->wheels.at(i).bulletWheelId);
-          trackControls->vehicle->setBrake(trackControls->brakes.x, trackControls->wheels.at(i).bulletWheelId);
-        } else if (trackControls->wheels.at(i).leftOrRight > 0) {
-          trackControls->vehicle->applyEngineForce(trackControls->torque.y, trackControls->wheels.at(i).bulletWheelId);
-          trackControls->vehicle->setBrake(trackControls->brakes.y, trackControls->wheels.at(i).bulletWheelId);
+
+//      for (size_t i = 0; i < trackControls->wheels.size(); ++i) {
+//        if (trackControls->wheels.at(i).leftOrRight < 0) {
+//          trackControls->vehicle->applyEngineForce(trackControls->torque.x, trackControls->wheels.at(i).bulletWheelId);
+//          trackControls->vehicle->setBrake(trackControls->brakes.x, trackControls->wheels.at(i).bulletWheelId);
+//        } else if (trackControls->wheels.at(i).leftOrRight > 0) {
+//          trackControls->vehicle->applyEngineForce(trackControls->torque.y, trackControls->wheels.at(i).bulletWheelId);
+//          trackControls->vehicle->setBrake(trackControls->brakes.y, trackControls->wheels.at(i).bulletWheelId);
+//        }
+//      }
+
+      if (trackControls->hasDriver) {
+        for (size_t i = 0; i < trackControls->wheels.size(); ++i) {
+          if (trackControls->wheels.at(i).leftOrRight < 0) {
+            trackControls->vehicle->applyEngineForce(trackControls->torque.x,
+                                                     trackControls->wheels.at(i).bulletWheelId);
+            trackControls->vehicle->setBrake(trackControls->brakes.x, trackControls->wheels.at(i).bulletWheelId);
+          } else if (trackControls->wheels.at(i).leftOrRight > 0) {
+            trackControls->vehicle->applyEngineForce(trackControls->torque.y,
+                                                     trackControls->wheels.at(i).bulletWheelId);
+            trackControls->vehicle->setBrake(trackControls->brakes.y, trackControls->wheels.at(i).bulletWheelId);
+          }
+        }
+      } else {
+        for (size_t i = 0; i < trackControls->wheels.size(); ++i) {
+          trackControls->vehicle->setBrake(TRACK_VACANT_BRAKE, trackControls->wheels.at(i).bulletWheelId);
         }
       }
+
+
       for (int i = 0; i < trackControls->vehicle->getNumWheels(); ++i) {
         trackControls->vehicle->updateWheelTransform(i, true);
       }

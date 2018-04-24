@@ -4,5 +4,12 @@
 #include "configuration.h"
 namespace fs = std::experimental::filesystem;
 
-std::string getFileNameOnly(const fs::_Directory_iterator<std::true_type>::value_type &path);
-std::string getFileNameRelative(const fs::_Directory_iterator<std::true_type>::value_type &path);
+// Thanks MSVC. I always love your shoddy implementations.
+#ifdef _WIN32
+# define PATH_TYPE const fs::_Directory_iterator<std::true_type>::value_type
+#else
+# define PATH_TYPE const std::experimental::filesystem::v1::__cxx11::directory_entry
+#endif
+
+std::string getFileNameOnly(PATH_TYPE &path);
+std::string getFileNameRelative(PATH_TYPE &path);
