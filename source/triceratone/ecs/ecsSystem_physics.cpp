@@ -10,9 +10,11 @@
 
 #define HUMAN_HEIGHT 1.83f
 #define HUMAN_WIDTH 0.5f
+#define HUMAN_DEPTH 0.3f
+
 #define CHARA_JUMP 8.f
-#define CHARA_JUMP_COOLDOWN_MS 800
 #define CHARA_MIDAIR_FACTOR 0.f // 0.02f
+
 #define TRACK_VACANT_BRAKE 0.5f
 
 #pragma clang diagnostic push
@@ -120,7 +122,7 @@ namespace at3 {
     }
 
     // PlayerControls
-    // TODO: fire multiple rays and average, or create a kinematic body (0 mass, recalc inertia) to which to anchor
+    // TODO: create a kinematic body (0 mass, recalc inertia) to which to anchor
     //       the capsule when it lands from a height (point to point constraint, AKA ball joint, maybe)
     for (auto id : registries[4].ids) {
       PlayerControls *ctrls;
@@ -128,36 +130,45 @@ namespace at3 {
       Physics *physics;
       state->get_Physics(id, &physics);
 
-      // Fire a ray straight down
+      // Fire some rays straight down
       btTransform capsuleTrans;
       physics->rigidBody->getMotionState()->getWorldTransform(capsuleTrans);
-      float rayLength = HUMAN_HEIGHT * 1.5f;
-      btVector3 rayStart = capsuleTrans.getOrigin();
-      btVector3 rayEnd = rayStart + btVector3(0.f, 0.f, -rayLength);
-      btCollisionWorld::ClosestRayResultCallback groundSpringRayCallback(rayStart, rayEnd);
-      dynamicsWorld->rayTest(rayStart, rayEnd, groundSpringRayCallback);
+      float rayLength = 2.f;//HUMAN_HEIGHT * 1.5f;
+      float rayDistTravelledAvg = 0.f;
+      btVector3 rayHitPointAvg = {0.f, 0.f, 0.f};
+      btVector3 rayNormalAvg = {0.f, 0.f, 0.f};
+      bool anyRayHitGoodGround = false;
+      btVector3 orig = capsuleTrans.getOrigin();
+      std::vector<btVector3> rayStartLocations = {
+          {orig.x(), orig.y() + HUMAN_DEPTH * 0.5f, orig.z() - HUMAN_HEIGHT * 0.15f},
+          {orig.x(), orig.y() - HUMAN_DEPTH * 0.5f, orig.z() - HUMAN_HEIGHT * 0.15f},
+          {orig.x() + HUMAN_WIDTH * 0.5f, orig.y(), orig.z() - HUMAN_HEIGHT * 0.15f},
+          {orig.x() - HUMAN_WIDTH * 0.5f, orig.y(), orig.z() - HUMAN_HEIGHT * 0.15f}
+      };
+      for (auto rayStart : rayStartLocations) {
+        btVector3 rayEnd = rayStart + btVector3(0.f, 0.f, -rayLength);
+        btCollisionWorld::ClosestRayResultCallback groundSpringRayCallback(rayStart, rayEnd);
+        dynamicsWorld->rayTest(rayStart, rayEnd, groundSpringRayCallback);
+        rayDistTravelledAvg += (groundSpringRayCallback.m_hitPointWorld - rayStart).length();
+        anyRayHitGoodGround |= (groundSpringRayCallback.hasHit() && groundSpringRayCallback.m_hitNormalWorld.z() > 0.4);
+        rayHitPointAvg += groundSpringRayCallback.m_hitPointWorld;
+        rayNormalAvg += groundSpringRayCallback.m_hitNormalWorld;
+      }
+      rayDistTravelledAvg /= rayStartLocations.size();
+      rayHitPointAvg /= rayStartLocations.size();
+      rayNormalAvg /= rayStartLocations.size();
 
       // some variables to use below
-      float rayDistTravelled = (groundSpringRayCallback.m_hitPointWorld - rayStart).length();
       float maxSpringForce = rayLength * 0.5f;
-      float springForceLinear = maxSpringForce - rayDistTravelled;
+      float springForceLinear = maxSpringForce - rayDistTravelledAvg;
       bool isInJumpRange = springForceLinear > -rayLength * 0.2f;
-      bool rayHitGoodGround = groundSpringRayCallback.hasHit();
 
       // store the linear spring force as offset from equilibrium
       ctrls->equilibriumOffset = springForceLinear;
 
-      // steep ground is not good ground
-      if (groundSpringRayCallback.m_hitNormalWorld.z() < 0.5) {
-        rayHitGoodGround = false;
-      }
-
-      // get vertical velocity
-      float zVel = physics->rigidBody->getLinearVelocity().z();
-
       // Handle jumping
       if (ctrls->jumpInProgress) {
-//        float zVel = physics->rigidBody->getLinearVelocity().z();
+        float zVel = physics->rigidBody->getLinearVelocity().z();
         if (zVel > ctrls->lastJumpZVel) {
           ctrls->jumpInProgress = false;
         } else {
@@ -173,7 +184,7 @@ namespace at3 {
       float angDamp = 0.f;
 
       float springForceOverMax = springForceLinear / maxSpringForce; // How far from equilibrium (0 to 1, 1 is far)
-      ctrls->isGrounded = rayHitGoodGround; // not grounded if high in the air or on steep slope
+      ctrls->isGrounded = anyRayHitGoodGround; // not grounded if high in the air or on steep slope
       ctrls->isGrounded &= fabs(springForceOverMax) < 1.f; // extra range checks
       ctrls->isGrounded &= fabs(springForceOverMax) > -1.f;
       ctrls->isGrounded &= (! ctrls->jumpInProgress); // not grounded if jumping
@@ -192,8 +203,8 @@ namespace at3 {
         // modify walking force to align with gradient of ground so as not to point into or out of the ground.
         // this avoids "jiggling" as you walk up or down a hill, especially on slow hardware.
         float origForceMag = glm::length(ctrls->forces);
-        ctrls->forces.z = -1 * ( ctrls->forces.x * groundSpringRayCallback.m_hitNormalWorld.x() +
-                                 ctrls->forces.y * groundSpringRayCallback.m_hitNormalWorld.y() ) ;
+        ctrls->forces.z = -1 * ( ctrls->forces.x * rayNormalAvg.x() +
+                                 ctrls->forces.y * rayNormalAvg.y() ) ;
 
         if ( glm::length(ctrls->forces) ) {
           ctrls->forces = origForceMag * glm::normalize(ctrls->forces);
@@ -201,10 +212,9 @@ namespace at3 {
 
         // SOME DEBUG DRAW
         if (settings::graphics::gpuApi == settings::graphics::OPENGL_OPENCL) {
-          btVector3 dbgDrawStart = groundSpringRayCallback.m_hitPointWorld + btVector3(0.f, 0.f, 2.25f);
-          dynamicsWorld->getDebugDrawer()->drawLine(dbgDrawStart,
-                                                    {dbgDrawStart + groundSpringRayCallback.m_hitNormalWorld},
-                                                    {1.f, 0.f, 1.f});
+          btVector3 dbgDrawStart = rayHitPointAvg + btVector3(0.f, 0.f, 2.25f);
+          dynamicsWorld->getDebugDrawer()->drawLine(dbgDrawStart, {dbgDrawStart + rayNormalAvg}, {1.f, 0.f, 1.f});
+
           dynamicsWorld->getDebugDrawer()->drawLine(dbgDrawStart,
                                                     {dbgDrawStart +
                                                      btVector3(ctrls->forces.x, ctrls->forces.y, ctrls->forces.z)},
