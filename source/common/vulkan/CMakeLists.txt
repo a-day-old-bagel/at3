@@ -1,4 +1,6 @@
 
+add_subdirectory( shaders )
+
 add_library( ${AT3_TARGET_PREFIX}vulkan STATIC
   dataStore.h
   debug.h

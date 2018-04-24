@@ -1,7 +1,4 @@
 
-add_subdirectory( shaders )
-add_subdirectory( stuff )
-
 add_library( ${AT3_TARGET_PREFIX}graphics STATIC
   graphicsBackend.cpp graphicsBackend.h
   loadedTexture.cpp loadedTexture.h

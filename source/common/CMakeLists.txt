@@ -10,6 +10,7 @@ target_link_libraries( ${AT3_TARGET_PREFIX}external INTERFACE realtimeutils )
 
 add_subdirectory( global )
 add_subdirectory( gpuapi )
+add_subdirectory( vulkan )
 
 add_library( ${AT3_TARGET_PREFIX}common STATIC
   eventResponseMap.cpp eventResponseMap.h
