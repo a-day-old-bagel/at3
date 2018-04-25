@@ -1,6 +1,11 @@
 #pragma once
 #pragma once
-#include "vkh.h"
+//#include "vkh.h"
+
+#include <vulkan/vulkan.h>
+#include <vulkan/vk_sdk_platform.h>
+#include <vector>
+#include "vkcTypes.h"
 
 namespace at3
 {
@@ -106,7 +111,8 @@ namespace at3
 		return info;
 	}
 
-	inline VkViewport viewport(float x, float y, float width, float height, float minDepth = 0.0f, float maxDepth = 0.0f)
+	inline VkViewport viewport(float x, float y, float width, float height, float minDepth = 0.0f,
+														 float maxDepth = 0.0f)
 	{
 		VkViewport vp = {};
 		vp.x = x;

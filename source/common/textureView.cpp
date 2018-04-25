@@ -1,6 +1,3 @@
-//
-// Created by volundr on 11/13/17.
-//
 
 #include "textureView.h"
 #include "settings.h"

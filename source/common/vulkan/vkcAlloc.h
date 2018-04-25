@@ -2,24 +2,25 @@
 
 #include <cstdint>
 #include <cstdlib>
-#include "vkh.h"
-#include "vkh_types.h"
-#include "vkh_initializers.h"
+//#include "vkh.h"
+
+#include "vkcTypes.h"
+#include "vkcInitializers.h"
 
 namespace at3::allocators::passthrough {
   struct AllocatorState {
     size_t *memTypeAllocSizes;
     uint32_t totalAllocs;
 
-    VkhContext *context;
+    VkcCommon *context;
   };
 
   extern AllocatorState state;
 
   //ALLOCATOR INTERFACE / INSTALLATION
-  void activate(VkhContext *context);
-  void alloc(Allocation &outAlloc, AllocationCreateInfo createInfo);
-  void free(Allocation &handle);
+  void activate(VkcCommon *context);
+  void alloc(VkcAllocation &outAlloc, VkcAllocationCreateInfo createInfo);
+  void free(VkcAllocation &handle);
   size_t allocatedSize(uint32_t memoryType);
   uint32_t numAllocs();
 
@@ -36,7 +37,7 @@ namespace at3::allocators::pool {
   };
 
   struct DeviceMemoryBlock {
-    Allocation mem;
+    VkcAllocation mem;
     std::vector<OffsetSize> layout;
     bool pageReserved;
   };
@@ -46,7 +47,7 @@ namespace at3::allocators::pool {
   };
 
   struct AllocatorState {
-    VkhContext *context;
+    VkcCommon *context;
 
     std::vector<size_t> memTypeAllocSizes;
     uint32_t totalAllocs;
@@ -60,9 +61,9 @@ namespace at3::allocators::pool {
   extern AllocatorState state;
 
   //ALLOCATOR INTERFACE / INSTALLATION
-  void activate(VkhContext *context);
-  void alloc(Allocation &outAlloc, AllocationCreateInfo createInfo);
-  void free(Allocation &handle);
+  void activate(VkcCommon *context);
+  void alloc(VkcAllocation &outAlloc, VkcAllocationCreateInfo createInfo);
+  void free(VkcAllocation &handle);
   size_t allocatedSize(uint32_t memoryType);
   uint32_t numAllocs();
 

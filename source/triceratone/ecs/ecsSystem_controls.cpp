@@ -10,13 +10,6 @@
 #include "glm/gtx/transform.hpp"
 #include "glm/gtx/matrix_decompose.hpp"
 
-#define PYR_SIDE_ACCEL 2500.f
-#define PYR_UP_ACCEL 4000.f
-#define TRACK_TORQUE 100.f
-#define CHARA_WALK 100.f
-#define CHARA_RUN 250.f
-#define FREE_SPEED 5.f
-
 using namespace rtu::topics;
 
 namespace at3 {

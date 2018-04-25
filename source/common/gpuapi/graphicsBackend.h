@@ -12,7 +12,7 @@
 #include "shaderProgram.h"
 #include "topics.hpp"
 #include "vulkanBackend.h"
-#include "vulkanContext.h"
+#include "vkc.h"
 
 namespace at3 {
 

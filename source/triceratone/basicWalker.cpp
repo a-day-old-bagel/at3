@@ -1,10 +1,9 @@
 
 #include "basicWalker.h"
-#include <memory> #include "topics.hpp"
+#include <memory>
+#include "topics.hpp"
 
-#define HUMAN_HEIGHT 1.83f
-#define HUMAN_WIDTH 0.5f
-#define HUMAN_DEPTH 0.3f
+
 
 using namespace ezecs;
 using namespace rtu::topics;

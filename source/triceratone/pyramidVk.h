@@ -8,7 +8,7 @@
 #include "ecsInterface.h"
 #include "ezecs.hpp"
 #include "scene.h"
-#include "vulkanContext.h"
+#include "vkc.h"
 
 namespace at3 {
   class PyramidVk {

@@ -2,10 +2,6 @@
 #include "basicWalkerVk.h"
 #include "topics.hpp"
 
-#define HUMAN_HEIGHT 1.83f
-#define HUMAN_WIDTH 0.5f
-#define HUMAN_DEPTH 0.3f
-
 using namespace ezecs;
 using namespace rtu::topics;
 
@@ -37,8 +33,8 @@ namespace at3 {
     mpPhysicsBody->addChild(mpVisualBody);
 
     mpCamera = std::make_shared<ThirdPersonCamera_> (0.f, 5.f, (float) M_PI * 0.5f);
-    mpPhysicsBody->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
-//    mpVisualBody->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
+//    mpPhysicsBody->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
+    mpVisualBody->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
 
     ctrlId = physicalId;
     camGimbalId = mpCamera->mpCamGimbal->getId();

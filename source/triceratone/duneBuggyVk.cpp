@@ -6,8 +6,6 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"
 
-#define WHEEL_RADIUS 1.5f
-
 using namespace ezecs;
 using namespace rtu::topics;
 

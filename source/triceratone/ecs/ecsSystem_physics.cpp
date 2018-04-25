@@ -8,15 +8,6 @@
 
 #include "debug.h"
 
-#define HUMAN_HEIGHT 1.83f
-#define HUMAN_WIDTH 0.5f
-#define HUMAN_DEPTH 0.3f
-
-#define CHARA_JUMP 8.f
-#define CHARA_MIDAIR_FACTOR 0.f // 0.02f
-
-#define TRACK_VACANT_BRAKE 0.5f
-
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "IncompatibleTypes"
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"

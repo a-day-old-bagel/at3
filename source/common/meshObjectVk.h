@@ -5,7 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "sceneObject.h"
-#include "vulkanContext.h"
+#include "vkc.h"
 
 namespace at3 {
   template <typename EcsInterface>

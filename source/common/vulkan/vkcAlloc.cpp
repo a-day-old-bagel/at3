@@ -1,15 +1,15 @@
-#pragma once
 
-#include "vkh_alloc.h"
+#include "vkcAlloc.h"
+#include "configuration.h"
 
 //Simple Passthrough allocator -> sub allocators responsible for actually parcelling out memory
 
 namespace at3::allocators::passthrough {
 
   AllocatorState state;
-  AllocatorInterface allocImpl = {activate, alloc, free, allocatedSize, numAllocs};
+  VkcAllocatorInterface allocImpl = {activate, alloc, free, allocatedSize, numAllocs};
 
-  void activate(VkhContext *context) {
+  void activate(VkcCommon *context) {
     context->allocator = allocImpl;
     state.context = context;
 
@@ -19,14 +19,14 @@ namespace at3::allocators::passthrough {
     state.memTypeAllocSizes = (size_t *) calloc(1, sizeof(size_t) * memProperties.memoryTypeCount);
   }
 
-  void deactivate(VkhContext *context) {
+  void deactivate(VkcCommon *context) {
     ::free(state.memTypeAllocSizes);
   }
 
   //IMPLEMENTATION
 
 
-  void alloc(Allocation &outAlloc, AllocationCreateInfo createInfo) {
+  void alloc(VkcAllocation &outAlloc, VkcAllocationCreateInfo createInfo) {
     state.totalAllocs++;
     state.memTypeAllocSizes[createInfo.memoryTypeIndex] += createInfo.size;
 
@@ -38,12 +38,12 @@ namespace at3::allocators::passthrough {
     outAlloc.offset = 0;
     outAlloc.context = state.context;
 
-    checkf(res != VK_ERROR_OUT_OF_DEVICE_MEMORY, "Out of device memory");
-    checkf(res != VK_ERROR_TOO_MANY_OBJECTS, "Attempting to create too many allocations")
-    checkf(res == VK_SUCCESS, "Error allocating memory in passthrough allocator");
+    AT3_ASSERT(res != VK_ERROR_OUT_OF_DEVICE_MEMORY, "Out of device memory");
+    AT3_ASSERT(res != VK_ERROR_TOO_MANY_OBJECTS, "Attempting to create too many allocations")
+    AT3_ASSERT(res == VK_SUCCESS, "Error allocating memory in passthrough allocator");
   }
 
-  void free(Allocation &allocation) {
+  void free(VkcAllocation &allocation) {
     state.totalAllocs--;
     state.memTypeAllocSizes[allocation.type] -= allocation.size;
     vkFreeMemory(state.context->device, (allocation.handle), nullptr);
@@ -61,9 +61,9 @@ namespace at3::allocators::passthrough {
 namespace at3::allocators::pool {
 
   AllocatorState state;
-  AllocatorInterface allocImpl = {activate, alloc, free, allocatedSize, numAllocs};
+  VkcAllocatorInterface allocImpl = {activate, alloc, free, allocatedSize, numAllocs};
 
-  void activate(VkhContext *context) {
+  void activate(VkcCommon *context) {
     context->allocator = allocImpl;
     state.context = context;
 
@@ -86,9 +86,9 @@ namespace at3::allocators::pool {
     DeviceMemoryBlock newBlock = {};
     VkResult res = vkAllocateMemory(state.context->device, &info, nullptr, &newBlock.mem.handle);
 
-    checkf(res != VK_ERROR_OUT_OF_DEVICE_MEMORY, "Out of device memory");
-    checkf(res != VK_ERROR_TOO_MANY_OBJECTS, "Attempting to create too many allocations")
-    checkf(res == VK_SUCCESS, "Error allocating memory in passthrough allocator");
+    AT3_ASSERT(res != VK_ERROR_OUT_OF_DEVICE_MEMORY, "Out of device memory");
+    AT3_ASSERT(res != VK_ERROR_TOO_MANY_OBJECTS, "Attempting to create too many allocations")
+    AT3_ASSERT(res == VK_SUCCESS, "Error allocating memory in passthrough allocator");
 
     newBlock.mem.type = memoryType;
     newBlock.mem.size = newPoolSize;
@@ -127,7 +127,7 @@ namespace at3::allocators::pool {
     return false;
   }
 
-  void alloc(Allocation &outAlloc, AllocationCreateInfo createInfo) {
+  void alloc(VkcAllocation &outAlloc, VkcAllocationCreateInfo createInfo) {
     uint32_t memoryType = createInfo.memoryTypeIndex;
     VkDeviceSize size = createInfo.size;
 
@@ -157,7 +157,7 @@ namespace at3::allocators::pool {
     markChunkOfMemoryBlockUsed(memoryType, location, requestedAllocSize);
   }
 
-  void free(Allocation &allocation) {
+  void free(VkcAllocation &allocation) {
     VkDeviceSize requestedAllocSize = ((allocation.size / state.pageSize) + 1) * state.pageSize;
 
     OffsetSize span = {allocation.offset, requestedAllocSize};
@@ -191,7 +191,7 @@ namespace at3::allocators::pool {
     return state.totalAllocs;
   }
 
-  void deactivate(VkhContext *context) {
+  void deactivate(VkcCommon *context) {
   }
 
 }
