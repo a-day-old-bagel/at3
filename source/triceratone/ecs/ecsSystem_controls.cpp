@@ -63,9 +63,9 @@ namespace at3 {
         updateLookInfos();
         // Rotate the movement axis to the correct orientation
         pyramidControls->force = glm::mat3 {
-            PYR_SIDE_ACCEL * dt, 0, 0,
-            0, PYR_SIDE_ACCEL * dt, 0,
-            0, 0, PYR_UP_ACCEL * dt
+            PYR_SIDE_ACCEL, 0, 0,
+            0, PYR_SIDE_ACCEL, 0,
+            0, 0, PYR_UP_ACCEL
         } * glm::normalize(lastKnownHorizCtrlRot * pyramidControls->accel);
 
         pyramidControls->accel = glm::vec3();
@@ -97,7 +97,7 @@ namespace at3 {
       if (length(playerControls->horizControl) > 0.0f) {
         updateLookInfos();
         // Rotate the movement axis to the correct orientation
-        playerControls->forces = (playerControls->isRunning ? CHARA_RUN : CHARA_WALK) * dt *
+        playerControls->forces = (playerControls->isRunning ? CHARA_RUN : CHARA_WALK) *
             glm::normalize(lastKnownHorizCtrlRot * glm::vec3(playerControls->horizControl, 0.f));
         // Clear the input
         playerControls->horizControl = glm::vec2();

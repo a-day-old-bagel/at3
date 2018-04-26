@@ -20,7 +20,7 @@ namespace at3 {
     mpPhysicsBody = std::make_shared<SceneObject_>();
     entityId physicalId = mpPhysicsBody->getId();
     state.add_Placement(physicalId, transform);
-    state.add_Physics(physicalId, 1.f, NULL, Physics::CHARA);
+    state.add_Physics(physicalId, 1.f, nullptr, Physics::CHARA);
     Physics* physics;
     state.get_Physics(physicalId, &physics);
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
@@ -33,7 +33,6 @@ namespace at3 {
     mpPhysicsBody->addChild(mpVisualBody);
 
     mpCamera = std::make_shared<ThirdPersonCamera_> (0.f, 5.f, (float) M_PI * 0.5f);
-//    mpPhysicsBody->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
     mpVisualBody->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
 
     ctrlId = physicalId;
@@ -53,17 +52,16 @@ namespace at3 {
     mpState->get_Placement(mpCamera->mpCamGimbal->getId(), &camPlacement);
     PlayerControls *controls;
     mpState->get_PlayerControls(mpPhysicsBody->getId(), &controls);
-
-    float correction = controls->equilibriumOffset;
-    float correctionThresholdHigh = -1.f;
-    float correctionThresholdLow = 0.f;
-    if (correction < correctionThresholdHigh) {
-      correction = 0.f;
-    } else if (correction < correctionThresholdLow) {
-      float range = correctionThresholdHigh - correctionThresholdLow;
-      correction *= pow((correctionThresholdHigh - correction) / range, 2);
+    float correction = 0.f;
+    if (controls->isGrounded) {
+      correction = controls->equilibriumOffset;
+      float correctionThresholdHigh = -1.f;
+      float correctionThresholdLow = 0.f;
+      if (correction < correctionThresholdLow && correction > correctionThresholdHigh) {
+        float range = correctionThresholdHigh - correctionThresholdLow;
+        correction *= pow((correctionThresholdHigh - correction) / range, 2);
+      }
     }
-
     return glm::scale(
         glm::rotate(
             glm::translate(

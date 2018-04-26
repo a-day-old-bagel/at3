@@ -100,8 +100,8 @@ namespace at3 {
       state->get_PyramidControls(id, &ctrls);
       Physics *physics;
       state->get_Physics(id, &physics);
-      physics->rigidBody->applyImpulse({ctrls->force.x, ctrls->force.y, ctrls->force.z},
-                                       btVector3(ctrls->up.x, ctrls->up.y, ctrls->up.z) * 0.05f);
+      physics->rigidBody->applyForce({ctrls->force.x, ctrls->force.y, ctrls->force.z},
+                                     btVector3(ctrls->up.x, ctrls->up.y, ctrls->up.z) * 0.05f);
 
       // Custom constraint to keep the pyramid up FixMe: this sometimes gets stuck in a horizontal position?
       glm::vec3 up{0.f, 0.f, 1.f};
@@ -114,7 +114,7 @@ namespace at3 {
 
     // PlayerControls
     // TODO: create a kinematic body (0 mass, recalc inertia) to which to anchor
-    //       the capsule when it lands from a height (point to point constraint, AKA ball joint, maybe)
+    //       the capsule when it lands from a height (point to point constraint, AKA ball joint, maybe)?
     for (auto id : registries[4].ids) {
       PlayerControls *ctrls;
       state->get_PlayerControls(id, &ctrls);
@@ -128,13 +128,19 @@ namespace at3 {
       float rayDistTravelledAvg = 0.f;
       btVector3 rayHitPointAvg = {0.f, 0.f, 0.f};
       btVector3 rayNormalAvg = {0.f, 0.f, 0.f};
+      btVector3 groundVelocity;
+      bool groundVelocityFound = false;
       bool anyRayHitGoodGround = false;
       btVector3 orig = capsuleTrans.getOrigin();
       std::vector<btVector3> rayStartLocations = {
-          {orig.x(), orig.y() + HUMAN_DEPTH * 0.5f, orig.z() - HUMAN_HEIGHT * 0.15f},
-          {orig.x(), orig.y() - HUMAN_DEPTH * 0.5f, orig.z() - HUMAN_HEIGHT * 0.15f},
-          {orig.x() + HUMAN_WIDTH * 0.5f, orig.y(), orig.z() - HUMAN_HEIGHT * 0.15f},
-          {orig.x() - HUMAN_WIDTH * 0.5f, orig.y(), orig.z() - HUMAN_HEIGHT * 0.15f}
+#         if CHARA_USE_FOUR_RAYS
+            {orig.x(), orig.y() + HUMAN_DEPTH * 0.5f, orig.z() - HUMAN_HEIGHT * 0.15f},
+            {orig.x(), orig.y() - HUMAN_DEPTH * 0.5f, orig.z() - HUMAN_HEIGHT * 0.15f},
+            {orig.x() + HUMAN_WIDTH * 0.5f, orig.y(), orig.z() - HUMAN_HEIGHT * 0.15f},
+            {orig.x() - HUMAN_WIDTH * 0.5f, orig.y(), orig.z() - HUMAN_HEIGHT * 0.15f}
+#         else
+            {orig.x(), orig.y(), orig.z() - HUMAN_HEIGHT * 0.15f},
+#         endif
       };
       for (auto rayStart : rayStartLocations) {
         btVector3 rayEnd = rayStart + btVector3(0.f, 0.f, -rayLength);
@@ -144,6 +150,10 @@ namespace at3 {
         anyRayHitGoodGround |= (groundSpringRayCallback.hasHit() && groundSpringRayCallback.m_hitNormalWorld.z() > 0.4);
         rayHitPointAvg += groundSpringRayCallback.m_hitPointWorld;
         rayNormalAvg += groundSpringRayCallback.m_hitNormalWorld;
+        if ( ! groundVelocityFound && groundSpringRayCallback.m_collisionObject) { // Use the results of the first ray
+          groundVelocity = groundSpringRayCallback.m_collisionObject->getInterpolationLinearVelocity();
+          groundVelocityFound = true;
+        }
       }
       rayDistTravelledAvg /= rayStartLocations.size();
       rayHitPointAvg /= rayStartLocations.size();
@@ -158,21 +168,20 @@ namespace at3 {
       ctrls->equilibriumOffset = springForceLinear;
 
       // Handle jumping
+      float zVel = physics->rigidBody->getLinearVelocity().z();
       if (ctrls->jumpInProgress) {
-        float zVel = physics->rigidBody->getLinearVelocity().z();
-        if (zVel > ctrls->lastJumpZVel) {
+        if (springForceLinear >= -0.1f && zVel < 0.f) {
           ctrls->jumpInProgress = false;
-        } else {
-          ctrls->lastJumpZVel = zVel;
         }
       } else if (ctrls->jumpRequested) {
         physics->rigidBody->applyImpulse({0.f, 0.f, CHARA_JUMP}, {0.f, 0.f, 0.f});
         ctrls->jumpInProgress = true;
-        ctrls->lastJumpZVel = physics->rigidBody->getLinearVelocity().z();
       }
 
+      // damping variables to be applied to object
       float linDamp = 0.f;
       float angDamp = 0.f;
+      float zFactor = 1.f;
 
       float springForceOverMax = springForceLinear / maxSpringForce; // How far from equilibrium (0 to 1, 1 is far)
       ctrls->isGrounded = anyRayHitGoodGround; // not grounded if high in the air or on steep slope
@@ -181,47 +190,58 @@ namespace at3 {
       ctrls->isGrounded &= (! ctrls->jumpInProgress); // not grounded if jumping
 
       if (ctrls->isGrounded) { // Movement along ground - apply controls and a "stick to ground" force
-        float sfomPow2 = (float)pow(springForceOverMax, 2);
-        float sfomPow4 = (float)pow(springForceOverMax, 4);
-        float sfom10Pow2 = (float)pow(springForceOverMax * 10.f, 2);
+        auto sfomPow2 = (float)pow(springForceOverMax, 2);
+        auto sfomPow4 = (float)pow(springForceOverMax, 4);
+        auto sfom10Pow2 = (float)pow(springForceOverMax * 10.f, 2);
         float springForceMagnitude = (1.0f - sfomPow2) - std::max(0.f, 1.f - sfom10Pow2);
+        springForceMagnitude *= CHARA_SPRING_FACTOR;
         float mvmntForceMagnitude = std::max(CHARA_MIDAIR_FACTOR, 1.f - sfomPow2);
         float dampingMagnitude = std::min(0.9999999f, 1.1f - sfomPow4);
         linDamp = dampingMagnitude;
 
         float springForceFinal = springForceMagnitude * ((0 < springForceLinear) - (springForceLinear < 0));
 
-        // modify walking force to align with gradient of ground so as not to point into or out of the ground.
+        // Add a strong damping and negation of falling motion if the character is moving down fast past equilibrium
+        if (zVel < -0.2f && springForceLinear > 0.05f) {
+          physics->rigidBody->setLinearVelocity(btVector3(
+              physics->rigidBody->getLinearVelocity().x(),
+              physics->rigidBody->getLinearVelocity().y(), 0));
+          zFactor = 0.0f;
+        }
+
+        // If the character is on top of a moving object, match its velocity TODO: This is poop. Riding car is ghetto.
+        float groundSpeedFactor = 1.f;
+        if (groundVelocity.length()) {
+          btVector3 groundForce = groundVelocity - physics->rigidBody->getLinearVelocity();
+          physics->rigidBody->applyCentralImpulse(groundForce);
+          linDamp = 0;
+          groundSpeedFactor = 2.5f;
+        }
+
+        // modify walking force to be perpendicular to the ground normal so as not to point into or out of the ground.
         // this avoids "jiggling" as you walk up or down a hill, especially on slow hardware.
         float origForceMag = glm::length(ctrls->forces);
         ctrls->forces.z = -1 * ( ctrls->forces.x * rayNormalAvg.x() +
                                  ctrls->forces.y * rayNormalAvg.y() ) ;
-
+        // re-normalize the new walking force vector to match the magnitude of the old one
         if ( glm::length(ctrls->forces) ) {
           ctrls->forces = origForceMag * glm::normalize(ctrls->forces);
         }
 
-        // SOME DEBUG DRAW
-        if (settings::graphics::gpuApi == settings::graphics::OPENGL_OPENCL) {
-          btVector3 dbgDrawStart = rayHitPointAvg + btVector3(0.f, 0.f, 2.25f);
-          dynamicsWorld->getDebugDrawer()->drawLine(dbgDrawStart, {dbgDrawStart + rayNormalAvg}, {1.f, 0.f, 1.f});
-
-          dynamicsWorld->getDebugDrawer()->drawLine(dbgDrawStart,
-                                                    {dbgDrawStart +
-                                                     btVector3(ctrls->forces.x, ctrls->forces.y, ctrls->forces.z)},
-                                                    {1.f, 1.f, 0.f});
-        }
-
-        physics->rigidBody->applyImpulse({ctrls->forces.x * mvmntForceMagnitude,
-                                          ctrls->forces.y * mvmntForceMagnitude,
-                                          ctrls->forces.z * mvmntForceMagnitude + springForceFinal }, {0.f, 0.f, 0.f});
+        physics->rigidBody->applyCentralForce({
+            ctrls->forces.x * mvmntForceMagnitude * groundSpeedFactor,
+            ctrls->forces.y * mvmntForceMagnitude * groundSpeedFactor,
+            ctrls->forces.z * mvmntForceMagnitude * groundSpeedFactor + springForceFinal });
 
       } else { // movement while in air - apply greatly reduced controls
-        physics->rigidBody->applyImpulse({ctrls->forces.x * CHARA_MIDAIR_FACTOR,
-                                          ctrls->forces.y * CHARA_MIDAIR_FACTOR, 0.f}, {0.f, 0.f, 0.f});
+        physics->rigidBody->applyCentralForce({
+            ctrls->forces.x * CHARA_MIDAIR_FACTOR,
+            ctrls->forces.y * CHARA_MIDAIR_FACTOR,
+            0.f});
       }
 
       physics->rigidBody->setDamping(linDamp, angDamp); // Set damping
+      physics->rigidBody->setLinearFactor(btVector3(1, 1, zFactor));
 
       // zero controls
       ctrls->forces = glm::vec3();

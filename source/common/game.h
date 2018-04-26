@@ -9,7 +9,6 @@
 #include <cstdlib>
 #include <iostream>
 
-//#include "graphicsBackend.h"
 #include "vkc.h"
 #include "debug.h"
 #include "scene.h"
@@ -51,11 +50,6 @@ namespace at3 {
       void setCamera(void *camPtr);
       std::shared_ptr<Camera<EcsInterface>> getCamera() { return mpCamera; }
   };
-
-//  #define GAME_TYPE typename Game<EcsInterface, Derived>
-
-  template <typename EcsInterface, typename Derived>
-  using GameType = Game<EcsInterface, Derived>;
 
   template <typename EcsInterface, typename Derived>
   Game<EcsInterface, Derived>::Game() : mEcsInterface(&mState),

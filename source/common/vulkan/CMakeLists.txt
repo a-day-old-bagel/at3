@@ -2,12 +2,6 @@
 add_subdirectory( shaders )
 
 add_library( ${AT3_TARGET_PREFIX}vulkan STATIC
-
-  material_loading.h
-
-
-
-
   vkc.h
   vkcAlloc.h vkcAlloc.cpp
   vkcDataStore.h vkcDataStore.cpp
