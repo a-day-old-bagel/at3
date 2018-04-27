@@ -4,6 +4,15 @@
 #include <sstream>
 #include <vector>
 #include <functional>
+
+#include "configuration.h"
+
+#define GLM_FORCE_RADIANS
+#define GLM_ENABLE_EXPERIMENTAL
+#if USE_VULKAN_COORDS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#endif
+
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "settings.h"
@@ -95,6 +104,8 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
 
 
 
+
+
       if (settings::graphics::gpuApi == settings::graphics::VULKAN) {
         mpTestObj0 = std::make_shared<MeshObjectVk_>(mVulkan.get(), "pyramid_bottom", start);
         mpTestObj1 = std::make_shared<MeshObjectVk_>(mVulkan.get(), "pyramid_top", start);
@@ -116,6 +127,7 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
         key3Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_3", PyramidVk::makeActiveControl, mpPyramidVk.get());
         keyFSub = RTU_MAKE_SUB_UNIQUEPTR("key_down_f", PyramidVk::spawnSphere, mpPyramidVk.get());
       }
+
 
 
 
@@ -159,7 +171,6 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
 
       }
 
-
       return true;
     }
 
@@ -169,7 +180,6 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
     }
 
     void onTick(float dt) {
-
       mControlSystem.tick(dt);
 
       if (settings::graphics::gpuApi == settings::graphics::OPENGL_OPENCL) {

@@ -9,6 +9,4 @@ void main()
 {
 	vec3 norm = normalize(fragNormal);
 	outColor = vec4(norm.x, norm.y, norm.z, 1.0);
-
-	//outColor = vec4(fragUV.x, fragUV.y, 1.0, 1.0);
 }

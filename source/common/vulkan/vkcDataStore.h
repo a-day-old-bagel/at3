@@ -12,11 +12,6 @@
 #include <deque>
 #include "vkcMaterial.h"
 
-//#include "configuration.h"
-////#include "shader_inputs.h"
-//#include "vkcTypes.h"
-
-
 namespace at3 {
 
   uint32_t getMemoryType(const VkPhysicalDevice &device, uint32_t memoryTypeBitsRequirement,

@@ -31,9 +31,7 @@
 # endif
 #endif
 
-/*
- * This macro was found at https://stackoverflow.com/questions/7895869
- */
+// Aligned data
 #if defined(_MSC_VER)
 # define AT3_ALIGNED_(x) __declspec(align(x))
 #else

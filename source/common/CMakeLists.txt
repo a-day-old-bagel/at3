@@ -22,6 +22,7 @@ add_library( ${AT3_TARGET_PREFIX}common STATIC
   perspectiveCamera.h
   scene.h
   sceneObject.h
+  sdlContext.h sdlContext.cpp
   skyBox.h
   terrainObject.h
   thirdPersonCamera.h

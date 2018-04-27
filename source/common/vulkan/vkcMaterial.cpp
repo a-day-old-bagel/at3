@@ -12,6 +12,7 @@
 #include "common_vert.vert.spv.c"
 #include "random_frag.frag.spv.c"
 #include "debug_normals.frag.spv.c"
+#include "debug_uvs.frag.spv.c"
 #include "static_sun.frag.spv.c"
 
 namespace at3 {
@@ -136,7 +137,7 @@ namespace at3 {
   void loadUBOTestMaterial(VkcCommon &ctxt, int num) {
     //create descriptor set layout
     VkDescriptorSetLayoutBinding layoutBinding;
-    layoutBinding = descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, 1);
+    layoutBinding = descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0,1);
 
     VkDescriptorSetLayoutCreateInfo layoutInfo = descriptorSetLayoutCreateInfo(&layoutBinding, 1);
 
@@ -156,5 +157,7 @@ namespace at3 {
 
     createBasicMaterial(ubo_array_vert_spv, ubo_array_vert_spv_len,
                         static_sun_frag_spv, static_sun_frag_spv_len, ctxt, createInfo);
+//                        debug_uvs_frag_spv, debug_uvs_frag_spv_len, ctxt, createInfo);
+
   }
 }

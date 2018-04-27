@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <iostream>
 
+#include "sdlContext.h"
 #include "vkc.h"
 #include "debug.h"
 #include "scene.h"
@@ -23,9 +24,10 @@ namespace at3 {
   class Game {
 
     protected:
+      std::unique_ptr<SdlContext> sdlc;
+      std::unique_ptr<VulkanContext<EcsInterface>> mVulkan;
       typename EcsInterface::State mState;
       Scene<EcsInterface> mScene;
-      std::unique_ptr<VulkanContext<EcsInterface>> mVulkan;
 
     private:
       EcsInterface mEcsInterface;
@@ -63,19 +65,20 @@ namespace at3 {
 
   template <typename EcsInterface, typename Derived>
   bool Game<EcsInterface, Derived>::init(const char *appName, const char *settingsName) {
+
     mSettingsFileName = settingsName;
-    graphicsBackend::applicationName = appName;
     derived().registerCustomSettings();
     settings::loadFromIni(mSettingsFileName.c_str());
 
+    sdlc = std::make_unique<SdlContext>(appName);
+
     switch (settings::graphics::gpuApi) {
       case settings::graphics::OPENGL_OPENCL: {
-        if (!graphicsBackend::init()) { return false; }
+        if (!graphicsBackend::init(sdlc->getWindow())) { return false; }
       } break;
       case settings::graphics::VULKAN: {
-        if (!graphicsBackend::init()) { return false; }
         VulkanContextCreateInfo<EcsInterface> contextCreateInfo = VulkanContextCreateInfo<EcsInterface>::defaults();
-        contextCreateInfo.window = graphicsBackend::sdl2::window;
+        contextCreateInfo.window = sdlc->getWindow();
         contextCreateInfo.ecs = &mEcsInterface;
         mVulkan = std::make_unique<VulkanContext<EcsInterface>>(contextCreateInfo);
       }
@@ -309,6 +312,8 @@ namespace at3 {
   void Game<EcsInterface, Derived>::setCamera(void *camPtr) {
     std::shared_ptr<Camera<EcsInterface>> *camera = (std::shared_ptr<Camera<EcsInterface>>*)camPtr;
     mpCamera = *camera;
-    graphicsBackend::setFovy(mpCamera->getFovy());
+    if (settings::graphics::gpuApi == settings::graphics::OPENGL_OPENCL) {
+      graphicsBackend::setFovy(mpCamera->getFovy());
+    }
   }
 }

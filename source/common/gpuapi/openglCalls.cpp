@@ -6,7 +6,7 @@ namespace at3 {
   namespace graphicsBackend {
     namespace opengl {
       bool init() {
-        glContext = SDL_GL_CreateContext(sdl2::window);
+        glContext = SDL_GL_CreateContext(window);
         if (glContext == nullptr) {
           fprintf(stderr, "Failed to initialize OpenGL context: %s\n", SDL_GetError());
           return false;
@@ -22,7 +22,7 @@ namespace at3 {
         return true;
       }
       void swap() {
-        SDL_GL_SwapWindow(sdl2::window);
+        SDL_GL_SwapWindow(window);
       }
       void clear() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

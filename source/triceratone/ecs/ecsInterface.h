@@ -1,7 +1,16 @@
 
 #pragma once
 
+#include "configuration.h"
+
+#define GLM_FORCE_RADIANS
+#define GLM_ENABLE_EXPERIMENTAL
+#if USE_VULKAN_COORDS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#endif
+
 #include <glm/glm.hpp>
+
 #include "ezecs.hpp"
 
 #include "configuration.h"

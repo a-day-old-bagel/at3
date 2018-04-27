@@ -5,12 +5,8 @@ add_library( ${AT3_TARGET_PREFIX}graphics STATIC
   material.cpp material.h
   openglCalls.cpp
   openglValidation.cpp openglValidation.h
-  sdl2Calls.cpp
   shaderProgram.cpp shaderProgram.h
   shaders.cpp shaders.h
-  tiny_obj_loader.h
-  vulkanCalls.cpp
-  vulkanBackend.cpp vulkanBackend.h
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}graphics
   ${AT3_TARGET_PREFIX}external

@@ -11,17 +11,10 @@
 #include "shaders.h"
 #include "shaderProgram.h"
 #include "topics.hpp"
-#include "vulkanBackend.h"
-#include "vkc.h"
 
 namespace at3 {
-
-  struct FakeScene {
-
-  };
-
   namespace graphicsBackend {
-    bool init();
+    bool init(SDL_Window *window);
     void swap();
     void clear();
     void deInit();
@@ -32,27 +25,14 @@ namespace at3 {
     void toggleFullscreen(void *nothing);
     void handleWindowEvent(void *windowEvent);
 
-    extern const char *applicationName;
     extern float currentFovY;
+    extern SDL_Window *window;
 
-    namespace sdl2 {
-      bool init();
-      extern SDL_Window *window;
-      extern uint32_t windowFlags;
-    }
     namespace opengl {
       bool init();
       void swap();
       void clear();
       extern SDL_GLContext glContext;
-    }
-    namespace vulkan {
-      bool init();
-      void swap();
-      void clear();
-      void handleWindowSizeChange();
-      extern std::unique_ptr<VulkanBackend> vkbe;
-//      extern std::unique_ptr<VulkanContext<FakeScene>> vkc;
     }
   }
 }

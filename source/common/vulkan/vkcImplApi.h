@@ -1,7 +1,5 @@
 #pragma once
 
-//#include <SDLvulkan.h>
-
 template <typename EcsInterface>
 VulkanContextCreateInfo<EcsInterface> VulkanContextCreateInfo<EcsInterface>::defaults() {
   VulkanContextCreateInfo<EcsInterface> info;
@@ -45,21 +43,21 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo<EcsInterface>
 
   createSwapchainForSurface(); // window size is needed here
 
-  createCommandPool(common.gfxCommandPool, common.device, common.gpu, common.gpu.graphicsQueueFamilyIdx);
-  createCommandPool(common.transferCommandPool, common.device, common.gpu, common.gpu.transferQueueFamilyIdx);
-  createCommandPool(common.presentCommandPool, common.device, common.gpu, common.gpu.presentQueueFamilyIdx);
+  createCommandPool(common.gfxCommandPool);
+  createCommandPool(common.transferCommandPool);
+  createCommandPool(common.presentCommandPool);
 
-  createDescriptorPool(common.descriptorPool, common.device, info.types, info.typeCounts);
+  createDescriptorPool(common.descriptorPool, info.types, info.typeCounts);
 
-  createVkSemaphore(common.imageAvailableSemaphore, common.device);
-  createVkSemaphore(common.renderFinishedSemaphore, common.device);
+  createVkSemaphore(common.imageAvailableSemaphore);
+  createVkSemaphore(common.renderFinishedSemaphore);
 
   createQueryPool(10);
 
   common.frameFences.resize(common.swapChain.imageViews.size());
 
   for (uint32_t i = 0; i < common.frameFences.size(); ++i) {
-    createFence(common.frameFences[i], common.device);
+    createFence(common.frameFences[i]);
   }
 
   // Init the ubo store and meshes
@@ -75,7 +73,7 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo<EcsInterface>
   for (auto & path : fs::directory_iterator("./assets/models/")) {
     if (fs::is_directory(path)) { continue; }
     printf("\n%s -> %s\n", getFileNameOnly(path).c_str(), getFileNameRelative(path).c_str());
-    meshResources.emplace(getFileNameOnly(path), loadMesh(getFileNameRelative(path).c_str(), true, common));
+    meshResources.emplace(getFileNameOnly(path), loadMesh(getFileNameRelative(path).c_str(), true));
   }
 
   printf("Num meshes: %lu\n", meshResources.size());
@@ -83,7 +81,8 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo<EcsInterface>
 
   // Init the vulkan swapchain, pipeline, etc.
 
-  initRendering(common, (uint32_t)meshResources.size());
+  initRendering((uint32_t) meshResources.size());
+  initGlobalShaderData();
 }
 
 template <typename EcsInterface>
@@ -99,7 +98,7 @@ void VulkanContext<EcsInterface>::updateWvMat(void *data) {
 
 template <typename EcsInterface>
 void VulkanContext<EcsInterface>::step() {
-  render(common, dataStore.get(), currentWvMat, meshResources, ecs);
+  render(dataStore.get(), currentWvMat, meshResources, ecs);
 }
 
 template <typename EcsInterface>
@@ -108,7 +107,7 @@ void VulkanContext<EcsInterface>::reInitRendering() {
   cleanupRendering();
   getWindowSize();
   createSwapchainForSurface();
-  initRendering(common, (uint32_t)meshResources.size());
+  initRendering((uint32_t) meshResources.size());
 }
 
 template<typename EcsInterface>
@@ -119,7 +118,7 @@ void VulkanContext<EcsInterface>::registerMeshInstance(const std::string &meshFi
     DataStore::AcquireStatus didAcquire = dataStore->acquire(instance.uboIdx);
     AT3_ASSERT(didAcquire != DataStore::AcquireStatus::FAILURE, "Error acquiring ubo index");
     if (didAcquire == DataStore::AcquireStatus::NEWPAGE) {
-      updateDescriptorSets(common, dataStore.get());
+      updateDescriptorSets(dataStore.get());
     }
     instance.id = id;
     mesh.instances.push_back(instance);

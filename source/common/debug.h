@@ -1,9 +1,16 @@
 #pragma once
 
+#define GLM_FORCE_RADIANS
+#define GLM_ENABLE_EXPERIMENTAL
+#if USE_VULKAN_COORDS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#endif
+
+#include <glm/gtc/type_ptr.hpp>
+
 #include <epoxy/gl.h>
 #include <memory>
 #include <vector>
-#include <glm/gtc/type_ptr.hpp>
 
 #include "sceneObject.h"
 #include "debug.h"

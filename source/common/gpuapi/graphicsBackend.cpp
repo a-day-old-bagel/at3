@@ -7,44 +7,21 @@ using namespace rtu::topics;
 namespace at3 {
   namespace graphicsBackend {
 
-    bool init() {
+    bool init(SDL_Window *window) {
+      graphicsBackend::window = window;
 	    currentFovY = settings::graphics::fovy;
-      bool success = sdl2::init();
-      switch (settings::graphics::gpuApi) {
-        case settings::graphics::OPENGL_OPENCL: success &= opengl::init(); break;
-        case settings::graphics::VULKAN: success &= vulkan::init(); break;
-        default: {
-          std::cerr << "Invalid graphics API selection: " << settings::graphics::gpuApi << std::endl;
-          success = false;
-        }
-      }
+      bool success = opengl::init();
       if(success) {
-        switch (settings::graphics::gpuApi) {
-          case settings::graphics::OPENGL_OPENCL:
-            Shaders::updateViewInfos(currentFovY, settings::graphics::windowDimX, settings::graphics::windowDimY);
-            break;
-          case settings::graphics::VULKAN:
-            break;
-          default:
-            break;
-        }
+        Shaders::updateViewInfos(currentFovY, settings::graphics::windowDimX, settings::graphics::windowDimY);
         setFullscreenMode(settings::graphics::fullscreen);
       }
       return success;
     }
     void swap() {
-      switch (settings::graphics::gpuApi) {
-        case settings::graphics::OPENGL_OPENCL: opengl::swap(); break;
-        case settings::graphics::VULKAN: vulkan::swap(); break;
-        default: assert(false);
-      }
+      opengl::swap();
     }
     void clear() {
-      switch (settings::graphics::gpuApi) {
-        case settings::graphics::OPENGL_OPENCL: opengl::clear(); break;
-        case settings::graphics::VULKAN: vulkan::clear(); break;
-        default: assert(false);
-      }
+      opengl::clear();
     }
     void deInit() {
       // TODO: clean up SDL, GLFW, OPENGL, VULKAN, ETC!!! (in their own places)
@@ -54,19 +31,19 @@ namespace at3 {
     bool setFullscreenMode(uint32_t mode) {
       switch (mode) {
         case settings::graphics::FULLSCREEN: {
-          SDL_SetWindowFullscreen(sdl2::window, SDL_WINDOW_FULLSCREEN);
+          SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
         } break;
         case settings::graphics::FAKED_FULLSCREEN: {
-          SDL_SetWindowFullscreen(sdl2::window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+          SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
         } break;
-        case settings::graphics::MAXIMIZED: SDL_MaximizeWindow(sdl2::window);
+        case settings::graphics::MAXIMIZED: SDL_MaximizeWindow(window);
         case settings::graphics::WINDOWED:
         default: {
-          SDL_SetWindowFullscreen(sdl2::window, 0);
+          SDL_SetWindowFullscreen(window, 0);
         }
       }
-      auto isCurrentlyFull = (SDL_GetWindowFlags(sdl2::window) & SDL_WINDOW_FULLSCREEN);
-      auto isCurrentlyFake = (SDL_GetWindowFlags(sdl2::window) & SDL_WINDOW_FULLSCREEN_DESKTOP);
+      auto isCurrentlyFull = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN);
+      auto isCurrentlyFake = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN_DESKTOP);
       if (isCurrentlyFull) {
         settings::graphics::fullscreen = settings::graphics::FULLSCREEN;
       } else if (isCurrentlyFake) {
@@ -78,8 +55,8 @@ namespace at3 {
     }
 
     void toggleFullscreen(void *nothing) {
-      auto isCurrentlyFull = (SDL_GetWindowFlags(sdl2::window) & SDL_WINDOW_FULLSCREEN);
-      auto isCurrentlyFake = (SDL_GetWindowFlags(sdl2::window) & SDL_WINDOW_FULLSCREEN_DESKTOP);
+      auto isCurrentlyFull = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN);
+      auto isCurrentlyFake = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN_DESKTOP);
       if (isCurrentlyFull || isCurrentlyFake) {
         if ( ! setFullscreenMode(settings::graphics::WINDOWED)) {
           std::cerr << "Failed to change to windowed mode!" << std::endl;
@@ -97,17 +74,8 @@ namespace at3 {
         case SDL_WINDOWEVENT_SIZE_CHANGED: {
           settings::graphics::windowDimX = (uint32_t) event->window.data1;
           settings::graphics::windowDimY = (uint32_t) event->window.data2;
-          switch (settings::graphics::gpuApi) {
-            case settings::graphics::OPENGL_OPENCL: {
-              glViewport(0, 0, settings::graphics::windowDimX, settings::graphics::windowDimY);
-              Shaders::updateViewInfos(currentFovY, settings::graphics::windowDimX, settings::graphics::windowDimY);
-            } break;
-            case settings::graphics::VULKAN:
-              vulkan::handleWindowSizeChange();
-              break;
-            default:
-              break;
-          }
+          glViewport(0, 0, settings::graphics::windowDimX, settings::graphics::windowDimY);
+          Shaders::updateViewInfos(currentFovY, settings::graphics::windowDimX, settings::graphics::windowDimY);
           std::cout << "Window size changed to: " << settings::graphics::windowDimX << "x"
                     << settings::graphics::windowDimY << std::endl;
         } break;
@@ -130,18 +98,10 @@ namespace at3 {
     }
     void setFovy(float fovy) {
       graphicsBackend::currentFovY = fovy;
-      switch (settings::graphics::gpuApi) {
-        case settings::graphics::OPENGL_OPENCL:
-          Shaders::updateViewInfos(fovy, settings::graphics::windowDimX, settings::graphics::windowDimY);
-          break;
-        case settings::graphics::VULKAN:
-          break;
-        default:
-          break;
-      }
+      Shaders::updateViewInfos(fovy, settings::graphics::windowDimX, settings::graphics::windowDimY);
     }
 
-    const char *applicationName = nullptr;
+    SDL_Window *window = nullptr;
     float currentFovY;
   }
 }
