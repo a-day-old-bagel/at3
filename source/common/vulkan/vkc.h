@@ -12,8 +12,6 @@
 #include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
 
-//#include <gli/gli.hpp>
-
 #include "configuration.h"
 #include "macros.h"
 #include "topics.hpp"
@@ -42,13 +40,22 @@ namespace at3 {
       static VulkanContextCreateInfo<EcsInterface> defaults();
   };
 
+//  template<typename EcsInterface>
+//  class Texture;
+//  template<typename EcsInterface>
+//  class Texture2D;
+//  template<typename EcsInterface>
+//  class Texture2DArray;
+//  template<typename EcsInterface>
+//  class TextureCubeMap;
+
   template<typename EcsInterface>
   class VulkanContext {
 
-      friend class Texture;
-      friend class Texture2D;
-      friend class Texture2DArray;
-      friend class TextureCubeMap;
+//      friend class Texture<EcsInterface>;
+//      friend class Texture2D<EcsInterface>;
+//      friend class Texture2DArray<EcsInterface>;
+//      friend class TextureCubeMap<EcsInterface>;
 
     public:
 
@@ -74,6 +81,8 @@ namespace at3 {
       VkcTextureResource testTex;
       VkDescriptorImageInfo testTexDescriptor;
 
+      // TODO: use this
+//      Texture2D<EcsInterface> tex;
 
       void createInstance(const char *appName);
       void createPhysicalDevice();
@@ -161,3 +170,5 @@ namespace at3 {
 # include "vkcImplInternalResources.h"
 
 }
+
+//#include "VulkanTexture.hpp"

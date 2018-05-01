@@ -381,9 +381,15 @@ namespace at3 {
           EZECS_CHECK_PRINT(EZECS_ERR_MSG(status, "Attempted to add wheel to nonexistent vehicle!\n"));
           return false;
         }
+        printf("wheel add:\n%2.f %2.f %2.f\n%2.f %2.f %2.f\n%2.f %2.f %2.f\n",
+               initInfo.connectionPoint.x(), initInfo.connectionPoint.y(), initInfo.connectionPoint.z(),
+               initInfo.direction.x(), initInfo.direction.y(), initInfo.direction.z(),
+               initInfo.axle.x(), initInfo.axle.y(), initInfo.axle.z()
+        );
         trackControls->vehicle->addWheel(initInfo.connectionPoint, initInfo.direction, initInfo.axle,
                                          initInfo.suspensionRestLength, initInfo.wheelRadius,
                                          trackControls->tuning, initInfo.isFrontWheel);
+        printf("wheel add finished\n");
         initInfo.wi.bulletWheelId = (int)trackControls->wheels.size();
         physics->customData = new WheelInfo(initInfo.wi);
         trackControls->wheels.push_back(initInfo.wi);

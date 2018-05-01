@@ -76,6 +76,7 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo<EcsInterface>
   initGlobalShaderData();
 
   makeTexture(testTex, "assets/textures/cucumber.png");
+  // TODO: use the new texture object
 }
 
 template <typename EcsInterface>
