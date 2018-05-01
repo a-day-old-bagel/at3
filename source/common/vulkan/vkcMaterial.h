@@ -11,8 +11,6 @@
 #include <glm/glm.hpp>
 
 #include "vkcTypes.h"
-#include "vkcInitializers.h"
-
 
 namespace at3 {
 

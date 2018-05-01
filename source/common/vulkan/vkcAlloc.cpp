@@ -30,7 +30,11 @@ namespace at3::allocators::passthrough {
     state.totalAllocs++;
     state.memTypeAllocSizes[createInfo.memoryTypeIndex] += createInfo.size;
 
-    VkMemoryAllocateInfo allocInfo = at3::memoryAllocateInfo(createInfo.size, createInfo.memoryTypeIndex);
+    VkMemoryAllocateInfo allocInfo {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = createInfo.size;
+    allocInfo.memoryTypeIndex = createInfo.memoryTypeIndex;
+
     VkResult res = vkAllocateMemory(state.context->device, &allocInfo, nullptr, &(outAlloc.handle));
 
     outAlloc.size = createInfo.size;
@@ -81,10 +85,13 @@ namespace at3::allocators::pool {
     VkDeviceSize newPoolSize = size * 2;
     newPoolSize = newPoolSize < state.memoryBlockMinSize ? state.memoryBlockMinSize : newPoolSize;
 
-    VkMemoryAllocateInfo info = at3::memoryAllocateInfo(newPoolSize, memoryType);
+    VkMemoryAllocateInfo allocInfo {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = newPoolSize;
+    allocInfo.memoryTypeIndex = memoryType;
 
     DeviceMemoryBlock newBlock = {};
-    VkResult res = vkAllocateMemory(state.context->device, &info, nullptr, &newBlock.mem.handle);
+    VkResult res = vkAllocateMemory(state.context->device, &allocInfo, nullptr, &newBlock.mem.handle);
 
     AT3_ASSERT(res != VK_ERROR_OUT_OF_DEVICE_MEMORY, "Out of device memory");
     AT3_ASSERT(res != VK_ERROR_TOO_MANY_OBJECTS, "Attempting to create too many allocations")

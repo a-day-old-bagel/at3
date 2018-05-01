@@ -9,7 +9,7 @@ struct tdata
 
 layout(binding=0,set=0) uniform TRANSFORM_DATA
 {
-	tdata d[256];
+	tdata d[512];
 }transform;
 
 layout(push_constant) uniform transformData

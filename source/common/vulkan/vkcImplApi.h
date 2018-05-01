@@ -6,17 +6,8 @@ VulkanContextCreateInfo<EcsInterface> VulkanContextCreateInfo<EcsInterface>::def
   info.appName = "at3";
   info.window = nullptr;
   info.ecs = nullptr;
-  info.types.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-  info.types.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
-  info.types.push_back(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
-  info.types.push_back(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-  info.types.push_back(VK_DESCRIPTOR_TYPE_SAMPLER);
-  info.typeCounts.push_back(512);
-  info.typeCounts.push_back(512);
-  info.typeCounts.push_back(512);
-  info.typeCounts.push_back(512);
-  info.typeCounts.push_back(512);
-  info.typeCounts.push_back(1);
+  info.descriptorTypeCounts.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 512});
+  info.descriptorTypeCounts.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1});
   return info;
 }
 
@@ -47,7 +38,7 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo<EcsInterface>
   createCommandPool(common.transferCommandPool);
   createCommandPool(common.presentCommandPool);
 
-  createDescriptorPool(common.descriptorPool, info.types, info.typeCounts);
+  createDescriptorPool(common.descriptorPool, info);
 
   createVkSemaphore(common.imageAvailableSemaphore);
   createVkSemaphore(common.renderFinishedSemaphore);
@@ -83,6 +74,8 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo<EcsInterface>
 
   initRendering((uint32_t) meshResources.size());
   initGlobalShaderData();
+
+  makeTexture(testTex, "assets/textures/cucumber.png");
 }
 
 template <typename EcsInterface>

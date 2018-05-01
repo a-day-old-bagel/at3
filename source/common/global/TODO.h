@@ -12,3 +12,5 @@
 // TODO: Possibly use precompiled sdl and vulkan sdk's in extern instead of relying on system-installed sdk's
 // TODO: Stop using custom SDLvulkan.h, now that SDL supports Vulkan - but must find way to force XCB over X11 - search SDL2 repo for "VK_USE_PLATFORM_XCB_KHR"
 // TODO: Third-person camera smoothing (per-frame amount that cam moves towards target is proportional to distance from target, maybe have dead zone for anti-jiggle)
+// TODO: Use swapchain cacheing
+// TODO: Use SLikeNet for multiplayer

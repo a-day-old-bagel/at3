@@ -12,6 +12,8 @@
 #include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
 
+//#include <gli/gli.hpp>
+
 #include "configuration.h"
 #include "macros.h"
 #include "topics.hpp"
@@ -20,7 +22,6 @@
 #include "vkcTypes.h"
 #include "vkcAlloc.h"
 #include "vkcDataStore.h"
-#include "vkcInitializers.h"
 #include "vkcMaterial.h"
 
 #define SUBSCRIBE_TOPIC(e, x) std::make_unique<rtu::topics::Subscription>(e, RTU_MTHD_DLGT(&VulkanContext::x, this));
@@ -32,6 +33,9 @@ namespace at3 {
       std::string appName;
       SDL_Window *window = nullptr;
       EcsInterface *ecs = nullptr;
+
+      std::vector<VkDescriptorPoolSize> descriptorTypeCounts;
+
       std::vector<VkDescriptorType> types;
       std::vector<uint32_t> typeCounts;
 
@@ -40,6 +44,11 @@ namespace at3 {
 
   template<typename EcsInterface>
   class VulkanContext {
+
+      friend class Texture;
+      friend class Texture2D;
+      friend class Texture2DArray;
+      friend class TextureCubeMap;
 
     public:
 
@@ -62,6 +71,9 @@ namespace at3 {
       GlobalShaderDataStore globalData;
       static const uint32_t INVALID_QUEUE_FAMILY_IDX = (uint32_t) -1;
 
+      VkcTextureResource testTex;
+      VkDescriptorImageInfo testTexDescriptor;
+
 
       void createInstance(const char *appName);
       void createPhysicalDevice();
@@ -73,8 +85,8 @@ namespace at3 {
       VkExtent2D chooseSwapExtent();
 
 
-      void createDescriptorPool(VkDescriptorPool &outPool, std::vector<VkDescriptorType> &descriptorTypes,
-                                std::vector<uint32_t> &maxDescriptors);
+      void createDescriptorPool(VkDescriptorPool &outPool, VulkanContextCreateInfo<EcsInterface> &info);
+
       void createImageView(VkImageView &outView, VkFormat imageFormat, VkImageAspectFlags aspectMask, uint32_t mipCount,
                                  const VkImage &imageHdl);
       void createVkSemaphore(VkSemaphore &outSemaphore);
@@ -118,13 +130,16 @@ namespace at3 {
                   EcsInterface *ecs);
 
 
-      void makeTexture(VkcTextureResource &outAsset, const char *filepath);
+      void makeTexture(VkcTextureResource &outResource, const char *filepath);
       void initGlobalShaderData();
       MeshResources <EcsInterface> loadMesh(const char *filepath, bool combineSubMeshes);
       void setGlobalVertexLayout(std::vector<EMeshVertexAttribute> layout);
       uint32_t make(MeshResource<EcsInterface> &outAsset, float *vertices, uint32_t vertexCount, uint32_t *indices,
                     uint32_t indexCount);
       void quad(MeshResource<EcsInterface> &outAsset, float width, float height, float xOffset, float yOffset);
+
+      void loadTextures();
+      void loadTextureArray(std::string filename, VkFormat format);
 
 
       void cleanupRendering();
@@ -141,6 +156,8 @@ namespace at3 {
   // IMPLEMENTATION TEMPLATES INCLUDED HERE
 
 # include "vkcImplApi.h"
-# include "vkcImplInternal.h"
+# include "vkcImplInternalDynamic.h"
+# include "vkcImplInternalCallOnce.h"
+# include "vkcImplInternalResources.h"
 
 }

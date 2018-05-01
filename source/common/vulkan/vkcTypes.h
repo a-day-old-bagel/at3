@@ -144,6 +144,8 @@ namespace at3 {
       VkDescriptorBufferInfo bufferInfo;
       VkWriteDescriptorSet setWrite;
 
+      std::vector<VkWriteDescriptorSet> setWriters;
+
       VkcAllocatorInterface allocator;
   };
 

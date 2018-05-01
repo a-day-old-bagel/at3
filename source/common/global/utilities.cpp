@@ -6,3 +6,7 @@ std::string getFileNameOnly(PATH_TYPE &path) {
 std::string getFileNameRelative(PATH_TYPE &path) {
   return path.path().string();
 }
+
+bool fileExists(const std::string &filePath) {
+  return fs::exists(filePath);
+}

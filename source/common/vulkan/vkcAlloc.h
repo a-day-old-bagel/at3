@@ -5,7 +5,6 @@
 //#include "vkh.h"
 
 #include "vkcTypes.h"
-#include "vkcInitializers.h"
 
 namespace at3::allocators::passthrough {
   struct AllocatorState {

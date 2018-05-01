@@ -110,7 +110,7 @@ namespace at3 {
 
       DataStore(VkcCommon &_ctxt) {
         ctxt = &_ctxt;
-        slotsPerPage = 256;
+        slotsPerPage = 512;
         size = (sizeof(VShaderInput) * slotsPerPage);
       }
 
@@ -140,6 +140,7 @@ namespace at3 {
         if (!p) {
           p = &createNewPage();
           newPage = true;
+          printf("new\n");
         }
 
         uint32_t slot = p->freeIndices.front();
