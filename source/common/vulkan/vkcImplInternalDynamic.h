@@ -707,11 +707,6 @@ void VulkanContext<EcsInterface>::updateDescriptorSets(DataStore *dataStore) {
     common.bufferInfo.offset = 0;
     common.bufferInfo.range = VK_WHOLE_SIZE;
 
-    testTexDescriptor = {};
-    testTexDescriptor.imageView = testTex.view;
-    testTexDescriptor.sampler = globalData.sampler;
-    testTexDescriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
     VkWriteDescriptorSet uboSetWriter = {};
     uboSetWriter.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     uboSetWriter.dstBinding = 0;
@@ -720,7 +715,7 @@ void VulkanContext<EcsInterface>::updateDescriptorSets(DataStore *dataStore) {
     uboSetWriter.descriptorCount = 1;
     uboSetWriter.dstSet = common.matData.descSets[i];
     uboSetWriter.pBufferInfo = &common.bufferInfo;
-    uboSetWriter.pImageInfo = 0;
+    uboSetWriter.pImageInfo = nullptr;
     common.setWriters.push_back(uboSetWriter);
 
     VkWriteDescriptorSet texSetWriter = {};
@@ -730,11 +725,12 @@ void VulkanContext<EcsInterface>::updateDescriptorSets(DataStore *dataStore) {
     texSetWriter.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     texSetWriter.descriptorCount = 1;
     texSetWriter.dstSet = common.matData.descSets[i];
-    texSetWriter.pBufferInfo = 0;
-    texSetWriter.pImageInfo = &testTexDescriptor;
+    texSetWriter.pBufferInfo = nullptr;
+    texSetWriter.pImageInfo = &testTex.descriptor;
     common.setWriters.push_back(texSetWriter);
 
-    vkUpdateDescriptorSets(common.device, static_cast<uint32_t>(common.setWriters.size()), common.setWriters.data(), 0, NULL);
+    vkUpdateDescriptorSets(common.device, static_cast<uint32_t>(common.setWriters.size()), common.setWriters.data(), 0,
+                           nullptr);
   }
 }
 
@@ -755,7 +751,8 @@ void VulkanContext<EcsInterface>::createDepthBuffer() {
 
   allocateDeviceMemory(common.renderData.depthBuffer.imageMemory, createInfo);
 
-  vkBindImageMemory(common.device, common.renderData.depthBuffer.handle, common.renderData.depthBuffer.imageMemory.handle,
+  vkBindImageMemory(common.device, common.renderData.depthBuffer.handle,
+                    common.renderData.depthBuffer.imageMemory.handle,
                     common.renderData.depthBuffer.imageMemory.offset);
 
   createImageView(common.renderData.depthBuffer.view, VK_FORMAT_D32_SFLOAT, VK_IMAGE_ASPECT_DEPTH_BIT, 1,
@@ -826,7 +823,8 @@ void VulkanContext<EcsInterface>::render(
     DataStore *dataStore, const glm::mat4 &wvMat, const MeshRepository <EcsInterface> &meshAssets,
     EcsInterface *ecs) {
 
-  glm::mat4 proj = glm::perspective(glm::radians(60.f), common.windowWidth / (float) common.windowHeight, 0.1f, 10000.f);
+  glm::mat4 proj = glm::perspective(glm::radians(60.f), common.windowWidth / (float) common.windowHeight, 0.1f,
+                                    10000.f);
   // reverse the y
   proj[1][1] *= -1;
 

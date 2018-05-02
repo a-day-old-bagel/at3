@@ -152,6 +152,7 @@ namespace at3 {
 
 
 
+  // TODO: Get rid of this if new texture code matches
   struct VkcTextureResource {
     VkImage image;
     at3::VkcAllocation deviceMemory;

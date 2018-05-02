@@ -1,5 +1,6 @@
 #pragma once
 
+// TODO: Get rid of this if new texture code matches - uses all existing code if possible
 template<typename EcsInterface>
 void VulkanContext<EcsInterface>::makeTexture(VkcTextureResource &outResource, const char *filepath) {
   VkcTextureResource &t = outResource;

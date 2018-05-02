@@ -11,31 +11,26 @@
  *
  * Additions to this code are also licensed under the MIT license as follows:
  *
- * Copyright(C) 2018 by Galen Cochrane
+ * Copyright(C) 2018 Galen Cochrane
+ *
+ * This code is licensed under the MIT license(MIT) (http://opensource.org/licenses/MIT)
+ */
+
+/*
+ * TODO: Remove the standalone functions if similar functions already exist in the vkc code
+ * TODO: Use resources in existing vkc code to better advantage
+ * TODO: Make a repo of these things that works with the mesh repo
+ * TODO: uncomment and fix the other classes
  */
 
 #pragma once
 
-//#include <cstdlib>
-//#include <string>
-//#include <fstream>
-//#include <vector>
-//
-//#include <vulkan/vulkan.h>
 #include <gli/gli.hpp>
-//#include "vkc.h"
-//#include "utilities.h"
 
 namespace at3 {
 
   /**
 		* Get the index of a memory type that has all the requested property bits set
-		*
-		* @param typeBits Bitmask with bits set for each memory type supported by the resource to request for (from VkMemoryRequirements)
-		* @param properties Bitmask of properties for the memory type to request
-		* @param (Optional) memTypeFound Pointer to a bool that is set to true if a matching memory type has been found
-		*
-		* @return Index of the requested memory type, or the max value of uint32_t as an error value.
 		*/
   uint32_t chooseMemoryType(
       uint32_t typeBits, VkPhysicalDeviceMemoryProperties &availableProps, VkMemoryPropertyFlags desiredProps,
@@ -66,29 +61,18 @@ namespace at3 {
 
   /**
 		* Allocate and begin a new primary command buffer from a command pool
-		*
-		* @param pool The pool to use to allocate the new command buffer
-		*
-		* @return A handle to the allocated command buffer
 		*/
   VkCommandBuffer beginNewCommandBuffer(VkDevice device, VkCommandPool pool);
 
   /**
   * Finish command buffer and deallocate the buffer (use with beginNewCommandBuffer for best results)
-  *
-  * @param device Device to use
-  * @param pool The pool from which to deallocate the command buffer
-  * @param commandBuffer Command buffer to flush
-  * @param queue Queue to submit the command buffer to
-  *
-  * @note The queue that the command buffer is submitted to must be from the same family index as the pool it was allocated from
-  * @note Uses a fence to ensure command buffer has finished executing
   */
   void flushCommandBuffer(VkDevice device, VkCommandPool pool, VkCommandBuffer commandBuffer, VkQueue queue);
 
   /** @brief Vulkan texture base class */
   template <typename EcsInterface>
   class Texture {
+    protected:
       VulkanContext<EcsInterface> *ctxt = nullptr;
     public:
       VkImage image;
@@ -127,15 +111,6 @@ namespace at3 {
     public:
       /**
       * Load a 2D texture including all mip levels
-      *
-      * @param filename File to load (supports .ktx and .dds)
-      * @param format Vulkan format of the image data stored in the file
-      * @param common VkcCommon object containing device to load texture on
-      * @param copyQueue Queue used for the texture staging copy commands (must support transfer)
-      * @param (Optional) imageUsageFlags Usage flags for the texture's image (defaults to VK_IMAGE_USAGE_SAMPLED_BIT)
-      * @param (Optional) imageLayout Usage layout for the texture (defaults VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-      * @param (Optional) forceLinear Force linear tiling (not advised, defaults to false)
-      *
       */
       void loadFromFile(
           std::string filename,
@@ -146,7 +121,7 @@ namespace at3 {
           VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
           bool forceLinear = false) {
 
-        if (ctxt) {
+        if (this->ctxt) {
           destroy();
         }
         this->ctxt = ctxt;
@@ -449,7 +424,7 @@ namespace at3 {
 //          VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
 //          VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
 //
-//        if (ctxt) {
+//        if (this->ctxt) {
 //          destroy();
 //        }
 //        this->ctxt = ctxt;
@@ -638,7 +613,7 @@ namespace at3 {
 //          VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
 //          VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
 //
-//        if (ctxt) {
+//        if (this->ctxt) {
 //          destroy();
 //        }
 //        this->ctxt = ctxt;
@@ -848,7 +823,7 @@ namespace at3 {
 //          VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
 //          VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
 //
-//        if (ctxt) {
+//        if (this->ctxt) {
 //          destroy();
 //        }
 //        this->ctxt = ctxt;

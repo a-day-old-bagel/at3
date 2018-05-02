@@ -78,11 +78,7 @@ namespace at3 {
       GlobalShaderDataStore globalData;
       static const uint32_t INVALID_QUEUE_FAMILY_IDX = (uint32_t) -1;
 
-      VkcTextureResource testTex;
-      VkDescriptorImageInfo testTexDescriptor;
-
-      // TODO: use this
-//      Texture2D<EcsInterface> tex;
+      Texture2D<EcsInterface> testTex;
 
       void createInstance(const char *appName);
       void createPhysicalDevice();

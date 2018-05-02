@@ -1,7 +1,7 @@
 #pragma once
 
-template <typename EcsInterface>
-VulkanContextCreateInfo<EcsInterface> VulkanContextCreateInfo<EcsInterface>::defaults() {
+template<typename EcsInterface>
+VulkanContextCreateInfo <EcsInterface> VulkanContextCreateInfo<EcsInterface>::defaults() {
   VulkanContextCreateInfo<EcsInterface> info;
   info.appName = "at3";
   info.window = nullptr;
@@ -11,8 +11,8 @@ VulkanContextCreateInfo<EcsInterface> VulkanContextCreateInfo<EcsInterface>::def
   return info;
 }
 
-template <typename EcsInterface>
-VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo<EcsInterface> info) {
+template<typename EcsInterface>
+VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo <EcsInterface> info) {
 
   sub_wvUpdate = SUBSCRIBE_TOPIC("primary_cam_wv", updateWvMat);
   sub_windowResize = SUBSCRIBE_TOPIC("window_resized", reInitRendering);
@@ -61,7 +61,7 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo<EcsInterface>
 
   // Open every mesh in the mesh directory
   // TODO: Handle the multiple-objects-in-one-file case (true -> false)?
-  for (auto & path : fs::directory_iterator("./assets/models/")) {
+  for (auto &path : fs::directory_iterator("./assets/models/")) {
     if (fs::is_directory(path)) { continue; }
     printf("\n%s -> %s\n", getFileNameOnly(path).c_str(), getFileNameRelative(path).c_str());
     meshResources.emplace(getFileNameOnly(path), loadMesh(getFileNameRelative(path).c_str(), true));
@@ -75,27 +75,27 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo<EcsInterface>
   initRendering((uint32_t) meshResources.size());
   initGlobalShaderData();
 
-  makeTexture(testTex, "assets/textures/cucumber.png");
-  // TODO: use the new texture object
+  testTex.loadFromFile("assets/models/cerberus/albedo.ktx", VK_FORMAT_R8G8B8A8_UNORM, this,
+                       common.deviceQueues.transferQueue);
 }
 
-template <typename EcsInterface>
+template<typename EcsInterface>
 VulkanContext<EcsInterface>::~VulkanContext() {
 
 }
 
-template <typename EcsInterface>
+template<typename EcsInterface>
 void VulkanContext<EcsInterface>::updateWvMat(void *data) {
-  auto newMat = (glm::mat4*)data;
+  auto newMat = (glm::mat4 *) data;
   currentWvMat = *newMat;
 }
 
-template <typename EcsInterface>
+template<typename EcsInterface>
 void VulkanContext<EcsInterface>::step() {
   render(dataStore.get(), currentWvMat, meshResources, ecs);
 }
 
-template <typename EcsInterface>
+template<typename EcsInterface>
 void VulkanContext<EcsInterface>::reInitRendering() {
   vkDeviceWaitIdle(common.device);
   cleanupRendering();
@@ -105,8 +105,9 @@ void VulkanContext<EcsInterface>::reInitRendering() {
 }
 
 template<typename EcsInterface>
-void VulkanContext<EcsInterface>::registerMeshInstance(const std::string &meshFileName,
-                                                       const typename EcsInterface::EcsId id) {
+void VulkanContext<EcsInterface>::registerMeshInstance(
+    const std::string &meshFileName,
+    const typename EcsInterface::EcsId id) {
   for (auto &mesh : meshResources.at(meshFileName)) {
     MeshInstance<EcsInterface> instance;
     DataStore::AcquireStatus didAcquire = dataStore->acquire(instance.uboIdx);
