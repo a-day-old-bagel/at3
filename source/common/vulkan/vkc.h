@@ -40,22 +40,22 @@ namespace at3 {
       static VulkanContextCreateInfo<EcsInterface> defaults();
   };
 
-//  template<typename EcsInterface>
-//  class Texture;
-//  template<typename EcsInterface>
-//  class Texture2D;
-//  template<typename EcsInterface>
-//  class Texture2DArray;
-//  template<typename EcsInterface>
-//  class TextureCubeMap;
+  template<typename EcsInterface>
+  class Texture;
+  template<typename EcsInterface>
+  class Texture2D;
+  template<typename EcsInterface>
+  class Texture2DArray;
+  template<typename EcsInterface>
+  class TextureCubeMap;
 
   template<typename EcsInterface>
   class VulkanContext {
 
-//      friend class Texture<EcsInterface>;
-//      friend class Texture2D<EcsInterface>;
-//      friend class Texture2DArray<EcsInterface>;
-//      friend class TextureCubeMap<EcsInterface>;
+      friend class Texture<EcsInterface>;
+      friend class Texture2D<EcsInterface>;
+      friend class Texture2DArray<EcsInterface>;
+      friend class TextureCubeMap<EcsInterface>;
 
     public:
 
@@ -72,7 +72,7 @@ namespace at3 {
       VkcCommon common;
       std::unique_ptr<DataStore> dataStore;
       MeshRepository<EcsInterface> meshResources;
-      glm::mat4 currentWvMat;
+      glm::mat4 currentWvMat = glm::mat4(1.f);
       std::unique_ptr<rtu::topics::Subscription> sub_wvUpdate, sub_windowResize;
       VkDebugReportCallbackEXT callback;
       GlobalShaderDataStore globalData;
@@ -171,4 +171,4 @@ namespace at3 {
 
 }
 
-//#include "VulkanTexture.hpp"
+#include "VulkanTexture.hpp"

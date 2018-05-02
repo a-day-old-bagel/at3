@@ -11,7 +11,7 @@ add_library( ${AT3_TARGET_PREFIX}vulkan STATIC
   vkcImplInternalResources.h
   vkcMaterial.h vkcMaterial.cpp
   vkcTypes.h
-#  VulkanTexture.hpp VulkanTexture.cpp
+  VulkanTexture.hpp VulkanTexture.cpp
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}vulkan
   ${AT3_TARGET_PREFIX}external

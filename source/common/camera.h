@@ -20,7 +20,7 @@ namespace at3 {
       virtual ~Camera();
 
       virtual glm::mat4 worldView();
-      glm::mat4 lastWorldViewQueried; // set every time worldView is called (for cache)
+      glm::mat4 lastWorldViewQueried = glm::mat4(1.f); // set every time worldView is called (for cache)
 
       virtual glm::mat4 projection(float aspect, float alpha = 1.0f) const = 0;
 
@@ -37,7 +37,7 @@ namespace at3 {
 
   template <typename EcsInterface>
   glm::mat4 Camera<EcsInterface>::worldView() {
-    glm::mat4 wv;
+    glm::mat4 wv(1.f);
 
     // TODO: Reinvestigate this horrible crap
     SCENE_ reverseTransformLookup(wv, true, true, SceneObject<EcsInterface>::InheritedDOF::ALL);

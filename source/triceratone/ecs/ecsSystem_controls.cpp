@@ -57,7 +57,7 @@ namespace at3 {
       pyramidControls->up = glm::quat_cast(placement->mat) * glm::vec3(0.f, 0.f, 1.f);
 
       // zero control forces
-      pyramidControls->force = glm::vec3();
+      pyramidControls->force = glm::vec3(0, 0, 0);
 
       if (length(pyramidControls->accel) > 0.0f) {
         updateLookInfos();
@@ -68,7 +68,7 @@ namespace at3 {
             0, 0, PYR_UP_ACCEL
         } * glm::normalize(lastKnownHorizCtrlRot * pyramidControls->accel);
 
-        pyramidControls->accel = glm::vec3();
+        pyramidControls->accel = glm::vec3(0, 0, 0);
       }
     }
     for (auto id : (registries[1].ids)) { // Track/buggy
@@ -79,7 +79,7 @@ namespace at3 {
         // Calculate torque to apply
         trackControls->torque += TRACK_TORQUE * trackControls->control;
 
-        trackControls->control = glm::vec2();
+        trackControls->control = glm::vec2(0, 0);
       }
     }
     for (auto id : (registries[2].ids)) { // Player/Walking
@@ -100,7 +100,7 @@ namespace at3 {
         playerControls->forces = (playerControls->isRunning ? CHARA_RUN : CHARA_WALK) *
             glm::normalize(lastKnownHorizCtrlRot * glm::vec3(playerControls->horizControl, 0.f));
         // Clear the input
-        playerControls->horizControl = glm::vec2();
+        playerControls->horizControl = glm::vec2(0, 0);
       }
     }
     for (auto id: (registries[3].ids)) { // Free Control
@@ -120,7 +120,7 @@ namespace at3 {
         placement->mat[3][1] += movement.y;
         placement->mat[3][2] += movement.z;
 
-        freeControls->control = glm::vec3();
+        freeControls->control = glm::vec3(0, 0, 0);
       }
       if (freeControls->x10) {
         freeControls->x10 = 0;
@@ -176,13 +176,13 @@ namespace at3 {
         // Rotate object orientation according to the mouse motion
         float inversionValue = (mouseControls->invertedX ? 1.f : -1.f);
         placement->mat = glm::rotate(
-            glm::mat4(),
+            glm::mat4(1.f),
             (float)event->motion.xrel * settings::controls::mouseSpeed * ((float) M_PI / 180.0f) * inversionValue,
             { 0.0f, 0.0f, 1.0f }
         ) * placement->mat;
         inversionValue = (mouseControls->invertedY ? 1.f : -1.f);
         placement->mat = placement->mat * glm::rotate(
-            glm::mat4(),
+            glm::mat4(1.f),
             (float)event->motion.yrel * settings::controls::mouseSpeed * ((float) M_PI / 180.0f) * inversionValue,
             { 1.0f, 0.0f, 0.0f }
         );

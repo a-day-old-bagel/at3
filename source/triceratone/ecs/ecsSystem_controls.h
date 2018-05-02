@@ -12,8 +12,8 @@ using namespace ezecs;
 namespace at3 {
   class EntityAssociatedERM;
   class ControlSystem : public System<ControlSystem> {
-      glm::mat4 lastKnownWorldView;
-      glm::mat3 lastKnownHorizCtrlRot;
+      glm::mat4 lastKnownWorldView = glm::mat4(1.f);
+      glm::mat3 lastKnownHorizCtrlRot = glm::mat3(1.f);
       bool lookInfoIsFresh = false;
 
       rtu::topics::Subscription updateWvMatSub;

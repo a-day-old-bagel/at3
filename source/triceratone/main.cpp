@@ -85,7 +85,7 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       assert(initSuccess);
 
       // an identity matrix
-      glm::mat4 ident;
+      glm::mat4 ident(1.f);
 
 
 

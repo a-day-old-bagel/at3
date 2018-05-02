@@ -128,12 +128,8 @@ target_include_directories( ${AT3_TARGET_PREFIX}external INTERFACE SYSTEM
   ${CMAKE_CURRENT_SOURCE_DIR}/assimp/include
   ${CMAKE_CURRENT_SOURCE_DIR}/rapidjson/include
   ${CMAKE_CURRENT_SOURCE_DIR}/stb
-
-#  ${CMAKE_CURRENT_SOURCE_DIR}/gli
-#  ${CMAKE_CURRENT_SOURCE_DIR}/gli/external  # GLM is here
-
-  ${CMAKE_CURRENT_SOURCE_DIR}/glm
-
+  ${CMAKE_CURRENT_SOURCE_DIR}/gli
+  ${CMAKE_CURRENT_SOURCE_DIR}/gli/external  # GLM is here
   ${${AT3_TARGET_PREFIX}external_includes}
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}external INTERFACE

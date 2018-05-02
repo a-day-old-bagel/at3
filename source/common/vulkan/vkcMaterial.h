@@ -15,8 +15,8 @@
 namespace at3 {
 
   struct VShaderInput {
-    glm::mat4 model;
-    glm::mat4 normal;
+    glm::mat4 model = glm::mat4(1.f);
+    glm::mat4 normal = glm::mat4(1.f);
   };
 
   struct GlobalShaderData {

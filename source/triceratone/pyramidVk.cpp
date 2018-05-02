@@ -20,18 +20,19 @@ using namespace rtu::topics;
 
 static float pyrFireSize = 0.3f, pyrFireScale = 0.15f;
 static glm::mat4 pyrFireWiggle(const glm::mat4& transformIn, uint32_t time) {
-  return glm::scale(glm::mat4(), { 1.f, 1.f, pyrFireSize + pyrFireScale * sin(time * 0.1f) });
+  return glm::scale(glm::mat4(1.f), { 1.f, 1.f, pyrFireSize + pyrFireScale * sin(time * 0.1f) });
 }
 
 static glm::mat4 pyrTopRotate(const glm::mat4& transformIn, uint32_t time) {
-  return glm::rotate(glm::mat4(), time * 0.002f, {0.f, 0.f, 1.f});
+  return glm::rotate(glm::mat4(1.f), time * 0.002f, {0.f, 0.f, 1.f});
 }
 
 namespace at3 {
 
   PyramidVk::PyramidVk(ezecs::State &state, VulkanContext<EntityComponentSystemInterface> *context, Scene_ &scene,
                        glm::mat4 &transform) : mpState(&state), mpScene(&scene), vkc(context) {
-    glm::mat4 ident;
+
+    glm::mat4 ident(1.f);
     glm::mat4 pyrFirMat = glm::scale(glm::rotate(glm::translate(ident, {0.f, 0.f, -0.4f}),
                                                  (float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f)), {0.105f, 0.105f, 0.15f});
 

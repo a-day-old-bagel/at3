@@ -184,7 +184,7 @@ namespace at3 {
   void SceneObject<EcsInterface>::m_draw(Transform &modelWorld, const glm::mat4 &worldView,
                                          const glm::mat4 &projection, bool debug) {
     TransformRAII mw(modelWorld);
-    glm::mat4 myTransform;
+    glm::mat4 myTransform(1.f);
     bool hasTransform = false;
 
     if (ecs->hasTransform(id)) {
@@ -231,7 +231,7 @@ namespace at3 {
   template<typename EcsInterface>
   void SceneObject<EcsInterface>::m_traverseAndCache(Transform &modelWorld) {
     TransformRAII mw(modelWorld);
-    glm::mat4 myTransform;
+    glm::mat4 myTransform(1.f);
     bool hasTransform = false;
 
     if (ecs->hasTransform(id)) {

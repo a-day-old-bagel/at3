@@ -29,7 +29,7 @@ namespace at3 {
 
   template <typename EcsInterface>
   ThirdPersonCamera<EcsInterface>::ThirdPersonCamera(float up, float back, float tilt) {
-    glm::mat4 ident;
+    glm::mat4 ident(1.f);
     glm::mat4 camMat = glm::rotate(glm::translate(ident, {0.f, -back, 0.f}), tilt, glm::vec3(1.0f, 0.0f, 0.0f));
     mpCamera = std::shared_ptr<PerspectiveCamera<EcsInterface>>
         (new PerspectiveCamera<EcsInterface>(camMat));

@@ -20,10 +20,10 @@ using namespace rtu::topics;
 namespace at3 {
 
   static glm::mat4 wheelScaler(const glm::mat4& transformIn, uint32_t time) {
-    return glm::scale(glm::mat4(), {0.5f, WHEEL_RADIUS, WHEEL_RADIUS});
+    return glm::scale(glm::mat4(1.f), {0.5f, WHEEL_RADIUS, WHEEL_RADIUS});
   }
   static glm::mat4 chassisScalar(const glm::mat4& transformIn, uint32_t time) {
-    return glm::rotate(glm::scale(glm::mat4(), {1.8f, 2.8f, 1.f}), (float)M_PI, glm::vec3(1.f, 0.f, 0.f));
+    return glm::rotate(glm::scale(glm::mat4(1.f), {1.8f, 2.8f, 1.f}), (float)M_PI, glm::vec3(1.f, 0.f, 0.f));
   }
 
   DuneBuggyVk::DuneBuggyVk(ezecs::State &state, VulkanContext<EntityComponentSystemInterface> *context, Scene_ &scene,
@@ -33,7 +33,7 @@ namespace at3 {
 
     ezecs::entityId chassisId = mpChassis->getId();
 
-    glm::mat4 ident;
+    glm::mat4 ident(1.f);
     std::vector<float> chassisVerts = {
         1.7f,  1.7f, -0.4f,
         1.7f, -1.7f, -0.4f,

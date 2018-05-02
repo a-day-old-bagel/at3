@@ -37,18 +37,8 @@ namespace {
   typedef std::vector<float>* floatVecPtr;
 
   struct Placement : public Component<Placement> {
-    glm::mat4 mat {
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1
-    };
-    glm::mat4 absMat {
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1
-    };
+    glm::mat4 mat = glm::mat4(1.f);
+    glm::mat4 absMat = glm::mat4(1.f);
     Placement(glm::mat4 mat);
     glm::vec3 getTranslation(bool abs = false);
     glm::vec3 getLookAt(bool abs = false);
@@ -58,7 +48,7 @@ namespace {
   };
 
   struct TransformFunction : public Component<TransformFunction> {
-    glm::mat4 transformed;
+    glm::mat4 transformed = glm::mat4(1.f);
     transformFunc func;
     TransformFunction(transformFunc func);
   };
@@ -100,18 +90,18 @@ namespace {
   EZECS_COMPONENT_DEPENDENCIES(Physics, Placement)
 
   struct PyramidControls : public Component<PyramidControls> {
-    glm::vec3 accel;
-    glm::vec3 force;
-    glm::vec3 up;
+    glm::vec3 accel = glm::vec3(0, 0, 0);
+    glm::vec3 force = glm::vec3(0, 0, 0);
+    glm::vec3 up = glm::vec3(0, 0, 1);
     int style;
     PyramidControls();
   };
   EZECS_COMPONENT_DEPENDENCIES(PyramidControls, Physics)
 
   struct TrackControls : public Component<TrackControls> {
-    glm::vec2 control;
-    glm::vec2 brakes;
-    glm::vec2 torque;
+    glm::vec2 control = glm::vec2(0, 0);
+    glm::vec2 brakes = glm::vec2(0, 0);
+    glm::vec2 torque = glm::vec2(0, 0);
     bool hasDriver = false;
     std::vector<WheelInfo> wheels;
     btRaycastVehicle *vehicle;
@@ -121,8 +111,9 @@ namespace {
   EZECS_COMPONENT_DEPENDENCIES(TrackControls, Physics)
 
   struct PlayerControls : public Component<PlayerControls> {
-    glm::vec2 horizControl;
-    glm::vec3 forces, up;
+    glm::vec2 horizControl = glm::vec2(0, 0);
+    glm::vec3 forces = glm::vec3(0, 0, 0);
+    glm::vec3 up = glm::vec3(0, 0, 0);
     float equilibriumOffset = 0.f;
     bool jumpRequested = false;
     bool jumpInProgress = false;
@@ -133,7 +124,7 @@ namespace {
   EZECS_COMPONENT_DEPENDENCIES(PlayerControls, Physics)
 
   struct FreeControls : public Component<FreeControls> {
-    glm::vec3 control;
+    glm::vec3 control = glm::vec3(0, 0, 0);
     int x10 = 0;
     FreeControls();
   };

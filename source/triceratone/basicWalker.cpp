@@ -14,7 +14,7 @@ namespace at3 {
   BasicWalker::BasicWalker(ezecs::State &state, Scene_ &scene, glm::mat4 &transform)
       : mpState(&state), mpScene(&scene) {
 
-    glm::mat4 ident;
+    glm::mat4 ident(1.f);
     glm::mat4 rotatedTransform = glm::rotate(transform, (float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f));
 
     mpPhysicsBody = std::make_shared<SceneObject_>();
@@ -67,7 +67,7 @@ namespace at3 {
     return glm::scale(
         glm::rotate(
             glm::translate(
-                glm::mat4(),
+                glm::mat4(1.f),
                 {0.f, 0.f, -HUMAN_HEIGHT * 0.165f + correction}),
             camPlacement->getHorizRot(), glm::vec3(0.0f, 0.0f, 1.0f)),
         {HUMAN_WIDTH * 0.5f, HUMAN_DEPTH * 0.5f, HUMAN_HEIGHT * 0.5f});

@@ -244,7 +244,7 @@ namespace at3 {
       physics->rigidBody->setLinearFactor(btVector3(1, 1, zFactor));
 
       // zero controls
-      ctrls->forces = glm::vec3();
+      ctrls->forces = glm::vec3(0, 0, 0);
       ctrls->jumpRequested = false;
       ctrls->isRunning = false;
     }
@@ -292,8 +292,8 @@ namespace at3 {
         trackControls->vehicle->updateWheelTransform(i, true);
       }
       // zero control forces
-      trackControls->torque = glm::vec2();
-      trackControls->brakes = glm::vec2();
+      trackControls->torque = glm::vec2(0, 0);
+      trackControls->brakes = glm::vec2(0, 0);
     }
 
     // All Physics
@@ -303,7 +303,7 @@ namespace at3 {
       Placement *placement;
       state->get_Placement(id, &placement);
       btTransform transform;
-      glm::mat4 newTransform;
+      glm::mat4 newTransform(1.f);
       switch (physics->geom) {
         case Physics::WHEEL: {
           WheelInfo wi = *((WheelInfo*)physics->customData);
@@ -381,15 +381,9 @@ namespace at3 {
           EZECS_CHECK_PRINT(EZECS_ERR_MSG(status, "Attempted to add wheel to nonexistent vehicle!\n"));
           return false;
         }
-        printf("wheel add:\n%2.f %2.f %2.f\n%2.f %2.f %2.f\n%2.f %2.f %2.f\n",
-               initInfo.connectionPoint.x(), initInfo.connectionPoint.y(), initInfo.connectionPoint.z(),
-               initInfo.direction.x(), initInfo.direction.y(), initInfo.direction.z(),
-               initInfo.axle.x(), initInfo.axle.y(), initInfo.axle.z()
-        );
         trackControls->vehicle->addWheel(initInfo.connectionPoint, initInfo.direction, initInfo.axle,
                                          initInfo.suspensionRestLength, initInfo.wheelRadius,
                                          trackControls->tuning, initInfo.isFrontWheel);
-        printf("wheel add finished\n");
         initInfo.wi.bulletWheelId = (int)trackControls->wheels.size();
         physics->customData = new WheelInfo(initInfo.wi);
         trackControls->wheels.push_back(initInfo.wi);
