@@ -7,3 +7,12 @@
 *.spv filter=lfs diff=lfs merge=lfs -text
 *.fbx filter=lfs diff=lfs merge=lfs -text
 *.ktx filter=lfs diff=lfs merge=lfs -text
+*.mtl filter=lfs diff=lfs merge=lfs -text
+*.x filter=lfs diff=lfs merge=lfs -text
+*.bvh filter=lfs diff=lfs merge=lfs -text
+*.dxf filter=lfs diff=lfs merge=lfs -text
+*.material filter=lfs diff=lfs merge=lfs -text
+*.skeleton.xml filter=lfs diff=lfs merge=lfs -text
+*.mesh filter=lfs diff=lfs merge=lfs -text
+*.mesh.xml filter=lfs diff=lfs merge=lfs -text
+*.ms3d filter=lfs diff=lfs merge=lfs -text
