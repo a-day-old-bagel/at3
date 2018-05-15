@@ -702,6 +702,8 @@ void VulkanContext<EcsInterface>::updateDescriptorSets(DataStore *dataStore) {
     VkResult res = vkAllocateDescriptorSets(common.device, &allocInfo, &common.matData.descSets[i]);
     AT3_ASSERT(res == VK_SUCCESS, "Error allocating global descriptor set");
 
+    common.setWriters.clear();  // This *could* be faster than recreating a vector every update.
+
     common.bufferInfo = {};
     common.bufferInfo.buffer = dataStore->getPage(i);
     common.bufferInfo.offset = 0;
@@ -895,8 +897,8 @@ void VulkanContext<EcsInterface>::render(
   for (auto pair : meshAssets) {
     for (auto mesh : pair.second) {
       for (auto instance : mesh.instances) {
-        glm::uint32 uboSlot = instance.uboIdx >> 16;
-        glm::uint32 uboPage = instance.uboIdx & 0xFFFF;
+        glm::uint32 uboSlot = instance.uboIdx >> 16u;
+        glm::uint32 uboPage = instance.uboIdx & 0xFFFFu;
 
         if (currentlyBound != uboPage) {
           vkCmdBindDescriptorSets(common.renderData.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,

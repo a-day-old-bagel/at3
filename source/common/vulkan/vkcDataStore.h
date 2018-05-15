@@ -140,7 +140,6 @@ namespace at3 {
         if (!p) {
           p = &createNewPage();
           newPage = true;
-          printf("new\n");
         }
 
         uint32_t slot = p->freeIndices.front();
