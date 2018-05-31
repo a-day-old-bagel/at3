@@ -63,19 +63,21 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo <EcsInterface
   // TODO: Handle the multiple-objects-in-one-file case (true -> false)?
   for (auto &path : fs::directory_iterator("./assets/models/")) {
     if (fs::is_directory(path)) { continue; }
-    printf("\n%s -> %s\n", getFileNameOnly(path).c_str(), getFileNameRelative(path).c_str());
+    printf("\n%s:\nLoading Mesh: %s\n", getFileNameOnly(path).c_str(), getFileNameRelative(path).c_str());
     meshResources.emplace(getFileNameOnly(path), loadMesh(getFileNameRelative(path).c_str(), true));
+    fflush(stdout);
   }
+  printf("\n");
+  fflush(stdout);
 
-  printf("Num meshes: %lu\n", meshResources.size());
-  dataStore = std::make_unique<DataStore>(common);
+  dataStore = std::make_unique<UboPageMgr>(common);
 
   // Init the vulkan swapchain, pipeline, etc.
 
   initRendering((uint32_t) meshResources.size());
-  initGlobalShaderData();
+//  initGlobalShaderData();
 
-  testTex.loadFromFile("assets/models/cerberus/albedo.ktx", VK_FORMAT_R8G8B8A8_UNORM, this,
+  testTex.loadFromFile(/*"assets/models/cerberus/albedo.ktx"*/ "assets/textures/pyramid_bottom.ktx", VK_FORMAT_R8G8B8A8_UNORM, this,
                        common.deviceQueues.transferQueue);
 }
 
@@ -110,9 +112,9 @@ void VulkanContext<EcsInterface>::registerMeshInstance(
     const typename EcsInterface::EcsId id) {
   for (auto &mesh : meshResources.at(meshFileName)) {
     MeshInstance<EcsInterface> instance;
-    DataStore::AcquireStatus didAcquire = dataStore->acquire(instance.uboIdx);
-    AT3_ASSERT(didAcquire != DataStore::AcquireStatus::FAILURE, "Error acquiring ubo index");
-    if (didAcquire == DataStore::AcquireStatus::NEWPAGE) {
+    UboPageMgr::AcquireStatus didAcquire = dataStore->acquire(instance.uboIdx);
+    AT3_ASSERT(didAcquire != UboPageMgr::AcquireStatus::FAILURE, "Error acquiring ubo index");
+    if (didAcquire == UboPageMgr::AcquireStatus::NEWPAGE) {
       updateDescriptorSets(dataStore.get());
     }
     instance.id = id;

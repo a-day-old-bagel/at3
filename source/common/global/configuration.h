@@ -32,6 +32,9 @@
 // micro$haft® winderp™  ---  http://lolengine.net/blog/2011/3/4/fuck-you-microsoft-near-far-macros
 #undef near
 #undef far
+// and more windows stupidity
+#undef min
+#undef max
 
 // Physics and controls defines
 #define HUMAN_HEIGHT 1.83f

@@ -498,7 +498,8 @@ void VulkanContext<EcsInterface>::initGlobalShaderData() {
     uint32_t structSize = static_cast<uint32_t>(sizeof(GlobalShaderData));
     size_t uboAlignment = common.gpu.deviceProps.limits.minUniformBufferOffsetAlignment;
 
-    globalData.size = (structSize / uboAlignment) * uboAlignment + ((structSize % uboAlignment) > 0 ? uboAlignment : 0);
+    globalData.size = (uint32_t)
+        ((structSize / uboAlignment) * uboAlignment + ((structSize % uboAlignment) > 0 ? uboAlignment : 0));
 
     createBuffer(globalData.buffer, globalData.mem, globalData.size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);

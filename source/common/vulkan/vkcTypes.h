@@ -152,17 +152,17 @@ namespace at3 {
 
 
 
-  // TODO: Get rid of this if new texture code matches
-  struct VkcTextureResource {
-    VkImage image;
-    at3::VkcAllocation deviceMemory;
-    VkImageView view;
-    VkFormat format;
-
-    uint32_t width;
-    uint32_t height;
-    uint32_t numChannels;
-  };
+//  // TODO: Get rid of this if new texture code matches
+//  struct VkcTextureResource {
+//    VkImage image;
+//    at3::VkcAllocation deviceMemory;
+//    VkImageView view;
+//    VkFormat format;
+//
+//    uint32_t width;
+//    uint32_t height;
+//    uint32_t numChannels;
+//  };
 
 
 
@@ -185,10 +185,28 @@ namespace at3 {
     uint32_t vertexSize;
   };
 
+  struct UboIdx {
+    private:
+      uint32_t raw;
+    public:
+      UboIdx() : raw(std::numeric_limits<uint32_t>::max()) {
+        // raw set to max so that things will crash if the index is used without first setting it to a valid value.
+      }
+      inline void set(const uint32_t page, const uint32_t slot) {
+        raw = slot << 16u;
+        raw += page;
+      }
+      inline uint32_t getPage() const {
+        return raw & 0xFFFFu;
+      }
+      inline uint32_t getSlot() const {
+        return raw >> 16u;
+      }
+  };
   template<typename EcsInterface>
   struct MeshInstance {
     typename EcsInterface::EcsId id = 0;
-    uint32_t uboIdx;
+    UboIdx uboIdx;
   };
 
   template<typename EcsInterface>

@@ -1,58 +1,58 @@
 #pragma once
 
-// TODO: Get rid of this if new texture code matches - uses all existing code if possible
-template<typename EcsInterface>
-void VulkanContext<EcsInterface>::makeTexture(VkcTextureResource &outResource, const char *filepath) {
-  VkcTextureResource &t = outResource;
-
-  int texWidth, texHeight, texChannels;
-
-  //STBI_rgb_alpha forces an alpha even if the image doesn't have one
-  stbi_uc *pixels = stbi_load(filepath, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-
-  AT3_ASSERT(pixels, "Could not load image");
-
-  VkDeviceSize imageSize = texWidth * texHeight * 4;
-
-  VkBuffer stagingBuffer;
-  VkcAllocation stagingBufferMemory;
-
-  createBuffer(stagingBuffer, stagingBufferMemory, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-  void *data;
-  vkMapMemory(common.device, stagingBufferMemory.handle, stagingBufferMemory.offset, imageSize, 0, &data);
-  memcpy(data, pixels, static_cast<size_t>(imageSize));
-  vkUnmapMemory(common.device, stagingBufferMemory.handle);
-
-  stbi_image_free(pixels);
-
-  t.width = texWidth;
-  t.height = texHeight;
-  t.numChannels = texChannels;
-  t.format = VK_FORMAT_R8G8B8A8_UNORM;
-
-  //VK image format must match buffer
-  createImage(t.image, t.width, t.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
-              VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-
-  allocMemoryForImage(t.deviceMemory, t.image, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-  vkBindImageMemory(common.device, t.image, t.deviceMemory.handle, t.deviceMemory.offset);
-
-  transitionImageLayout(t.image, t.format,
-                        VK_IMAGE_LAYOUT_UNDEFINED,
-                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-  copyBufferToImage(stagingBuffer, t.image, t.width, t.height);
-
-  transitionImageLayout(t.image, t.format,
-                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-  createImageView(t.view, t.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, t.image);
-
-  vkDestroyBuffer(common.device, stagingBuffer, nullptr);
-  freeDeviceMemory(stagingBufferMemory);
-}
+//// TODO: Get rid of this if new texture code matches - uses all existing code if possible
+//template<typename EcsInterface>
+//void VulkanContext<EcsInterface>::makeTexture(VkcTextureResource &outResource, const char *filepath) {
+//  VkcTextureResource &t = outResource;
+//
+//  int texWidth, texHeight, texChannels;
+//
+//  //STBI_rgb_alpha forces an alpha even if the image doesn't have one
+//  stbi_uc *pixels = stbi_load(filepath, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+//
+//  AT3_ASSERT(pixels, "Could not load image");
+//
+//  VkDeviceSize imageSize = texWidth * texHeight * 4;
+//
+//  VkBuffer stagingBuffer;
+//  VkcAllocation stagingBufferMemory;
+//
+//  createBuffer(stagingBuffer, stagingBufferMemory, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+//               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+//
+//  void *data;
+//  vkMapMemory(common.device, stagingBufferMemory.handle, stagingBufferMemory.offset, imageSize, 0, &data);
+//  memcpy(data, pixels, static_cast<size_t>(imageSize));
+//  vkUnmapMemory(common.device, stagingBufferMemory.handle);
+//
+//  stbi_image_free(pixels);
+//
+//  t.width = texWidth;
+//  t.height = texHeight;
+//  t.numChannels = texChannels;
+//  t.format = VK_FORMAT_R8G8B8A8_UNORM;
+//
+//  //VK image format must match buffer
+//  createImage(t.image, t.width, t.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
+//              VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+//
+//  allocMemoryForImage(t.deviceMemory, t.image, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+//  vkBindImageMemory(common.device, t.image, t.deviceMemory.handle, t.deviceMemory.offset);
+//
+//  transitionImageLayout(t.image, t.format,
+//                        VK_IMAGE_LAYOUT_UNDEFINED,
+//                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+//  copyBufferToImage(stagingBuffer, t.image, t.width, t.height);
+//
+//  transitionImageLayout(t.image, t.format,
+//                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+//                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+//
+//  createImageView(t.view, t.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, t.image);
+//
+//  vkDestroyBuffer(common.device, stagingBuffer, nullptr);
+//  freeDeviceMemory(stagingBufferMemory);
+//}
 
 template<typename EcsInterface>
 MeshResources <EcsInterface> VulkanContext<EcsInterface>::loadMesh(

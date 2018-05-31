@@ -684,7 +684,7 @@ void VulkanContext<EcsInterface>::initRendering(uint32_t num) {
 }
 
 template<typename EcsInterface>
-void VulkanContext<EcsInterface>::updateDescriptorSets(DataStore *dataStore) {
+void VulkanContext<EcsInterface>::updateDescriptorSets(UboPageMgr *dataStore) {
 
   size_t oldNumPages = common.matData.descSets.size();
   size_t newNumPages = dataStore->getNumPages();
@@ -822,7 +822,7 @@ void VulkanContext<EcsInterface>::cleanupRendering() {
 
 template<typename EcsInterface>
 void VulkanContext<EcsInterface>::render(
-    DataStore *dataStore, const glm::mat4 &wvMat, const MeshRepository <EcsInterface> &meshAssets,
+    UboPageMgr *dataStore, const glm::mat4 &wvMat, const MeshRepository <EcsInterface> &meshAssets,
     EcsInterface *ecs) {
 
   glm::mat4 proj = glm::perspective(glm::radians(60.f), common.windowWidth / (float) common.windowHeight, 0.1f,
@@ -897,8 +897,8 @@ void VulkanContext<EcsInterface>::render(
   for (auto pair : meshAssets) {
     for (auto mesh : pair.second) {
       for (auto instance : mesh.instances) {
-        glm::uint32 uboSlot = instance.uboIdx >> 16u;
-        glm::uint32 uboPage = instance.uboIdx & 0xFFFFu;
+        glm::uint32 uboSlot = instance.uboIdx.getSlot();
+        glm::uint32 uboPage = instance.uboIdx.getPage();
 
         if (currentlyBound != uboPage) {
           vkCmdBindDescriptorSets(common.renderData.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,

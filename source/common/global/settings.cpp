@@ -26,7 +26,7 @@ namespace at3 {
     }
 
     namespace controls {
-      float mouseSpeed = 0.04f;
+      float mouseSpeed = 0.1f;
     }
 
     // The settings registry contains mappings from setting name to memory location.

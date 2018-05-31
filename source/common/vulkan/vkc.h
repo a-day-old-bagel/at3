@@ -19,7 +19,7 @@
 
 #include "vkcTypes.h"
 #include "vkcAlloc.h"
-#include "vkcDataStore.h"
+#include "vkcUboPageMgr.h"
 #include "vkcMaterial.h"
 
 #define SUBSCRIBE_TOPIC(e, x) std::make_unique<rtu::topics::Subscription>(e, RTU_MTHD_DLGT(&VulkanContext::x, this));
@@ -70,7 +70,7 @@ namespace at3 {
 
       EcsInterface *ecs;
       VkcCommon common;
-      std::unique_ptr<DataStore> dataStore;
+      std::unique_ptr<UboPageMgr> dataStore;
       MeshRepository<EcsInterface> meshResources;
       glm::mat4 currentWvMat = glm::mat4(1.f);
       std::unique_ptr<rtu::topics::Subscription> sub_wvUpdate, sub_windowResize;
@@ -128,14 +128,14 @@ namespace at3 {
 
 
       void initRendering(uint32_t num);
-      void updateDescriptorSets(DataStore *dataStore);
+      void updateDescriptorSets(UboPageMgr *dataStore);
       void createMainRenderPass();
       void createDepthBuffer();
-      void render(DataStore *dataStore, const glm::mat4 &wvMat, const MeshRepository<EcsInterface> &meshAssets,
+      void render(UboPageMgr *dataStore, const glm::mat4 &wvMat, const MeshRepository<EcsInterface> &meshAssets,
                   EcsInterface *ecs);
 
 
-      void makeTexture(VkcTextureResource &outResource, const char *filepath);
+//      void makeTexture(VkcTextureResource &outResource, const char *filepath);
       void initGlobalShaderData();
       MeshResources <EcsInterface> loadMesh(const char *filepath, bool combineSubMeshes);
       void setGlobalVertexLayout(std::vector<EMeshVertexAttribute> layout);

@@ -136,6 +136,8 @@ namespace at3 {
         height = static_cast<uint32_t>(tex2D[0].extent().y);
         mipLevels = static_cast<uint32_t>(tex2D.levels());
 
+        printf("Loading Texture: %s (%u x %u with %u mip levels).\n", filename.c_str(), width, height, mipLevels);
+
         // Get device properites for the requested texture format
         VkFormatProperties formatProperties;
         vkGetPhysicalDeviceFormatProperties(ctxt->common.gpu.device, format, &formatProperties);

@@ -4,7 +4,7 @@ add_subdirectory( shaders )
 add_library( ${AT3_TARGET_PREFIX}vulkan STATIC
   vkc.h
   vkcAlloc.h vkcAlloc.cpp
-  vkcDataStore.h vkcDataStore.cpp
+  vkcUboPageMgr.h vkcUboPageMgr.cpp
   vkcImplApi.h
   vkcImplInternalDynamic.h
   vkcImplInternalCallOnce.h
