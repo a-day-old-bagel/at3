@@ -22,7 +22,7 @@ namespace at3 {
   template <typename EcsInterface>
   class Scene {
     private:
-      std::unordered_map<const SceneObject<EcsInterface> *, std::shared_ptr<SceneObject<EcsInterface>>> m_objects;
+      std::unordered_map<const SceneObject<EcsInterface> *, std::shared_ptr<SceneObject<EcsInterface>>> objects;
 
     public:
 
@@ -72,20 +72,20 @@ namespace at3 {
 
   template <typename EcsInterface>
   void Scene<EcsInterface>::addObject(std::shared_ptr<SceneObject<EcsInterface>> object) {
-    this->m_objects.insert({object.get(), object});
+    this->objects.insert({object.get(), object});
   }
 
   template <typename EcsInterface>
   void Scene<EcsInterface>::removeObject(const SceneObject<EcsInterface> *address) {
-    auto iterator = m_objects.find(address);
-    if (iterator != m_objects.end()) {
-      m_objects.erase(iterator);
+    auto iterator = objects.find(address);
+    if (iterator != objects.end()) {
+      objects.erase(iterator);
     }
   }
 
   template <typename EcsInterface>
   void Scene<EcsInterface>::clear() {
-    m_objects.clear();
+    objects.clear();
   }
 
   template <typename EcsInterface>
@@ -99,8 +99,8 @@ namespace at3 {
     auto projection = camera.projection(graphicsBackend::getAspect());
 
     // draw each top level object
-    for (auto object : this->m_objects) {
-      object.second->m_draw(
+    for (auto object : this->objects) {
+      object.second->drawInternal(
           modelWorld,
           worldView,
           projection,
@@ -115,8 +115,8 @@ namespace at3 {
     TransformStack modelWorld;
 
     // draw each top level object
-    for (auto object : this->m_objects) {
-      object.second->m_traverseAndCache(modelWorld);
+    for (auto object : this->objects) {
+      object.second->traverseAndCache(modelWorld);
     }
   }
 }

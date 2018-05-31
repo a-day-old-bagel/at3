@@ -23,7 +23,7 @@ namespace at3 {
   template <typename EcsInterface>
   class SkyBox : public SceneObject<EcsInterface> {
       GLuint vertices;//, texture;
-      void m_drawSurface( const glm::mat4 &modelView, const glm::mat4 &projection);
+      void drawSurface(const glm::mat4 &modelView, const glm::mat4 &projection);
 
       std::shared_ptr<LoadedTexture> currentTexture;
 
@@ -64,11 +64,11 @@ namespace at3 {
     glm::mat4 axesCorrection = glm::rotate((float)(M_PI * 0.5f), glm::vec3(1.f, 0.f, 0.f));
     glm::mat4 reverseView = axesCorrection * glm::transpose(worldView);
     glm::mat4 inverseProj = glm::inverse(projection);
-    m_drawSurface(reverseView, inverseProj);
+    drawSurface(reverseView, inverseProj);
   }
 
   template <typename EcsInterface>
-  void SkyBox<EcsInterface>::m_drawSurface(const glm::mat4 &modelView, const glm::mat4 &projection) {
+  void SkyBox<EcsInterface>::drawSurface(const glm::mat4 &modelView, const glm::mat4 &projection) {
     auto shader = Shaders::skyQuadShader();
     shader->use();
 

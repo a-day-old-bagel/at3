@@ -12,13 +12,13 @@ namespace at3 {
 
   BasicWalkerVk::BasicWalkerVk(ezecs::State &state, VulkanContext<EntityComponentSystemInterface> *context,
                                Scene_ &scene, glm::mat4 &transform)
-      : mpState(&state), mpScene(&scene) {
+      : state(&state), scene(&scene) {
 
     glm::mat4 ident(1.f);
     glm::mat4 rotatedTransform = glm::rotate(transform, (float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f));
 
-    mpPhysicsBody = std::make_shared<SceneObject_>();
-    entityId physicalId = mpPhysicsBody->getId();
+    physicsBody = std::make_shared<SceneObject_>();
+    entityId physicalId = physicsBody->getId();
     state.add_Placement(physicalId, transform);
     state.add_Physics(physicalId, 1.f, nullptr, Physics::CHARA);
     Physics* physics;
@@ -26,32 +26,32 @@ namespace at3 {
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
     state.add_PlayerControls(physicalId);
 
-    mpVisualBody = std::make_shared<MeshObjectVk_>(context, "sphere", "pyramid_bottom.png", ident, MeshObject_::SUNNY);
+    visualBody = std::make_shared<MeshObjectVk_>(context, "sphere", "pyramid_bottom.png", ident, MeshObject_::SUNNY);
 
-    entityId bodyId = mpVisualBody->getId();
+    entityId bodyId = visualBody->getId();
     state.add_TransformFunction(bodyId, RTU_MTHD_DLGT(&BasicWalkerVk::bodyVisualTransform, this));
-    mpPhysicsBody->addChild(mpVisualBody);
+    physicsBody->addChild(visualBody);
 
-    mpCamera = std::make_shared<ThirdPersonCamera_> (0.f, 5.f, (float) M_PI * 0.5f);
-    mpVisualBody->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
+    camera = std::make_shared<ThirdPersonCamera_> (0.f, 5.f, (float) M_PI * 0.5f);
+    visualBody->addChild(camera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
 
     ctrlId = physicalId;
-    camGimbalId = mpCamera->mpCamGimbal->getId();
+    camGimbalId = camera->mpCamGimbal->getId();
 
     addToScene();
   }
   std::shared_ptr<PerspectiveCamera_> BasicWalkerVk::getCamPtr() {
-    return mpCamera->mpCamera;
+    return camera->mpCamera;
   }
   void BasicWalkerVk::addToScene() {
-    mpScene->addObject(mpPhysicsBody);
+    scene->addObject(physicsBody);
   }
 
   glm::mat4 BasicWalkerVk::bodyVisualTransform(const glm::mat4 &transformIn, uint32_t time) {
     Placement *camPlacement;
-    mpState->get_Placement(mpCamera->mpCamGimbal->getId(), &camPlacement);
+    state->get_Placement(camera->mpCamGimbal->getId(), &camPlacement);
     PlayerControls *controls;
-    mpState->get_PlayerControls(mpPhysicsBody->getId(), &controls);
+    state->get_PlayerControls(physicsBody->getId(), &controls);
     float correction = 0.f;
     if (controls->isGrounded) {
       correction = controls->equilibriumOffset;
@@ -74,7 +74,7 @@ namespace at3 {
   void BasicWalkerVk::makeActiveControl(void *nothing) {
     publish<entityId>("switch_to_walking_controls", ctrlId);
     publish<entityId>("switch_to_mouse_controls", camGimbalId);
-    publish<std::shared_ptr<PerspectiveCamera_>>("set_primary_camera", mpCamera->mpCamera);
+    publish<std::shared_ptr<PerspectiveCamera_>>("set_primary_camera", camera->mpCamera);
   }
 }
 #pragma clang diagnostic pop

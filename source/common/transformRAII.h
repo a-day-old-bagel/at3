@@ -32,8 +32,8 @@ namespace at3 {
    */
   class TransformRAII : public Transform {
     private:
-      Transform *m_base;
-      size_t m_originalSize;
+      Transform *base;
+      size_t originalSize;
     public:
       /**
        * Construct a transform stack on top of the given stack which unwinds
@@ -61,7 +61,7 @@ namespace at3 {
       /**
        * Look at the current transform represented by the stack.
        */
-      const glm::mat4 &peek() const { return m_base->peek(); }
+      const glm::mat4 &peek() const { return base->peek(); }
 
       /**
        * Push the given matrix onto the transform stack. This is essentially a
@@ -71,7 +71,7 @@ namespace at3 {
        *
        * \sa operator*=()
        */
-      void push(glm::mat4 matrix) { m_base->push(matrix); }
+      void push(glm::mat4 matrix) { base->push(matrix); }
 
       /**
        * Remove the last matrix transform from the top of the transform stack.
@@ -82,9 +82,9 @@ namespace at3 {
        *
        * \return Current size of the transform stack.
        */
-      size_t size() { return m_base->size(); }
+      size_t size() { return base->size(); }
     protected:
-      Transform *getBase() { return m_base; }
+      Transform *getBase() { return base; }
       void unwind(size_t size);
   };
 }

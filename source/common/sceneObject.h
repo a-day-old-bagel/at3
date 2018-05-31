@@ -39,9 +39,9 @@ namespace at3 {
       std::unordered_map<
           const SceneObject<EcsInterface> *,
           std::shared_ptr<SceneObject<EcsInterface>>
-      > m_children;
-      SceneObject<EcsInterface> *m_parent = NULL;
-      int m_inheritedDOF = ALL;
+      > children;
+      SceneObject<EcsInterface> *parent = NULL;
+      int inheritedDOF = ALL;
 
     public:
 
@@ -120,8 +120,7 @@ namespace at3 {
        * Was private, but template friend classes do not work in a cross-platform way... :(
        * This method recursively draws this object and all of its children.
        */
-      void m_draw(Transform &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
-                  bool debug);
+      void drawInternal(Transform &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection, bool debug);
 
       /**
        * Caches this scene object's absolute world transform inside it's ECS transform component.
@@ -129,7 +128,7 @@ namespace at3 {
        *
        * @param modelWorld
        */
-      virtual void m_traverseAndCache(Transform &modelWorld);
+      virtual void traverseAndCache(Transform &modelWorld);
 
       void reverseTransformLookup(glm::mat4 &wv, bool forceTraverse = false, bool includeTransFunc = true,
                                         int whichDOFs = ALL) const;
@@ -161,28 +160,29 @@ namespace at3 {
 
   template<typename EcsInterface>
   void SceneObject<EcsInterface>::addChild(std::shared_ptr<SceneObject> child, int inheritedDOF /* = ALL */) {
-    m_children.insert({child.get(), child});
-    child.get()->m_parent = this;
-    child.get()->m_inheritedDOF = inheritedDOF;
+    children.insert({child.get(), child});
+    child.get()->parent = this;
+    child.get()->inheritedDOF = inheritedDOF;
   }
 
   template<typename EcsInterface>
   void SceneObject<EcsInterface>::removeChild(const SceneObject *address) {
-    auto iterator = m_children.find(address);
-    assert(iterator != m_children.end());
-    // TODO: Set the m_parent member of this child to nullptr (SceneObjects
-    // do not have m_parent members at the time of this writing).
-    m_children.erase(iterator);
+    auto iterator = children.find(address);
+    assert(iterator != children.end());
+    // TODO: Set the parent member of this child to nullptr (SceneObjects
+    // do not have parent members at the time of this writing).
+    children.erase(iterator);
   }
 
   template<typename EcsInterface>
   bool SceneObject<EcsInterface>::hasChild(const SceneObject *address) {
-    return m_children.find(address) != m_children.end();
+    return children.find(address) != children.end();
   }
 
   template<typename EcsInterface>
-  void SceneObject<EcsInterface>::m_draw(Transform &modelWorld, const glm::mat4 &worldView,
-                                         const glm::mat4 &projection, bool debug) {
+  void SceneObject<EcsInterface>::drawInternal(
+      Transform &modelWorld, const glm::mat4 &worldView,
+      const glm::mat4 &projection, bool debug) {
     TransformRAII mw(modelWorld);
     glm::mat4 myTransform(1.f);
     bool hasTransform = false;
@@ -197,8 +197,8 @@ namespace at3 {
     this->draw(mw.peek(), worldView, projection, debug);
 
     // Draw our children
-    for (auto child : m_children) {
-      switch (child.second->m_inheritedDOF) {
+    for (auto child : children) {
+      switch (child.second->inheritedDOF) {
         case TRANSLATION_ONLY: {
           if (hasTransform) { break; }
           TransformRAII mw_transOnly(modelWorld);
@@ -208,7 +208,7 @@ namespace at3 {
                                         0, 0, 1, 0,
                                         myTransform[3][0], myTransform[3][1], myTransform[3][2], 1
                                     });
-          child.second->m_draw(mw_transOnly, worldView, projection, debug);
+          child.second->drawInternal(mw_transOnly, worldView, projection, debug);
         } return;
         case WITHOUT_TRANSLATION: {
           if (hasTransform) { break; }
@@ -219,17 +219,17 @@ namespace at3 {
                                       myTransform[2][0], myTransform[2][1], myTransform[2][2], 0,
                                       0, 0, 0, 1
                                   });
-          child.second->m_draw(mw_noTrans, worldView, projection, debug);
+          child.second->drawInternal(mw_noTrans, worldView, projection, debug);
         } return;
         default:
           break;
       }
-      child.second->m_draw(mw, worldView, projection, debug);
+      child.second->drawInternal(mw, worldView, projection, debug);
     }
   }
 
   template<typename EcsInterface>
-  void SceneObject<EcsInterface>::m_traverseAndCache(Transform &modelWorld) {
+  void SceneObject<EcsInterface>::traverseAndCache(Transform &modelWorld) {
     TransformRAII mw(modelWorld);
     glm::mat4 myTransform(1.f);
     bool hasTransform = false;
@@ -245,8 +245,8 @@ namespace at3 {
     }
 
     // Draw our children
-    for (auto child : m_children) {
-      switch (child.second->m_inheritedDOF) {
+    for (auto child : children) {
+      switch (child.second->inheritedDOF) {
         case TRANSLATION_ONLY: {
           if (hasTransform) { break; }
           TransformRAII mw_transOnly(modelWorld);
@@ -256,7 +256,7 @@ namespace at3 {
                                         0, 0, 1, 0,
                                         myTransform[3][0], myTransform[3][1], myTransform[3][2], 1
                                     });
-          child.second->m_traverseAndCache(mw_transOnly);
+          child.second->traverseAndCache(mw_transOnly);
         }
           return;
         case WITHOUT_TRANSLATION: {
@@ -268,13 +268,13 @@ namespace at3 {
                                       myTransform[2][0], myTransform[2][1], myTransform[2][2], 0,
                                       0, 0, 0, 1
                                   });
-          child.second->m_traverseAndCache(mw_noTrans);
+          child.second->traverseAndCache(mw_noTrans);
         }
           return;
         default:
           break;
       }
-      child.second->m_traverseAndCache(mw);
+      child.second->traverseAndCache(mw);
     }
 
 //    // Draw our children TODO: Why isn't this way correct? Why are there returns after each case above? Does the above case limit objects to one child each? The same goes for m_draw...
@@ -340,8 +340,8 @@ namespace at3 {
             wv *= glm::inverse(fullTransform);
           } break;
         }
-      } else if (m_parent != NULL) {
-        m_parent->reverseTransformLookup(wv, forceTraverse, includeTransFunc, m_inheritedDOF);
+      } else if (parent != NULL) {
+        parent->reverseTransformLookup(wv, forceTraverse, includeTransFunc, inheritedDOF);
       }
     } else { // the way that actually works for the camera :(
       if (ecs->hasTransform(id)) {
@@ -372,8 +372,8 @@ namespace at3 {
         }
       }
 
-      if (m_parent != NULL) {
-        m_parent->reverseTransformLookup(wv, forceTraverse, includeTransFunc, m_inheritedDOF);
+      if (parent != NULL) {
+        parent->reverseTransformLookup(wv, forceTraverse, includeTransFunc, inheritedDOF);
       }
     }
   }

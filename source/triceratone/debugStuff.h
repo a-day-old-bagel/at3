@@ -11,8 +11,8 @@ namespace at3 {
   typedef std::function<void(glm::vec3&, glm::vec3&, glm::vec3&)> lineDrawFuncType;
   class DebugStuff {
     private:
-      Scene_* mpScene;
-      std::shared_ptr<BulletDebug_> mpBulletDebug;
+      Scene_* scene;
+      std::shared_ptr<BulletDebug_> bulletDebug;
       rtu::topics::Subscription lineDrawRequestSubscription;
       void fulfillDrawLineRequest(void* args);
       void addToScene();

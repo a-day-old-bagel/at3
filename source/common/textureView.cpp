@@ -23,23 +23,23 @@ namespace at3 {
         1.f, 1.f,
         1.f, 0.f
     };
-    glGenBuffers(1, &m_vertices);
-    glBindBuffer(GL_ARRAY_BUFFER, m_vertices);
+    glGenBuffers(1, &vertices);
+    glBindBuffer(GL_ARRAY_BUFFER, vertices);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 18, corners, GL_STATIC_DRAW);
-    glGenBuffers(1, &m_texCoords);
-    glBindBuffer(GL_ARRAY_BUFFER, m_texCoords);
+    glGenBuffers(1, &texCoords);
+    glBindBuffer(GL_ARRAY_BUFFER, texCoords);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 12, texCorners, GL_STATIC_DRAW);
   }
 
   void TextureView::viewTextureUnit(GLuint unit) {
-    m_textureUnit = unit;
+    textureUnit = unit;
   }
 
   void TextureView::draw() {
     auto shader = Shaders::textureViewShader();
     shader->use();
 
-    glBindBuffer(GL_ARRAY_BUFFER, m_vertices);
+    glBindBuffer(GL_ARRAY_BUFFER, vertices);
     ASSERT_GL_ERROR();
     assert(shader->vertPositionLocation() != -1);
     glEnableVertexAttribArray(shader->vertPositionLocation());
@@ -47,7 +47,7 @@ namespace at3 {
     glVertexAttribPointer(shader->vertPositionLocation(), 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     ASSERT_GL_ERROR();
 
-    glBindBuffer(GL_ARRAY_BUFFER, m_texCoords);
+    glBindBuffer(GL_ARRAY_BUFFER, texCoords);
     ASSERT_GL_ERROR();
     assert(shader->vertTexCoordLocation() != -1);
     glEnableVertexAttribArray(shader->vertTexCoordLocation());
@@ -56,7 +56,7 @@ namespace at3 {
     ASSERT_GL_ERROR();
 
     assert(shader->texture0() != -1);
-    glUniform1i(shader->texture0(), m_textureUnit);
+    glUniform1i(shader->texture0(), textureUnit);
     ASSERT_GL_ERROR();
 
     glDrawArrays(GL_TRIANGLES, 0, 6);

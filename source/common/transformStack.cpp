@@ -25,7 +25,7 @@
 
 namespace at3 {
   TransformStack::TransformStack() {
-    m_stack.push(glm::mat4(1.f));
+    stack.push(glm::mat4(1.f));
   }
 
   TransformStack::~TransformStack() {
@@ -37,16 +37,16 @@ namespace at3 {
   }
 
   void TransformStack::push(glm::mat4 matrix) {
-    this->m_stack.push(
-        this->m_stack.top() * matrix);
+    this->stack.push(
+        this->stack.top() * matrix);
   }
 
   void TransformStack::pop() {
-    this->m_stack.pop();
+    this->stack.pop();
   }
 
   void TransformStack::unwind(size_t size) {
-    while (m_stack.size() > size)
-      m_stack.pop();
+    while (stack.size() > size)
+      stack.pop();
   }
 }

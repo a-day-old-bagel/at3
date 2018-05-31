@@ -25,16 +25,16 @@ namespace at3 {
 
     protected:
       std::unique_ptr<SdlContext> sdlc;
-      std::unique_ptr<VulkanContext<EcsInterface>> mVulkan;
-      typename EcsInterface::State mState;
-      Scene<EcsInterface> mScene;
+      std::unique_ptr<VulkanContext<EcsInterface>> vulkan;
+      typename EcsInterface::State state;
+      Scene<EcsInterface> scene;
 
     private:
-      EcsInterface mEcsInterface;
-      std::shared_ptr<Camera<EcsInterface>> mpCamera = nullptr;
-      float mLastTime = 0.f;
-      std::string mSettingsFileName;
-      bool mIsQuit = false;
+      EcsInterface ecsInterface;
+      std::shared_ptr<Camera<EcsInterface>> currentCamera = nullptr;
+      float lastTime = 0.f;
+      std::string settingsFileName;
+      bool isQuit = false;
       rtu::topics::Subscription switchToCamSub;
 
       Derived &derived();
@@ -46,17 +46,17 @@ namespace at3 {
 
       bool init(const char *appName, const char *settingsName);
       void tick();
-      bool isQuit();
+      bool getIsQuit();
       void deInit();
 
       void setCamera(void *camPtr);
-      std::shared_ptr<Camera<EcsInterface>> getCamera() { return mpCamera; }
+      std::shared_ptr<Camera<EcsInterface>> getCamera() { return currentCamera; }
   };
 
   template <typename EcsInterface, typename Derived>
-  Game<EcsInterface, Derived>::Game() : mEcsInterface(&mState),
+  Game<EcsInterface, Derived>::Game() : ecsInterface(&state),
           switchToCamSub("set_primary_camera", RTU_MTHD_DLGT((&Game<EcsInterface, Derived>::setCamera), this))
-  { SceneObject_::linkEcs(mEcsInterface); }
+  { SceneObject_::linkEcs(ecsInterface); }
 
   template <typename EcsInterface, typename Derived>
   Derived & Game<EcsInterface, Derived>::derived() {
@@ -66,9 +66,9 @@ namespace at3 {
   template <typename EcsInterface, typename Derived>
   bool Game<EcsInterface, Derived>::init(const char *appName, const char *settingsName) {
 
-    mSettingsFileName = settingsName;
+    settingsFileName = settingsName;
     derived().registerCustomSettings();
-    settings::loadFromIni(mSettingsFileName.c_str());
+    settings::loadFromIni(settingsFileName.c_str());
 
     sdlc = std::make_unique<SdlContext>(appName);
 
@@ -79,8 +79,8 @@ namespace at3 {
       case settings::graphics::VULKAN: {
         VulkanContextCreateInfo<EcsInterface> contextCreateInfo = VulkanContextCreateInfo<EcsInterface>::defaults();
         contextCreateInfo.window = sdlc->getWindow();
-        contextCreateInfo.ecs = &mEcsInterface;
-        mVulkan = std::make_unique<VulkanContext<EcsInterface>>(contextCreateInfo);
+        contextCreateInfo.ecs = &ecsInterface;
+        vulkan = std::make_unique<VulkanContext<EcsInterface>>(contextCreateInfo);
       }
       default: break;
     }
@@ -89,16 +89,16 @@ namespace at3 {
   }
 
   template <typename EcsInterface, typename Derived>
-  bool Game<EcsInterface, Derived>::isQuit() {
-    return mIsQuit;
+  bool Game<EcsInterface, Derived>::getIsQuit() {
+    return isQuit;
   }
 
   template <typename EcsInterface, typename Derived>
   void Game<EcsInterface, Derived>::deInit() {
-    mIsQuit = true;
-    mpCamera.reset();
+    isQuit = true;
+    currentCamera.reset();
     graphicsBackend::deInit();
-    settings::saveToIni(mSettingsFileName.c_str());
+    settings::saveToIni(settingsFileName.c_str());
   }
 
   template <typename EcsInterface, typename Derived>
@@ -111,17 +111,17 @@ namespace at3 {
     }
 
     // If this is first frame, make sure timing doesn't cause problems
-    if (mLastTime == 0.0f) {
+    if (lastTime == 0.0f) {
       // FIXME: Try to make sure this doesn't ever produce a dt of 0.
       // TODO: Actually, just use the std::chrono stuff and use its "now" function
-      mLastTime = (float)(std::min((Uint32)0, SDL_GetTicks() - 1)) * TIME_MULTIPLIER_MS;
+      lastTime = (float)(std::min((Uint32)0, SDL_GetTicks() - 1)) * TIME_MULTIPLIER_MS;
     }
 
     // Update the world-view matrix topic
-    if (mpCamera) {
+    if (currentCamera) {
       switch (settings::graphics::gpuApi) {
         case settings::graphics::OPENGL_OPENCL: {
-          rtu::topics::publish<glm::mat4>("primary_cam_wv", mpCamera->lastWorldViewQueried);
+          rtu::topics::publish<glm::mat4>("primary_cam_wv", currentCamera->lastWorldViewQueried);
         } break;
         default: break;
       }
@@ -206,7 +206,7 @@ namespace at3 {
                 case SDL_WINDOWEVENT_SIZE_CHANGED: {
                   settings::graphics::windowDimX = (uint32_t) event.window.data1;
                   settings::graphics::windowDimY = (uint32_t) event.window.data2;
-                  mVulkan->reInitRendering();
+                  vulkan->reInitRendering();
                   std::cout << "Window size changed to: " << settings::graphics::windowDimX << "x"
                             << settings::graphics::windowDimY << std::endl;
                 } break;
@@ -288,20 +288,20 @@ namespace at3 {
 
     // Update logic given the time since the last frame was drawn TODO: SDL_GetTicks may be too granular
     float currentTime = (float)SDL_GetTicks() * TIME_MULTIPLIER_MS;
-    float dt = currentTime - mLastTime;
-    mLastTime = currentTime;
+    float dt = currentTime - lastTime;
+    lastTime = currentTime;
     derived().onTick(dt);
 
     // Clear the graphics scene and begin redraw if a camera is assigned
     graphicsBackend::clear();
 
-    if (mpCamera) {
+    if (currentCamera) {
       switch (settings::graphics::gpuApi) {
-        case settings::graphics::OPENGL_OPENCL: mScene.draw(*mpCamera, false); break;
+        case settings::graphics::OPENGL_OPENCL: scene.draw(*currentCamera, false); break;
         case settings::graphics::VULKAN: {
-          rtu::topics::publish<glm::mat4>("primary_cam_wv", mpCamera->worldView());
-          mScene.updateAbsoluteTransformCaches();
-          mVulkan->step();
+          rtu::topics::publish<glm::mat4>("primary_cam_wv", currentCamera->worldView());
+          scene.updateAbsoluteTransformCaches();
+          vulkan->step();
         } break;
         default: break;
       }
@@ -311,9 +311,9 @@ namespace at3 {
   template <typename EcsInterface, typename Derived>
   void Game<EcsInterface, Derived>::setCamera(void *camPtr) {
     std::shared_ptr<Camera<EcsInterface>> *camera = (std::shared_ptr<Camera<EcsInterface>>*)camPtr;
-    mpCamera = *camera;
+    currentCamera = *camera;
     if (settings::graphics::gpuApi == settings::graphics::OPENGL_OPENCL) {
-      graphicsBackend::setFovy(mpCamera->getFovy());
+      graphicsBackend::setFovy(currentCamera->getFovy());
     }
   }
 }

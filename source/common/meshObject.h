@@ -44,14 +44,14 @@ namespace at3 {
 
       int shaderStyle;
 
-      std::string m_meshFile;
-      GLuint m_vertexBuffer, m_indexBuffer, m_texture;
-      int m_numIndices;
+      std::string meshFile;
+      GLuint vertexBuffer, indexBuffer, texture;
+      int numIndices;
 
-      void m_loadMesh(const std::string &meshFile);
-      void m_loadTexture(const std::string &textureFile);
+      void loadMesh(const std::string &meshFile);
+      void loadTexture(const std::string &textureFile);
 
-      void m_drawSurface(
+      void drawSurface(
           const glm::mat4 &model,
           const glm::mat4 &modelView,
           const glm::mat4 &projection);
@@ -72,9 +72,9 @@ namespace at3 {
     SCENE_ECS->addTransform(SCENE_ID, transform);
 
     // Load the mesh from file using assimp
-    m_loadMesh(meshFile);
+    loadMesh(meshFile);
     // Load the texture from file using SDL2
-    m_loadTexture(textureFile);
+    loadTexture(textureFile);
   }
 
   template <typename EcsInterface>
@@ -82,7 +82,7 @@ namespace at3 {
     SCENE_ECS->addTransform(SCENE_ID, transform);
 
     // Load the mesh from file using assimp
-    m_loadMesh(meshFile);
+    loadMesh(meshFile);
   }
 
   template <typename EcsInterface>
@@ -90,7 +90,7 @@ namespace at3 {
   }
 
   template <typename EcsInterface>
-  void MeshObject<EcsInterface>::m_loadMesh(const std::string &meshFile) {
+  void MeshObject<EcsInterface>::loadMesh(const std::string &meshFile) {
     Assimp::Importer importer;
     auto scene = importer.ReadFile( meshFile, aiProcess_Triangulate );
 
@@ -158,9 +158,9 @@ namespace at3 {
     }
 
     // Copy the vertices buffer to the GL
-    glGenBuffers(1, &m_vertexBuffer);
+    glGenBuffers(1, &vertexBuffer);
     FORCE_ASSERT_GL_ERROR();
-    glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
     FORCE_ASSERT_GL_ERROR();
     glBufferData(
         GL_ARRAY_BUFFER,  // target
@@ -192,9 +192,9 @@ namespace at3 {
       indices[i * 3 + 2] = aim->mFaces[i].mIndices[2];
     }
     // Copy the index data to the GL
-    glGenBuffers(1, &m_indexBuffer);
+    glGenBuffers(1, &indexBuffer);
     FORCE_ASSERT_GL_ERROR();
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
     FORCE_ASSERT_GL_ERROR();
     glBufferData(
         GL_ELEMENT_ARRAY_BUFFER,  // target
@@ -204,11 +204,11 @@ namespace at3 {
     );
     FORCE_ASSERT_GL_ERROR();
     delete[] indices;
-    m_numIndices = aim->mNumFaces * 3;
+    numIndices = aim->mNumFaces * 3;
   }
 
   template <typename EcsInterface>
-  void MeshObject<EcsInterface>::m_loadTexture(const std::string &textureFile) {
+  void MeshObject<EcsInterface>::loadTexture(const std::string &textureFile) {
     if (textureFile.empty()) {
       return;
     }
@@ -217,9 +217,9 @@ namespace at3 {
     uint8_t* data = stbi_load(textureFile.c_str(), &x, &y, &n, 0);
     if (data) {
       // Create the texture object in the GL
-      glGenTextures(1, &m_texture);
+      glGenTextures(1, &texture);
       FORCE_ASSERT_GL_ERROR();
-      glBindTexture(GL_TEXTURE_2D, m_texture);
+      glBindTexture(GL_TEXTURE_2D, texture);
       FORCE_ASSERT_GL_ERROR();
       // Copy the image to the GL
       glTexImage2D(
@@ -245,7 +245,7 @@ namespace at3 {
   }
 
   template <typename EcsInterface>
-  void MeshObject<EcsInterface>::m_drawSurface(
+  void MeshObject<EcsInterface>::drawSurface(
       const glm::mat4 &model,
       const glm::mat4 &modelView,
       const glm::mat4 &projection)
@@ -302,7 +302,7 @@ namespace at3 {
           0  // value
       );                                                    ASSERT_GL_ERROR();
       glActiveTexture(GL_TEXTURE0);                         ASSERT_GL_ERROR();
-      glBindTexture(GL_TEXTURE_2D, m_texture);              ASSERT_GL_ERROR();
+      glBindTexture(GL_TEXTURE_2D, texture);              ASSERT_GL_ERROR();
     }
 
     // will re-use these for each attribute below...
@@ -310,7 +310,7 @@ namespace at3 {
     void* pointer = 0;
 
     // Prepare the vertex attributes
-    glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
     ASSERT_GL_ERROR();
     assert(shader->vertPositionLocation() != -1);
     glEnableVertexAttribArray(shader->vertPositionLocation());
@@ -386,10 +386,10 @@ namespace at3 {
     }
 
     // Draw the surface
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
     glDrawElements(
         GL_TRIANGLES,  // mode
-        m_numIndices,  // count
+        numIndices,  // count
         GL_UNSIGNED_INT,  // type
         0  // indices
     );
@@ -405,6 +405,6 @@ namespace at3 {
       completeModelWorld *= SCENE_ECS->getTransformFunction(SCENE_ID);
     }
     glm::mat4 modelView = worldView * completeModelWorld;
-    m_drawSurface(completeModelWorld, modelView, proj);
+    drawSurface(completeModelWorld, modelView, proj);
   }
 }

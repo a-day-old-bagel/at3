@@ -9,13 +9,13 @@
 namespace at3 {
   class DuneBuggyVk {
     private:
-      std::vector<std::shared_ptr<MeshObjectVk_>> mvpWheels;
-      ezecs::State* mpState;
-      Scene_* mpScene;
+      std::vector<std::shared_ptr<MeshObjectVk_>> wheels;
+      ezecs::State* state;
+      Scene_* scene;
       void addToScene();
     public:
-      std::shared_ptr<MeshObjectVk_> mpChassis;
-      std::shared_ptr<ThirdPersonCamera_> mpCamera;
+      std::shared_ptr<MeshObjectVk_> chassis;
+      std::shared_ptr<ThirdPersonCamera_> camera;
       ezecs::entityId ctrlId;
       ezecs::entityId camGimbalId;
 

@@ -27,14 +27,14 @@
 
 namespace at3 {
   TransformRAII::TransformRAII(Transform &original) {
-    m_base = original.getBase();
-    m_originalSize = m_base->size();
+    base = original.getBase();
+    originalSize = base->size();
   }
 
   TransformRAII::~TransformRAII() {
     // Unwind the transformation back to what it was when we were constructed
-    m_base->unwind(m_originalSize);
-    assert(m_base->size() == m_originalSize);
+    base->unwind(originalSize);
+    assert(base->size() == originalSize);
   }
 
   const Transform &TransformRAII::operator*=(const glm::mat4 &matrix) {
@@ -44,15 +44,15 @@ namespace at3 {
 
   void TransformRAII::pop() {
     // We shouldn't pop past the original size
-    assert(m_base->size() > m_originalSize);
+    assert(base->size() > originalSize);
 
-    m_base->pop();
+    base->pop();
   }
 
   void TransformRAII::unwind(size_t size) {
     // We shouldn't unwind past the original size
-    assert(size >= m_originalSize);
+    assert(size >= originalSize);
 
-    m_base->unwind(size);
+    base->unwind(size);
   }
 }

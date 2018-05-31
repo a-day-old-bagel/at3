@@ -9,14 +9,14 @@
 namespace at3 {
   class BasicWalkerVk {
     private:
-      ezecs::State* mpState;
-      Scene_* mpScene;
+      ezecs::State* state;
+      Scene_* scene;
       void addToScene();
       glm::mat4 bodyVisualTransform(const glm::mat4 &transformIn, uint32_t time);
     public:
-      std::shared_ptr<SceneObject_> mpPhysicsBody;
-      std::shared_ptr<MeshObjectVk_> mpVisualBody;
-      std::shared_ptr<ThirdPersonCamera_> mpCamera;
+      std::shared_ptr<SceneObject_> physicsBody;
+      std::shared_ptr<MeshObjectVk_> visualBody;
+      std::shared_ptr<ThirdPersonCamera_> camera;
       ezecs::entityId ctrlId;
       ezecs::entityId camGimbalId;
 

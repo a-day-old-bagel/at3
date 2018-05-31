@@ -28,32 +28,32 @@ namespace at3 {
       typedef struct {
         Point vertices[2];
       } Line;
-      std::vector<Line> m_lines;
-      std::vector<Point> m_points;
-      bool m_linesChanged;
+      std::vector<Line> lines;
+      std::vector<Point> points;
+      bool linesChanged;
 
-      GLuint m_lineBuffer, m_pointBuffer;
+      GLuint lineBuffer, pointBuffer;
 
       Debug();
 
-      void m_updateLines();
+      void updateLines();
 
-      void m_updatePoints();
+      void updatePoints();
 
-      void m_drawLines(
+      void drawLines(
           const glm::mat4 &modelView,
           const glm::mat4 &projection) const;
 
-      void m_drawPoints(
+      void drawPoints(
           const glm::mat4 &modelView,
           const glm::mat4 &projection) const;
 
-      void m_drawLine(
+      void drawLineInternal(
           const glm::vec3 &a,
           const glm::vec3 &b,
           const glm::vec3 &color);
 
-      void m_drawPoint(
+      void drawPointInternal(
           const glm::vec3 &pos,
           const glm::vec3 &color);
 
@@ -68,13 +68,13 @@ namespace at3 {
           const glm::vec3 &a,
           const glm::vec3 &b,
           const glm::vec3 &color) {
-        instance()->m_drawLine(a, b, color);
+        instance()->drawLineInternal(a, b, color);
       }
 
       static void drawPoint(
           const glm::vec3 &pos,
           const glm::vec3 &color) {
-        instance()->m_drawPoint(pos, color);
+        instance()->drawPointInternal(pos, color);
       }
 
       void draw(const glm::mat4 &modelWorld,
@@ -82,42 +82,42 @@ namespace at3 {
   };
 
   template<typename EcsInterface>
-  Debug<EcsInterface>::Debug() : m_linesChanged(true) {
-    glGenBuffers(1, &m_lineBuffer);
+  Debug<EcsInterface>::Debug() : linesChanged(true) {
+    glGenBuffers(1, &lineBuffer);
     FORCE_ASSERT_GL_ERROR();
-    glGenBuffers(1, &m_pointBuffer);
+    glGenBuffers(1, &pointBuffer);
     FORCE_ASSERT_GL_ERROR();
   }
 
   template<typename EcsInterface>
-  void Debug<EcsInterface>::m_updateLines() {
+  void Debug<EcsInterface>::updateLines() {
     // Upload the lines to the GL
-    glBindBuffer(GL_ARRAY_BUFFER, m_lineBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, lineBuffer);
     ASSERT_GL_ERROR();
     glBufferData(
         GL_ARRAY_BUFFER,               // target
-        m_lines.size() * sizeof(Line), // size
-        m_lines.data(),                // data
+        lines.size() * sizeof(Line), // size
+        lines.data(),                // data
         GL_STATIC_DRAW                 // usage
     );
     ASSERT_GL_ERROR();
   }
 
   template<typename EcsInterface>
-  void Debug<EcsInterface>::m_updatePoints() {
-    glBindBuffer(GL_ARRAY_BUFFER, m_pointBuffer);
+  void Debug<EcsInterface>::updatePoints() {
+    glBindBuffer(GL_ARRAY_BUFFER, pointBuffer);
     ASSERT_GL_ERROR();
     glBufferData(
         GL_ARRAY_BUFFER,                 // target
-        m_points.size() * sizeof(Point), // size
-        m_points.data(),                 // data
+        points.size() * sizeof(Point), // size
+        points.data(),                 // data
         GL_STATIC_DRAW                   // usage
     );
     ASSERT_GL_ERROR();
   }
 
   template<typename EcsInterface>
-  void Debug<EcsInterface>::m_drawLines(
+  void Debug<EcsInterface>::drawLines(
       const glm::mat4 &modelView,
       const glm::mat4 &projection) const {
 
@@ -141,7 +141,7 @@ namespace at3 {
     );
     ASSERT_GL_ERROR();
 
-    glBindBuffer(GL_ARRAY_BUFFER, m_lineBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, lineBuffer);
     ASSERT_GL_ERROR();
     assert(shader->vertPositionLocation() != -1);
     glEnableVertexAttribArray(shader->vertPositionLocation());
@@ -173,13 +173,13 @@ namespace at3 {
     glDrawArrays(
         GL_LINES,          // mode
         0,                 // first
-        m_lines.size() * 2 // count
+        lines.size() * 2 // count
     );
     ASSERT_GL_ERROR();
   }
 
   template<typename EcsInterface>
-  void Debug<EcsInterface>::m_drawPoints(
+  void Debug<EcsInterface>::drawPoints(
       const glm::mat4 &modelView,
       const glm::mat4 &projection) const {
     auto shader = Shaders::billboardPointShader();
@@ -201,7 +201,7 @@ namespace at3 {
     );
     ASSERT_GL_ERROR();
 
-    glBindBuffer(GL_ARRAY_BUFFER, m_lineBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, lineBuffer);
     ASSERT_GL_ERROR();
     assert(shader->vertPositionLocation() != -1);
     glEnableVertexAttribArray(shader->vertPositionLocation());
@@ -233,13 +233,13 @@ namespace at3 {
     glDrawArrays(
         GL_LINES,           // mode
         0,                  // first
-        m_lines.size() * 2  // count
+        lines.size() * 2  // count
     );
     ASSERT_GL_ERROR();
   }
 
   template<typename EcsInterface>
-  void Debug<EcsInterface>::m_drawLine(
+  void Debug<EcsInterface>::drawLineInternal(
       const glm::vec3 &a,
       const glm::vec3 &b,
       const glm::vec3 &color) {
@@ -256,8 +256,8 @@ namespace at3 {
     line.vertices[1].color[0] = color.x;
     line.vertices[1].color[1] = color.y;
     line.vertices[1].color[2] = color.z;
-    m_lines.push_back(line);
-    m_linesChanged = true;
+    lines.push_back(line);
+    linesChanged = true;
   }
 
   template<typename EcsInterface>
@@ -278,13 +278,13 @@ namespace at3 {
   template<typename EcsInterface>
   void Debug<EcsInterface>::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
                                  bool debug) {
-    if (m_linesChanged) {
-      m_updateLines();
-      m_linesChanged = false;
+    if (linesChanged) {
+      updateLines();
+      linesChanged = false;
     }
 
     glm::mat4 modelView = worldView * modelWorld;
 
-    m_drawLines(modelView, projection);
+    drawLines(modelView, projection);
   }
 }

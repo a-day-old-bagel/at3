@@ -26,12 +26,12 @@ namespace at3 {
     return glm::rotate(glm::scale(glm::mat4(1.f), {1.8f, 2.8f, 1.f}), (float)M_PI, glm::vec3(1.f, 0.f, 0.f));
   }
 
-  DuneBuggy::DuneBuggy(ezecs::State &state, Scene_ &scene, glm::mat4 &transform) : mpState(&state), mpScene(&scene) {
+  DuneBuggy::DuneBuggy(ezecs::State &state, Scene_ &scene, glm::mat4 &transform) : state(&state), scene(&scene) {
 
-    mpChassis = std::make_shared<MeshObject_>("assets/models/pyramid_bottom.dae", transform);
+    chassis = std::make_shared<MeshObject_>("assets/models/pyramid_bottom.dae", transform);
 //    mpChassis = std::make_shared<MeshObject_>("assets/models/jeep.dae", transform);
 
-    ezecs::entityId chassisId = mpChassis->getId();
+    ezecs::entityId chassisId = chassis->getId();
 
     glm::mat4 ident(1.f);
     std::vector<float> chassisVerts = {
@@ -71,9 +71,9 @@ namespace at3 {
         { 1.9f, -1.9f, 0.f}
     };
     for (int i = 0; i < 4; ++i) {
-      mvpWheels.push_back(std::make_shared<MeshObject_>("assets/models/sphere.dae", "assets/textures/thrusters.png",
+      wheels.push_back(std::make_shared<MeshObject_>("assets/models/sphere.dae", "assets/textures/thrusters.png",
                           ident, MeshObject_::SUNNY));
-      entityId wheelId = mvpWheels.back()->getId();
+      entityId wheelId = wheels.back()->getId();
       WheelInitInfo wheelInitInfo{
           {                         // WheelInfo struct - this part of the wheelInitInfo will persist.
               chassisId,                    // id of wheel's parent entity (chassis)
@@ -92,34 +92,34 @@ namespace at3 {
       state.add_TransformFunction(wheelId, RTU_FUNC_DLGT(wheelScaler));
     }
 
-    mpCamera = std::make_shared<ThirdPersonCamera_>(2.f, 7.f, (float)M_PI * 0.5f);
-    mpChassis->addChild(mpCamera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
+    camera = std::make_shared<ThirdPersonCamera_>(2.f, 7.f, (float)M_PI * 0.5f);
+    chassis->addChild(camera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
 
     ctrlId = chassisId;
-    camGimbalId = mpCamera->mpCamGimbal->getId();
+    camGimbalId = camera->mpCamGimbal->getId();
 
     addToScene();
   }
   void DuneBuggy::addToScene() {
-    mpScene->addObject(mpChassis);
-    for (auto wheel : mvpWheels) {
-      mpScene->addObject(wheel);
+    scene->addObject(chassis);
+    for (auto wheel : wheels) {
+      scene->addObject(wheel);
     }
   }
   void DuneBuggy::tip() {
     Physics *physics;
-    mpState->get_Physics(mpChassis->getId(), &physics);
+    state->get_Physics(chassis->getId(), &physics);
     physics->rigidBody->applyImpulse({0.f, 0.f, 100.f}, {1.f, 0.f, 0.f});
   }
 
   std::shared_ptr<PerspectiveCamera_> DuneBuggy::getCamPtr() {
-    return mpCamera->mpCamera;
+    return camera->mpCamera;
   }
 
   void DuneBuggy::makeActiveControl(void *nothing) {
     publish<entityId>("switch_to_track_controls", ctrlId);
     publish<entityId>("switch_to_mouse_controls", camGimbalId);
-    publish<std::shared_ptr<PerspectiveCamera_>>("set_primary_camera", mpCamera->mpCamera);
+    publish<std::shared_ptr<PerspectiveCamera_>>("set_primary_camera", camera->mpCamera);
   }
 
 }

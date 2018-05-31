@@ -13,15 +13,15 @@
 namespace at3 {
   class PyramidVk {
     private:
-      std::shared_ptr<MeshObjectVk_> mpTop, mpThrusters, mpFire;
-      std::vector<std::shared_ptr<MeshObjectVk_>> mvpSpheres;
-      ezecs::State* mpState;
-      Scene_* mpScene;
+      std::shared_ptr<MeshObjectVk_> top, thrusters, fire;
+      std::vector<std::shared_ptr<MeshObjectVk_>> spheres;
+      ezecs::State* state;
+      Scene_* scene;
       VulkanContext<EntityComponentSystemInterface>* vkc;
       void addToScene();
     public:
-      std::shared_ptr<MeshObjectVk_> mpBase;
-      std::shared_ptr<ThirdPersonCamera_> mpCamera;
+      std::shared_ptr<MeshObjectVk_> base;
+      std::shared_ptr<ThirdPersonCamera_> camera;
       ezecs::entityId ctrlId;
       ezecs::entityId camGimbalId;
 

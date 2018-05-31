@@ -38,7 +38,7 @@ namespace at3 {
    */
   class TransformStack : public Transform {
     private:
-      std::stack<glm::mat4> m_stack;
+      std::stack<glm::mat4> stack;
     public:
       TransformStack();
       ~TransformStack();
@@ -48,9 +48,9 @@ namespace at3 {
       void push(glm::mat4 matrix);
       void pop();
       const glm::mat4 &peek() const {
-        return this->m_stack.top();
+        return this->stack.top();
       }
-      size_t size() { return m_stack.size(); }
+      size_t size() { return stack.size(); }
 
     protected:
       Transform *getBase() { return this; }

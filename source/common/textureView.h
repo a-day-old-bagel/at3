@@ -9,9 +9,9 @@ namespace at3 {
 
   class TextureView {
 
-      GLuint m_vertices = 0;
-      GLuint m_texCoords = 0;
-      GLuint m_textureUnit = 0;
+      GLuint vertices = 0;
+      GLuint texCoords = 0;
+      GLuint textureUnit = 0;
 
     public:
       TextureView();

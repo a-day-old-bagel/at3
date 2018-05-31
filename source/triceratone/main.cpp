@@ -42,46 +42,46 @@ using namespace rtu::topics;
 
 class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
 
-    ControlSystem     mControlSystem;
-    AnimationSystem   mAnimationSystem;
-    PhysicsSystem     mPhysicsSystem;
+    ControlSystem     controlSystem;
+    AnimationSystem   animationSystem;
+    PhysicsSystem     physicsSystem;
 
-    std::shared_ptr<SceneObject_> mpFreeCam;
-    std::shared_ptr<PerspectiveCamera_> mpCamera;
-    std::shared_ptr<MeshObjectVk_> mpTestObj0;
-    std::shared_ptr<MeshObjectVk_> mpTestObj1;
-    std::unique_ptr<PyramidVk> mpPyramidVk;
-    std::unique_ptr<DuneBuggyVk> mpDuneBuggyVk;
-    std::unique_ptr<BasicWalkerVk> mpPlayerVk;
+    std::shared_ptr<SceneObject_> freeCam;
+    std::shared_ptr<PerspectiveCamera_> camera;
+    std::shared_ptr<MeshObjectVk_> testObj0;
+    std::shared_ptr<MeshObjectVk_> testObj1;
+    std::unique_ptr<PyramidVk> pyramidVk;
+    std::unique_ptr<DuneBuggyVk> duneBuggyVk;
+    std::unique_ptr<BasicWalkerVk> playerVk;
 
     std::unique_ptr<Subscription> keyFSub, key0Sub, key1Sub, key2Sub, key3Sub;
 
-    std::shared_ptr<SkyBox_>         mpSkybox;
-    std::shared_ptr<TerrainObject_>  mpTerrain;
-    std::unique_ptr<BasicWalker>     mpPlayer;
-    std::unique_ptr<Pyramid>         mpPyramid;
-    std::unique_ptr<DuneBuggy>       mpDuneBuggy;
-    std::shared_ptr<DebugStuff>      mpDebugStuff;
+    std::shared_ptr<SkyBox_>         skybox;
+    std::shared_ptr<TerrainObject_>  terrain;
+    std::unique_ptr<BasicWalker>     player;
+    std::unique_ptr<Pyramid>         pyramid;
+    std::unique_ptr<DuneBuggy>       duneBuggy;
+    std::shared_ptr<DebugStuff>      debugStuff;
 
 
   public:
 
     Triceratone()
-        : mControlSystem(&mState),
-          mAnimationSystem(&mState),
-          mPhysicsSystem(&mState) { }
+        : controlSystem(&state),
+          animationSystem(&state),
+          physicsSystem(&state) { }
 
     ~Triceratone() {
-      mScene.clear();
+      scene.clear();
     }
 
     bool onInit() {
 
       // Initialize the systems
       bool initSuccess = true;
-      initSuccess &= mControlSystem.init();
-      initSuccess &= mPhysicsSystem.init();
-      initSuccess &= mAnimationSystem.init();
+      initSuccess &= controlSystem.init();
+      initSuccess &= physicsSystem.init();
+      initSuccess &= animationSystem.init();
       assert(initSuccess);
 
       // an identity matrix
@@ -92,13 +92,13 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
 
 
       glm::mat4 start = glm::rotate(glm::translate(ident, {0.f, 0.f, 5.f}), 0.f, {1.0f, 0.0f, 0.0f});
-      mpFreeCam = std::make_shared<SceneObject_>();
-      mState.add_Placement(mpFreeCam->getId(), start);
-      mState.add_FreeControls(mpFreeCam->getId());
-      mpCamera = std::make_shared<PerspectiveCamera_> (ident);
-      mState.add_MouseControls(mpCamera->getId(), false, false);
-      mpFreeCam->addChild(mpCamera);
-      mScene.addObject(mpFreeCam);
+      freeCam = std::make_shared<SceneObject_>();
+      state.add_Placement(freeCam->getId(), start);
+      state.add_FreeControls(freeCam->getId());
+      camera = std::make_shared<PerspectiveCamera_> (ident);
+      state.add_MouseControls(camera->getId(), false, false);
+      freeCam->addChild(camera);
+      scene.addObject(freeCam);
       makeFreeCamActiveControl();
 
 
@@ -107,25 +107,25 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
 
 
       if (settings::graphics::gpuApi == settings::graphics::VULKAN) {
-        mpTestObj0 = std::make_shared<MeshObjectVk_>(mVulkan.get(), "pyramid_bottom", start);
-        mpTestObj1 = std::make_shared<MeshObjectVk_>(mVulkan.get(), "pyramid_top", start);
-        mpTestObj0->addChild(mpTestObj1);
-        mScene.addObject(mpTestObj0);
+        testObj0 = std::make_shared<MeshObjectVk_>(vulkan.get(), "pyramid_bottom", start);
+        testObj1 = std::make_shared<MeshObjectVk_>(vulkan.get(), "pyramid_top", start);
+        testObj0->addChild(testObj1);
+        scene.addObject(testObj0);
 
         glm::mat4 playerMat = glm::translate(ident, {0.f, -10.f, 0.f});
-        mpPlayerVk = std::make_unique<BasicWalkerVk>(mState, mVulkan.get(), mScene, playerMat);
+        playerVk = std::make_unique<BasicWalkerVk>(state, vulkan.get(), scene, playerMat);
 
         glm::mat4 buggyMat = glm::translate(ident, {0.f, 10.f, 0.f});
-        mpDuneBuggyVk = std::make_unique<DuneBuggyVk>(mState, mVulkan.get(), mScene, buggyMat);
+        duneBuggyVk = std::make_unique<DuneBuggyVk>(state, vulkan.get(), scene, buggyMat);
 
         glm::mat4 pyramidMat = glm::translate(ident, {0.f, 0.f, 0.f});
-        mpPyramidVk = std::make_unique<PyramidVk>(mState, mVulkan.get(), mScene, pyramidMat);
+        pyramidVk = std::make_unique<PyramidVk>(state, vulkan.get(), scene, pyramidMat);
 
         key0Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_0", Triceratone::makeFreeCamActiveControl, this);
-        key1Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_1", BasicWalkerVk::makeActiveControl, mpPlayerVk.get());
-        key2Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_2", DuneBuggyVk::makeActiveControl, mpDuneBuggyVk.get());
-        key3Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_3", PyramidVk::makeActiveControl, mpPyramidVk.get());
-        keyFSub = RTU_MAKE_SUB_UNIQUEPTR("key_down_f", PyramidVk::spawnSphere, mpPyramidVk.get());
+        key1Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_1", BasicWalkerVk::makeActiveControl, playerVk.get());
+        key2Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_2", DuneBuggyVk::makeActiveControl, duneBuggyVk.get());
+        key3Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_3", PyramidVk::makeActiveControl, pyramidVk.get());
+        keyFSub = RTU_MAKE_SUB_UNIQUEPTR("key_down_f", PyramidVk::spawnSphere, pyramidVk.get());
       }
 
 
@@ -137,34 +137,34 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
 
         // a terrain
         TerrainObject_::initTextures();
-        mpTerrain = std::make_shared<TerrainObject_>(ident, -5000.f, 5000.f, -5000.f, 5000.f, -10, 140);
-        this->mScene.addObject(mpTerrain);
+        terrain = std::make_shared<TerrainObject_>(ident, -5000.f, 5000.f, -5000.f, 5000.f, -10, 140);
+        this->scene.addObject(terrain);
 
         // the player
         glm::mat4 playerMat = glm::translate(ident, {0.f, -10.f, 0.f});
-        mpPlayer = std::make_unique<BasicWalker>(mState, mScene, playerMat);
+        player = std::make_unique<BasicWalker>(state, scene, playerMat);
 
         // a buggy
         glm::mat4 buggyMat = glm::translate(ident, {0.f, 10.f, 0.f});
-        mpDuneBuggy = std::make_unique<DuneBuggy>(mState, mScene, buggyMat);
+        duneBuggy = std::make_unique<DuneBuggy>(state, scene, buggyMat);
 
         // a flying pyramid
         glm::mat4 pyramidMat = glm::translate(ident, {0.f, 0.f, 0.f});
-        mpPyramid = std::make_unique<Pyramid>(mState, mScene, pyramidMat);
+        pyramid = std::make_unique<Pyramid>(state, scene, pyramidMat);
 
         // a skybox-like background
-        mpSkybox = std::make_shared<SkyBox_>();
-        this->mScene.addObject(mpSkybox);
-        mpSkybox->useCubeMap("assets/cubeMaps/sea.png");
+        skybox = std::make_shared<SkyBox_>();
+        this->scene.addObject(skybox);
+        skybox->useCubeMap("assets/cubeMaps/sea.png");
 
         // Set up control switching subscriptions
         key0Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_0", Triceratone::makeFreeCamActiveControl, this);
-        key1Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_1", BasicWalker::makeActiveControl, mpPlayer.get());
-        key2Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_2", DuneBuggy::makeActiveControl, mpDuneBuggy.get());
-        key3Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_3", Pyramid::makeActiveControl, mpPyramid.get());
+        key1Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_1", BasicWalker::makeActiveControl, player.get());
+        key2Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_2", DuneBuggy::makeActiveControl, duneBuggy.get());
+        key3Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_3", Pyramid::makeActiveControl, pyramid.get());
 
         // some debug-draw features
-        mpDebugStuff = std::make_shared<DebugStuff>(mScene, &mPhysicsSystem);
+        debugStuff = std::make_shared<DebugStuff>(scene, &physicsSystem);
 
         // test out some music
         // mpDebugStuff->queueMusic();
@@ -180,24 +180,24 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
     }
 
     void onTick(float dt) {
-      mControlSystem.tick(dt);
+      controlSystem.tick(dt);
 
       if (settings::graphics::gpuApi == settings::graphics::OPENGL_OPENCL) {
-        mpPyramid->resizeFire();
+        pyramid->resizeFire();
       }
       if (settings::graphics::gpuApi == settings::graphics::VULKAN) {
         // TODO: Not working for some reason
-        mpPyramidVk->resizeFire();
+        pyramidVk->resizeFire();
       }
 
-      mPhysicsSystem.tick(dt);
-      mAnimationSystem.tick(dt);
+      physicsSystem.tick(dt);
+      animationSystem.tick(dt);
     }
 
     void makeFreeCamActiveControl() {
-      publish<std::shared_ptr<PerspectiveCamera_>>("set_primary_camera", mpCamera);
-      publish<entityId>("switch_to_free_controls", mpFreeCam->getId());
-      publish<entityId>("switch_to_mouse_controls", mpCamera->getId());
+      publish<std::shared_ptr<PerspectiveCamera_>>("set_primary_camera", camera);
+      publish<entityId>("switch_to_free_controls", freeCam->getId());
+      publish<entityId>("switch_to_mouse_controls", camera->getId());
     }
 };
 
@@ -211,7 +211,7 @@ int main(int argc, char **argv) {
   }
 
   std::cout << std::endl << "AT3 has started." << std::endl;
-  while ( ! game.isQuit()) {
+  while ( !game.getIsQuit()) {
     game.tick();
   }
 
