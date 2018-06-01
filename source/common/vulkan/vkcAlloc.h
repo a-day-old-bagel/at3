@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <cstdlib>
-//#include "vkh.h"
 
 #include "vkcTypes.h"
 

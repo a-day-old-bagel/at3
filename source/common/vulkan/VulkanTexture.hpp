@@ -122,21 +122,22 @@ namespace at3 {
           bool forceLinear = false) {
 
         if (this->ctxt) {
-          destroy();
+          this->destroy();
         }
         this->ctxt = ctxt;
 
-        AT3_ASSERT(fileExists(filename), "Could not load texture from file: %s\n", filename);
+        AT3_ASSERT(fileExists(filename), "Could not load texture from file: %s\n", filename.c_str());
 
         gli::texture2d tex2D(gli::load(filename.c_str()));
 
-        AT3_ASSERT(!tex2D.empty(), "Texture loaded, but empty: %s\n", filename);
+        AT3_ASSERT(!tex2D.empty(), "Texture loaded, but empty: %s\n", filename.c_str());
 
-        width = static_cast<uint32_t>(tex2D[0].extent().x);
-        height = static_cast<uint32_t>(tex2D[0].extent().y);
-        mipLevels = static_cast<uint32_t>(tex2D.levels());
+        this->width = static_cast<uint32_t>(tex2D[0].extent().x);
+        this->height = static_cast<uint32_t>(tex2D[0].extent().y);
+        this->mipLevels = static_cast<uint32_t>(tex2D.levels());
 
-        printf("Loading Texture: %s (%u x %u with %u mip levels).\n", filename.c_str(), width, height, mipLevels);
+        printf("Loading Texture: %s (%u x %u with %u mip levels).\n", filename.c_str(),
+               this->width, this->height, this->mipLevels);
 
         // Get device properites for the requested texture format
         VkFormatProperties formatProperties;
@@ -195,7 +196,7 @@ namespace at3 {
           std::vector<VkBufferImageCopy> bufferCopyRegions;
           uint32_t offset = 0;
 
-          for (uint32_t i = 0; i < mipLevels; i++) {
+          for (uint32_t i = 0; i < this->mipLevels; i++) {
             VkBufferImageCopy bufferCopyRegion = {};
             bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             bufferCopyRegion.imageSubresource.mipLevel = i;
@@ -217,40 +218,40 @@ namespace at3 {
 
           imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
           imageCreateInfo.format = format;
-          imageCreateInfo.mipLevels = mipLevels;
+          imageCreateInfo.mipLevels = this->mipLevels;
           imageCreateInfo.arrayLayers = 1;
           imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
           imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
           imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
           imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-          imageCreateInfo.extent = {width, height, 1};
+          imageCreateInfo.extent = {this->width, this->height, 1};
           imageCreateInfo.usage = imageUsageFlags;
           // Ensure that the TRANSFER_DST bit is set for staging
           if (!(imageCreateInfo.usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
             imageCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
           }
-          vkCreateImage(ctxt->common.device, &imageCreateInfo, nullptr, &image);
+          vkCreateImage(ctxt->common.device, &imageCreateInfo, nullptr, &this->image);
 
-          vkGetImageMemoryRequirements(ctxt->common.device, image, &memReqs);
+          vkGetImageMemoryRequirements(ctxt->common.device, this->image, &memReqs);
 
           memAllocInfo.allocationSize = memReqs.size;
 
           memAllocInfo.memoryTypeIndex = chooseMemoryType(memReqs.memoryTypeBits, ctxt->common.gpu.memProps,
                                                           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-          vkAllocateMemory(ctxt->common.device, &memAllocInfo, nullptr, &deviceMemory);
-          vkBindImageMemory(ctxt->common.device, image, deviceMemory, 0);
+          vkAllocateMemory(ctxt->common.device, &memAllocInfo, nullptr, &this->deviceMemory);
+          vkBindImageMemory(ctxt->common.device, this->image, this->deviceMemory, 0);
 
           VkImageSubresourceRange subresourceRange = {};
           subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
           subresourceRange.baseMipLevel = 0;
-          subresourceRange.levelCount = mipLevels;
+          subresourceRange.levelCount = this->mipLevels;
           subresourceRange.layerCount = 1;
 
           // Image barrier for optimal image (target)
           // Optimal image will be used as destination for the copy
           setImageLayout(
               copyCmd,
-              image,
+              this->image,
               VK_IMAGE_LAYOUT_UNDEFINED,
               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
               subresourceRange);
@@ -259,7 +260,7 @@ namespace at3 {
           vkCmdCopyBufferToImage(
               copyCmd,
               stagingBuffer,
-              image,
+              this->image,
               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
               static_cast<uint32_t>(bufferCopyRegions.size()),
               bufferCopyRegions.data()
@@ -269,7 +270,7 @@ namespace at3 {
           this->imageLayout = imageLayout;
           setImageLayout(
               copyCmd,
-              image,
+              this->image,
               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
               imageLayout,
               subresourceRange);
@@ -295,7 +296,7 @@ namespace at3 {
 
           imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
           imageCreateInfo.format = format;
-          imageCreateInfo.extent = {width, height, 1};
+          imageCreateInfo.extent = {this->width, this->height, 1};
           imageCreateInfo.mipLevels = 1;
           imageCreateInfo.arrayLayers = 1;
           imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -347,11 +348,11 @@ namespace at3 {
 
           // Linear tiled images don't need to be staged
           // and can be directly used as textures
-          image = mappableImage;
-          deviceMemory = mappableMemory;
+          this->image = mappableImage;
+          this->deviceMemory = mappableMemory;
 
           // Setup image memory barrier
-          setImageLayout(copyCmd, image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, imageLayout);
+          setImageLayout(copyCmd, this->image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, imageLayout);
 
           flushCommandBuffer(ctxt->common.device, ctxt->common.transferCommandPool, copyCmd, copyQueue);
         }
@@ -369,7 +370,7 @@ namespace at3 {
         samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
         samplerCreateInfo.minLod = 0.0f;
         // Max level-of-detail should match mip level count
-        samplerCreateInfo.maxLod = (useStaging) ? (float) mipLevels : 0.0f;
+        samplerCreateInfo.maxLod = (useStaging) ? (float) this->mipLevels : 0.0f;
 
         // Only enable anisotropic filtering if enabled on the devicec
         samplerCreateInfo.anisotropyEnable = ctxt->common.gpu.features.samplerAnisotropy;
@@ -377,7 +378,7 @@ namespace at3 {
             ctxt->common.gpu.deviceProps.limits.maxSamplerAnisotropy : 1.0f;
 
         samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        vkCreateSampler(ctxt->common.device, &samplerCreateInfo, nullptr, &sampler);
+        vkCreateSampler(ctxt->common.device, &samplerCreateInfo, nullptr, &this->sampler);
 
         // Create image view
         // Textures are not directly accessed by the shaders and
@@ -392,12 +393,12 @@ namespace at3 {
         viewCreateInfo.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
         // Linear tiling usually won't support mip maps
         // Only set mip map count if optimal tiling is used
-        viewCreateInfo.subresourceRange.levelCount = (useStaging) ? mipLevels : 1;
-        viewCreateInfo.image = image;
-        vkCreateImageView(ctxt->common.device, &viewCreateInfo, nullptr, &view);
+        viewCreateInfo.subresourceRange.levelCount = (useStaging) ? this->mipLevels : 1;
+        viewCreateInfo.image = this->image;
+        vkCreateImageView(ctxt->common.device, &viewCreateInfo, nullptr, &this->view);
 
         // Update descriptor image info member that can be used for setting up descriptor sets
-        updateDescriptor();
+        this->updateDescriptor();
       }
 
 //      /**

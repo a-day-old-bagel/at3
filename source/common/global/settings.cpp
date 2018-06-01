@@ -10,7 +10,7 @@ namespace at3 {
 
     // Hard values given here are just default values. They are be overwritten at runtime with the ini file.
     namespace graphics {
-      uint32_t gpuApi = OPENGL_OPENCL;
+      uint32_t gpuApi = VULKAN;
       uint32_t fullscreen = WINDOWED;
       uint32_t windowDimX = 1200;
       uint32_t windowDimY = 700;

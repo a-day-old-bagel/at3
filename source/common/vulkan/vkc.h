@@ -12,10 +12,10 @@
 #include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
 
-#include "configuration.h"
-#include "macros.h"
+#include <gli/gli.hpp>
+
 #include "topics.hpp"
-#include "utilities.h"
+#include "settings.h"
 
 #include "vkcTypes.h"
 #include "vkcAlloc.h"
@@ -158,11 +158,17 @@ namespace at3 {
 
   };
 
-  // IMPLEMENTATION TEMPLATES INCLUDED HERE
-
+  /**
+   * Template implementations are included as separate files for the sake of file brevity, and are separated into loose
+   * categories as follows:
+   */
+  // Public member functions of VulkanContext
 # include "vkcImplApi.h"
-# include "vkcImplInternalDynamic.h"
+  // Member functions of VulkanContext that are generally only called during initialization
 # include "vkcImplInternalCallOnce.h"
+  // Member functions of VulkanContext that are called more than just during initialization
+# include "vkcImplInternalDynamic.h"
+  // Member functions of VulkanContext that deal with asset management
 # include "vkcImplInternalResources.h"
 
 }

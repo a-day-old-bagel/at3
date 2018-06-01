@@ -12,7 +12,7 @@
  * Copyright(C) 2018 by Galen Cochrane
  */
 
-#pragma once
+//#pragma once
 
 #include "vkc.h"
 
