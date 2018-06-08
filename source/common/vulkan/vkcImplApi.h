@@ -70,15 +70,56 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo <EcsInterface
   printf("\n");
   fflush(stdout);
 
+//  // Open every texture in the texture directory
+//  // TODO: Handle the multiple-objects-in-one-file case (true -> false)?
+//  for (auto &path : fs::directory_iterator("./assets/textures/")) {
+//    if (fs::is_directory(path) || getFileExtOnly(path) != "ktx") { continue; }
+//    printf("\n%s:\nLoading Texture: %s\n", getFileNameOnly(path).c_str(), getFileNameRelative(path).c_str());
+//    textureResources.emplace(getFileNameOnly(path));
+//    textureResources.at(getFileNameOnly(path)).loadFromFile(
+//        "assets/textures/pyramid_bottom.ktx", VK_FORMAT_R8G8B8A8_UNORM, this, common.deviceQueues.transferQueue);
+//    fflush(stdout);
+//  }
+//  printf("\n");
+//  fflush(stdout);
+
+
+  VkcTextureOperationInfo texOpInfo {};
+  texOpInfo.physicalDevice = common.gpu.device;
+  texOpInfo.logicalDevice = common.device;
+  texOpInfo.transferCommandPool = common.transferCommandPool;
+  texOpInfo.transferQueue = common.deviceQueues.transferQueue;
+  texOpInfo.physicalMemProps = common.gpu.memProps;
+  texOpInfo.samplerAnisotropy = common.gpu.features.samplerAnisotropy;
+  texOpInfo.maxSamplerAnisotropy = common.gpu.deviceProps.limits.maxSamplerAnisotropy;
+
+  textures = std::make_unique<TextureRepository<EcsInterface>>("./assets/textures", texOpInfo);
+
+
+//  testTex.loadFromFile("assets/textures/pyramid_bottom.ktx", VK_FORMAT_R8G8B8A8_UNORM, texOpInfo,
+//                       common.deviceQueues.transferQueue);
+//  testTex2.loadFromFile("assets/textures/pyramid_top.ktx", VK_FORMAT_R8G8B8A8_UNORM, texOpInfo,
+//                       common.deviceQueues.transferQueue);
+
+//  textureResources.emplace_back("assets/textures/pyramid_bottom.ktx", VK_FORMAT_R8G8B8A8_UNORM, texOpInfo,
+//                       common.deviceQueues.transferQueue);
+
   dataStore = std::make_unique<UboPageMgr>(common);
 
-  // Init the vulkan swapchain, pipeline, etc.
 
-  initRendering((uint32_t) meshResources.size());
+//  initRendering((uint32_t) textureResources.size());
+//  initRendering((uint32_t) meshResources.size());
+//  initRendering(Texture2D<EcsInterface>::getDescriptorImageInfoArrayCount());
+  initRendering(textures->getDescriptorImageInfoArrayCount());
+
+
+
 //  initGlobalShaderData();
 
-  testTex.loadFromFile(/*"assets/models/cerberus/albedo.ktx"*/ "assets/textures/pyramid_bottom.ktx", VK_FORMAT_R8G8B8A8_UNORM, this,
-                       common.deviceQueues.transferQueue);
+
+//  testTex.loadFromFile("assets/textures/pyramid_bottom.ktx", VK_FORMAT_R8G8B8A8_UNORM, this,
+//                       common.deviceQueues.transferQueue);
+
 }
 
 template<typename EcsInterface>
@@ -108,16 +149,23 @@ void VulkanContext<EcsInterface>::reInitRendering() {
 
 template<typename EcsInterface>
 void VulkanContext<EcsInterface>::registerMeshInstance(
-    const std::string &meshFileName,
-    const typename EcsInterface::EcsId id) {
+    const typename EcsInterface::EcsId id, const std::string &meshFileName, const std::string &textureFileName) {
   for (auto &mesh : meshResources.at(meshFileName)) {
     MeshInstance<EcsInterface> instance;
-    UboPageMgr::AcquireStatus didAcquire = dataStore->acquire(instance.uboIdx);
+    UboPageMgr::AcquireStatus didAcquire = dataStore->acquire(instance.indices);
     AT3_ASSERT(didAcquire != UboPageMgr::AcquireStatus::FAILURE, "Error acquiring ubo index");
     if (didAcquire == UboPageMgr::AcquireStatus::NEWPAGE) {
       updateDescriptorSets(dataStore.get());
     }
     instance.id = id;
+//    if (textureFileName.length() && Texture2D<EcsInterface>::textureExists(textureFileName)) {
+//      instance.indices.setTexture(Texture2D<EcsInterface>::getTextureArrayIndex(textureFileName));
+    if (textureFileName.length() && textures->textureExists(textureFileName)) {
+      instance.indices.setTexture(textures->getTextureArrayIndex(textureFileName));
+    } else {
+      instance.indices.setTexture(0u);  // The first texture will be used. Recommend using that slot for debug texture.
+      printf("No texture applied to mesh: %s\n", meshFileName.c_str());
+    }
     mesh.instances.push_back(instance);
   }
 }

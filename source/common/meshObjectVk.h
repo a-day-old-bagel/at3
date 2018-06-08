@@ -24,7 +24,8 @@ namespace at3 {
       enum ShaderStyle {
         NOTEXTURE, FULLBRIGHT, SUNNY
       };
-      MeshObjectVk(VulkanContext<EcsInterface> *vkc, const std::string &meshFile, const std::string &textureFile, glm::mat4 &transform, int style);
+      MeshObjectVk(VulkanContext<EcsInterface> *vkc, const std::string &meshFile, const std::string &textureFile,
+                   glm::mat4 &transform, int style = SUNNY);
       MeshObjectVk(VulkanContext<EcsInterface> *vkc, const std::string &meshFile, glm::mat4 &transform);
       virtual ~MeshObjectVk() = default;
 
@@ -36,14 +37,14 @@ namespace at3 {
                                            const std::string &textureFile, glm::mat4 &transform,
                                            int style) :shaderStyle(style), vkc(vkc) {
     SCENE_ECS->addTransform(SCENE_ID, transform);
-    vkc->registerMeshInstance(meshFile, SCENE_ID);
+    vkc->registerMeshInstance(SCENE_ID, meshFile, textureFile);
   }
 
   template <typename EcsInterface>
   MeshObjectVk<EcsInterface>::MeshObjectVk(VulkanContext<EcsInterface> *vkc, const std::string &meshFile,
                                            glm::mat4 &transform) : shaderStyle(NOTEXTURE), vkc(vkc) {
     SCENE_ECS->addTransform(SCENE_ID, transform);
-    vkc->registerMeshInstance(meshFile, SCENE_ID);
+    vkc->registerMeshInstance(SCENE_ID, meshFile);
   }
 
   template <typename EcsInterface>

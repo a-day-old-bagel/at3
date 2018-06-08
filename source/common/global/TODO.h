@@ -14,3 +14,4 @@
 // TODO: Third-person camera smoothing (per-frame amount that cam moves towards target is proportional to distance from target, maybe have dead zone for anti-jiggle)
 // TODO: Use swapchain cacheing
 // TODO: Use SLikeNet for multiplayer
+// TODO: Consider a BOB-inspired (horror?) game

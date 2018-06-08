@@ -126,7 +126,7 @@ namespace at3 {
       }
 
 
-      AcquireStatus acquire(UboIdx &outIdx) {
+      AcquireStatus acquire(MeshInstanceIndices &outIdx) {
         Page *p = nullptr;
 
         for (auto &page : pages) {
@@ -175,11 +175,12 @@ namespace at3 {
           rangesToUpdate[p] = curRange;
         }
 
+        // TODO: update only those which have moved, or at least don't calculate for those that haven't. OPTIMIZE!
         for (auto pair : meshRepo) {
           for (auto mesh : pair.second) {
             for (auto instance : mesh.instances) {
-              glm::uint32 uboSlot = instance.uboIdx.getSlot();
-              glm::uint32 uboPage = instance.uboIdx.getPage();
+              glm::uint32 uboSlot = instance.indices.getSlot();
+              glm::uint32 uboPage = instance.indices.getPage();
               glm::mat4 modelViewMatrix = viewMatrix * ecs->getAbsTransform(instance.id);
               objPtrs[uboPage][uboSlot].model = projMatrix * modelViewMatrix;
               objPtrs[uboPage][uboSlot].normal = glm::transpose(glm::inverse(modelViewMatrix));

@@ -43,20 +43,20 @@ namespace at3 {
     VkSampler sampler;
   };
 
-  struct VkhMaterialCreateInfo {
+  struct VkcMaterialCreateInfo {
     VkRenderPass renderPass;
-
     std::vector<VkDescriptorSetLayout> descSetLayouts;
     VkPipelineLayout *outPipelineLayout;
     VkPipeline *outPipeline;
-    uint32_t pushConstantRange;
-    VkShaderStageFlagBits pushConstantStages;
+    std::vector<VkPushConstantRange> pcRanges;
   };
 
   const VertexRenderData *vertexRenderData();
   void setVertexRenderData(VertexRenderData *renderData);
 
-  void createBasicMaterial(unsigned char *vertData, unsigned int vertLen, unsigned char *fragData, unsigned int fragLen,
-                           VkcCommon &ctxt, VkhMaterialCreateInfo &createInfo);
-  void loadUBOTestMaterial(VkcCommon &ctxt, int num);
+  void createBasicMaterial(
+      unsigned char *vertData, unsigned int vertLen, unsigned char *fragData, unsigned int fragLen, VkcCommon &ctxt,
+      VkcMaterialCreateInfo &createInfo, const VkSpecializationInfo* specializationInfo = nullptr);
+
+  void loadUBOTestMaterial(VkcCommon &ctxt, uint32_t texArrayLen);
 }

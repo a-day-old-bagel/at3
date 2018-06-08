@@ -21,6 +21,7 @@
 #include "vkcAlloc.h"
 #include "vkcUboPageMgr.h"
 #include "vkcMaterial.h"
+#include "VulkanTexture.hpp"
 
 #define SUBSCRIBE_TOPIC(e, x) std::make_unique<rtu::topics::Subscription>(e, RTU_MTHD_DLGT(&VulkanContext::x, this));
 
@@ -40,22 +41,22 @@ namespace at3 {
       static VulkanContextCreateInfo<EcsInterface> defaults();
   };
 
-  template<typename EcsInterface>
-  class Texture;
-  template<typename EcsInterface>
-  class Texture2D;
-  template<typename EcsInterface>
-  class Texture2DArray;
-  template<typename EcsInterface>
-  class TextureCubeMap;
+//  template<typename EcsInterface>
+//  class Texture;
+//  template<typename EcsInterface>
+//  class Texture2D;
+//  template<typename EcsInterface>
+//  class Texture2DArray;
+//  template<typename EcsInterface>
+//  class TextureCubeMap;
 
   template<typename EcsInterface>
   class VulkanContext {
 
-      friend class Texture<EcsInterface>;
-      friend class Texture2D<EcsInterface>;
-      friend class Texture2DArray<EcsInterface>;
-      friend class TextureCubeMap<EcsInterface>;
+//      friend class Texture<EcsInterface>;
+//      friend class Texture2D<EcsInterface>;
+//      friend class Texture2DArray<EcsInterface>;
+//      friend class TextureCubeMap<EcsInterface>;
 
     public:
 
@@ -64,7 +65,10 @@ namespace at3 {
       void updateWvMat(void *data);
       void step();
       void reInitRendering();
-      void registerMeshInstance(const std::string &meshFileName, const typename EcsInterface::EcsId id);
+      void registerMeshInstance(
+          typename EcsInterface::EcsId id,
+          const std::string &meshFileName,
+          const std::string &textureFileName = "");
 
     private:
 
@@ -78,7 +82,10 @@ namespace at3 {
       GlobalShaderDataStore globalData;
       static const uint32_t INVALID_QUEUE_FAMILY_IDX = (uint32_t) -1;
 
-      Texture2D<EcsInterface> testTex;
+//      Texture2D<EcsInterface> testTex, testTex2;
+//      Texture2DRepository<EcsInterface> textureResources;
+//      std::vector<Texture2D<EcsInterface>> textureResources;
+      std::unique_ptr<TextureRepository<EcsInterface>> textures;
 
       void createInstance(const char *appName);
       void createPhysicalDevice();

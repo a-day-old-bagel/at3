@@ -14,7 +14,9 @@
 
 //#pragma once
 
-#include "vkc.h"
+//#include "vkc.h"
+#include <vulkan/vulkan.h>
+#include "VulkanTexture.hpp"
 
 namespace at3 {
 
@@ -203,6 +205,7 @@ namespace at3 {
 		*
 		* @return A handle to the allocated command buffer
 		*/
+		// TODO: Replace this with the scratch command buffer stuff
   VkCommandBuffer beginNewCommandBuffer(VkDevice device, VkCommandPool pool) {
 
     VkCommandBuffer buff;

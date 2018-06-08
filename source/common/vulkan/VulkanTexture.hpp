@@ -25,7 +25,13 @@
 
 #pragma once
 
+#include <memory>
+#include <unordered_map>
+#include <vector>
+#include <string>
 #include <gli/gli.hpp>
+
+#include "utilities.h"
 
 namespace at3 {
 
@@ -60,8 +66,8 @@ namespace at3 {
       VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
   /**
-		* Allocate and begin a new primary command buffer from a command pool
-		*/
+  * Allocate and begin a new primary command buffer from a command pool
+  */
   VkCommandBuffer beginNewCommandBuffer(VkDevice device, VkCommandPool pool);
 
   /**
@@ -69,12 +75,22 @@ namespace at3 {
   */
   void flushCommandBuffer(VkDevice device, VkCommandPool pool, VkCommandBuffer commandBuffer, VkQueue queue);
 
+  /** @brief Info used to load textures without depending on VulkanContext wrapper (or any other wrapper) */
+  struct VkcTextureOperationInfo {
+    VkPhysicalDevice physicalDevice;
+    VkDevice logicalDevice;
+    VkCommandPool transferCommandPool;
+    VkQueue transferQueue;
+    VkPhysicalDeviceMemoryProperties physicalMemProps;
+    VkBool32 samplerAnisotropy;
+    float maxSamplerAnisotropy;
+    bool forceLinear = false;
+  };
+
   /** @brief Vulkan texture base class */
   template <typename EcsInterface>
-  class Texture {
-    protected:
-      VulkanContext<EcsInterface> *ctxt = nullptr;
-    public:
+  struct Texture {
+
       VkImage image;
       VkImageLayout imageLayout;
       VkDeviceMemory deviceMemory;
@@ -82,49 +98,34 @@ namespace at3 {
       uint32_t width, height;
       uint32_t mipLevels;
       uint32_t layerCount;
-      VkDescriptorImageInfo descriptor;
 
       /** @brief Optional sampler to use with this texture */
       VkSampler sampler;
 
-      /** @brief Update image descriptor from current sampler, view and image layout */
-      void updateDescriptor() {
-        descriptor.sampler = sampler;
-        descriptor.imageView = view;
-        descriptor.imageLayout = imageLayout;
-      }
-
       /** @brief Release all Vulkan resources held by this texture */
-      void destroy() {
-        vkDestroyImageView(ctxt->common.device, view, nullptr);
-        vkDestroyImage(ctxt->common.device, image, nullptr);
+      void destroy(VkcTextureOperationInfo &info) {
+        vkDestroyImageView(info.logicalDevice, view, nullptr);
+        vkDestroyImage(info.logicalDevice, image, nullptr);
         if (sampler) {
-          vkDestroySampler(ctxt->common.device, sampler, nullptr);
+          vkDestroySampler(info.logicalDevice, sampler, nullptr);
         }
-        vkFreeMemory(ctxt->common.device, deviceMemory, nullptr);
+        vkFreeMemory(info.logicalDevice, deviceMemory, nullptr);
       }
   };
 
   /** @brief 2D texture */
   template <typename EcsInterface>
-  class Texture2D : public Texture<EcsInterface> {
-    public:
+  struct Texture2D : public Texture<EcsInterface> {
+
       /**
       * Load a 2D texture including all mip levels
       */
       void loadFromFile(
-          std::string filename,
+          const std::string &filename,
           VkFormat format,
-          VulkanContext<EcsInterface> *ctxt,
-          VkQueue copyQueue,
+          VkcTextureOperationInfo &info,
           VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
-          VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-          bool forceLinear = false) {
-
-        if (this->ctxt) {
-          this->destroy();
-        }
-        this->ctxt = ctxt;
+          VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
 
         AT3_ASSERT(fileExists(filename), "Could not load texture from file: %s\n", filename.c_str());
 
@@ -141,14 +142,14 @@ namespace at3 {
 
         // Get device properites for the requested texture format
         VkFormatProperties formatProperties;
-        vkGetPhysicalDeviceFormatProperties(ctxt->common.gpu.device, format, &formatProperties);
+        vkGetPhysicalDeviceFormatProperties(info.physicalDevice, format, &formatProperties);
 
         // Only use linear tiling if requested (and supported by the device)
         // Support for linear tiling is mostly limited, so prefer to use
         // optimal tiling instead
         // On most implementations linear tiling will only support a very
         // limited amount of formats and features (mip maps, cubemaps, arrays, etc.)
-        auto useStaging = (VkBool32) !forceLinear;
+        auto useStaging = (VkBool32) !info.forceLinear;
 
         VkMemoryAllocateInfo memAllocInfo{};
         memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -156,7 +157,7 @@ namespace at3 {
         VkMemoryRequirements memReqs;
 
         // Use a separate command buffer for texture loading TODO: Correct to use this pool?
-        VkCommandBuffer copyCmd = beginNewCommandBuffer(ctxt->common.device, ctxt->common.transferCommandPool);
+        VkCommandBuffer copyCmd = beginNewCommandBuffer(info.logicalDevice, info.transferCommandPool);
 
         if (useStaging) {
           // Create a host-visible staging buffer that contains the raw image data
@@ -171,26 +172,26 @@ namespace at3 {
           bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
           bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-          vkCreateBuffer(ctxt->common.device, &bufferCreateInfo, nullptr, &stagingBuffer);
+          vkCreateBuffer(info.logicalDevice, &bufferCreateInfo, nullptr, &stagingBuffer);
 
           // Get memory requirements for the staging buffer (alignment, memory type bits)
-          vkGetBufferMemoryRequirements(ctxt->common.device, stagingBuffer, &memReqs);
+          vkGetBufferMemoryRequirements(info.logicalDevice, stagingBuffer, &memReqs);
 
           memAllocInfo.allocationSize = memReqs.size;
 
           // Get memory type index for a host visible buffer
-          memAllocInfo.memoryTypeIndex = chooseMemoryType(memReqs.memoryTypeBits, ctxt->common.gpu.memProps,
+          memAllocInfo.memoryTypeIndex = chooseMemoryType(memReqs.memoryTypeBits, info.physicalMemProps,
                                                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                                           VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-          vkAllocateMemory(ctxt->common.device, &memAllocInfo, nullptr, &stagingMemory);
-          vkBindBufferMemory(ctxt->common.device, stagingBuffer, stagingMemory, 0);
+          vkAllocateMemory(info.logicalDevice, &memAllocInfo, nullptr, &stagingMemory);
+          vkBindBufferMemory(info.logicalDevice, stagingBuffer, stagingMemory, 0);
 
           // Copy texture data into staging buffer
           uint8_t *data;
-          vkMapMemory(ctxt->common.device, stagingMemory, 0, memReqs.size, 0, (void **) &data);
+          vkMapMemory(info.logicalDevice, stagingMemory, 0, memReqs.size, 0, (void **) &data);
           memcpy(data, tex2D.data(), tex2D.size());
-          vkUnmapMemory(ctxt->common.device, stagingMemory);
+          vkUnmapMemory(info.logicalDevice, stagingMemory);
 
           // Setup buffer copy regions for each mip level
           std::vector<VkBufferImageCopy> bufferCopyRegions;
@@ -230,16 +231,16 @@ namespace at3 {
           if (!(imageCreateInfo.usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
             imageCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
           }
-          vkCreateImage(ctxt->common.device, &imageCreateInfo, nullptr, &this->image);
+          vkCreateImage(info.logicalDevice, &imageCreateInfo, nullptr, &this->image);
 
-          vkGetImageMemoryRequirements(ctxt->common.device, this->image, &memReqs);
+          vkGetImageMemoryRequirements(info.logicalDevice, this->image, &memReqs);
 
           memAllocInfo.allocationSize = memReqs.size;
 
-          memAllocInfo.memoryTypeIndex = chooseMemoryType(memReqs.memoryTypeBits, ctxt->common.gpu.memProps,
+          memAllocInfo.memoryTypeIndex = chooseMemoryType(memReqs.memoryTypeBits, info.physicalMemProps,
                                                           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-          vkAllocateMemory(ctxt->common.device, &memAllocInfo, nullptr, &this->deviceMemory);
-          vkBindImageMemory(ctxt->common.device, this->image, this->deviceMemory, 0);
+          vkAllocateMemory(info.logicalDevice, &memAllocInfo, nullptr, &this->deviceMemory);
+          vkBindImageMemory(info.logicalDevice, this->image, this->deviceMemory, 0);
 
           VkImageSubresourceRange subresourceRange = {};
           subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -275,18 +276,19 @@ namespace at3 {
               imageLayout,
               subresourceRange);
 
-          flushCommandBuffer(ctxt->common.device, ctxt->common.transferCommandPool, copyCmd, copyQueue);
+          flushCommandBuffer(info.logicalDevice, info.transferCommandPool, copyCmd, info.transferQueue);
 
           // Clean up staging resources
-          vkFreeMemory(ctxt->common.device, stagingMemory, nullptr);
-          vkDestroyBuffer(ctxt->common.device, stagingBuffer, nullptr);
+          vkFreeMemory(info.logicalDevice, stagingMemory, nullptr);
+          vkDestroyBuffer(info.logicalDevice, stagingBuffer, nullptr);
         } else {
           // Prefer using optimal tiling, as linear tiling
           // may support only a small set of features
           // depending on implementation (e.g. no mip maps, only one layer, etc.)
 
           // Check if this support is supported for linear tiling
-          assert(formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
+          AT3_ASSERT(formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT,
+                     "Linear tiling not supported!\n");
 
           VkImage mappableImage;
           VkDeviceMemory mappableMemory;
@@ -306,24 +308,24 @@ namespace at3 {
           imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
           // Load mip map level 0 to linear tiling image
-          vkCreateImage(ctxt->common.device, &imageCreateInfo, nullptr, &mappableImage);
+          vkCreateImage(info.logicalDevice, &imageCreateInfo, nullptr, &mappableImage);
 
           // Get memory requirements for this image
           // like size and alignment
-          vkGetImageMemoryRequirements(ctxt->common.device, mappableImage, &memReqs);
+          vkGetImageMemoryRequirements(info.logicalDevice, mappableImage, &memReqs);
           // Set memory allocation size to required memory size
           memAllocInfo.allocationSize = memReqs.size;
 
           // Get memory type that can be mapped to host memory
-          memAllocInfo.memoryTypeIndex = chooseMemoryType(memReqs.memoryTypeBits, ctxt->common.gpu.memProps,
+          memAllocInfo.memoryTypeIndex = chooseMemoryType(memReqs.memoryTypeBits, info.physicalMemProps,
                                                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                                           VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
           // Allocate host memory
-          vkAllocateMemory(ctxt->common.device, &memAllocInfo, nullptr, &mappableMemory);
+          vkAllocateMemory(info.logicalDevice, &memAllocInfo, nullptr, &mappableMemory);
 
           // Bind allocated image for use
-          vkBindImageMemory(ctxt->common.device, mappableImage, mappableMemory, 0);
+          vkBindImageMemory(info.logicalDevice, mappableImage, mappableMemory, 0);
 
           // Get sub resource layout
           // Mip map count, array layer, etc.
@@ -336,15 +338,15 @@ namespace at3 {
 
           // Get sub resources layout
           // Includes row pitch, size offsets, etc.
-          vkGetImageSubresourceLayout(ctxt->common.device, mappableImage, &subRes, &subResLayout);
+          vkGetImageSubresourceLayout(info.logicalDevice, mappableImage, &subRes, &subResLayout);
 
           // Map image memory
-          vkMapMemory(ctxt->common.device, mappableMemory, 0, memReqs.size, 0, &data);
+          vkMapMemory(info.logicalDevice, mappableMemory, 0, memReqs.size, 0, &data);
 
           // Copy image data into memory
           memcpy(data, tex2D[subRes.mipLevel].data(), tex2D[subRes.mipLevel].size());
 
-          vkUnmapMemory(ctxt->common.device, mappableMemory);
+          vkUnmapMemory(info.logicalDevice, mappableMemory);
 
           // Linear tiled images don't need to be staged
           // and can be directly used as textures
@@ -354,7 +356,7 @@ namespace at3 {
           // Setup image memory barrier
           setImageLayout(copyCmd, this->image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, imageLayout);
 
-          flushCommandBuffer(ctxt->common.device, ctxt->common.transferCommandPool, copyCmd, copyQueue);
+          flushCommandBuffer(info.logicalDevice, info.transferCommandPool, copyCmd, info.transferQueue);
         }
 
         // Create a defaultsampler
@@ -373,12 +375,12 @@ namespace at3 {
         samplerCreateInfo.maxLod = (useStaging) ? (float) this->mipLevels : 0.0f;
 
         // Only enable anisotropic filtering if enabled on the devicec
-        samplerCreateInfo.anisotropyEnable = ctxt->common.gpu.features.samplerAnisotropy;
+        samplerCreateInfo.anisotropyEnable = info.samplerAnisotropy;
         samplerCreateInfo.maxAnisotropy = samplerCreateInfo.anisotropyEnable ?
-            ctxt->common.gpu.deviceProps.limits.maxSamplerAnisotropy : 1.0f;
+            info.maxSamplerAnisotropy : 1.0f;
 
         samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        vkCreateSampler(ctxt->common.device, &samplerCreateInfo, nullptr, &this->sampler);
+        vkCreateSampler(info.logicalDevice, &samplerCreateInfo, nullptr, &this->sampler);
 
         // Create image view
         // Textures are not directly accessed by the shaders and
@@ -395,204 +397,69 @@ namespace at3 {
         // Only set mip map count if optimal tiling is used
         viewCreateInfo.subresourceRange.levelCount = (useStaging) ? this->mipLevels : 1;
         viewCreateInfo.image = this->image;
-        vkCreateImageView(ctxt->common.device, &viewCreateInfo, nullptr, &this->view);
-
-        // Update descriptor image info member that can be used for setting up descriptor sets
-        this->updateDescriptor();
+        VkResult result = vkCreateImageView(info.logicalDevice, &viewCreateInfo, nullptr, &this->view);
+        AT3_ASSERT(result == VK_SUCCESS, "Failed to create image view for %s!\n", filename.c_str());
       }
-
-//      /**
-//      * Creates a 2D texture from a buffer
-//      *
-//      * @param buffer Buffer containing texture data to upload
-//      * @param bufferSize Size of the buffer in machine units
-//      * @param width Width of the texture to create
-//      * @param height Height of the texture to create
-//      * @param format Vulkan format of the image data stored in the file
-//      * @param device Vulkan device to create the texture on
-//      * @param copyQueue Queue used for the texture staging copy commands (must support transfer)
-//      * @param (Optional) filter Texture filtering for the sampler (defaults to VK_FILTER_LINEAR)
-//      * @param (Optional) imageUsageFlags Usage flags for the texture's image (defaults to VK_IMAGE_USAGE_SAMPLED_BIT)
-//      * @param (Optional) imageLayout Usage layout for the texture (defaults VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-//      */
-//      void fromBuffer(
-//          void *buffer,
-//          VkDeviceSize bufferSize,
-//          VkFormat format,
-//          uint32_t width,
-//          uint32_t height,
-//          VulkanContext *ctxt,
-//          VkQueue copyQueue,
-//          VkFilter filter = VK_FILTER_LINEAR,
-//          VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
-//          VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-//
-//        if (this->ctxt) {
-//          destroy();
-//        }
-//        this->ctxt = ctxt;
-//
-//        assert(buffer);
-//
-//        this->device = device;
-//        width = width;
-//        height = height;
-//        mipLevels = 1;
-//
-//        VkMemoryAllocateInfo memAllocInfo{};
-//        memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-//        VkMemoryRequirements memReqs;
-//
-//        // Use a separate command buffer for texture loading
-//        VkCommandBuffer copyCmd;
-//        ctxt->createCommandBuffer(copyCmd, ctxt->common.transferCommandPool); // TODO: Correct to use this pool?
-//        VkCommandBufferBeginInfo cmdBufferBeginInfo{};
-//        cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-//        vkBeginCommandBuffer(copyCmd, &cmdBufferBeginInfo);
-//
-//        // Create a host-visible staging buffer that contains the raw image data
-//        VkBuffer stagingBuffer;
-//        VkDeviceMemory stagingMemory;
-//
-//        VkBufferCreateInfo bufferCreateInfo{};
-//        bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-//
-//        bufferCreateInfo.size = bufferSize;
-//        // This buffer is used as a transfer source for the buffer copy
-//        bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-//        bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-//
-//        VK_CHECK_RESULT(vkCreateBuffer(ctxt->common.device, &bufferCreateInfo, nullptr, &stagingBuffer));
-//
-//        // Get memory requirements for the staging buffer (alignment, memory type bits)
-//        vkGetBufferMemoryRequirements(ctxt->common.device, stagingBuffer, &memReqs);
-//
-//        memAllocInfo.allocationSize = memReqs.size;
-//        // Get memory type index for a host visible buffer
-//        memAllocInfo.memoryTypeIndex = chooseMemoryType(memReqs.memoryTypeBits, ctxt->common.gpu.memProps,
-//                                                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-//                                                             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-//
-//        VK_CHECK_RESULT(vkAllocateMemory(ctxt->common.device, &memAllocInfo, nullptr, &stagingMemory));
-//        VK_CHECK_RESULT(vkBindBufferMemory(ctxt->common.device, stagingBuffer, stagingMemory, 0));
-//
-//        // Copy texture data into staging buffer
-//        uint8_t *data;
-//        VK_CHECK_RESULT(vkMapMemory(ctxt->common.device, stagingMemory, 0, memReqs.size, 0, (void **) &data));
-//        memcpy(data, buffer, bufferSize);
-//        vkUnmapMemory(ctxt->common.device, stagingMemory);
-//
-//        VkBufferImageCopy bufferCopyRegion = {};
-//        bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-//        bufferCopyRegion.imageSubresource.mipLevel = 0;
-//        bufferCopyRegion.imageSubresource.baseArrayLayer = 0;
-//        bufferCopyRegion.imageSubresource.layerCount = 1;
-//        bufferCopyRegion.imageExtent.width = width;
-//        bufferCopyRegion.imageExtent.height = height;
-//        bufferCopyRegion.imageExtent.depth = 1;
-//        bufferCopyRegion.bufferOffset = 0;
-//
-//        // Create optimal tiled target image
-//        VkImageCreateInfo imageCreateInfo = vks::initializers::imageCreateInfo();
-//        imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-//        imageCreateInfo.format = format;
-//        imageCreateInfo.mipLevels = mipLevels;
-//        imageCreateInfo.arrayLayers = 1;
-//        imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-//        imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-//        imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-//        imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-//        imageCreateInfo.extent = {width, height, 1};
-//        imageCreateInfo.usage = imageUsageFlags;
-//        // Ensure that the TRANSFER_DST bit is set for staging
-//        if (!(imageCreateInfo.usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
-//          imageCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-//        }
-//        VK_CHECK_RESULT(vkCreateImage(ctxt->common.device, &imageCreateInfo, nullptr, &image));
-//
-//        vkGetImageMemoryRequirements(ctxt->common.device, image, &memReqs);
-//
-//        memAllocInfo.allocationSize = memReqs.size;
-//
-//        memAllocInfo.memoryTypeIndex = chooseMemoryType(memReqs.memoryTypeBits, ctxt->common.gpu.memProps,
-//                                                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-//        VK_CHECK_RESULT(vkAllocateMemory(ctxt->common.device, &memAllocInfo, nullptr, &deviceMemory));
-//        VK_CHECK_RESULT(vkBindImageMemory(ctxt->common.device, image, deviceMemory, 0));
-//
-//        VkImageSubresourceRange subresourceRange = {};
-//        subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-//        subresourceRange.baseMipLevel = 0;
-//        subresourceRange.levelCount = mipLevels;
-//        subresourceRange.layerCount = 1;
-//
-//        // Image barrier for optimal image (target)
-//        // Optimal image will be used as destination for the copy
-//        vks::tools::setImageLayout(
-//            copyCmd,
-//            image,
-//            VK_IMAGE_LAYOUT_UNDEFINED,
-//            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-//            subresourceRange);
-//
-//        // Copy mip levels from staging buffer
-//        vkCmdCopyBufferToImage(
-//            copyCmd,
-//            stagingBuffer,
-//            image,
-//            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-//            1,
-//            &bufferCopyRegion
-//        );
-//
-//        // Change texture image layout to shader read after all mip levels have been copied
-//        this->imageLayout = imageLayout;
-//        vks::tools::setImageLayout(
-//            copyCmd,
-//            image,
-//            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-//            imageLayout,
-//            subresourceRange);
-//
-//        device->flushCommandBuffer(copyCmd, copyQueue);
-//
-//        // Clean up staging resources
-//        vkFreeMemory(ctxt->common.device, stagingMemory, nullptr);
-//        vkDestroyBuffer(ctxt->common.device, stagingBuffer, nullptr);
-//
-//        // Create sampler
-//        VkSamplerCreateInfo samplerCreateInfo = {};
-//        samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-//        samplerCreateInfo.magFilter = filter;
-//        samplerCreateInfo.minFilter = filter;
-//        samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-//        samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-//        samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-//        samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-//        samplerCreateInfo.mipLodBias = 0.0f;
-//        samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
-//        samplerCreateInfo.minLod = 0.0f;
-//        samplerCreateInfo.maxLod = 0.0f;
-//        samplerCreateInfo.maxAnisotropy = 1.0f;
-//        VK_CHECK_RESULT(vkCreateSampler(ctxt->common.device, &samplerCreateInfo, nullptr, &sampler));
-//
-//        // Create image view
-//        VkImageViewCreateInfo viewCreateInfo = {};
-//        viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-//        viewCreateInfo.pNext = NULL;
-//        viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-//        viewCreateInfo.format = format;
-//        viewCreateInfo.components = {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B,
-//                                     VK_COMPONENT_SWIZZLE_A};
-//        viewCreateInfo.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-//        viewCreateInfo.subresourceRange.levelCount = 1;
-//        viewCreateInfo.image = image;
-//        VK_CHECK_RESULT(vkCreateImageView(ctxt->common.device, &viewCreateInfo, nullptr, &view));
-//
-//        // Update descriptor image info member that can be used for setting up descriptor sets
-//        updateDescriptor();
-//      }
-
   };
+
+
+
+
+
+//  template<typename EcsInterface>
+//  std::unique_ptr<std::unordered_map<std::string, uint32_t>> Texture2D<EcsInterface>::textureArrayIndexMap;
+//  template<typename EcsInterface>
+//  std::unique_ptr<std::vector<VkDescriptorImageInfo>> Texture2D<EcsInterface>::descriptorImageInfos;
+//  template<typename EcsInterface>
+//  std::unique_ptr<uint32_t> Texture2D<EcsInterface>::nextId;
+
+
+
+  template<typename EcsInterface>
+  class TextureRepository {
+      std::vector<Texture2D<EcsInterface>> textures;
+      std::vector<VkDescriptorImageInfo> descriptorImageInfos;
+      std::unordered_map<std::string, uint32_t> textureArrayIndexMap;
+      uint32_t nextId = 0;
+      void registerNewTexture2D(Texture2D<EcsInterface>* texture, VkcTextureOperationInfo &info,
+                                       const std::string &key) {
+        printf("Texture %u registered: %s\n", nextId, key.c_str());
+        textureArrayIndexMap.emplace(key, nextId++);
+        VkDescriptorImageInfo imageInfo {};
+        imageInfo.sampler = texture->sampler;
+        imageInfo.imageView = texture->view;
+        imageInfo.imageLayout = texture->imageLayout;
+        descriptorImageInfos.push_back(imageInfo);
+      }
+    public:
+      TextureRepository(const std::string &textureDirectory, VkcTextureOperationInfo &info) {
+        for (auto &path : fs::recursive_directory_iterator(textureDirectory)) {
+          if (getFileExtOnly(path) == ".ktx") {
+            textures.emplace_back();
+            textures.back().loadFromFile(getFileNameRelative(path), VK_FORMAT_R8G8B8A8_UNORM, info);
+            registerNewTexture2D(&textures.back(), info, getFileNameOnly(path));
+          }
+        }
+      }
+      bool textureExists(const std::string &key) {
+        return textureArrayIndexMap.count(key) > 0;
+      }
+      uint32_t getTextureArrayIndex(const std::string &key) {
+        return textureArrayIndexMap.at(key);
+      }
+      VkDescriptorImageInfo* getDescriptorImageInfoArrayPtr() {
+        return descriptorImageInfos.data();
+      }
+      uint32_t getDescriptorImageInfoArrayCount() {
+        return static_cast<uint32_t>(descriptorImageInfos.size());
+      }
+  };
+
+
+
+
+
+
 
 //  /** @brief 2D array texture */
 //  class Texture2DArray : public Texture {
@@ -653,25 +520,25 @@ namespace at3 {
 //        bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 //        bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 //
-//        VK_CHECK_RESULT(vkCreateBuffer(ctxt->common.device, &bufferCreateInfo, nullptr, &stagingBuffer));
+//        VK_CHECK_RESULT(vkCreateBuffer(ctxt.logicalDevice, &bufferCreateInfo, nullptr, &stagingBuffer));
 //
 //        // Get memory requirements for the staging buffer (alignment, memory type bits)
-//        vkGetBufferMemoryRequirements(ctxt->common.device, stagingBuffer, &memReqs);
+//        vkGetBufferMemoryRequirements(ctxt.logicalDevice, stagingBuffer, &memReqs);
 //
 //        memAllocInfo.allocationSize = memReqs.size;
 //        // Get memory type index for a host visible buffer
-//        memAllocInfo.memoryTypeIndex = chooseMemoryType(memReqs.memoryTypeBits, ctxt->common.gpu.memProps,
+//        memAllocInfo.memoryTypeIndex = chooseMemoryType(memReqs.memoryTypeBits, ctxt.physicalMemProps,
 //                                                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
 //                                                             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 //
-//        VK_CHECK_RESULT(vkAllocateMemory(ctxt->common.device, &memAllocInfo, nullptr, &stagingMemory));
-//        VK_CHECK_RESULT(vkBindBufferMemory(ctxt->common.device, stagingBuffer, stagingMemory, 0));
+//        VK_CHECK_RESULT(vkAllocateMemory(ctxt.logicalDevice, &memAllocInfo, nullptr, &stagingMemory));
+//        VK_CHECK_RESULT(vkBindBufferMemory(ctxt.logicalDevice, stagingBuffer, stagingMemory, 0));
 //
 //        // Copy texture data into staging buffer
 //        uint8_t *data;
-//        VK_CHECK_RESULT(vkMapMemory(ctxt->common.device, stagingMemory, 0, memReqs.size, 0, (void **) &data));
+//        VK_CHECK_RESULT(vkMapMemory(ctxt.logicalDevice, stagingMemory, 0, memReqs.size, 0, (void **) &data));
 //        memcpy(data, tex2DArray.data(), static_cast<size_t>(tex2DArray.size()));
-//        vkUnmapMemory(ctxt->common.device, stagingMemory);
+//        vkUnmapMemory(ctxt.logicalDevice, stagingMemory);
 //
 //        // Setup buffer copy regions for each layer including all of it's miplevels
 //        std::vector<VkBufferImageCopy> bufferCopyRegions;
@@ -713,20 +580,20 @@ namespace at3 {
 //        imageCreateInfo.arrayLayers = layerCount;
 //        imageCreateInfo.mipLevels = mipLevels;
 //
-//        VK_CHECK_RESULT(vkCreateImage(ctxt->common.device, &imageCreateInfo, nullptr, &image));
+//        VK_CHECK_RESULT(vkCreateImage(ctxt.logicalDevice, &imageCreateInfo, nullptr, &image));
 //
-//        vkGetImageMemoryRequirements(ctxt->common.device, image, &memReqs);
+//        vkGetImageMemoryRequirements(ctxt.logicalDevice, image, &memReqs);
 //
 //        memAllocInfo.allocationSize = memReqs.size;
-//        memAllocInfo.memoryTypeIndex = chooseMemoryType(memReqs.memoryTypeBits, ctxt->common.gpu.memProps,
+//        memAllocInfo.memoryTypeIndex = chooseMemoryType(memReqs.memoryTypeBits, ctxt.physicalMemProps,
 //                                                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 //
-//        VK_CHECK_RESULT(vkAllocateMemory(ctxt->common.device, &memAllocInfo, nullptr, &deviceMemory));
-//        VK_CHECK_RESULT(vkBindImageMemory(ctxt->common.device, image, deviceMemory, 0));
+//        VK_CHECK_RESULT(vkAllocateMemory(ctxt.logicalDevice, &memAllocInfo, nullptr, &deviceMemory));
+//        VK_CHECK_RESULT(vkBindImageMemory(ctxt.logicalDevice, image, deviceMemory, 0));
 //
 //        // Use a separate command buffer for texture loading
 //        VkCommandBuffer copyCmd;
-//        ctxt->createCommandBuffer(copyCmd, ctxt->common.transferCommandPool); // TODO: Correct to use this pool?
+//        ctxt->createCommandBuffer(copyCmd, ctxt.transferCommandPool); // TODO: Correct to use this pool?
 //        VkCommandBufferBeginInfo cmdBufferBeginInfo{};
 //        cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 //
@@ -781,7 +648,7 @@ namespace at3 {
 //        samplerCreateInfo.minLod = 0.0f;
 //        samplerCreateInfo.maxLod = (float) mipLevels;
 //        samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-//        VK_CHECK_RESULT(vkCreateSampler(ctxt->common.device, &samplerCreateInfo, nullptr, &sampler));
+//        VK_CHECK_RESULT(vkCreateSampler(ctxt.logicalDevice, &samplerCreateInfo, nullptr, &sampler));
 //
 //        // Create image view
 //        VkImageViewCreateInfo viewCreateInfo = vks::initializers::imageViewCreateInfo();
@@ -793,11 +660,11 @@ namespace at3 {
 //        viewCreateInfo.subresourceRange.layerCount = layerCount;
 //        viewCreateInfo.subresourceRange.levelCount = mipLevels;
 //        viewCreateInfo.image = image;
-//        VK_CHECK_RESULT(vkCreateImageView(ctxt->common.device, &viewCreateInfo, nullptr, &view));
+//        VK_CHECK_RESULT(vkCreateImageView(ctxt.logicalDevice, &viewCreateInfo, nullptr, &view));
 //
 //        // Clean up staging resources
-//        vkFreeMemory(ctxt->common.device, stagingMemory, nullptr);
-//        vkDestroyBuffer(ctxt->common.device, stagingBuffer, nullptr);
+//        vkFreeMemory(ctxt.logicalDevice, stagingMemory, nullptr);
+//        vkDestroyBuffer(ctxt.logicalDevice, stagingBuffer, nullptr);
 //
 //        // Update descriptor image info member that can be used for setting up descriptor sets
 //        updateDescriptor();
@@ -862,25 +729,25 @@ namespace at3 {
 //        bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 //        bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 //
-//        VK_CHECK_RESULT(vkCreateBuffer(ctxt->common.device, &bufferCreateInfo, nullptr, &stagingBuffer));
+//        VK_CHECK_RESULT(vkCreateBuffer(ctxt.logicalDevice, &bufferCreateInfo, nullptr, &stagingBuffer));
 //
 //        // Get memory requirements for the staging buffer (alignment, memory type bits)
-//        vkGetBufferMemoryRequirements(ctxt->common.device, stagingBuffer, &memReqs);
+//        vkGetBufferMemoryRequirements(ctxt.logicalDevice, stagingBuffer, &memReqs);
 //
 //        memAllocInfo.allocationSize = memReqs.size;
 //        // Get memory type index for a host visible buffer
-//        memAllocInfo.memoryTypeIndex = chooseMemoryType(memReqs.memoryTypeBits, ctxt->common.gpu.memProps,
+//        memAllocInfo.memoryTypeIndex = chooseMemoryType(memReqs.memoryTypeBits, ctxt.physicalMemProps,
 //                                                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
 //                                                             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 //
-//        VK_CHECK_RESULT(vkAllocateMemory(ctxt->common.device, &memAllocInfo, nullptr, &stagingMemory));
-//        VK_CHECK_RESULT(vkBindBufferMemory(ctxt->common.device, stagingBuffer, stagingMemory, 0));
+//        VK_CHECK_RESULT(vkAllocateMemory(ctxt.logicalDevice, &memAllocInfo, nullptr, &stagingMemory));
+//        VK_CHECK_RESULT(vkBindBufferMemory(ctxt.logicalDevice, stagingBuffer, stagingMemory, 0));
 //
 //        // Copy texture data into staging buffer
 //        uint8_t *data;
-//        VK_CHECK_RESULT(vkMapMemory(ctxt->common.device, stagingMemory, 0, memReqs.size, 0, (void **) &data));
+//        VK_CHECK_RESULT(vkMapMemory(ctxt.logicalDevice, stagingMemory, 0, memReqs.size, 0, (void **) &data));
 //        memcpy(data, texCube.data(), texCube.size());
-//        vkUnmapMemory(ctxt->common.device, stagingMemory);
+//        vkUnmapMemory(ctxt.logicalDevice, stagingMemory);
 //
 //        // Setup buffer copy regions for each face including all of it's miplevels
 //        std::vector<VkBufferImageCopy> bufferCopyRegions;
@@ -926,20 +793,20 @@ namespace at3 {
 //        imageCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 //
 //
-//        VK_CHECK_RESULT(vkCreateImage(ctxt->common.device, &imageCreateInfo, nullptr, &image));
+//        VK_CHECK_RESULT(vkCreateImage(ctxt.logicalDevice, &imageCreateInfo, nullptr, &image));
 //
-//        vkGetImageMemoryRequirements(ctxt->common.device, image, &memReqs);
+//        vkGetImageMemoryRequirements(ctxt.logicalDevice, image, &memReqs);
 //
 //        memAllocInfo.allocationSize = memReqs.size;
-//        memAllocInfo.memoryTypeIndex = chooseMemoryType(memReqs.memoryTypeBits, ctxt->common.gpu.memProps,
+//        memAllocInfo.memoryTypeIndex = chooseMemoryType(memReqs.memoryTypeBits, ctxt.physicalMemProps,
 //                                                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 //
-//        VK_CHECK_RESULT(vkAllocateMemory(ctxt->common.device, &memAllocInfo, nullptr, &deviceMemory));
-//        VK_CHECK_RESULT(vkBindImageMemory(ctxt->common.device, image, deviceMemory, 0));
+//        VK_CHECK_RESULT(vkAllocateMemory(ctxt.logicalDevice, &memAllocInfo, nullptr, &deviceMemory));
+//        VK_CHECK_RESULT(vkBindImageMemory(ctxt.logicalDevice, image, deviceMemory, 0));
 //
 //        // Use a separate command buffer for texture loading
 //        VkCommandBuffer copyCmd;
-//        ctxt->createCommandBuffer(copyCmd, ctxt->common.transferCommandPool); // TODO: Correct to use this pool?
+//        ctxt->createCommandBuffer(copyCmd, ctxt.transferCommandPool); // TODO: Correct to use this pool?
 //        VkCommandBufferBeginInfo cmdBufferBeginInfo{};
 //        cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 //
@@ -994,7 +861,7 @@ namespace at3 {
 //        samplerCreateInfo.minLod = 0.0f;
 //        samplerCreateInfo.maxLod = (float) mipLevels;
 //        samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-//        VK_CHECK_RESULT(vkCreateSampler(ctxt->common.device, &samplerCreateInfo, nullptr, &sampler));
+//        VK_CHECK_RESULT(vkCreateSampler(ctxt.logicalDevice, &samplerCreateInfo, nullptr, &sampler));
 //
 //        // Create image view
 //        VkImageViewCreateInfo viewCreateInfo = vks::initializers::imageViewCreateInfo();
@@ -1006,11 +873,11 @@ namespace at3 {
 //        viewCreateInfo.subresourceRange.layerCount = 6;
 //        viewCreateInfo.subresourceRange.levelCount = mipLevels;
 //        viewCreateInfo.image = image;
-//        VK_CHECK_RESULT(vkCreateImageView(ctxt->common.device, &viewCreateInfo, nullptr, &view));
+//        VK_CHECK_RESULT(vkCreateImageView(ctxt.logicalDevice, &viewCreateInfo, nullptr, &view));
 //
 //        // Clean up staging resources
-//        vkFreeMemory(ctxt->common.device, stagingMemory, nullptr);
-//        vkDestroyBuffer(ctxt->common.device, stagingBuffer, nullptr);
+//        vkFreeMemory(ctxt.logicalDevice, stagingMemory, nullptr);
+//        vkDestroyBuffer(ctxt.logicalDevice, stagingBuffer, nullptr);
 //
 //        // Update descriptor image info member that can be used for setting up descriptor sets
 //        updateDescriptor();

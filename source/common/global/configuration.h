@@ -13,19 +13,21 @@
 #define PERSISTENT_STAGING_BUFFER 0
 #define COPY_ON_MAIN_COMMANDBUFFER 0
 #define COMBINE_MESHES 0
+#define TEXTURE_ARRAY_LENGTH 1
 
 #if USE_VULKAN_COORDS
 # if COMBINE_MESHES
-#   define MESH_FLAGS aiProcess_JoinIdenticalVertices | aiProcess_PreTransformVertices | aiProcess_Triangulate
+#   define MESH_FLAGS ( aiProcess_JoinIdenticalVertices | aiProcess_PreTransformVertices | aiProcess_Triangulate \
+                                                        | aiProcess_FlipUVs )
 # else
-#   define MESH_FLAGS aiProcess_Triangulate
+#   define MESH_FLAGS ( aiProcess_Triangulate | aiProcess_FlipUVs )
 # endif
 #else
 # if COMBINE_MESHES
-#   define MESH_FLAGS aiProcess_JoinIdenticalVertices | aiProcess_PreTransformVertices | aiProcess_FlipWindingOrder \
-                      | aiProcess_Triangulate
+#   define MESH_FLAGS ( aiProcess_JoinIdenticalVertices | aiProcess_PreTransformVertices | aiProcess_FlipWindingOrder \
+                        | aiProcess_Triangulate )
 # else
-#   define MESH_FLAGS aiProcess_FlipWindingOrder | aiProcess_Triangulate
+#   define MESH_FLAGS ( aiProcess_FlipWindingOrder | aiProcess_Triangulate )
 # endif
 #endif
 
@@ -35,6 +37,7 @@
 // and more windows stupidity
 #undef min
 #undef max
+// If you were going to suggest using their macros that disable these, don't make me laugh. Of course they don't work.
 
 // Physics and controls defines
 #define HUMAN_HEIGHT 1.83f

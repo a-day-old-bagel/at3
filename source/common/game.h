@@ -175,6 +175,7 @@ namespace at3 {
             case SDL_SCANCODE_8: rtu::topics::publish("key_down_8"); break;
             case SDL_SCANCODE_9: rtu::topics::publish("key_down_9"); break;
             case SDL_SCANCODE_F: rtu::topics::publish("key_down_f"); break;
+            case SDL_SCANCODE_R: rtu::topics::publish("key_down_r"); break;
             case SDL_SCANCODE_SPACE: rtu::topics::publish("key_down_space"); break;
             default: break;
           } break;

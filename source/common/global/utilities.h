@@ -12,6 +12,7 @@ namespace fs = std::experimental::filesystem;
 #endif
 
 std::string getFileNameOnly(PATH_TYPE &path);
+std::string getFileExtOnly(PATH_TYPE &path);
 std::string getFileNameRelative(PATH_TYPE &path);
 
 bool fileExists(const std::string &filePath);

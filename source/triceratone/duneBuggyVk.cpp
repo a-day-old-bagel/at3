@@ -29,7 +29,7 @@ namespace at3 {
   DuneBuggyVk::DuneBuggyVk(ezecs::State &state, VulkanContext<EntityComponentSystemInterface> *context, Scene_ &scene,
                            glm::mat4 &transform) : state(&state), scene(&scene){
 
-    chassis = std::make_shared<MeshObjectVk_>(context, "pyramid_bottom", transform);
+    chassis = std::make_shared<MeshObjectVk_>(context, "pyramid_bottom", "pyramid_bottom", transform);
 
     ezecs::entityId chassisId = chassis->getId();
 

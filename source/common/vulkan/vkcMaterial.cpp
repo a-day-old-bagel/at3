@@ -49,8 +49,9 @@ namespace at3 {
 
   }
 
-  void createBasicMaterial(unsigned char *vertData, unsigned int vertLen, unsigned char *fragData, unsigned int fragLen,
-                           VkcCommon &ctxt, VkhMaterialCreateInfo &createInfo) {
+  void createBasicMaterial(
+      unsigned char *vertData, unsigned int vertLen, unsigned char *fragData, unsigned int fragLen, VkcCommon &ctxt,
+      VkcMaterialCreateInfo &createInfo, const VkSpecializationInfo* specializationInfo) {
 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
@@ -65,21 +66,34 @@ namespace at3 {
     fragmentStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     fragmentStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
     fragmentStageInfo.pName = "main";
+    fragmentStageInfo.pSpecializationInfo = specializationInfo;
     createShaderModule(fragmentStageInfo.module, fragData, fragLen, ctxt);
     shaderStages.push_back(fragmentStageInfo);
-    
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(createInfo.descSetLayouts.size());
     pipelineLayoutInfo.pSetLayouts = createInfo.descSetLayouts.data();
 
-    VkPushConstantRange pushConstantRange = {};
-    pushConstantRange.offset = 0;
-    pushConstantRange.size = createInfo.pushConstantRange;
-    pushConstantRange.stageFlags = createInfo.pushConstantStages;
 
-    pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-    pipelineLayoutInfo.pushConstantRangeCount = 1;
+
+
+//    VkPushConstantRange pushConstantRange = {};
+//    pushConstantRange.offset = 0;
+//    pushConstantRange.size = createInfo.pushConstantRange;
+//    pushConstantRange.stageFlags = createInfo.pushConstantStages;
+
+//    pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+//    pipelineLayoutInfo.pushConstantRangeCount = 1;
+
+
+
+
+    pipelineLayoutInfo.pPushConstantRanges = createInfo.pcRanges.data();
+    pipelineLayoutInfo.pushConstantRangeCount = (uint32_t) createInfo.pcRanges.size();
+
+
+
 
     VkResult res = vkCreatePipelineLayout(ctxt.device, &pipelineLayoutInfo, nullptr, createInfo.outPipelineLayout);
     AT3_ASSERT(res == VK_SUCCESS, "Error creating pipeline layout");
@@ -198,23 +212,44 @@ namespace at3 {
 
   }
 
-  void loadUBOTestMaterial(VkcCommon &ctxt, int num) {
+  void loadUBOTestMaterial(VkcCommon &ctxt, uint32_t texArrayLen) {
 
     std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
 
-    VkDescriptorSetLayoutBinding vertexBinding {};
-    vertexBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    vertexBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    vertexBinding.binding = 0;
-    vertexBinding.descriptorCount = 1;
-    layoutBindings.push_back(vertexBinding);
+    VkDescriptorSetLayoutBinding uboBinding {};
+    uboBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    uboBinding.binding = 0;
+    uboBinding.descriptorCount = 1;
+    layoutBindings.push_back(uboBinding);
 
-    VkDescriptorSetLayoutBinding fragmentBinding {};
-    vertexBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    vertexBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    vertexBinding.binding = 1;
-    vertexBinding.descriptorCount = 1;
-    layoutBindings.push_back(vertexBinding);
+
+
+//    VkDescriptorSetLayoutBinding samplerBinding {};
+//    samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+//    samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+//    samplerBinding.binding = 1;
+//    samplerBinding.descriptorCount = 1;
+//    layoutBindings.push_back(samplerBinding);
+//
+//    VkDescriptorSetLayoutBinding textureArrayBinding {};
+//    textureArrayBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+//    textureArrayBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+//    textureArrayBinding.binding = 2;
+//    textureArrayBinding.descriptorCount = TEXTURE_ARRAY_LENGTH;
+//    layoutBindings.push_back(textureArrayBinding);
+
+
+
+    VkDescriptorSetLayoutBinding textureArrayBinding {};
+    textureArrayBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    textureArrayBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    textureArrayBinding.binding = 1;
+//    textureArrayBinding.descriptorCount = TEXTURE_ARRAY_LENGTH;
+    textureArrayBinding.descriptorCount = texArrayLen;
+    layoutBindings.push_back(textureArrayBinding);
+
+
 
     VkDescriptorSetLayoutCreateInfo layoutInfo = {};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -224,18 +259,47 @@ namespace at3 {
     VkResult res = vkCreateDescriptorSetLayout(ctxt.device, &layoutInfo, nullptr, &ctxt.matData.descSetLayout);
     AT3_ASSERT(res == VK_SUCCESS, "Error creating desc set layout");
 
-    VkhMaterialCreateInfo createInfo = {};
+    VkcMaterialCreateInfo createInfo = {};
     createInfo.renderPass = ctxt.renderData.mainRenderPass;
     createInfo.outPipeline = &ctxt.matData.graphicsPipeline;
     createInfo.outPipelineLayout = &ctxt.matData.pipelineLayout;
 
-    createInfo.pushConstantStages = VK_SHADER_STAGE_VERTEX_BIT;
-    createInfo.pushConstantRange = sizeof(uint32_t);
+    VkPushConstantRange pcRange = {};
+    pcRange.offset = 0;
+    pcRange.size = sizeof(MeshInstanceIndices::rawType);
+    pcRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    createInfo.pcRanges.push_back(pcRange);
+
     createInfo.descSetLayouts.push_back(ctxt.matData.descSetLayout);
 
-    createBasicMaterial(ubo_array_vert_spv, ubo_array_vert_spv_len,
-                        static_sun_frag_spv, static_sun_frag_spv_len, ctxt, createInfo);
-//                        debug_uvs_frag_spv, debug_uvs_frag_spv_len, ctxt, createInfo);
 
+
+
+
+    struct SpecializationData {
+      uint32_t textureArrayLength = 1;
+    } specializationData;
+    specializationData.textureArrayLength = texArrayLen;
+
+    std::vector<VkSpecializationMapEntry> specializationMapEntries;
+
+    VkSpecializationMapEntry textureArrayLengthEntry {};
+    textureArrayLengthEntry.constantID = 0;
+    textureArrayLengthEntry.size = sizeof(specializationData.textureArrayLength);
+    textureArrayLengthEntry.offset = static_cast<uint32_t>(offsetof(SpecializationData, textureArrayLength));
+    specializationMapEntries.push_back(textureArrayLengthEntry);
+
+    // Prepare specialization info block for the shader stage
+    VkSpecializationInfo specializationInfo{};
+    specializationInfo.dataSize = sizeof(specializationData);
+    specializationInfo.mapEntryCount = static_cast<uint32_t>(specializationMapEntries.size());
+    specializationInfo.pMapEntries = specializationMapEntries.data();
+    specializationInfo.pData = &specializationData;
+
+
+
+
+    createBasicMaterial(ubo_array_vert_spv, ubo_array_vert_spv_len,
+                        static_sun_frag_spv, static_sun_frag_spv_len, ctxt, createInfo, &specializationInfo);
   }
 }

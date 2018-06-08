@@ -125,7 +125,7 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
         key1Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_1", BasicWalkerVk::makeActiveControl, playerVk.get());
         key2Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_2", DuneBuggyVk::makeActiveControl, duneBuggyVk.get());
         key3Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_3", PyramidVk::makeActiveControl, pyramidVk.get());
-        keyFSub = RTU_MAKE_SUB_UNIQUEPTR("key_down_f", PyramidVk::spawnSphere, pyramidVk.get());
+        keyFSub = RTU_MAKE_SUB_UNIQUEPTR("key_down_r", PyramidVk::spawnSphere, pyramidVk.get());
       }
 
 

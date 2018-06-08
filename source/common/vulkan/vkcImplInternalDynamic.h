@@ -720,16 +720,64 @@ void VulkanContext<EcsInterface>::updateDescriptorSets(UboPageMgr *dataStore) {
     uboSetWriter.pImageInfo = nullptr;
     common.setWriters.push_back(uboSetWriter);
 
+
+
+
+//    VkWriteDescriptorSet texSetWriter = {};
+//    texSetWriter.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+//    texSetWriter.dstBinding = 1;
+//    texSetWriter.dstArrayElement = 0;
+//    texSetWriter.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+//    texSetWriter.descriptorCount = 1;
+//    texSetWriter.dstSet = common.matData.descSets[i];
+//    texSetWriter.pBufferInfo = nullptr;
+//    texSetWriter.pImageInfo = &testTex.descriptor;
+//    common.setWriters.push_back(texSetWriter);
+
+
+
+
+//    VkDescriptorImageInfo samplerInfo = {};
+//    samplerInfo.sampler = testTex.sampler;
+//
+//    VkWriteDescriptorSet samplerWriter = {};
+//    samplerWriter.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+//    samplerWriter.dstBinding = 1;
+//    samplerWriter.dstArrayElement = 0;
+//    samplerWriter.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+//    samplerWriter.descriptorCount = 1;
+//    samplerWriter.dstSet = common.matData.descSets[i];
+//    samplerWriter.pBufferInfo = nullptr;
+//    samplerWriter.pImageInfo = &samplerInfo;
+//    common.setWriters.push_back(samplerWriter);
+//
+//    VkWriteDescriptorSet textureArrayWriter = {};
+//    textureArrayWriter.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+//    textureArrayWriter.dstBinding = 2;
+//    textureArrayWriter.dstArrayElement = 0;
+//    textureArrayWriter.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+//    textureArrayWriter.descriptorCount = TEXTURE_ARRAY_LENGTH;
+//    textureArrayWriter.pBufferInfo = nullptr;
+//    textureArrayWriter.dstSet = common.matData.descSets[i];
+//    textureArrayWriter.pImageInfo = &testTex.descriptor;  // TODO: needs to be array
+//    common.setWriters.push_back(textureArrayWriter);
+
+
+
+
     VkWriteDescriptorSet texSetWriter = {};
     texSetWriter.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     texSetWriter.dstBinding = 1;
     texSetWriter.dstArrayElement = 0;
     texSetWriter.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    texSetWriter.descriptorCount = 1;
+//    texSetWriter.descriptorCount = Texture2D<EcsInterface>::getDescriptorImageInfoArrayCount();
+    texSetWriter.descriptorCount = textures->getDescriptorImageInfoArrayCount();
     texSetWriter.dstSet = common.matData.descSets[i];
-    texSetWriter.pBufferInfo = nullptr;
-    texSetWriter.pImageInfo = &testTex.descriptor;
+//    texSetWriter.pImageInfo = Texture2D<EcsInterface>::getDescriptorImageInfoArrayPtr();
+    texSetWriter.pImageInfo = textures->getDescriptorImageInfoArrayPtr();
     common.setWriters.push_back(texSetWriter);
+
+
 
     vkUpdateDescriptorSets(common.device, static_cast<uint32_t>(common.setWriters.size()), common.setWriters.data(), 0,
                            nullptr);
@@ -897,8 +945,9 @@ void VulkanContext<EcsInterface>::render(
   for (auto pair : meshAssets) {
     for (auto mesh : pair.second) {
       for (auto instance : mesh.instances) {
-        glm::uint32 uboSlot = instance.uboIdx.getSlot();
-        glm::uint32 uboPage = instance.uboIdx.getPage();
+//        glm::uint32 uboSlot = instance.indices.getSlot();
+        glm::uint32 uboPage = instance.indices.getPage();
+//        glm::uint32 texIndx = instance.indices.getTexture();
 
         if (currentlyBound != uboPage) {
           vkCmdBindDescriptorSets(common.renderData.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -906,13 +955,36 @@ void VulkanContext<EcsInterface>::render(
           currentlyBound = uboPage;
         }
 
+
+
+
+//        vkCmdPushConstants(
+//            common.renderData.commandBuffers[imageIndex],
+//            common.matData.pipelineLayout,
+//            VK_SHADER_STAGE_VERTEX_BIT,
+//            0,
+//            sizeof(glm::uint32),
+//            (void *) &uboSlot);
+//
+//        vkCmdPushConstants(
+//            common.renderData.commandBuffers[imageIndex],
+//            common.matData.pipelineLayout,
+//            VK_SHADER_STAGE_FRAGMENT_BIT,
+//            sizeof(glm::uint32),
+//            sizeof(glm::uint32),
+//            (void *) &texIndx);
+
+
+
         vkCmdPushConstants(
             common.renderData.commandBuffers[imageIndex],
             common.matData.pipelineLayout,
-            VK_SHADER_STAGE_VERTEX_BIT,
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             0,
-            sizeof(glm::uint32),
-            (void *) &uboSlot);
+            sizeof(MeshInstanceIndices::rawType),
+            (void *) &instance.indices.raw);
+
+
 
         VkBuffer vertexBuffers[] = {mesh.buffer};
         VkDeviceSize vertexOffsets[] = {0};

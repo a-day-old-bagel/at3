@@ -16,6 +16,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "utilities.h"
+#include "VulkanTexture.hpp"
 
 namespace at3 {
 
@@ -183,28 +184,44 @@ namespace at3 {
     uint32_t vertexSize;
   };
 
-  struct UboIdx {
-    private:
-      uint32_t raw;
-    public:
-      UboIdx() : raw(std::numeric_limits<uint32_t>::max()) {
-        // raw set to max so that things will crash if the index is used without first setting it to a valid value.
-      }
-      inline void set(const uint32_t page, const uint32_t slot) {
-        raw = slot << 16u;
-        raw += page;
-      }
-      inline uint32_t getPage() const {
-        return raw & 0xFFFFu;
-      }
-      inline uint32_t getSlot() const {
-        return raw >> 16u;
-      }
+  /**
+   *    32 bits are divided between a 12-bit texture index (T), an 11-bit page index (P), and a 9-bit slot index (S).
+   *    |T|T|T|T|T|T|T|T|T|T|T|T|P|P|P|P|P|P|P|P|P|P|P|S|S|S|S|S|S|S|S|S|   --> least significant
+   *
+   *    This provides support for 4096 unique textures and 1048576 mesh instances.
+   *    If more are required, this should not be too difficult to change. You should really only have to change things
+   *    here and in the shaders. Just leave uint32_t as the getter return types and method argument types.
+   */
+  struct MeshInstanceIndices {
+    typedef uint32_t rawType;
+    rawType raw;
+    MeshInstanceIndices() : raw(std::numeric_limits<rawType>::max()) {
+      // set to max so that things will probably crash if an index is used without first setting it to a valid value.
+    }
+    inline void set(const uint32_t page, const uint32_t slot, const uint32_t texture = 0) {
+      raw = texture << 20u;
+      raw += page << 9u;
+      raw += slot;
+    }
+    inline void setTexture(const uint32_t texture) {
+      rawType uboPart = raw & 0xFFFFFu;
+      raw = texture << 20u | uboPart;
+    }
+    inline uint32_t getTexture() const {
+      return raw >> 20u & 0xFFFu;
+    }
+    inline uint32_t getPage() const {
+      return raw >> 9u & 0x7FFu;
+    }
+    inline uint32_t getSlot() const {
+      return raw & 0x1FFu;
+    }
   };
+
   template<typename EcsInterface>
   struct MeshInstance {
     typename EcsInterface::EcsId id = 0;
-    UboIdx uboIdx;
+    MeshInstanceIndices indices;
   };
 
   template<typename EcsInterface>
