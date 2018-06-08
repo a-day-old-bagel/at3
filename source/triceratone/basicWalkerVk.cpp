@@ -1,5 +1,5 @@
 
-#include "basicWalkerVk.h"
+#include "basicWalkerVk.hpp"
 #include "topics.hpp"
 
 using namespace ezecs;
@@ -26,7 +26,7 @@ namespace at3 {
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
     state.add_PlayerControls(physicalId);
 
-    visualBody = std::make_shared<MeshObjectVk_>(context, "sphere", "pyramid_bottom.png", ident, MeshObject_::SUNNY);
+    visualBody = std::make_shared<MeshObjectVk_>(context, "sphere", "grass1024_00", ident);
 
     entityId bodyId = visualBody->getId();
     state.add_TransformFunction(bodyId, RTU_MTHD_DLGT(&BasicWalkerVk::bodyVisualTransform, this));

@@ -1,6 +1,6 @@
 
-#include "textureView.h"
-#include "settings.h"
+#include "textureView.hpp"
+#include "settings.hpp"
 
 namespace at3 {
   TextureView::TextureView() {

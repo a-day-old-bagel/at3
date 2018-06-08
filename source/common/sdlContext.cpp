@@ -1,6 +1,6 @@
 
-#include "sdlContext.h"
-#include "settings.h"
+#include "sdlContext.hpp"
+#include "settings.hpp"
 
 namespace at3 {
   SdlContext::SdlContext(const char *applicationName) {

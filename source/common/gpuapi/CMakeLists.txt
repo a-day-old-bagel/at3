@@ -1,12 +1,12 @@
 
 add_library( ${AT3_TARGET_PREFIX}graphics STATIC
-  graphicsBackend.cpp graphicsBackend.h
-  loadedTexture.cpp loadedTexture.h
-  material.cpp material.h
+  graphicsBackend.cpp graphicsBackend.hpp
+  loadedTexture.cpp loadedTexture.hpp
+  material.cpp material.hpp
   openglCalls.cpp
-  openglValidation.cpp openglValidation.h
-  shaderProgram.cpp shaderProgram.h
-  shaders.cpp shaders.h
+  openglValidation.cpp openglValidation.hpp
+  shaderProgram.cpp shaderProgram.hpp
+  shaders.cpp shaders.hpp
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}graphics
   ${AT3_TARGET_PREFIX}external

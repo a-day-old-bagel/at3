@@ -1,7 +1,7 @@
 #include <cassert>
 #include <SDL_stdinc.h>
 #include <iostream>
-#include "imageProcessing.h"
+#include "imageProcessing.hpp"
 
 namespace at3 {
 

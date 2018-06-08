@@ -1,12 +1,12 @@
 
-#include "ecsSystem_physics.h"
+#include "ecsSystem_physics.hpp"
 #include "BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 #include <BulletCollision/CollisionShapes/btTriangleShape.h>
 //#include <BulletDynamics/Character/btKinematicCharacterController.h>
 
-#include "debug.h"
+#include "debug.hpp"
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "IncompatibleTypes"

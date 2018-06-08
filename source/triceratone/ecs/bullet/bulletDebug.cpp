@@ -2,7 +2,7 @@
 // Created by volundr on 4/2/17.
 //
 
-#include "bulletDebug.h"
+#include "bulletDebug.hpp"
 namespace at3 {
   /*
    * Define conversion from Bullet vector structures to glm vector structures

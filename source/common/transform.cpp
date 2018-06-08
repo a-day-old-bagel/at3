@@ -21,7 +21,7 @@
  * IN THE SOFTWARE.
  */
 
-#include "configuration.h"
+#include "configuration.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
@@ -31,7 +31,7 @@
 
 #include <glm/gtx/string_cast.hpp>
 
-#include "transform.h"
+#include "transform.hpp"
 
 namespace at3 {
   Transform::Transform() {

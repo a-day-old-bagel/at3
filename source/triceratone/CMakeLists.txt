@@ -3,13 +3,13 @@ set( TARGET_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR} )
 add_subdirectory( "./ecs" )
 add_executable( ${TARGET_NAME}
   main.cpp
-  duneBuggy.cpp duneBuggy.h
-  duneBuggyVk.cpp duneBuggyVk.h
-  pyramid.cpp pyramid.h
-  pyramidVk.cpp pyramidVk.h
-  debugStuff.cpp debugStuff.h
-  basicWalker.cpp basicWalker.h
-  basicWalkerVk.cpp basicWalkerVk.h
+  duneBuggy.cpp duneBuggy.hpp
+  duneBuggyVk.cpp duneBuggyVk.hpp
+  pyramid.cpp pyramid.hpp
+  pyramidVk.cpp pyramidVk.hpp
+  debugStuff.cpp debugStuff.hpp
+  basicWalker.cpp basicWalker.hpp
+  basicWalkerVk.cpp basicWalkerVk.hpp
   )
 target_link_libraries( ${TARGET_NAME}
   ${TARGET_NAME}_systems

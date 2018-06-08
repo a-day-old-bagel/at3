@@ -2,16 +2,16 @@
 add_subdirectory( shaders )
 
 add_library( ${AT3_TARGET_PREFIX}vulkan STATIC
-  vkc.h
-  vkcAlloc.h vkcAlloc.cpp
-  vkcUboPageMgr.h vkcUboPageMgr.cpp
-  vkcImplApi.h
-  vkcImplInternalDynamic.h
-  vkcImplInternalCallOnce.h
-  vkcImplInternalResources.h
-  vkcMaterial.h vkcMaterial.cpp
-  vkcTypes.h
-  VulkanTexture.hpp VulkanTexture.cpp
+  vkc.hpp
+  vkcAlloc.hpp vkcAlloc.cpp
+  vkcUboPageMgr.hpp vkcUboPageMgr.cpp
+  vkcImplApi.hpp
+  vkcImplInternalDynamic.hpp
+  vkcImplInternalCallOnce.hpp
+  vkcImplInternalResources.hpp
+  vkcMaterial.hpp vkcMaterial.cpp
+  vkcTextures.hpp vkcTextures.cpp
+  vkcTypes.hpp
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}vulkan
   ${AT3_TARGET_PREFIX}external

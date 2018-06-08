@@ -1,5 +1,5 @@
 add_library( ${TARGET_NAME}_systems_bullet STATIC
-  bulletDebug.cpp bulletDebug.h
+  bulletDebug.cpp bulletDebug.hpp
   )
 target_link_libraries( ${TARGET_NAME}_systems_bullet
   ${AT3_TARGET_PREFIX}common

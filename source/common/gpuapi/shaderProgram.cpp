@@ -4,7 +4,7 @@
 #include <sstream>
 #include <cstring>
 
-#include "shaderProgram.h"
+#include "shaderProgram.hpp"
 
 #define GLSL_VERSION "400"
 

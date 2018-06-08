@@ -1,19 +1,15 @@
 
-#include "vkcMaterial.h"
+#include "vkcMaterial.hpp"
 
+// TODO: get rid of stb
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
 #define STBI_ONLY_JPEG
 #include <stb/stb_image.h>
 
 // Include the shader codes
-#include "ubo_array.vert.spv.c"
-#include "dynamic_ubo.vert.spv.c"
-#include "common_vert.vert.spv.c"
-#include "random_frag.frag.spv.c"
-#include "debug_normals.frag.spv.c"
-#include "debug_uvs.frag.spv.c"
-#include "static_sun.frag.spv.c"
+#include "meshDefault.vert.spv.c"
+#include "meshDefault.frag.spv.c"
 
 namespace at3 {
 
@@ -75,25 +71,8 @@ namespace at3 {
     pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(createInfo.descSetLayouts.size());
     pipelineLayoutInfo.pSetLayouts = createInfo.descSetLayouts.data();
 
-
-
-
-//    VkPushConstantRange pushConstantRange = {};
-//    pushConstantRange.offset = 0;
-//    pushConstantRange.size = createInfo.pushConstantRange;
-//    pushConstantRange.stageFlags = createInfo.pushConstantStages;
-
-//    pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-//    pipelineLayoutInfo.pushConstantRangeCount = 1;
-
-
-
-
     pipelineLayoutInfo.pPushConstantRanges = createInfo.pcRanges.data();
     pipelineLayoutInfo.pushConstantRangeCount = (uint32_t) createInfo.pcRanges.size();
-
-
-
 
     VkResult res = vkCreatePipelineLayout(ctxt.device, &pipelineLayoutInfo, nullptr, createInfo.outPipelineLayout);
     AT3_ASSERT(res == VK_SUCCESS, "Error creating pipeline layout");
@@ -223,33 +202,12 @@ namespace at3 {
     uboBinding.descriptorCount = 1;
     layoutBindings.push_back(uboBinding);
 
-
-
-//    VkDescriptorSetLayoutBinding samplerBinding {};
-//    samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-//    samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-//    samplerBinding.binding = 1;
-//    samplerBinding.descriptorCount = 1;
-//    layoutBindings.push_back(samplerBinding);
-//
-//    VkDescriptorSetLayoutBinding textureArrayBinding {};
-//    textureArrayBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-//    textureArrayBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-//    textureArrayBinding.binding = 2;
-//    textureArrayBinding.descriptorCount = TEXTURE_ARRAY_LENGTH;
-//    layoutBindings.push_back(textureArrayBinding);
-
-
-
     VkDescriptorSetLayoutBinding textureArrayBinding {};
     textureArrayBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     textureArrayBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     textureArrayBinding.binding = 1;
-//    textureArrayBinding.descriptorCount = TEXTURE_ARRAY_LENGTH;
     textureArrayBinding.descriptorCount = texArrayLen;
     layoutBindings.push_back(textureArrayBinding);
-
-
 
     VkDescriptorSetLayoutCreateInfo layoutInfo = {};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -273,9 +231,7 @@ namespace at3 {
     createInfo.descSetLayouts.push_back(ctxt.matData.descSetLayout);
 
 
-
-
-
+    // Specialization constants
     struct SpecializationData {
       uint32_t textureArrayLength = 1;
     } specializationData;
@@ -289,7 +245,6 @@ namespace at3 {
     textureArrayLengthEntry.offset = static_cast<uint32_t>(offsetof(SpecializationData, textureArrayLength));
     specializationMapEntries.push_back(textureArrayLengthEntry);
 
-    // Prepare specialization info block for the shader stage
     VkSpecializationInfo specializationInfo{};
     specializationInfo.dataSize = sizeof(specializationData);
     specializationInfo.mapEntryCount = static_cast<uint32_t>(specializationMapEntries.size());
@@ -297,9 +252,10 @@ namespace at3 {
     specializationInfo.pData = &specializationData;
 
 
-
-
-    createBasicMaterial(ubo_array_vert_spv, ubo_array_vert_spv_len,
-                        static_sun_frag_spv, static_sun_frag_spv_len, ctxt, createInfo, &specializationInfo);
+//    createBasicMaterial(ubo_array_vert_spv, ubo_array_vert_spv_len,
+//                        static_sun_frag_spv, static_sun_frag_spv_len, ctxt, createInfo, &specializationInfo);
+    createBasicMaterial(meshDefault_vert_spv, meshDefault_vert_spv_len,
+                        meshDefault_frag_spv, meshDefault_frag_spv_len,
+                        ctxt, createInfo, &specializationInfo);
   }
 }

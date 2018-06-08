@@ -6,10 +6,10 @@ add_subdirectory( "${EZECS_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/ezecs" )
 
 add_subdirectory( "./bullet" )
 add_library( ${TARGET_NAME}_systems STATIC
-  ecsInterface.cpp ecsInterface.h
-  ecsSystem_controls.cpp ecsSystem_controls.h
-  ecsSystem_animation.cpp ecsSystem_animation.h
-  ecsSystem_physics.cpp ecsSystem_physics.h
+  ecsInterface.cpp ecsInterface.hpp
+  ecsSystem_controls.cpp ecsSystem_controls.hpp
+  ecsSystem_animation.cpp ecsSystem_animation.hpp
+  ecsSystem_physics.cpp ecsSystem_physics.hpp
   )
 target_link_libraries( ${TARGET_NAME}_systems
   ${TARGET_NAME}_systems_bullet

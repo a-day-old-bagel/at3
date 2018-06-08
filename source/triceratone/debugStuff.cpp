@@ -1,5 +1,5 @@
 
-#include "configuration.h"
+#include "configuration.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
@@ -8,7 +8,7 @@
 #endif
 
 #include <glm/gtc/matrix_transform.hpp>
-#include "debugStuff.h"
+#include "debugStuff.hpp"
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"

@@ -21,7 +21,7 @@
  * IN THE SOFTWARE.
  */
 
-#include "transformStack.h"
+#include "transformStack.hpp"
 
 namespace at3 {
   TransformStack::TransformStack() {

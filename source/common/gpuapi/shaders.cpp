@@ -1,8 +1,8 @@
 
 #include <SDL_stdinc.h>
-#include "shaderProgram.h"
-#include "shaders.h"
-#include "openglValidation.h"
+#include "shaderProgram.hpp"
+#include "shaders.hpp"
+#include "openglValidation.hpp"
 
 namespace at3 {
 //# define SHADER_DIR shaders

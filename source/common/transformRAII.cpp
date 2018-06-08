@@ -23,7 +23,7 @@
 
 #include <cassert>
 
-#include "transformRAII.h"
+#include "transformRAII.hpp"
 
 namespace at3 {
   TransformRAII::TransformRAII(Transform &original) {

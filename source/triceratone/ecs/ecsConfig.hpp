@@ -9,7 +9,7 @@
 
 #include <vector>
 
-#include "configuration.h"
+#include "configuration.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL

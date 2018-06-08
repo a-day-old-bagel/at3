@@ -13,24 +13,24 @@ add_subdirectory( gpuapi )
 add_subdirectory( vulkan )
 
 add_library( ${AT3_TARGET_PREFIX}common STATIC
-  eventResponseMap.cpp eventResponseMap.h
-  camera.h
-  debug.h
-  game.h
-  meshObject.h
-  meshObjectVk.h
-  perspectiveCamera.h
-  scene.h
-  sceneObject.h
-  sdlContext.h sdlContext.cpp
-  skyBox.h
-  terrainObject.h
-  thirdPersonCamera.h
-  transform.cpp transform.h
-  transformRAII.cpp transformRAII.h
-  transformStack.cpp transformStack.h
-  textureView.cpp textureView.h
-  imageProcessing.h imageProcessing.cpp
+  eventResponseMap.cpp eventResponseMap.hpp
+  camera.hpp
+  debug.hpp
+  game.hpp
+  meshObject.hpp
+  meshObjectVk.hpp
+  perspectiveCamera.hpp
+  scene.hpp
+  sceneObject.hpp
+  sdlContext.hpp sdlContext.cpp
+  skyBox.hpp
+  terrainObject.hpp
+  thirdPersonCamera.hpp
+  transform.cpp transform.hpp
+  transformRAII.cpp transformRAII.hpp
+  transformStack.cpp transformStack.hpp
+  textureView.cpp textureView.hpp
+  imageProcessing.hpp imageProcessing.cpp
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}common
   ${AT3_TARGET_PREFIX}external

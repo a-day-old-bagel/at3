@@ -1,7 +1,7 @@
 
 #include <sstream>
 #include <SDL_video.h>
-#include "settings.h"
+#include "settings.hpp"
 
 #define AT3_VERBOSE_SETTINGS 0
 

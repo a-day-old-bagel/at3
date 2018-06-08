@@ -3,8 +3,8 @@
 //#define STBI_ONLY_PNG
 //#define STBI_ONLY_JPEG
 #include "stb_image.h"
-#include "loadedTexture.h"
-#include "openglValidation.h"
+#include "loadedTexture.hpp"
+#include "openglValidation.hpp"
 
 namespace at3 {
 

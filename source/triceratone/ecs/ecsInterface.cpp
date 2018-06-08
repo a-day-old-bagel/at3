@@ -1,6 +1,6 @@
 
 
-#include "ecsInterface.h"
+#include "ecsInterface.hpp"
 
 using namespace ezecs;
 

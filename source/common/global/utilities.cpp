@@ -1,4 +1,4 @@
-#include "utilities.h"
+#include "utilities.hpp"
 
 std::string getFileNameOnly(PATH_TYPE &path) {
   return path.path().stem().string();

@@ -1,6 +1,6 @@
 
-#include "vkcAlloc.h"
-#include "configuration.h"
+#include "vkcAlloc.hpp"
+#include "configuration.hpp"
 
 //Simple Passthrough allocator -> sub allocators responsible for actually parcelling out memory
 

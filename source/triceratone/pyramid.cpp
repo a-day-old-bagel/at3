@@ -1,6 +1,6 @@
 
 
-#include "configuration.h"
+#include "configuration.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
@@ -10,7 +10,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "pyramid.h"
+#include "pyramid.hpp"
 #include "topics.hpp"
 
 #pragma clang diagnostic push

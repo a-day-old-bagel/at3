@@ -1,6 +1,6 @@
 
 #include <iostream>
-#include "graphicsBackend.h"
+#include "graphicsBackend.hpp"
 
 namespace at3 {
   namespace graphicsBackend {

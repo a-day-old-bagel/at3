@@ -1,5 +1,5 @@
 
-#include "configuration.h"
+#include "configuration.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
@@ -8,7 +8,7 @@
 #endif
 
 #include <glm/gtc/matrix_transform.hpp>
-#include "duneBuggyVk.h"
+#include "duneBuggyVk.hpp"
 #include "topics.hpp"
 
 #pragma clang diagnostic push
@@ -71,8 +71,7 @@ namespace at3 {
         { 1.9f, -1.9f, 0.f}
     };
     for (int i = 0; i < 4; ++i) {
-      wheels.push_back(std::make_shared<MeshObjectVk_>(context, "sphere", "thrusters.png",
-                          ident, MeshObjectVk_::SUNNY));
+      wheels.push_back(std::make_shared<MeshObjectVk_>(context, "sphere", "pyramid_thrusters", ident));
       entityId wheelId = wheels.back()->getId();
       WheelInitInfo wheelInitInfo{
           {                         // WheelInfo struct - this part of the wheelInitInfo will persist.

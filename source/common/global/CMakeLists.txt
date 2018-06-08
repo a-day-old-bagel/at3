@@ -1,10 +1,10 @@
 
 add_library( ${AT3_TARGET_PREFIX}global STATIC
-  configuration.h
-  settings.cpp settings.h
-  utilities.cpp utilities.h
-  macros.h
-  TODO.h
+  configuration.hpp
+  settings.cpp settings.hpp
+  utilities.cpp utilities.hpp
+  macros.hpp
+  TODO.hpp
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}global
   ${AT3_TARGET_PREFIX}external

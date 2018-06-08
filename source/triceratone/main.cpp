@@ -5,7 +5,7 @@
 #include <vector>
 #include <functional>
 
-#include "configuration.h"
+#include "configuration.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
@@ -15,23 +15,23 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "settings.h"
+#include "settings.hpp"
 #include "topics.hpp"
 #include "ezecs.hpp"
-#include "ecsInterface.h"
-#include "game.h"
+#include "ecsInterface.hpp"
+#include "game.hpp"
 
-#include "ecsSystem_animation.h"
-#include "ecsSystem_controls.h"
-#include "ecsSystem_physics.h"
+#include "ecsSystem_animation.hpp"
+#include "ecsSystem_controls.hpp"
+#include "ecsSystem_physics.hpp"
 
-#include "basicWalker.h"
-#include "basicWalkerVk.h"
-#include "duneBuggy.h"
-#include "duneBuggyVk.h"
-#include "pyramid.h"
-#include "pyramidVk.h"
-#include "debugStuff.h"
+#include "basicWalker.hpp"
+#include "basicWalkerVk.hpp"
+#include "duneBuggy.hpp"
+#include "duneBuggyVk.hpp"
+#include "pyramid.hpp"
+#include "pyramidVk.hpp"
+#include "debugStuff.hpp"
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"

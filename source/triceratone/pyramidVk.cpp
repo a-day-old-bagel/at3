@@ -1,5 +1,5 @@
 
-#include "configuration.h"
+#include "configuration.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
@@ -9,7 +9,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "pyramidVk.h"
+#include "pyramidVk.hpp"
 #include "topics.hpp"
 
 #pragma clang diagnostic push
@@ -36,15 +36,11 @@ namespace at3 {
     glm::mat4 pyrFirMat = glm::scale(glm::rotate(glm::translate(ident, {0.f, 0.f, -0.4f}),
                                                  (float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f)), {0.105f, 0.105f, 0.15f});
 
-    base = std::make_shared<MeshObjectVk_> (context,
-        "pyramid_bottom", "pyramid_bottom.png", transform, MeshObjectVk_::SUNNY);
-    top = std::make_shared<MeshObjectVk_> (context,
-        "pyramid_top", "pyramid_top_new.png", ident, MeshObjectVk_::SUNNY);
-    thrusters = std::make_shared<MeshObjectVk_> (context,
-        "pyramid_thrusters", "thrusters.png", ident, MeshObjectVk_::SUNNY);
-    fire = std::make_shared<MeshObjectVk_> (context,
-        "pyramid_thruster_flames", "pyramid_flames.png",
-        pyrFirMat, MeshObjectVk_::FULLBRIGHT);
+    base = std::make_shared<MeshObjectVk_> (context, "pyramid_bottom", "pyramid_bottom", transform);
+    top = std::make_shared<MeshObjectVk_> (context, "pyramid_top", "pyramid_top", ident);
+    thrusters = std::make_shared<MeshObjectVk_> (context, "pyramid_thrusters", "pyramid_thrusters", ident);
+    fire = std::make_shared<MeshObjectVk_> (context, "pyramid_thruster_flames", "pyramid_flames", pyrFirMat,
+        MeshObjectVk_::FULLBRIGHT);
 
     entityId bottomId = base->getId();
     std::vector<float> hullVerts = {
@@ -109,8 +105,7 @@ namespace at3 {
     state->get_Placement(base->getId(), &source);
     glm::mat4 sourceMat = glm::translate(source->mat, {0.f, 0.f, 3.f});
     spheres.push_back(std::shared_ptr<MeshObjectVk_>(
-        new MeshObjectVk_(vkc, "sphere", "pyramid_flames.png",
-                        sourceMat, MeshObjectVk_::FULLBRIGHT)));
+        new MeshObjectVk_(vkc, "sphere", "pyramid_flames", sourceMat, MeshObjectVk_::FULLBRIGHT)));
     float sphereRadius = 1.0f;
     state->add_Physics(spheres.back()->getId(), 5.f, &sphereRadius, Physics::SPHERE);
     Physics *physics;

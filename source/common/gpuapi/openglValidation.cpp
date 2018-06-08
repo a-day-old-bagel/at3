@@ -1,6 +1,6 @@
 
 #include <cstdio>
-#include "openglValidation.h"
+#include "openglValidation.hpp"
 
 namespace at3 {
 

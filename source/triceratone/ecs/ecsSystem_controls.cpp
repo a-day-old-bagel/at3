@@ -1,6 +1,6 @@
 
-#include <global/settings.h>
-#include "ecsSystem_controls.h"
+#include <global/settings.hpp>
+#include "ecsSystem_controls.hpp"
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"
