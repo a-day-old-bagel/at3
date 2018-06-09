@@ -20,7 +20,7 @@
 #include "vkcTypes.hpp"
 #include "vkcAlloc.hpp"
 #include "vkcUboPageMgr.hpp"
-#include "vkcMaterial.hpp"
+#include "vkcPipelines.hpp"
 #include "vkcTextures.hpp"
 
 #define SUBSCRIBE_TOPIC(e, x) std::make_unique<rtu::topics::Subscription>(e, RTU_MTHD_DLGT(&VulkanContext::x, this));

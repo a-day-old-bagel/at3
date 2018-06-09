@@ -43,20 +43,34 @@ namespace at3 {
     VkSampler sampler;
   };
 
-  struct VkcMaterialCreateInfo {
-    VkRenderPass renderPass;
-    std::vector<VkDescriptorSetLayout> descSetLayouts;
+  struct VkcShaderSourceInfo {
+    unsigned char *data;
+    unsigned int length;
+  };
+  struct VkcPipelineCreateInfo {
+    VkcCommon *ctxt;
     VkPipelineLayout *outPipelineLayout;
     VkPipeline *outPipeline;
+    VkRenderPass renderPass;
+    std::vector<VkDescriptorSetLayout> descSetLayouts;
     std::vector<VkPushConstantRange> pcRanges;
+    VkSpecializationInfo specializationInfo;
+    VkcShaderSourceInfo
+        vertInfo,
+        tescInfo,
+        teseInfo,
+        geomInfo,
+        fragInfo;
   };
 
   const VertexRenderData *vertexRenderData();
   void setVertexRenderData(VertexRenderData *renderData);
 
-  void createBasicMaterial(
-      unsigned char *vertData, unsigned int vertLen, unsigned char *fragData, unsigned int fragLen, VkcCommon &ctxt,
-      VkcMaterialCreateInfo &createInfo, const VkSpecializationInfo* specializationInfo = nullptr);
+//  void createBasicPipeline(
+//      unsigned char *vertData, unsigned int vertLen, unsigned char *fragData, unsigned int fragLen, VkcCommon &ctxt,
+//      VkcPipelineCreateInfo &createInfo, const VkSpecializationInfo *specializationInfo = nullptr);
 
-  void loadUBOTestMaterial(VkcCommon &ctxt, uint32_t texArrayLen);
+  void createBasicPipeline(VkcPipelineCreateInfo &info);
+
+  void createDefaultMeshPipeline(VkcCommon &ctxt, uint32_t texArrayLen);
 }

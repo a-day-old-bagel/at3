@@ -9,7 +9,7 @@ add_library( ${AT3_TARGET_PREFIX}vulkan STATIC
   vkcImplInternalDynamic.hpp
   vkcImplInternalCallOnce.hpp
   vkcImplInternalResources.hpp
-  vkcMaterial.hpp vkcMaterial.cpp
+  vkcPipelines.hpp vkcPipelines.cpp
   vkcTextures.hpp vkcTextures.cpp
   vkcTypes.hpp
   )

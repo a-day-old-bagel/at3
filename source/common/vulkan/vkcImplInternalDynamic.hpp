@@ -678,7 +678,7 @@ void VulkanContext<EcsInterface>::initRendering(uint32_t num) {
   for (uint32_t i = 0; i < swapChainImageCount; ++i) {
     createCommandBuffer(common.renderData.commandBuffers[i], common.gfxCommandPool);
   }
-  loadUBOTestMaterial(common, num);
+  createDefaultMeshPipeline(common, num);
 
   common.renderData.firstFrame = std::vector<bool>(swapChainImageCount, true);
 }

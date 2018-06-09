@@ -10,7 +10,7 @@
 #include <glm/glm.hpp>
 #include <cstdint>
 #include <deque>
-#include "vkcMaterial.hpp"
+#include "vkcPipelines.hpp"
 
 namespace at3 {
 

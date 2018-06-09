@@ -1,5 +1,5 @@
 
-#include "vkcMaterial.hpp"
+#include "vkcPipelines.hpp"
 
 // TODO: get rid of stb
 #define STB_IMAGE_IMPLEMENTATION
@@ -45,9 +45,11 @@ namespace at3 {
 
   }
 
-  void createBasicMaterial(
-      unsigned char *vertData, unsigned int vertLen, unsigned char *fragData, unsigned int fragLen, VkcCommon &ctxt,
-      VkcMaterialCreateInfo &createInfo, const VkSpecializationInfo* specializationInfo) {
+//  void createBasicPipeline(
+//      unsigned char *vertData, unsigned int vertLen, unsigned char *fragData, unsigned int fragLen, VkcCommon &ctxt,
+//      VkcPipelineCreateInfo &createInfo, const VkSpecializationInfo *specializationInfo) {
+
+  void createBasicPipeline(VkcPipelineCreateInfo &info) {
 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
@@ -55,26 +57,26 @@ namespace at3 {
     vertexStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertexStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
     vertexStageInfo.pName = "main";
-    createShaderModule(vertexStageInfo.module, vertData, vertLen, ctxt);
+    createShaderModule(vertexStageInfo.module, info.vertInfo.data, info.vertInfo.length, *info.ctxt);
     shaderStages.push_back(vertexStageInfo);
 
     VkPipelineShaderStageCreateInfo fragmentStageInfo {};
     fragmentStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     fragmentStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
     fragmentStageInfo.pName = "main";
-    fragmentStageInfo.pSpecializationInfo = specializationInfo;
-    createShaderModule(fragmentStageInfo.module, fragData, fragLen, ctxt);
+    fragmentStageInfo.pSpecializationInfo = &info.specializationInfo;
+    createShaderModule(fragmentStageInfo.module, info.fragInfo.data, info.fragInfo.length, *info.ctxt);
     shaderStages.push_back(fragmentStageInfo);
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(createInfo.descSetLayouts.size());
-    pipelineLayoutInfo.pSetLayouts = createInfo.descSetLayouts.data();
+    pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(info.descSetLayouts.size());
+    pipelineLayoutInfo.pSetLayouts = info.descSetLayouts.data();
 
-    pipelineLayoutInfo.pPushConstantRanges = createInfo.pcRanges.data();
-    pipelineLayoutInfo.pushConstantRangeCount = (uint32_t) createInfo.pcRanges.size();
+    pipelineLayoutInfo.pPushConstantRanges = info.pcRanges.data();
+    pipelineLayoutInfo.pushConstantRangeCount = (uint32_t) info.pcRanges.size();
 
-    VkResult res = vkCreatePipelineLayout(ctxt.device, &pipelineLayoutInfo, nullptr, createInfo.outPipelineLayout);
+    VkResult res = vkCreatePipelineLayout(info.ctxt->device, &pipelineLayoutInfo, nullptr, info.outPipelineLayout);
     AT3_ASSERT(res == VK_SUCCESS, "Error creating pipeline layout");
 
     const VertexRenderData *vertexLayout = vertexRenderData();
@@ -100,14 +102,14 @@ namespace at3 {
     VkViewport vp {};
     vp.x = 0;
     vp.y = 0;
-    vp.width = static_cast<float>(ctxt.swapChain.extent.width);
-    vp.height = static_cast<float>(ctxt.swapChain.extent.height);
+    vp.width = static_cast<float>(info.ctxt->swapChain.extent.width);
+    vp.height = static_cast<float>(info.ctxt->swapChain.extent.height);
     vp.minDepth = 0.f;
     vp.maxDepth = 1.f;
 
     VkRect2D scissor {};
-    scissor.extent.width = ctxt.swapChain.extent.width;
-    scissor.extent.height = ctxt.swapChain.extent.height;
+    scissor.extent.width = info.ctxt->swapChain.extent.width;
+    scissor.extent.height = info.ctxt->swapChain.extent.height;
     scissor.offset.x = 0;
     scissor.offset.y = 0;
 
@@ -173,8 +175,8 @@ namespace at3 {
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = nullptr; // Optional
-    pipelineInfo.layout = *createInfo.outPipelineLayout;
-    pipelineInfo.renderPass = createInfo.renderPass;
+    pipelineInfo.layout = *info.outPipelineLayout;
+    pipelineInfo.renderPass = info.renderPass;
     pipelineInfo.pDepthStencilState = &depthStencil;
 
     pipelineInfo.subpass = 0;
@@ -183,16 +185,32 @@ namespace at3 {
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.basePipelineIndex = -1;
 
-    res = vkCreateGraphicsPipelines(ctxt.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, createInfo.outPipeline);
+    res = vkCreateGraphicsPipelines(info.ctxt->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, info.outPipeline);
     AT3_ASSERT(res == VK_SUCCESS, "Error creating graphics pipeline");
 
-    vkDestroyShaderModule(ctxt.device, shaderStages[0].module, nullptr);
-    vkDestroyShaderModule(ctxt.device, shaderStages[1].module, nullptr);
+    vkDestroyShaderModule(info.ctxt->device, shaderStages[0].module, nullptr);
+    vkDestroyShaderModule(info.ctxt->device, shaderStages[1].module, nullptr);
 
   }
 
-  void loadUBOTestMaterial(VkcCommon &ctxt, uint32_t texArrayLen) {
+  void createDefaultMeshPipeline(VkcCommon &ctxt, uint32_t texArrayLen) {
 
+    VkcPipelineCreateInfo info {};
+    info.ctxt = &ctxt;
+    info.renderPass = ctxt.renderData.mainRenderPass;
+
+
+    // Fields to be filled with new pipeline info
+    info.outPipeline = &ctxt.matData.graphicsPipeline;  // TODO: store these in a pipeline collection somewhere instead.
+    info.outPipelineLayout = &ctxt.matData.pipelineLayout;
+
+
+    // Shaders
+    info.vertInfo = { meshDefault_vert_spv, meshDefault_vert_spv_len };
+    info.fragInfo = { meshDefault_frag_spv, meshDefault_frag_spv_len };
+
+
+    // Descriptor set layout
     std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
 
     VkDescriptorSetLayoutBinding uboBinding {};
@@ -217,18 +235,15 @@ namespace at3 {
     VkResult res = vkCreateDescriptorSetLayout(ctxt.device, &layoutInfo, nullptr, &ctxt.matData.descSetLayout);
     AT3_ASSERT(res == VK_SUCCESS, "Error creating desc set layout");
 
-    VkcMaterialCreateInfo createInfo = {};
-    createInfo.renderPass = ctxt.renderData.mainRenderPass;
-    createInfo.outPipeline = &ctxt.matData.graphicsPipeline;
-    createInfo.outPipelineLayout = &ctxt.matData.pipelineLayout;
+    info.descSetLayouts.push_back(ctxt.matData.descSetLayout);
 
+
+    // Push constants
     VkPushConstantRange pcRange = {};
     pcRange.offset = 0;
     pcRange.size = sizeof(MeshInstanceIndices::rawType);
     pcRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-    createInfo.pcRanges.push_back(pcRange);
-
-    createInfo.descSetLayouts.push_back(ctxt.matData.descSetLayout);
+    info.pcRanges.push_back(pcRange);
 
 
     // Specialization constants
@@ -245,17 +260,12 @@ namespace at3 {
     textureArrayLengthEntry.offset = static_cast<uint32_t>(offsetof(SpecializationData, textureArrayLength));
     specializationMapEntries.push_back(textureArrayLengthEntry);
 
-    VkSpecializationInfo specializationInfo{};
-    specializationInfo.dataSize = sizeof(specializationData);
-    specializationInfo.mapEntryCount = static_cast<uint32_t>(specializationMapEntries.size());
-    specializationInfo.pMapEntries = specializationMapEntries.data();
-    specializationInfo.pData = &specializationData;
+    info.specializationInfo.dataSize = sizeof(specializationData);
+    info.specializationInfo.mapEntryCount = static_cast<uint32_t>(specializationMapEntries.size());
+    info.specializationInfo.pMapEntries = specializationMapEntries.data();
+    info.specializationInfo.pData = &specializationData;
 
 
-//    createBasicMaterial(ubo_array_vert_spv, ubo_array_vert_spv_len,
-//                        static_sun_frag_spv, static_sun_frag_spv_len, ctxt, createInfo, &specializationInfo);
-    createBasicMaterial(meshDefault_vert_spv, meshDefault_vert_spv_len,
-                        meshDefault_frag_spv, meshDefault_frag_spv_len,
-                        ctxt, createInfo, &specializationInfo);
+    createBasicPipeline(info);
   }
 }
