@@ -45,10 +45,6 @@ namespace at3 {
 
   }
 
-//  void createBasicPipeline(
-//      unsigned char *vertData, unsigned int vertLen, unsigned char *fragData, unsigned int fragLen, VkcCommon &ctxt,
-//      VkcPipelineCreateInfo &createInfo, const VkSpecializationInfo *specializationInfo) {
-
   void createBasicPipeline(VkcPipelineCreateInfo &info) {
 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;

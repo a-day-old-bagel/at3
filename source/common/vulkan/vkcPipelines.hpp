@@ -66,10 +66,6 @@ namespace at3 {
   const VertexRenderData *vertexRenderData();
   void setVertexRenderData(VertexRenderData *renderData);
 
-//  void createBasicPipeline(
-//      unsigned char *vertData, unsigned int vertLen, unsigned char *fragData, unsigned int fragLen, VkcCommon &ctxt,
-//      VkcPipelineCreateInfo &createInfo, const VkSpecializationInfo *specializationInfo = nullptr);
-
   void createBasicPipeline(VkcPipelineCreateInfo &info);
 
   void createDefaultMeshPipeline(VkcCommon &ctxt, uint32_t texArrayLen);
