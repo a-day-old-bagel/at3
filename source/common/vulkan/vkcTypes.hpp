@@ -111,12 +111,12 @@ namespace at3 {
       at3::VkcAllocation uboAlloc;
   };
 
-  struct VkcMaterialData {
-      std::vector<VkDescriptorSet> descSets;
-      VkDescriptorSetLayout descSetLayout;
-      VkPipelineLayout pipelineLayout;
-      VkPipeline graphicsPipeline;
-  };
+//  struct VkcMaterialData {
+//      std::vector<VkDescriptorSet> descSets;
+//      VkDescriptorSetLayout descSetLayout;
+//      VkPipelineLayout pipelineLayout;
+//      VkPipeline graphicsPipeline;
+//  };
 
   struct VkcCommon {
       SDL_Window *window;
@@ -139,7 +139,7 @@ namespace at3 {
       std::vector<VkFence> frameFences;
 
       VkcRenderingData renderData;
-      VkcMaterialData matData;
+//      VkcMaterialData matData;
       VkDescriptorBufferInfo bufferInfo;
       VkWriteDescriptorSet setWrite;
 
@@ -150,18 +150,6 @@ namespace at3 {
 
 
 
-
-//  // TODO: Get rid of this if new texture code matches
-//  struct VkcTextureResource {
-//    VkImage image;
-//    at3::VkcAllocation deviceMemory;
-//    VkImageView view;
-//    VkFormat format;
-//
-//    uint32_t width;
-//    uint32_t height;
-//    uint32_t numChannels;
-//  };
 
 
 

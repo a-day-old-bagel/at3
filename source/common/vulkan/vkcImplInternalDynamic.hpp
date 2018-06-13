@@ -678,7 +678,9 @@ void VulkanContext<EcsInterface>::initRendering(uint32_t num) {
   for (uint32_t i = 0; i < swapChainImageCount; ++i) {
     createCommandBuffer(common.renderData.commandBuffers[i], common.gfxCommandPool);
   }
-  createDefaultMeshPipeline(common, num);
+
+//  createDefaultMeshPipeline(common, num);
+  pipelineRepo = std::make_unique<VkcPipelineRepository>(common, textureRepo->getDescriptorImageInfoArrayCount());
 
   common.renderData.firstFrame = std::vector<bool>(swapChainImageCount, true);
 }
@@ -686,10 +688,12 @@ void VulkanContext<EcsInterface>::initRendering(uint32_t num) {
 template<typename EcsInterface>
 void VulkanContext<EcsInterface>::updateDescriptorSets(UboPageMgr *dataStore) {
 
-  size_t oldNumPages = common.matData.descSets.size();
+//  size_t oldNumPages = common.matData.descSets.size();
+  size_t oldNumPages = pipelineRepo->at(0).descSets.size();
   size_t newNumPages = dataStore->getNumPages();
 
-  common.matData.descSets.resize(newNumPages);
+//  common.matData.descSets.resize(newNumPages);
+  pipelineRepo->at(0).descSets.resize(newNumPages);
 
   for (size_t i = oldNumPages; i < newNumPages; ++i) {
 
@@ -697,9 +701,11 @@ void VulkanContext<EcsInterface>::updateDescriptorSets(UboPageMgr *dataStore) {
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = common.descriptorPool;
     allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &common.matData.descSetLayout;
+//    allocInfo.pSetLayouts = &common.matData.descSetLayout;
+    allocInfo.pSetLayouts = &pipelineRepo->at(0).descSetLayouts.at(0);
 
-    VkResult res = vkAllocateDescriptorSets(common.device, &allocInfo, &common.matData.descSets[i]);
+//    VkResult res = vkAllocateDescriptorSets(common.device, &allocInfo, &common.matData.descSets[i]);
+    VkResult res = vkAllocateDescriptorSets(common.device, &allocInfo, &pipelineRepo->at(0).descSets[i]);
     AT3_ASSERT(res == VK_SUCCESS, "Error allocating global descriptor set");
 
     common.setWriters.clear();  // This *could* be faster than recreating a vector every update.
@@ -715,7 +721,8 @@ void VulkanContext<EcsInterface>::updateDescriptorSets(UboPageMgr *dataStore) {
     uboSetWriter.dstArrayElement = 0;
     uboSetWriter.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     uboSetWriter.descriptorCount = 1;
-    uboSetWriter.dstSet = common.matData.descSets[i];
+//    uboSetWriter.dstSet = common.matData.descSets[i];
+    uboSetWriter.dstSet = pipelineRepo->at(0).descSets[i];
     uboSetWriter.pBufferInfo = &common.bufferInfo;
     uboSetWriter.pImageInfo = nullptr;
     common.setWriters.push_back(uboSetWriter);
@@ -725,9 +732,10 @@ void VulkanContext<EcsInterface>::updateDescriptorSets(UboPageMgr *dataStore) {
     texSetWriter.dstBinding = 1;
     texSetWriter.dstArrayElement = 0;
     texSetWriter.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    texSetWriter.descriptorCount = textures->getDescriptorImageInfoArrayCount();
-    texSetWriter.dstSet = common.matData.descSets[i];
-    texSetWriter.pImageInfo = textures->getDescriptorImageInfoArrayPtr();
+    texSetWriter.descriptorCount = textureRepo->getDescriptorImageInfoArrayCount();
+//    texSetWriter.dstSet = common.matData.descSets[i];
+    texSetWriter.dstSet = pipelineRepo->at(0).descSets[i];
+    texSetWriter.pImageInfo = textureRepo->getDescriptorImageInfoArrayPtr();
     common.setWriters.push_back(texSetWriter);
 
     vkUpdateDescriptorSets(common.device, static_cast<uint32_t>(common.setWriters.size()), common.setWriters.data(), 0,
@@ -808,8 +816,10 @@ void VulkanContext<EcsInterface>::cleanupRendering() {
                        static_cast<uint32_t>(common.renderData.commandBuffers.size()),
                        common.renderData.commandBuffers.data());
 
-  vkDestroyPipeline(common.device, common.matData.graphicsPipeline, nullptr);
-  vkDestroyPipelineLayout(common.device, common.matData.pipelineLayout, nullptr);
+//  vkDestroyPipeline(common.device, common.matData.graphicsPipeline, nullptr);
+//  vkDestroyPipelineLayout(common.device, common.matData.pipelineLayout, nullptr);
+  vkDestroyPipeline(common.device, pipelineRepo->at(0).handle, nullptr);
+  vkDestroyPipelineLayout(common.device, pipelineRepo->at(0).layout, nullptr);
   vkDestroyRenderPass(common.device, common.renderData.mainRenderPass, nullptr);
 
   for (size_t i = 0; i < common.swapChain.imageViews.size(); i++) {
@@ -888,8 +898,10 @@ void VulkanContext<EcsInterface>::render(
 
   int currentlyBound = -1;
 
+//  vkCmdBindPipeline(common.renderData.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
+//                    common.matData.graphicsPipeline);
   vkCmdBindPipeline(common.renderData.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    common.matData.graphicsPipeline);
+                    pipelineRepo->at(0).handle);
 
   for (auto pair : meshAssets) {
     for (auto mesh : pair.second) {
@@ -897,14 +909,23 @@ void VulkanContext<EcsInterface>::render(
         glm::uint32 uboPage = instance.indices.getPage();
 
         if (currentlyBound != uboPage) {
+//          vkCmdBindDescriptorSets(common.renderData.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
+//                                  common.matData.pipelineLayout, 0, 1, &common.matData.descSets[uboPage], 0, nullptr);
           vkCmdBindDescriptorSets(common.renderData.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                  common.matData.pipelineLayout, 0, 1, &common.matData.descSets[uboPage], 0, nullptr);
+                                  pipelineRepo->at(0).layout, 0, 1, &pipelineRepo->at(0).descSets[uboPage], 0, nullptr);
           currentlyBound = uboPage;
         }
 
+//        vkCmdPushConstants(
+//            common.renderData.commandBuffers[imageIndex],
+//            common.matData.pipelineLayout,
+//            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+//            0,
+//            sizeof(MeshInstanceIndices::rawType),
+//            (void *) &instance.indices.raw);
         vkCmdPushConstants(
             common.renderData.commandBuffers[imageIndex],
-            common.matData.pipelineLayout,
+            pipelineRepo->at(0).layout,
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             0,
             sizeof(MeshInstanceIndices::rawType),

@@ -65,7 +65,7 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo <EcsInterface
   for (auto &path : fs::recursive_directory_iterator("./assets/models")) {
     if (getFileExtOnly(path) == ".dae") {
       printf("\n%s:\nLoading Mesh: %s\n", getFileNameOnly(path).c_str(), getFileNameRelative(path).c_str());
-      meshResources.emplace(getFileNameOnly(path), loadMesh(getFileNameRelative(path).c_str(), true));
+      meshRepo.emplace(getFileNameOnly(path), loadMesh(getFileNameRelative(path).c_str(), true));
     }
   }
   printf("\n");
@@ -82,13 +82,13 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo <EcsInterface
   texOpInfo.physicalMemProps = common.gpu.memProps;
   texOpInfo.samplerAnisotropy = common.gpu.features.samplerAnisotropy;
   texOpInfo.maxSamplerAnisotropy = common.gpu.deviceProps.limits.maxSamplerAnisotropy;
-  textures = std::make_unique<VkcTextureRepository<EcsInterface>>("./assets/textures", texOpInfo);
+  textureRepo = std::make_unique<VkcTextureRepository>("./assets/textures", texOpInfo);
 
   // Create the paged UBO system for mesh instance data
   dataStore = std::make_unique<UboPageMgr>(common);
 
-  // Create the rest of the pipeline
-  initRendering(textures->getDescriptorImageInfoArrayCount());
+  // Create the rest of the rendering pipelines
+  initRendering(textureRepo->getDescriptorImageInfoArrayCount());
 }
 
 template<typename EcsInterface>
@@ -104,22 +104,23 @@ void VulkanContext<EcsInterface>::updateWvMat(void *data) {
 
 template<typename EcsInterface>
 void VulkanContext<EcsInterface>::step() {
-  render(dataStore.get(), currentWvMat, meshResources, ecs);
+  render(dataStore.get(), currentWvMat, meshRepo, ecs);
 }
 
 template<typename EcsInterface>
 void VulkanContext<EcsInterface>::reInitRendering() {
+  printf("Re-initializing vulkan rendering pipeline\n");
   vkDeviceWaitIdle(common.device);
   cleanupRendering();
   getWindowSize();
   createSwapchainForSurface();
-  initRendering((uint32_t) meshResources.size());
+  initRendering(textureRepo->getDescriptorImageInfoArrayCount());
 }
 
 template<typename EcsInterface>
 void VulkanContext<EcsInterface>::registerMeshInstance(
     const typename EcsInterface::EcsId id, const std::string &meshFileName, const std::string &textureFileName) {
-  for (auto &mesh : meshResources.at(meshFileName)) {
+  for (auto &mesh : meshRepo.at(meshFileName)) {
     MeshInstance<EcsInterface> instance;
     UboPageMgr::AcquireStatus didAcquire = dataStore->acquire(instance.indices);
     AT3_ASSERT(didAcquire != UboPageMgr::AcquireStatus::FAILURE, "Error acquiring ubo index");
@@ -127,8 +128,8 @@ void VulkanContext<EcsInterface>::registerMeshInstance(
       updateDescriptorSets(dataStore.get());
     }
     instance.id = id;
-    if (textureFileName.length() && textures->textureExists(textureFileName)) {
-      instance.indices.setTexture(textures->getTextureArrayIndex(textureFileName));
+    if (textureFileName.length() && textureRepo->textureExists(textureFileName)) {
+      instance.indices.setTexture(textureRepo->getTextureArrayIndex(textureFileName));
     } else {
       instance.indices.setTexture(0u);  // The first texture will be used. Recommend using that slot for debug texture.
       printf("No texture applied to mesh: %s\n", meshFileName.c_str());

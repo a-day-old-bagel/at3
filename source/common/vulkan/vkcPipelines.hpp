@@ -44,29 +44,43 @@ namespace at3 {
   };
 
   struct VkcShaderSourceInfo {
-    unsigned char *data;
-    unsigned int length;
+    unsigned char *data = nullptr;
+    unsigned int length = 0;
   };
   struct VkcPipelineCreateInfo {
     VkcCommon *ctxt;
-    VkPipelineLayout *outPipelineLayout;
-    VkPipeline *outPipeline;
     VkRenderPass renderPass;
-    std::vector<VkDescriptorSetLayout> descSetLayouts;
+    std::vector<VkDescriptorSetLayoutCreateInfo> descSetLayoutInfos;
     std::vector<VkPushConstantRange> pcRanges;
     VkSpecializationInfo specializationInfo;
     VkcShaderSourceInfo
-        vertInfo,
-        tescInfo,
-        teseInfo,
-        geomInfo,
-        fragInfo;
+        vertCode,
+        tescCode,
+        teseCode,
+        geomCode,
+        fragCode;
   };
 
   const VertexRenderData *vertexRenderData();
   void setVertexRenderData(VertexRenderData *renderData);
 
-  void createBasicPipeline(VkcPipelineCreateInfo &info);
+  class VkcPipelineRepository {
 
-  void createDefaultMeshPipeline(VkcCommon &ctxt, uint32_t texArrayLen);
+      struct VkcPipeline {
+        std::vector<VkDescriptorSet> descSets;
+        std::vector<VkDescriptorSetLayout> descSetLayouts;
+        VkPipelineLayout layout;
+        VkPipeline handle;
+      };
+      std::vector<VkcPipeline> pipelines;
+
+      void createPipeline(VkcPipelineCreateInfo &info);
+      void createStandardMeshPipeline(VkcCommon &ctxt, uint32_t texArrayLen);
+      void createStaticHeightmapTerrainPipeline(VkcCommon &ctxt);
+
+    public:
+      VkcPipelineRepository(VkcCommon &ctxt, uint32_t numTextures2D);
+      VkcPipeline &at(uint32_t index);
+  };
+
 }

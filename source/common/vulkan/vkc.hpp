@@ -1,7 +1,6 @@
 
 #pragma once
 
-#include <stb/stb_image.h>
 #include <unordered_map>
 #include <string>
 #include <sstream>
@@ -56,9 +55,10 @@ namespace at3 {
       EcsInterface *ecs;
       VkcCommon common;
       std::unique_ptr<UboPageMgr> dataStore;
-      MeshRepository<EcsInterface> meshResources;
-      std::unique_ptr<VkcTextureRepository<EcsInterface>> textures;
 
+      MeshRepository<EcsInterface> meshRepo;
+      std::unique_ptr<VkcTextureRepository> textureRepo;
+      std::unique_ptr<VkcPipelineRepository> pipelineRepo;
 
       glm::mat4 currentWvMat = glm::mat4(1.f);
       std::unique_ptr<rtu::topics::Subscription> sub_wvUpdate, sub_windowResize;
