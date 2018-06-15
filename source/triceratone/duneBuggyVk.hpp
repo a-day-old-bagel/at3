@@ -19,7 +19,8 @@ namespace at3 {
       ezecs::entityId ctrlId;
       ezecs::entityId camGimbalId;
 
-      DuneBuggyVk(ezecs::State &state, VulkanContext<EntityComponentSystemInterface> *context, Scene_ &scene, glm::mat4 &transform);
+      DuneBuggyVk(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context,
+                  Scene_ &scene, glm::mat4 &transform);
       std::shared_ptr<PerspectiveCamera_> getCamPtr();
       void tip();
       void makeActiveControl(void* nothing);

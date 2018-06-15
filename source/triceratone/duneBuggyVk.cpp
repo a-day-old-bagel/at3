@@ -26,8 +26,8 @@ namespace at3 {
     return glm::rotate(glm::scale(glm::mat4(1.f), {1.8f, 2.8f, 1.f}), (float)M_PI, glm::vec3(1.f, 0.f, 0.f));
   }
 
-  DuneBuggyVk::DuneBuggyVk(ezecs::State &state, VulkanContext<EntityComponentSystemInterface> *context, Scene_ &scene,
-                           glm::mat4 &transform) : state(&state), scene(&scene){
+  DuneBuggyVk::DuneBuggyVk(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context,
+                           Scene_ &scene, glm::mat4 &transform) : state(&state), scene(&scene){
 
     chassis = std::make_shared<MeshObjectVk_>(context, "pyramid_bottom", "pyramid_bottom", transform);
 

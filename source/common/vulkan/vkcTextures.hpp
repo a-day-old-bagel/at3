@@ -33,7 +33,7 @@
 
 #include "utilities.hpp"
 
-namespace at3 {
+namespace at3::vkc {
 
   /*
    * Get the index of a memory type that has all the requested property bits set
@@ -70,7 +70,7 @@ namespace at3 {
 
   void flushCommandBuffer(VkDevice device, VkCommandPool pool, VkCommandBuffer commandBuffer, VkQueue queue);
 
-  struct VkcTextureOperationInfo {
+  struct TextureOperationInfo {
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice logicalDevice = VK_NULL_HANDLE;
     VkCommandPool transferCommandPool = VK_NULL_HANDLE;
@@ -81,7 +81,7 @@ namespace at3 {
     bool forceLinear = false;
   };
 
-  struct VkcTexture {
+  struct Texture {
       VkImage image;
       VkImageLayout imageLayout;
       VkDeviceMemory deviceMemory;
@@ -90,27 +90,27 @@ namespace at3 {
       uint32_t mipLevels;
       uint32_t layerCount;
       VkSampler sampler;
-      void destroy(VkcTextureOperationInfo &info);
+      void destroy(TextureOperationInfo &info);
   };
 
-  struct VkcTexture2D {
-    VkcTexture texture;
-    VkcTexture2D (
+  struct Texture2D {
+    Texture texture;
+    Texture2D (
         const std::string &filename,
         VkFormat format,
-        VkcTextureOperationInfo &info,
+        TextureOperationInfo &info,
         VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
         VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
   };
 
-  class VkcTextureRepository {
-      std::vector<VkcTexture2D> textures;
+  class TextureRepository {
+      std::vector<Texture2D> textures;
       std::vector<VkDescriptorImageInfo> descriptorImageInfos;
       std::unordered_map<std::string, uint32_t> textureArrayIndexMap;
       uint32_t nextId = 0;
-      void registerNewTexture2D(VkcTexture2D* texture2D, VkcTextureOperationInfo &info, const std::string &key);
+      void registerNewTexture2D(Texture2D* texture2D, TextureOperationInfo &info, const std::string &key);
     public:
-      VkcTextureRepository(const std::string &textureDirectory, VkcTextureOperationInfo &info);
+      TextureRepository(const std::string &textureDirectory, TextureOperationInfo &info);
       bool textureExists(const std::string &key);
       uint32_t getTextureArrayIndex(const std::string &key);
       VkDescriptorImageInfo* getDescriptorImageInfoArrayPtr();

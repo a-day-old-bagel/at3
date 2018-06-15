@@ -3,9 +3,10 @@
 
 // Include the shader codes
 #include "meshDefault.vert.spv.c"
+#include "meshDefault.geom.spv.c"
 #include "meshDefault.frag.spv.c"
 
-namespace at3 {
+namespace at3::vkc {
 
   VertexRenderData *_vkRenderData = nullptr;
   const VertexRenderData *vertexRenderData() {
@@ -19,7 +20,7 @@ namespace at3 {
   }
 
   void createShaderModule(VkShaderModule &outModule, unsigned char *binaryData, size_t dataSize,
-                          const VkcCommon &ctxt) {
+                          const Common &ctxt) {
     VkShaderModuleCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 
@@ -40,12 +41,135 @@ namespace at3 {
   }
 
 
-  VkcPipelineRepository::VkcPipelineRepository(VkcCommon &ctxt, uint32_t numTextures2D) {
+  PipelineRepository::PipelineRepository(Common &ctxt, uint32_t numTextures2D) {
+    pipelines.resize(PIPELINE_COUNT);
+
+    createMainRenderPass(ctxt);
     createStandardMeshPipeline(ctxt, numTextures2D);
     createStaticHeightmapTerrainPipeline(ctxt);
   }
 
-  void VkcPipelineRepository::createPipeline(VkcPipelineCreateInfo &info) {
+  void PipelineRepository::createRenderPass(
+      Common &ctxt, VkRenderPass &outPass, std::vector<VkAttachmentDescription> &colorAttachments,
+      VkAttachmentDescription *depthAttachment) {
+    std::vector<VkAttachmentReference> attachRefs;
+
+    std::vector<VkAttachmentDescription> allAttachments;
+    allAttachments = colorAttachments;
+
+    uint32_t attachIdx = 0;
+    while (attachIdx < colorAttachments.size()) {
+      VkAttachmentReference ref = {0};
+      ref.attachment = attachIdx++;
+      ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+      attachRefs.push_back(ref);
+    }
+
+    VkSubpassDescription subpass = {};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size());
+    subpass.pColorAttachments = &attachRefs[0];
+
+    VkAttachmentReference depthRef = {0};
+
+    if (depthAttachment) {
+      depthRef.attachment = attachIdx;
+      depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+      subpass.pDepthStencilAttachment = &depthRef;
+      allAttachments.push_back(*depthAttachment);
+    }
+
+
+    VkRenderPassCreateInfo renderPassInfo = {};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = static_cast<uint32_t>(allAttachments.size());
+    renderPassInfo.pAttachments = &allAttachments[0];
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpass;
+
+    // Original Comments:
+    //we need a subpass dependency for transitioning the image to the right format, because by default, vulkan
+    //will try to do that before we have acquired an image from our fb
+    VkSubpassDependency dependency = {};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL; //External means outside of the render pipeline, in srcPass, it means before the render pipeline
+    dependency.dstSubpass = 0; //must be higher than srcSubpass
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    renderPassInfo.dependencyCount = 1;
+    renderPassInfo.pDependencies = &dependency;
+
+    VkResult res = vkCreateRenderPass(ctxt.device, &renderPassInfo, nullptr, &outPass);
+    AT3_ASSERT(res == VK_SUCCESS, "Error creating render pass");
+  }
+
+  void PipelineRepository::createMainRenderPass(Common &ctxt) {
+    VkAttachmentDescription colorAttachment = {};
+    colorAttachment.format = ctxt.swapChain.imageFormat;
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkAttachmentDescription depthAttachment = {};
+    depthAttachment.format = VK_FORMAT_D32_SFLOAT;
+    depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    std::vector<VkAttachmentDescription> renderPassAttachments;
+    renderPassAttachments.push_back(colorAttachment);
+
+    createRenderPass(ctxt, mainRenderPass, renderPassAttachments, &depthAttachment);
+  }
+
+  void PipelineRepository::createPipelineLayout(PipelineCreateInfo &info) {
+
+    // Get a reference to the pipeline to be filled
+    Pipeline &pipeline = pipelines.at(info.index);
+
+    // This will be used to hold the return values of Vulkan functions for error checking.
+    VkResult res;
+
+    { // Populate pipelineLayoutInfo and use it to create the pipeline layout
+      VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
+      // Create the descriptor set layouts
+      for (auto layoutInfo : info.descSetLayoutInfos) {
+        pipeline.descSetLayouts.emplace_back();
+        res = vkCreateDescriptorSetLayout(
+            info.ctxt->device, &layoutInfo, nullptr, &pipeline.descSetLayouts.back());
+        AT3_ASSERT(res == VK_SUCCESS, "Error creating desc set layout");
+      }
+
+      // Include the descriptor set layouts in the pipeline layout creation info.
+      pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+      pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(pipeline.descSetLayouts.size());
+      pipelineLayoutInfo.pSetLayouts = pipeline.descSetLayouts.data();
+
+      // Include the push constants in the pipeline layout creation info.
+      pipelineLayoutInfo.pPushConstantRanges = info.pcRanges.data();
+      pipelineLayoutInfo.pushConstantRangeCount = (uint32_t) info.pcRanges.size();
+
+      // Create the pipeline layout.
+      res = vkCreatePipelineLayout(info.ctxt->device, &pipelineLayoutInfo, nullptr, &pipeline.layout);
+      AT3_ASSERT(res == VK_SUCCESS, "Error creating pipeline layout");
+    }
+  }
+
+  void PipelineRepository::createPipeline(PipelineCreateInfo &info) {
+
+    // Get a reference to the pipeline to be filled
+    Pipeline &pipeline = pipelines.at(info.index);
 
     // This will be used to hold the return values of Vulkan functions for error checking.
     VkResult res;
@@ -67,6 +191,7 @@ namespace at3 {
         tescStageInfo.stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
         tescStageInfo.pName = "main";
         createShaderModule(tescStageInfo.module, info.tescCode.data, info.tescCode.length, *info.ctxt);
+        shaderStages.push_back(tescStageInfo);
       }
       // Tesselation evaluation shader. Optional, but must also come with tesc above
       if (info.teseCode.data) {
@@ -75,6 +200,7 @@ namespace at3 {
         teseStageInfo.stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
         teseStageInfo.pName = "main";
         createShaderModule(teseStageInfo.module, info.teseCode.data, info.teseCode.length, *info.ctxt);
+        shaderStages.push_back(teseStageInfo);
       }
       // Geometry shader. Optional.
       if (info.geomCode.data) {
@@ -83,6 +209,7 @@ namespace at3 {
         geomStageInfo.stage = VK_SHADER_STAGE_GEOMETRY_BIT;
         geomStageInfo.pName = "main";
         createShaderModule(geomStageInfo.module, info.geomCode.data, info.geomCode.length, *info.ctxt);
+        shaderStages.push_back(geomStageInfo);
       }
       // Fragment shader is required. Will crash without.
       VkPipelineShaderStageCreateInfo fragStageInfo{};
@@ -93,35 +220,6 @@ namespace at3 {
       createShaderModule(fragStageInfo.module, info.fragCode.data, info.fragCode.length, *info.ctxt);
       shaderStages.push_back(fragStageInfo);
     } // shaderStages is now populated and final.
-
-    // Add a pipeline object to pipelines. This will be filled in below.
-    pipelines.emplace_back();
-
-    // Pipeline layout creation info allocated
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
-    { // Populate pipelineLayoutInfo and use it to create the pipeline layout
-
-      // Create the descriptor set layouts
-      for (auto layoutInfo : info.descSetLayoutInfos) {
-        pipelines.back().descSetLayouts.emplace_back();
-        res = vkCreateDescriptorSetLayout(
-            info.ctxt->device, &layoutInfo, nullptr, &pipelines.back().descSetLayouts.back());
-        AT3_ASSERT(res == VK_SUCCESS, "Error creating desc set layout");
-      }
-
-      // Include the descriptor set layouts in the pipeline layout creation info.
-      pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-      pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(pipelines.back().descSetLayouts.size());
-      pipelineLayoutInfo.pSetLayouts = pipelines.back().descSetLayouts.data();
-
-      // Include the push constants in the pipeline layout creation info.
-      pipelineLayoutInfo.pPushConstantRanges = info.pcRanges.data();
-      pipelineLayoutInfo.pushConstantRangeCount = (uint32_t) info.pcRanges.size();
-
-      // Create the pipeline layout.
-      res = vkCreatePipelineLayout(info.ctxt->device, &pipelineLayoutInfo, nullptr, &pipelines.back().layout);
-      AT3_ASSERT(res == VK_SUCCESS, "Error creating pipeline layout");
-    }
 
     // TODO: this is stupid. Make a pipeline repository like the texture repository and have this value in there.
     const VertexRenderData *vertexLayout = vertexRenderData();
@@ -241,8 +339,8 @@ namespace at3 {
       pipelineInfo.pRasterizationState = &rasterizer;
       pipelineInfo.pMultisampleState = &multisampling;
       pipelineInfo.pColorBlendState = &colorBlending;
-      pipelineInfo.pDynamicState = nullptr; // Optional
-      pipelineInfo.layout = pipelines.back().layout;
+      pipelineInfo.pDynamicState = nullptr; // Enable dynamic states here, watch performance?
+      pipelineInfo.layout = pipeline.layout;
       pipelineInfo.renderPass = info.renderPass;
       pipelineInfo.pDepthStencilState = &depthStencil;
 
@@ -255,7 +353,7 @@ namespace at3 {
 
     // Create the pipeline on the gpu.
     res = vkCreateGraphicsPipelines(
-        info.ctxt->device, VK_NULL_HANDLE, 1,&pipelineInfo, nullptr, &pipelines.back().handle);
+        info.ctxt->device, VK_NULL_HANDLE, 1,&pipelineInfo, nullptr, &pipeline.handle);
     AT3_ASSERT(res == VK_SUCCESS, "Error creating graphics pipeline");
 
     // Cleanup the shader modules now that they've been copied to the gpu.
@@ -265,18 +363,20 @@ namespace at3 {
 
   }
 
-  void VkcPipelineRepository::createStandardMeshPipeline(VkcCommon &ctxt, uint32_t texArrayLen) {
+  void PipelineRepository::createStandardMeshPipeline(Common &ctxt, uint32_t texArrayLen) {
 
     // This is populated and then passed to createPipeline.
-    VkcPipelineCreateInfo info {};
+    PipelineCreateInfo info {};
 
-    { // Context and renderpass
+    { // pipeline type, context, and renderpass
+      info.index = MESH;
       info.ctxt = &ctxt;
-      info.renderPass = ctxt.renderData.mainRenderPass;
+      info.renderPass = mainRenderPass;
     }
 
     { // Shaders
       info.vertCode = {meshDefault_vert_spv, meshDefault_vert_spv_len};
+      info.geomCode = {meshDefault_geom_spv, meshDefault_geom_spv_len};
       info.fragCode = {meshDefault_frag_spv, meshDefault_frag_spv_len};
     }
 
@@ -285,7 +385,7 @@ namespace at3 {
     {
       VkDescriptorSetLayoutBinding uboBinding{};
       uboBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-      uboBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+      uboBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT;
       uboBinding.binding = 0;
       uboBinding.descriptorCount = 1;
       layoutBindings.push_back(uboBinding);
@@ -312,7 +412,7 @@ namespace at3 {
     {
       pcRange.offset = 0;
       pcRange.size = sizeof(MeshInstanceIndices::rawType);
-      pcRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+      pcRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
       info.pcRanges.push_back(pcRange);
     }
 
@@ -334,14 +434,45 @@ namespace at3 {
       info.specializationInfo.pData = &specializationData;
     }
 
+    // If this is a re-initialization, the layouts will already exist and do not need to be recreated.
+    if (!pipelines.at(info.index).layoutsExist) {
+      createPipelineLayout(info);
+      pipelines.at(info.index).layoutsExist = true;
+    }
+
+    // The pipeline itself will need to be recreated even for a re-initialization, since it's not dynamic.
+    // An alternative would be to make the viewport and scissors dynamic, but that could hurt performance.
+    // Benchmarking would need to be done to make sure, but for now I'm leaving them non-dynamic.
+    // Another option would be to keep both a dynamic and non-dynamic version of each pipeline, so that the dynamic
+    // one could be used while the static ones were being recreated.
     createPipeline(info);
   }
 
-  void VkcPipelineRepository::createStaticHeightmapTerrainPipeline(VkcCommon &ctxt) {
+  void PipelineRepository::createStaticHeightmapTerrainPipeline(Common &ctxt) {
 
   }
 
-  VkcPipelineRepository::VkcPipeline &VkcPipelineRepository::at(uint32_t index) {
+  void PipelineRepository::destroy(Common &ctxt) {
+    for (auto pipeline : pipelines) {
+      for (auto set : pipeline.descSets) {
+        vkFreeDescriptorSets(ctxt.device, ctxt.descriptorPool, (uint32_t)pipeline.descSetLayouts.size(), &set);
+      }
+      vkDestroyPipeline(ctxt.device, pipeline.handle, nullptr);
+      vkDestroyPipelineLayout(ctxt.device, pipeline.layout, nullptr);
+      for (auto layout : pipeline.descSetLayouts) {
+        vkDestroyDescriptorSetLayout(ctxt.device, layout, nullptr);
+      }
+      pipeline.descSetLayouts.clear();
+      vkDestroyRenderPass(ctxt.device, mainRenderPass, nullptr);
+    }
+  }
+
+  PipelineRepository::Pipeline &PipelineRepository::at(uint32_t index) {
     return pipelines.at(index);
+  }
+
+  void PipelineRepository::reinit(Common &ctxt, uint32_t numTextures2D) {
+    createStandardMeshPipeline(ctxt, numTextures2D);
+    createStaticHeightmapTerrainPipeline(ctxt);
   }
 }

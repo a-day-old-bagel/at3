@@ -16,3 +16,5 @@
 // TODO: Use SLikeNet for multiplayer
 // TODO: Consider a BOB-inspired (horror?) game
 // TODO: USE GLTF and PBR
+// TODO: investigate the need for custom allocators
+// TODO: find a drop-in replacement for std::vector

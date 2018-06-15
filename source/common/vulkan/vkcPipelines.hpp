@@ -12,7 +12,7 @@
 
 #include "vkcTypes.hpp"
 
-namespace at3 {
+namespace at3::vkc {
 
   struct VShaderInput {
     glm::mat4 model = glm::mat4(1.f);
@@ -32,7 +32,7 @@ namespace at3 {
 
   struct GlobalShaderDataStore {
     //storage for global shader data
-    VkcAllocation mem;
+    Allocation mem;
     VkBuffer buffer;
     GlobalShaderData shaderData;
     uint32_t size;
@@ -43,17 +43,30 @@ namespace at3 {
     VkSampler sampler;
   };
 
-  struct VkcShaderSourceInfo {
+  struct ShaderSourceInfo {
     unsigned char *data = nullptr;
     unsigned int length = 0;
   };
-  struct VkcPipelineCreateInfo {
-    VkcCommon *ctxt;
+
+  const VertexRenderData *vertexRenderData();
+  void setVertexRenderData(VertexRenderData *renderData);
+
+  enum StandardPipeline {
+    MESH = 0,
+    NORMAL,
+    SKYBOX,
+    HEIGHT_TERRAIN,
+    PIPELINE_COUNT
+  };
+
+  struct PipelineCreateInfo {
+    StandardPipeline index;
+    Common *ctxt;
     VkRenderPass renderPass;
     std::vector<VkDescriptorSetLayoutCreateInfo> descSetLayoutInfos;
     std::vector<VkPushConstantRange> pcRanges;
     VkSpecializationInfo specializationInfo;
-    VkcShaderSourceInfo
+    ShaderSourceInfo
         vertCode,
         tescCode,
         teseCode,
@@ -61,26 +74,34 @@ namespace at3 {
         fragCode;
   };
 
-  const VertexRenderData *vertexRenderData();
-  void setVertexRenderData(VertexRenderData *renderData);
+  class PipelineRepository {
 
-  class VkcPipelineRepository {
-
-      struct VkcPipeline {
+      struct Pipeline {
         std::vector<VkDescriptorSet> descSets;
         std::vector<VkDescriptorSetLayout> descSetLayouts;
         VkPipelineLayout layout;
         VkPipeline handle;
+        bool layoutsExist = false;
       };
-      std::vector<VkcPipeline> pipelines;
+      std::vector<Pipeline> pipelines;
 
-      void createPipeline(VkcPipelineCreateInfo &info);
-      void createStandardMeshPipeline(VkcCommon &ctxt, uint32_t texArrayLen);
-      void createStaticHeightmapTerrainPipeline(VkcCommon &ctxt);
+      void createRenderPass(
+          Common &ctxt, VkRenderPass &outPass, std::vector<VkAttachmentDescription> &colorAttachments,
+          VkAttachmentDescription *depthAttachment);
+      void createMainRenderPass(Common &ctxt);
+      void createPipelineLayout(PipelineCreateInfo &info);
+      void createPipeline(PipelineCreateInfo &info);
+      void createStandardMeshPipeline(Common &ctxt, uint32_t texArrayLen);
+      void createStaticHeightmapTerrainPipeline(Common &ctxt);
+      void destroy(Common &ctxt);
 
     public:
-      VkcPipelineRepository(VkcCommon &ctxt, uint32_t numTextures2D);
-      VkcPipeline &at(uint32_t index);
+
+      VkRenderPass mainRenderPass;
+
+      PipelineRepository(Common &ctxt, uint32_t numTextures2D);
+      Pipeline &at(uint32_t index);
+      void reinit(Common &ctxt, uint32_t numTextures2D);
   };
 
 }

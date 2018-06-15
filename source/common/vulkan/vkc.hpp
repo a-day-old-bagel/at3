@@ -24,7 +24,7 @@
 
 #define SUBSCRIBE_TOPIC(e, x) std::make_unique<rtu::topics::Subscription>(e, RTU_MTHD_DLGT(&VulkanContext::x, this));
 
-namespace at3 {
+namespace at3::vkc {
 
   template<typename EcsInterface>
   struct VulkanContextCreateInfo {
@@ -53,12 +53,12 @@ namespace at3 {
     private:
 
       EcsInterface *ecs;
-      VkcCommon common;
+      Common common;
       std::unique_ptr<UboPageMgr> dataStore;
 
       MeshRepository<EcsInterface> meshRepo;
-      std::unique_ptr<VkcTextureRepository> textureRepo;
-      std::unique_ptr<VkcPipelineRepository> pipelineRepo;
+      std::unique_ptr<TextureRepository> textureRepo;
+      std::unique_ptr<PipelineRepository> pipelineRepo;
 
       glm::mat4 currentWvMat = glm::mat4(1.f);
       std::unique_ptr<rtu::topics::Subscription> sub_wvUpdate, sub_windowResize;
@@ -70,7 +70,7 @@ namespace at3 {
       void createPhysicalDevice();
       void createLogicalDevice();
       void createQueryPool(int queryCount);
-      void getWindowSize();
+      void storeWindowSize();
       void createSurface();
       void createSwapchainForSurface();
       VkExtent2D chooseSwapExtent();
@@ -83,39 +83,37 @@ namespace at3 {
       void createVkSemaphore(VkSemaphore &outSemaphore);
       void createFence(VkFence &outFence);
       void createCommandPool(VkCommandPool &outPool);
-      void freeDeviceMemory(VkcAllocation &mem);
-      void createRenderPass(VkRenderPass &outPass, std::vector<VkAttachmentDescription> &colorAttachments,
-                                  VkAttachmentDescription *depthAttachment);
+      void freeDeviceMemory(Allocation &mem);
       void createCommandBuffer(VkCommandBuffer &outBuffer, VkCommandPool &pool);
       uint32_t getMemoryType(const VkPhysicalDevice &device, uint32_t memoryTypeBitsRequirement,
                              VkMemoryPropertyFlags requiredProperties);
-      void createFrameBuffers(std::vector<VkFramebuffer> &outBuffers, const VkcSwapChain &swapChain,
+      void createFrameBuffers(std::vector<VkFramebuffer> &outBuffers, const SwapChain &swapChain,
                                     const VkImageView *depthBufferView, const VkRenderPass &renderPass);
-      void allocateDeviceMemory(VkcAllocation &outMem, VkcAllocationCreateInfo info);
-      VkcCommandBuffer beginScratchCommandBuffer(VkcCmdPoolType type);
-      void submitScratchCommandBuffer(VkcCommandBuffer &commandBuffer);
+      void allocateDeviceMemory(Allocation &outMem, AllocationCreateInfo info);
+      CommandBuffer beginScratchCommandBuffer(CmdPoolType type);
+      void submitScratchCommandBuffer(CommandBuffer &commandBuffer);
 
       //todo: do we really need three of these?
       void copyBuffer(VkBuffer &srcBuffer, VkBuffer &dstBuffer, VkDeviceSize size, uint32_t srcOffset,
-                      uint32_t dstOffset, VkcCommandBuffer &buffer);
+                      uint32_t dstOffset, CommandBuffer &buffer);
       void copyBuffer(VkBuffer &srcBuffer, VkBuffer &dstBuffer, VkDeviceSize size, uint32_t srcOffset,
                       uint32_t dstOffset, VkCommandBuffer &buffer);
       void copyBuffer(VkBuffer &srcBuffer, VkBuffer &dstBuffer, VkDeviceSize size, uint32_t srcOffset,
                       uint32_t dstOffset, VkCommandBuffer *buffer);
 
-      void createBuffer(VkBuffer &outBuffer, VkcAllocation &bufferMemory, VkDeviceSize size, VkBufferUsageFlags usage,
+      void createBuffer(VkBuffer &outBuffer, Allocation &bufferMemory, VkDeviceSize size, VkBufferUsageFlags usage,
                         VkMemoryPropertyFlags properties);
       void copyDataToBuffer(VkBuffer *buffer, uint32_t dataSize, uint32_t dstOffset, char *data);
       void createImage(VkImage &outImage, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
                        VkImageUsageFlags usage);
       void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
       void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-      void allocMemoryForImage(VkcAllocation &outMem, const VkImage &image, VkMemoryPropertyFlags properties);
+      void allocMemoryForImage(Allocation &outMem, const VkImage &image, VkMemoryPropertyFlags properties);
 
 
-      void initRendering(uint32_t num);
+      void createWindowSizeDependents();
       void updateDescriptorSets(UboPageMgr *dataStore);
-      void createMainRenderPass();
+//      void createMainRenderPass();
       void createDepthBuffer();
       void render(UboPageMgr *dataStore, const glm::mat4 &wvMat, const MeshRepository<EcsInterface> &meshAssets,
                   EcsInterface *ecs);
@@ -128,7 +126,7 @@ namespace at3 {
       void quad(MeshResource<EcsInterface> &outAsset, float width, float height, float xOffset, float yOffset);
 
 
-      void cleanupRendering();
+      void destroyWindowSizeDependents();
 
       void createDebugCallback();
 

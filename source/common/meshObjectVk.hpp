@@ -18,22 +18,22 @@ namespace at3 {
   class MeshObjectVk : public SceneObject<EcsInterface> {
 
       int shaderStyle;
-      VulkanContext<EcsInterface> *vkc;
+      vkc::VulkanContext<EcsInterface> *vkc;
 
     public:
       enum ShaderStyle {
         NOTEXTURE, FULLBRIGHT, SUNNY
       };
-      MeshObjectVk(VulkanContext<EcsInterface> *vkc, const std::string &meshFile, const std::string &textureFile,
+      MeshObjectVk(vkc::VulkanContext<EcsInterface> *vkc, const std::string &meshFile, const std::string &textureFile,
                    glm::mat4 &transform, int style = SUNNY);
-      MeshObjectVk(VulkanContext<EcsInterface> *vkc, const std::string &meshFile, glm::mat4 &transform);
+      MeshObjectVk(vkc::VulkanContext<EcsInterface> *vkc, const std::string &meshFile, glm::mat4 &transform);
       virtual ~MeshObjectVk() = default;
 
       virtual void draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &proj, bool debug);
   };
 
   template <typename EcsInterface>
-  MeshObjectVk<EcsInterface>::MeshObjectVk(VulkanContext<EcsInterface> *vkc, const std::string &meshFile,
+  MeshObjectVk<EcsInterface>::MeshObjectVk(vkc::VulkanContext<EcsInterface> *vkc, const std::string &meshFile,
                                            const std::string &textureFile, glm::mat4 &transform,
                                            int style) :shaderStyle(style), vkc(vkc) {
     SCENE_ECS->addTransform(SCENE_ID, transform);
@@ -41,7 +41,7 @@ namespace at3 {
   }
 
   template <typename EcsInterface>
-  MeshObjectVk<EcsInterface>::MeshObjectVk(VulkanContext<EcsInterface> *vkc, const std::string &meshFile,
+  MeshObjectVk<EcsInterface>::MeshObjectVk(vkc::VulkanContext<EcsInterface> *vkc, const std::string &meshFile,
                                            glm::mat4 &transform) : shaderStyle(NOTEXTURE), vkc(vkc) {
     SCENE_ECS->addTransform(SCENE_ID, transform);
     vkc->registerMeshInstance(SCENE_ID, meshFile);

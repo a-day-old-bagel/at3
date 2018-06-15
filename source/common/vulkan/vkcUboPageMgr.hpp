@@ -12,24 +12,24 @@
 #include <deque>
 #include "vkcPipelines.hpp"
 
-namespace at3 {
+namespace at3::vkc {
 
   uint32_t getMemoryType(const VkPhysicalDevice &device, uint32_t memoryTypeBitsRequirement,
                          VkMemoryPropertyFlags requiredProperties);
 
-  void createBuffer(VkBuffer &outBuffer, VkcAllocation &bufferMemory, VkDeviceSize size, VkBufferUsageFlags usage,
-                    VkMemoryPropertyFlags properties, VkcCommon &ctxt);
+  void createBuffer(VkBuffer &outBuffer, Allocation &bufferMemory, VkDeviceSize size, VkBufferUsageFlags usage,
+                    VkMemoryPropertyFlags properties, Common &ctxt);
 
   class UboPageMgr {
 
       uint32_t slotsPerPage;
       uint32_t size;
 
-      VkcCommon *ctxt;
+      Common *ctxt;
 
       struct Page {
         VkBuffer buf;
-        VkcAllocation alloc;
+        Allocation alloc;
         std::deque<uint32_t> freeIndices;
         uint32_t index;
 
@@ -53,7 +53,7 @@ namespace at3 {
 
       Page &createNewPage() {
         Page page;
-        VkcCommon &_ctxt = *ctxt;
+        Common &_ctxt = *ctxt;
 
         createBuffer(
             page.buf,
@@ -108,14 +108,14 @@ namespace at3 {
         SUCCESS, NEWPAGE, FAILURE
       };
 
-      UboPageMgr(VkcCommon &_ctxt) {
+      UboPageMgr(Common &_ctxt) {
         ctxt = &_ctxt;
         slotsPerPage = 512;
         size = (sizeof(VShaderInput) * slotsPerPage);
       }
 
 
-      VkcAllocation &getAlloc(uint32_t idx) {
+      Allocation &getAlloc(uint32_t idx) {
         AT3_ASSERT(pages.size() >= (idx + 1), "Array index out of bounds");
         return pages[idx].alloc;
       }
@@ -156,7 +156,7 @@ namespace at3 {
 
       template<typename EcsInterface>
       void updateBuffers(const glm::mat4 &viewMatrix, const glm::mat4 &projMatrix, VkCommandBuffer *commandBuffer,
-                         VkcCommon &ctxt, EcsInterface *ecs, const MeshRepository<EcsInterface> &meshRepo) {
+                         Common &ctxt, EcsInterface *ecs, const MeshRepository<EcsInterface> &meshRepo) {
         std::vector<VkMappedMemoryRange> rangesToUpdate;
         rangesToUpdate.resize(pages.size());
 

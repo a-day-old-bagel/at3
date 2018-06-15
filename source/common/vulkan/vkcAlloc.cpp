@@ -3,13 +3,12 @@
 #include "configuration.hpp"
 
 //Simple Passthrough allocator -> sub allocators responsible for actually parcelling out memory
-
-namespace at3::allocators::passthrough {
+namespace at3::vkc::passthrough {
 
   AllocatorState state;
-  VkcAllocatorInterface allocImpl = {activate, alloc, free, allocatedSize, numAllocs};
+  AllocatorInterface allocImpl = {activate, alloc, free, allocatedSize, numAllocs};
 
-  void activate(VkcCommon *context) {
+  void activate(Common *context) {
     context->allocator = allocImpl;
     state.context = context;
 
@@ -19,14 +18,14 @@ namespace at3::allocators::passthrough {
     state.memTypeAllocSizes = (size_t *) calloc(1, sizeof(size_t) * memProperties.memoryTypeCount);
   }
 
-  void deactivate(VkcCommon *context) {
+  void deactivate(Common *context) {
     ::free(state.memTypeAllocSizes);
   }
 
   //IMPLEMENTATION
 
 
-  void alloc(VkcAllocation &outAlloc, VkcAllocationCreateInfo createInfo) {
+  void alloc(Allocation &outAlloc, AllocationCreateInfo createInfo) {
     state.totalAllocs++;
     state.memTypeAllocSizes[createInfo.memoryTypeIndex] += createInfo.size;
 
@@ -47,7 +46,7 @@ namespace at3::allocators::passthrough {
     AT3_ASSERT(res == VK_SUCCESS, "Error allocating memory in passthrough allocator");
   }
 
-  void free(VkcAllocation &allocation) {
+  void free(Allocation &allocation) {
     state.totalAllocs--;
     state.memTypeAllocSizes[allocation.type] -= allocation.size;
     vkFreeMemory(state.context->device, (allocation.handle), nullptr);
@@ -62,12 +61,12 @@ namespace at3::allocators::passthrough {
   }
 }
 
-namespace at3::allocators::pool {
+namespace at3::vkc::pool {
 
   AllocatorState state;
-  VkcAllocatorInterface allocImpl = {activate, alloc, free, allocatedSize, numAllocs};
+  AllocatorInterface allocImpl = {activate, alloc, free, allocatedSize, numAllocs};
 
-  void activate(VkcCommon *context) {
+  void activate(Common *context) {
     context->allocator = allocImpl;
     state.context = context;
 
@@ -134,7 +133,7 @@ namespace at3::allocators::pool {
     return false;
   }
 
-  void alloc(VkcAllocation &outAlloc, VkcAllocationCreateInfo createInfo) {
+  void alloc(Allocation &outAlloc, AllocationCreateInfo createInfo) {
     uint32_t memoryType = createInfo.memoryTypeIndex;
     VkDeviceSize size = createInfo.size;
 
@@ -164,7 +163,7 @@ namespace at3::allocators::pool {
     markChunkOfMemoryBlockUsed(memoryType, location, requestedAllocSize);
   }
 
-  void free(VkcAllocation &allocation) {
+  void free(Allocation &allocation) {
     VkDeviceSize requestedAllocSize = ((allocation.size / state.pageSize) + 1) * state.pageSize;
 
     OffsetSize span = {allocation.offset, requestedAllocSize};
@@ -198,7 +197,7 @@ namespace at3::allocators::pool {
     return state.totalAllocs;
   }
 
-  void deactivate(VkcCommon *context) {
+  void deactivate(Common *context) {
   }
 
 }

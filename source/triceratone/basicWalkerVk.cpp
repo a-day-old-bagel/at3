@@ -10,7 +10,7 @@ using namespace rtu::topics;
 
 namespace at3 {
 
-  BasicWalkerVk::BasicWalkerVk(ezecs::State &state, VulkanContext<EntityComponentSystemInterface> *context,
+  BasicWalkerVk::BasicWalkerVk(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context,
                                Scene_ &scene, glm::mat4 &transform)
       : state(&state), scene(&scene) {
 

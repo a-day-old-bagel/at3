@@ -29,7 +29,7 @@ static glm::mat4 pyrTopRotate(const glm::mat4& transformIn, uint32_t time) {
 
 namespace at3 {
 
-  PyramidVk::PyramidVk(ezecs::State &state, VulkanContext<EntityComponentSystemInterface> *context, Scene_ &scene,
+  PyramidVk::PyramidVk(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context, Scene_ &scene,
                        glm::mat4 &transform) : state(&state), scene(&scene), vkc(context) {
 
     glm::mat4 ident(1.f);

@@ -17,7 +17,7 @@ namespace at3 {
       std::vector<std::shared_ptr<MeshObjectVk_>> spheres;
       ezecs::State* state;
       Scene_* scene;
-      VulkanContext<EntityComponentSystemInterface>* vkc;
+      vkc::VulkanContext<EntityComponentSystemInterface>* vkc;
       void addToScene();
     public:
       std::shared_ptr<MeshObjectVk_> base;
@@ -25,7 +25,7 @@ namespace at3 {
       ezecs::entityId ctrlId;
       ezecs::entityId camGimbalId;
 
-      PyramidVk(ezecs::State &state, VulkanContext<EntityComponentSystemInterface> *context, Scene_ &scene,
+      PyramidVk(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context, Scene_ &scene,
                 glm::mat4 &transform);
       void resizeFire();
       void spawnSphere();

@@ -18,81 +18,81 @@
 #include "utilities.hpp"
 #include "vkcTextures.hpp"
 
-namespace at3 {
+namespace at3::vkc {
 
-  struct VkcCommon;
+  struct Common;
 
-  enum VkcCmdPoolType {
+  enum CmdPoolType {
       Graphics,
       Transfer,
       Present
   };
 
-  struct VkcAllocation {
+  struct Allocation {
       VkDeviceMemory handle;
       uint32_t type;
       uint32_t id;
       VkDeviceSize size;
       VkDeviceSize offset;
-      VkcCommon *context;
+      Common *context;
   };
 
-  struct VkcAllocationCreateInfo {
+  struct AllocationCreateInfo {
       VkMemoryPropertyFlags usage;
       uint32_t memoryTypeIndex;
       VkDeviceSize size;
   };
 
-  struct VkcAllocatorInterface {
-      void (*activate)(VkcCommon *);
-      void (*alloc)(VkcAllocation &, VkcAllocationCreateInfo);
-      void (*free)(VkcAllocation &);
+  struct AllocatorInterface {
+      void (*activate)(Common *);
+      void (*alloc)(Allocation &, AllocationCreateInfo);
+      void (*free)(Allocation &);
       size_t (*allocatedSize)(uint32_t);
       uint32_t (*numAllocs)();
   };
 
-  struct VkcDeviceQueues {
+  struct DeviceQueues {
       VkQueue graphicsQueue;
       VkQueue transferQueue;
       VkQueue presentQueue;
   };
 
-  struct VkcSurface {
-      VkSurfaceKHR surface;
+  struct Surface {
+      VkSurfaceKHR handle;
       VkFormat format;
   };
 
-  struct VkcRenderBuffer {
+  struct RenderBuffer {
       VkImage handle;
       VkImageView view;
-      VkcAllocation imageMemory;
+      Allocation imageMemory;
   };
 
-  struct VkcCommandBuffer {
+  struct CommandBuffer {
       VkCommandBuffer buffer;
-      VkcCmdPoolType owningPool;
-      VkcCommon *context;
+      CmdPoolType owningPool;
+      Common *context;
   };
 
-  struct VkcSwapChainSupportInfo {
+  struct SwapChainSupportInfo {
       VkSurfaceCapabilitiesKHR capabilities;
       std::vector<VkSurfaceFormatKHR> formats;
       std::vector<VkPresentModeKHR> presentModes;
   };
 
-  struct VkcPhysicalDevice {
+  struct PhysicalDevice {
       VkPhysicalDevice device;
       VkPhysicalDeviceProperties deviceProps;
       VkPhysicalDeviceMemoryProperties memProps;
       VkPhysicalDeviceFeatures features;
-      VkcSwapChainSupportInfo swapChainSupport;
+      SwapChainSupportInfo swapChainSupport;
       uint32_t queueFamilyCount;
       uint32_t presentQueueFamilyIdx;
       uint32_t graphicsQueueFamilyIdx;
       uint32_t transferQueueFamilyIdx;
   };
 
-  struct VkcSwapChain {
+  struct SwapChain {
       VkSwapchainKHR swapChain;
       VkFormat imageFormat;
       VkExtent2D extent;
@@ -100,35 +100,24 @@ namespace at3 {
       std::vector<VkImageView> imageViews;
   };
 
-  struct VkcRenderingData {
+  struct WindowSizeDependents {
       std::vector<VkFramebuffer> frameBuffers;
       std::vector<VkCommandBuffer> commandBuffers;
       std::vector<bool> firstFrame;
-      at3::VkcRenderBuffer depthBuffer;
-      VkRenderPass mainRenderPass;
-
-      VkBuffer ubo;
-      at3::VkcAllocation uboAlloc;
+      RenderBuffer depthBuffer;
   };
 
-//  struct VkcMaterialData {
-//      std::vector<VkDescriptorSet> descSets;
-//      VkDescriptorSetLayout descSetLayout;
-//      VkPipelineLayout pipelineLayout;
-//      VkPipeline graphicsPipeline;
-//  };
-
-  struct VkcCommon {
+  struct Common {
       SDL_Window *window;
       int windowWidth;
       int windowHeight;
 
       VkInstance instance;
-      VkcSurface surface;
-      VkcPhysicalDevice gpu;
+      Surface surface;
+      PhysicalDevice gpu;
       VkDevice device;
-      VkcDeviceQueues deviceQueues;
-      VkcSwapChain swapChain;
+      DeviceQueues deviceQueues;
+      SwapChain swapChain;
       VkCommandPool gfxCommandPool;
       VkCommandPool transferCommandPool;
       VkCommandPool presentCommandPool;
@@ -138,14 +127,10 @@ namespace at3 {
       VkSemaphore renderFinishedSemaphore;
       std::vector<VkFence> frameFences;
 
-      VkcRenderingData renderData;
-//      VkcMaterialData matData;
-      VkDescriptorBufferInfo bufferInfo;
-      VkWriteDescriptorSet setWrite;
+      WindowSizeDependents windowDependents;
+      std::vector<VkWriteDescriptorSet> setWriters; // Only kept to avoid reallocating every frame (what compiler?)
 
-      std::vector<VkWriteDescriptorSet> setWriters;
-
-      VkcAllocatorInterface allocator;
+      AllocatorInterface allocator;
   };
 
 
@@ -215,7 +200,7 @@ namespace at3 {
   template<typename EcsInterface>
   struct MeshResource {
     VkBuffer buffer;
-    VkcAllocation bufferMemory;
+    Allocation bufferMemory;
 
     uint32_t vOffset;
     uint32_t iOffset;
@@ -229,7 +214,7 @@ namespace at3 {
     std::vector<MeshInstance<EcsInterface>> instances;
   };
 
-  // TODO: Get this disentangled from VulkanContext like VkcTextureRepository, do it when upgrading to gltf
+  // TODO: Get this disentangled from VulkanContext like TextureRepository, do it when upgrading to gltf
   template<typename EcsInterface>
   using MeshResources = std::vector<MeshResource<EcsInterface>>;
   template<typename EcsInterface>

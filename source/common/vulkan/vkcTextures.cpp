@@ -18,7 +18,7 @@
 #include <vulkan/vulkan.h>
 #include "vkcTextures.hpp"
 
-namespace at3 {
+namespace at3::vkc {
 
   /**
 		* Get the index of a memory type that has all the requested property bits set
@@ -266,7 +266,7 @@ namespace at3 {
     vkFreeCommandBuffers(device, pool, 1, &commandBuffer);
   }
 
-  void VkcTexture::destroy(VkcTextureOperationInfo &info) {
+  void Texture::destroy(TextureOperationInfo &info) {
     vkDestroyImageView(info.logicalDevice, view, nullptr);
     vkDestroyImage(info.logicalDevice, image, nullptr);
     if (sampler) {
@@ -275,10 +275,10 @@ namespace at3 {
     vkFreeMemory(info.logicalDevice, deviceMemory, nullptr);
   }
 
-  VkcTexture2D::VkcTexture2D(
+  Texture2D::Texture2D(
       const std::string &filename,
       VkFormat format,
-      VkcTextureOperationInfo &info,
+      TextureOperationInfo &info,
       VkImageUsageFlags imageUsageFlags,
       VkImageLayout imageLayout) {
 
@@ -556,8 +556,8 @@ namespace at3 {
     AT3_ASSERT(result == VK_SUCCESS, "Failed to create image view for %s!\n", filename.c_str());
   }
 
-  void VkcTextureRepository::registerNewTexture2D(
-      VkcTexture2D* texture2D, VkcTextureOperationInfo &info, const std::string &key) {
+  void TextureRepository::registerNewTexture2D(
+      Texture2D* texture2D, TextureOperationInfo &info, const std::string &key) {
     textureArrayIndexMap.emplace(key, nextId++);
     VkDescriptorImageInfo imageInfo {};
     imageInfo.sampler = texture2D->texture.sampler;
@@ -565,7 +565,7 @@ namespace at3 {
     imageInfo.imageLayout = texture2D->texture.imageLayout;
     descriptorImageInfos.push_back(imageInfo);
   }
-  VkcTextureRepository::VkcTextureRepository(const std::string &textureDirectory, VkcTextureOperationInfo &info) {
+  TextureRepository::TextureRepository(const std::string &textureDirectory, TextureOperationInfo &info) {
     for (auto &path : fs::recursive_directory_iterator(textureDirectory)) {
       if (getFileExtOnly(path) == ".ktx") {
         textures.emplace_back(getFileNameRelative(path), VK_FORMAT_R8G8B8A8_UNORM, info);
@@ -573,16 +573,16 @@ namespace at3 {
       }
     }
   }
-  bool VkcTextureRepository::textureExists(const std::string &key) {
+  bool TextureRepository::textureExists(const std::string &key) {
     return textureArrayIndexMap.count(key) > 0;
   }
-  uint32_t VkcTextureRepository::getTextureArrayIndex(const std::string &key) {
+  uint32_t TextureRepository::getTextureArrayIndex(const std::string &key) {
     return textureArrayIndexMap.at(key);
   }
-  VkDescriptorImageInfo* VkcTextureRepository::getDescriptorImageInfoArrayPtr() {
+  VkDescriptorImageInfo* TextureRepository::getDescriptorImageInfoArrayPtr() {
     return descriptorImageInfos.data();
   }
-  uint32_t VkcTextureRepository::getDescriptorImageInfoArrayCount() {
+  uint32_t TextureRepository::getDescriptorImageInfoArrayCount() {
     return static_cast<uint32_t>(descriptorImageInfos.size());
   }
 

@@ -20,7 +20,8 @@ namespace at3 {
       ezecs::entityId ctrlId;
       ezecs::entityId camGimbalId;
 
-      BasicWalkerVk(ezecs::State &state, VulkanContext<EntityComponentSystemInterface> *context, Scene_ &scene, glm::mat4 &transform);
+      BasicWalkerVk(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context,
+                    Scene_ &scene, glm::mat4 &transform);
       std::shared_ptr<PerspectiveCamera_> getCamPtr();
       void makeActiveControl(void* nothing);
   };

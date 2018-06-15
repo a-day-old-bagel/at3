@@ -54,19 +54,18 @@ VkExtent2D VulkanContext<EcsInterface>::chooseSwapExtent() {
 
 template<typename EcsInterface>
 void VulkanContext<EcsInterface>::createSwapchainForSurface() {
-  //choose the surface format to use
+
   VkSurfaceFormatKHR desiredFormat;
   VkPresentModeKHR desiredPresentMode;
   VkExtent2D swapExtent;
 
-  VkcSwapChain &outSwapChain = common.swapChain;
-  VkcPhysicalDevice &physDevice = common.gpu;
+  SwapChain &outSwapChain = common.swapChain;
+  PhysicalDevice &physDevice = common.gpu;
   const VkDevice &lDevice = common.device;
-  const VkcSurface &surface = common.surface;
+  const Surface &surface = common.surface;
 
   bool foundFormat = false;
 
-  //if there is no preferred format, the formats array only contains VK_FORMAT_UNDEFINED
   if (physDevice.swapChainSupport.formats.size() == 1 &&
       physDevice.swapChainSupport.formats[0].format == VK_FORMAT_UNDEFINED) {
     desiredFormat.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
@@ -74,7 +73,6 @@ void VulkanContext<EcsInterface>::createSwapchainForSurface() {
     foundFormat = true;
   }
 
-  //otherwise we can't just choose any format we want, but still let's try to grab one that we know will work for us first
   if (!foundFormat) {
     for (uint32_t i = 0; i < physDevice.swapChainSupport.formats.size(); ++i) {
       const auto &availableFormat = physDevice.swapChainSupport.formats[i];
@@ -86,8 +84,7 @@ void VulkanContext<EcsInterface>::createSwapchainForSurface() {
     }
   }
 
-  //if our preferred format isn't available, let's just grab the first available because yolo
-  if (!foundFormat) {
+  if (!foundFormat) { // just use the first one
     desiredFormat = physDevice.swapChainSupport.formats[0];
   }
 
@@ -110,31 +107,28 @@ void VulkanContext<EcsInterface>::createSwapchainForSurface() {
     printf("Using IMMEDIATE present mode.\n");
   }
 
-  //update physdevice for new surface size
-  vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physDevice.device, surface.surface,
+  vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physDevice.device, surface.handle,
                                             &physDevice.swapChainSupport.capabilities);
 
-  //swap extent is the resolution of the swapchain
   swapExtent = chooseSwapExtent();
 
-  //need 1 more than minimum image count for triple buffering
+  // extra image required for triple buffering
   uint32_t imageCount = physDevice.swapChainSupport.capabilities.minImageCount + 1;
   if (physDevice.swapChainSupport.capabilities.maxImageCount > 0 &&
       imageCount > physDevice.swapChainSupport.capabilities.maxImageCount) {
     imageCount = physDevice.swapChainSupport.capabilities.maxImageCount;
   }
 
-  //now that everything is set up, we need to actually create the swap chain
   VkSwapchainCreateInfoKHR createInfo = {};
   createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-  createInfo.surface = surface.surface;
+  createInfo.surface = surface.handle;
   createInfo.minImageCount = imageCount;
   createInfo.imageFormat = desiredFormat.format;
   createInfo.imageColorSpace = desiredFormat.colorSpace;
   createInfo.imageExtent = swapExtent;
-  createInfo.imageArrayLayers = 1; //always 1 unless a stereoscopic app
+  createInfo.imageArrayLayers = 1; // TODO: this will change for VR
 
-  //here, we're rendering directly to the swap chain, but if we were using post processing, this might be VK_IMAGE_USAGE_TRANSFER_DST_BIT
+  // TODO: change to VK_IMAGE_USAGE_TRANSFER_DST_BIT for post processing stuff
   createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
 
@@ -160,7 +154,6 @@ void VulkanContext<EcsInterface>::createSwapchainForSurface() {
   VkResult res = vkCreateSwapchainKHR(lDevice, &createInfo, nullptr, &outSwapChain.swapChain);
   AT3_ASSERT(res == VK_SUCCESS, "Error creating Vulkan Swapchain");
 
-  //get images for swap chain
   vkGetSwapchainImagesKHR(lDevice, outSwapChain.swapChain, &imageCount, nullptr);
   outSwapChain.imageHandles.resize(imageCount);
   outSwapChain.imageViews.resize(imageCount);
@@ -170,7 +163,6 @@ void VulkanContext<EcsInterface>::createSwapchainForSurface() {
   outSwapChain.imageFormat = desiredFormat.format;
   outSwapChain.extent = swapExtent;
 
-  //create image views
   for (uint32_t i = 0; i < outSwapChain.imageHandles.size(); i++) {
     createImageView(outSwapChain.imageViews[i], outSwapChain.imageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1,
                     outSwapChain.imageHandles[i]);
@@ -178,7 +170,7 @@ void VulkanContext<EcsInterface>::createSwapchainForSurface() {
 }
 
 template<typename EcsInterface>
-void VulkanContext<EcsInterface>::getWindowSize() {
+void VulkanContext<EcsInterface>::storeWindowSize() {
   int width, height;
   SDL_GetWindowSize(common.window, &width, &height);
   if (width <= 0 || height <= 0) {
@@ -218,68 +210,8 @@ VulkanContext<EcsInterface>::createImageView(
 }
 
 template<typename EcsInterface>
-void VulkanContext<EcsInterface>::freeDeviceMemory(VkcAllocation &mem) {
-  //this is sorta weird
-  mem.context->allocator.free(mem);
-}
-
-template<typename EcsInterface>
-void VulkanContext<EcsInterface>::createRenderPass(
-    VkRenderPass &outPass, std::vector<VkAttachmentDescription> &colorAttachments,
-    VkAttachmentDescription *depthAttachment) {
-  std::vector<VkAttachmentReference> attachRefs;
-
-  std::vector<VkAttachmentDescription> allAttachments;
-  allAttachments = colorAttachments;
-
-  uint32_t attachIdx = 0;
-  while (attachIdx < colorAttachments.size()) {
-    VkAttachmentReference ref = {0};
-    ref.attachment = attachIdx++;
-    ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    attachRefs.push_back(ref);
-  }
-
-  VkSubpassDescription subpass = {};
-  subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-  subpass.colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size());
-  subpass.pColorAttachments = &attachRefs[0];
-
-  VkAttachmentReference depthRef = {0};
-
-  if (depthAttachment) {
-    depthRef.attachment = attachIdx;
-    depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    subpass.pDepthStencilAttachment = &depthRef;
-    allAttachments.push_back(*depthAttachment);
-  }
-
-
-  VkRenderPassCreateInfo renderPassInfo = {};
-  renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-  renderPassInfo.attachmentCount = static_cast<uint32_t>(allAttachments.size());
-  renderPassInfo.pAttachments = &allAttachments[0];
-  renderPassInfo.subpassCount = 1;
-  renderPassInfo.pSubpasses = &subpass;
-
-  //we need a subpass dependency for transitioning the image to the right format, because by default, vulkan
-  //will try to do that before we have acquired an image from our fb
-  VkSubpassDependency dependency = {};
-  dependency.srcSubpass = VK_SUBPASS_EXTERNAL; //External means outside of the render pipeline, in srcPass, it means before the render pipeline
-  dependency.dstSubpass = 0; //must be higher than srcSubpass
-  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-  dependency.srcAccessMask = 0;
-  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-  //add the dependency to the renderpassinfo
-  renderPassInfo.dependencyCount = 1;
-  renderPassInfo.pDependencies = &dependency;
-
-
-  VkResult res = vkCreateRenderPass(common.device, &renderPassInfo, nullptr, &outPass);
-  AT3_ASSERT(res == VK_SUCCESS, "Error creating render pass");
+void VulkanContext<EcsInterface>::freeDeviceMemory(Allocation &mem) {
+  mem.context->allocator.free(mem); // wtf
 }
 
 template<typename EcsInterface>
@@ -301,6 +233,7 @@ uint32_t VulkanContext<EcsInterface>::getMemoryType(
   VkPhysicalDeviceMemoryProperties memProperties;
   vkGetPhysicalDeviceMemoryProperties(device, &memProperties);
 
+  // Original comments:
   //The VkPhysicalDeviceMemoryProperties structure has two arraysL memoryTypes and memoryHeaps.
   //Memory heaps are distinct memory resources like dedicated VRAM and swap space in RAM
   //for when VRAM runs out.The different types of memory exist within these heaps.Right now
@@ -327,7 +260,7 @@ uint32_t VulkanContext<EcsInterface>::getMemoryType(
 template<typename EcsInterface>
 void
 VulkanContext<EcsInterface>::createFrameBuffers(
-    std::vector<VkFramebuffer> &outBuffers, const VkcSwapChain &swapChain, const VkImageView *depthBufferView,
+    std::vector<VkFramebuffer> &outBuffers, const SwapChain &swapChain, const VkImageView *depthBufferView,
     const VkRenderPass &renderPass) {
   outBuffers.resize(swapChain.imageViews.size());
 
@@ -354,19 +287,19 @@ VulkanContext<EcsInterface>::createFrameBuffers(
 }
 
 template<typename EcsInterface>
-void VulkanContext<EcsInterface>::allocateDeviceMemory(VkcAllocation &outMem, VkcAllocationCreateInfo info) {
+void VulkanContext<EcsInterface>::allocateDeviceMemory(Allocation &outMem, AllocationCreateInfo info) {
   common.allocator.alloc(outMem, info);
 }
 
 template<typename EcsInterface>
-VkcCommandBuffer VulkanContext<EcsInterface>::beginScratchCommandBuffer(VkcCmdPoolType type) {
+CommandBuffer VulkanContext<EcsInterface>::beginScratchCommandBuffer(CmdPoolType type) {
   VkCommandBufferAllocateInfo allocInfo = {};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 
-  if (type == VkcCmdPoolType::Graphics) {
+  if (type == CmdPoolType::Graphics) {
     allocInfo.commandPool = common.gfxCommandPool;
-  } else if (type == VkcCmdPoolType::Transfer) {
+  } else if (type == CmdPoolType::Transfer) {
     allocInfo.commandPool = common.transferCommandPool;
   } else {
     allocInfo.commandPool = common.presentCommandPool;
@@ -383,7 +316,7 @@ VkcCommandBuffer VulkanContext<EcsInterface>::beginScratchCommandBuffer(VkcCmdPo
 
   vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
-  VkcCommandBuffer outBuf;
+  CommandBuffer outBuf;
   outBuf.buffer = commandBuffer;
   outBuf.owningPool = type;
   outBuf.context = &common;
@@ -393,11 +326,11 @@ VkcCommandBuffer VulkanContext<EcsInterface>::beginScratchCommandBuffer(VkcCmdPo
 }
 
 template<typename EcsInterface>
-void VulkanContext<EcsInterface>::submitScratchCommandBuffer(VkcCommandBuffer &commandBuffer) {
+void VulkanContext<EcsInterface>::submitScratchCommandBuffer(CommandBuffer &commandBuffer) {
   vkEndCommandBuffer(commandBuffer.buffer);
 
   AT3_ASSERT(commandBuffer.context, "Attempting to submit a scratch command buffer that does not have a valid context");
-  VkcCommon &common = *commandBuffer.context;
+  Common &common = *commandBuffer.context;
 
   VkSubmitInfo submitInfo = {};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -406,11 +339,11 @@ void VulkanContext<EcsInterface>::submitScratchCommandBuffer(VkcCommandBuffer &c
 
   VkQueue queue;
   VkCommandPool pool;
-  if (commandBuffer.owningPool == VkcCmdPoolType::Graphics) {
+  if (commandBuffer.owningPool == CmdPoolType::Graphics) {
     queue = common.deviceQueues.graphicsQueue;
     pool = common.gfxCommandPool;
 
-  } else if (commandBuffer.owningPool == VkcCmdPoolType::Transfer) {
+  } else if (commandBuffer.owningPool == CmdPoolType::Transfer) {
     queue = common.deviceQueues.transferQueue;
     pool = common.transferCommandPool;
   } else {
@@ -430,7 +363,7 @@ template<typename EcsInterface>
 void
 VulkanContext<EcsInterface>::copyBuffer(
     VkBuffer &srcBuffer, VkBuffer &dstBuffer, VkDeviceSize size, uint32_t srcOffset,
-    uint32_t dstOffset, VkcCommandBuffer &buffer) {
+    uint32_t dstOffset, CommandBuffer &buffer) {
   VkBufferCopy copyRegion = {};
   copyRegion.srcOffset = srcOffset; // Optional
   copyRegion.dstOffset = dstOffset; // Optional
@@ -456,7 +389,7 @@ VulkanContext<EcsInterface>::copyBuffer(
     VkBuffer &srcBuffer, VkBuffer &dstBuffer, VkDeviceSize size, uint32_t srcOffset, uint32_t dstOffset,
     VkCommandBuffer *buffer) {
   if (!buffer) {
-    VkcCommandBuffer scratch = beginScratchCommandBuffer(VkcCmdPoolType::Transfer);
+    CommandBuffer scratch = beginScratchCommandBuffer(CmdPoolType::Transfer);
 
     copyBuffer(srcBuffer, dstBuffer, size, srcOffset, dstOffset, scratch);
 
@@ -468,13 +401,14 @@ VulkanContext<EcsInterface>::copyBuffer(
 
 template<typename EcsInterface>
 void VulkanContext<EcsInterface>::createBuffer(
-    VkBuffer &outBuffer, VkcAllocation &bufferMemory, VkDeviceSize size, VkBufferUsageFlags usage,
+    VkBuffer &outBuffer, Allocation &bufferMemory, VkDeviceSize size, VkBufferUsageFlags usage,
     VkMemoryPropertyFlags properties) {
   VkBufferCreateInfo bufferInfo = {};
   bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   bufferInfo.size = size;
   bufferInfo.usage = usage;
 
+  // Original comment:
   //concurrent so it can be used by the graphics and transfer queues
 
   std::vector<uint32_t> queues;
@@ -495,7 +429,7 @@ void VulkanContext<EcsInterface>::createBuffer(
   VkMemoryRequirements memRequirements;
   vkGetBufferMemoryRequirements(common.device, outBuffer, &memRequirements);
 
-  VkcAllocationCreateInfo allocInfo = {};
+  AllocationCreateInfo allocInfo = {};
   allocInfo.size = memRequirements.size;
   allocInfo.memoryTypeIndex = getMemoryType(common.gpu.device, memRequirements.memoryTypeBits, properties);
   allocInfo.usage = properties;
@@ -509,7 +443,7 @@ void
 VulkanContext<EcsInterface>::copyDataToBuffer(
     VkBuffer *buffer, uint32_t dataSize, uint32_t dstOffset, char *data) {
   VkBuffer stagingBuffer;
-  VkcAllocation stagingMemory;
+  Allocation stagingMemory;
 
   createBuffer(stagingBuffer, stagingMemory, dataSize,
                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -523,7 +457,7 @@ VulkanContext<EcsInterface>::copyDataToBuffer(
 
   vkUnmapMemory(common.device, stagingMemory.handle);
 
-  VkcCommandBuffer scratch = beginScratchCommandBuffer(VkcCmdPoolType::Transfer);
+  CommandBuffer scratch = beginScratchCommandBuffer(CmdPoolType::Transfer);
   copyBuffer(stagingBuffer, *buffer, dataSize, 0, dstOffset, scratch);
   submitScratchCommandBuffer(scratch);
 
@@ -558,7 +492,7 @@ void VulkanContext<EcsInterface>::createImage(
 template<typename EcsInterface>
 void VulkanContext<EcsInterface>::copyBufferToImage(
     VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
-  VkcCommandBuffer commandBuffer = beginScratchCommandBuffer(VkcCmdPoolType::Transfer);
+  CommandBuffer commandBuffer = beginScratchCommandBuffer(CmdPoolType::Transfer);
 
   VkBufferImageCopy region = {};
   region.bufferOffset = 0;
@@ -591,14 +525,14 @@ void VulkanContext<EcsInterface>::copyBufferToImage(
 template<typename EcsInterface>
 void VulkanContext<EcsInterface>::transitionImageLayout(
     VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
-  VkcCommandBuffer commandBuffer = beginScratchCommandBuffer(VkcCmdPoolType::Graphics);
+  CommandBuffer commandBuffer = beginScratchCommandBuffer(CmdPoolType::Graphics);
 
   VkImageMemoryBarrier barrier = {};
   barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
   barrier.oldLayout = oldLayout;
   barrier.newLayout = newLayout;
 
-  //these are used to transfer queue ownership, which we aren't doing
+  // queue ownership could be transferred with these
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
@@ -634,7 +568,6 @@ void VulkanContext<EcsInterface>::transitionImageLayout(
     destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 
   } else {
-    //Unsupported layout transition
     AT3_ASSERT(0, "Attempting an unsupported image layout transition");
   }
 
@@ -654,11 +587,11 @@ void VulkanContext<EcsInterface>::transitionImageLayout(
 
 template<typename EcsInterface>
 void VulkanContext<EcsInterface>::allocMemoryForImage(
-    VkcAllocation &outMem, const VkImage &image, VkMemoryPropertyFlags properties) {
+    Allocation &outMem, const VkImage &image, VkMemoryPropertyFlags properties) {
   VkMemoryRequirements memRequirements;
   vkGetImageMemoryRequirements(common.device, image, &memRequirements);
 
-  VkcAllocationCreateInfo createInfo;
+  AllocationCreateInfo createInfo;
   createInfo.size = memRequirements.size;
   createInfo.memoryTypeIndex = getMemoryType(common.gpu.device, memRequirements.memoryTypeBits, properties);
   createInfo.usage = properties;
@@ -666,33 +599,27 @@ void VulkanContext<EcsInterface>::allocMemoryForImage(
 }
 
 template<typename EcsInterface>
-void VulkanContext<EcsInterface>::initRendering(uint32_t num) {
-  createMainRenderPass();
+void VulkanContext<EcsInterface>::createWindowSizeDependents() {
   createDepthBuffer();
 
-  createFrameBuffers(common.renderData.frameBuffers, common.swapChain, &common.renderData.depthBuffer.view,
-                     common.renderData.mainRenderPass);
+  createFrameBuffers(common.windowDependents.frameBuffers, common.swapChain, &common.windowDependents.depthBuffer.view,
+                     pipelineRepo->mainRenderPass);
 
   uint32_t swapChainImageCount = static_cast<uint32_t>(common.swapChain.imageViews.size());
-  common.renderData.commandBuffers.resize(swapChainImageCount);
+  common.windowDependents.commandBuffers.resize(swapChainImageCount);
   for (uint32_t i = 0; i < swapChainImageCount; ++i) {
-    createCommandBuffer(common.renderData.commandBuffers[i], common.gfxCommandPool);
+    createCommandBuffer(common.windowDependents.commandBuffers[i], common.gfxCommandPool);
   }
 
-//  createDefaultMeshPipeline(common, num);
-  pipelineRepo = std::make_unique<VkcPipelineRepository>(common, textureRepo->getDescriptorImageInfoArrayCount());
-
-  common.renderData.firstFrame = std::vector<bool>(swapChainImageCount, true);
+  common.windowDependents.firstFrame = std::vector<bool>(swapChainImageCount, true);
 }
 
 template<typename EcsInterface>
 void VulkanContext<EcsInterface>::updateDescriptorSets(UboPageMgr *dataStore) {
 
-//  size_t oldNumPages = common.matData.descSets.size();
   size_t oldNumPages = pipelineRepo->at(0).descSets.size();
   size_t newNumPages = dataStore->getNumPages();
 
-//  common.matData.descSets.resize(newNumPages);
   pipelineRepo->at(0).descSets.resize(newNumPages);
 
   for (size_t i = oldNumPages; i < newNumPages; ++i) {
@@ -700,20 +627,18 @@ void VulkanContext<EcsInterface>::updateDescriptorSets(UboPageMgr *dataStore) {
     VkDescriptorSetAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = common.descriptorPool;
-    allocInfo.descriptorSetCount = 1;
-//    allocInfo.pSetLayouts = &common.matData.descSetLayout;
+    allocInfo.descriptorSetCount = (uint32_t)pipelineRepo->at(0).descSetLayouts.size();
     allocInfo.pSetLayouts = &pipelineRepo->at(0).descSetLayouts.at(0);
 
-//    VkResult res = vkAllocateDescriptorSets(common.device, &allocInfo, &common.matData.descSets[i]);
     VkResult res = vkAllocateDescriptorSets(common.device, &allocInfo, &pipelineRepo->at(0).descSets[i]);
     AT3_ASSERT(res == VK_SUCCESS, "Error allocating global descriptor set");
 
     common.setWriters.clear();  // This *could* be faster than recreating a vector every update.
 
-    common.bufferInfo = {};
-    common.bufferInfo.buffer = dataStore->getPage(i);
-    common.bufferInfo.offset = 0;
-    common.bufferInfo.range = VK_WHOLE_SIZE;
+    VkDescriptorBufferInfo bufferInfo = {};
+    bufferInfo.buffer = dataStore->getPage(i);
+    bufferInfo.offset = 0;
+    bufferInfo.range = VK_WHOLE_SIZE;
 
     VkWriteDescriptorSet uboSetWriter = {};
     uboSetWriter.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -721,9 +646,8 @@ void VulkanContext<EcsInterface>::updateDescriptorSets(UboPageMgr *dataStore) {
     uboSetWriter.dstArrayElement = 0;
     uboSetWriter.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     uboSetWriter.descriptorCount = 1;
-//    uboSetWriter.dstSet = common.matData.descSets[i];
     uboSetWriter.dstSet = pipelineRepo->at(0).descSets[i];
-    uboSetWriter.pBufferInfo = &common.bufferInfo;
+    uboSetWriter.pBufferInfo = &bufferInfo;
     uboSetWriter.pImageInfo = nullptr;
     common.setWriters.push_back(uboSetWriter);
 
@@ -733,7 +657,6 @@ void VulkanContext<EcsInterface>::updateDescriptorSets(UboPageMgr *dataStore) {
     texSetWriter.dstArrayElement = 0;
     texSetWriter.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     texSetWriter.descriptorCount = textureRepo->getDescriptorImageInfoArrayCount();
-//    texSetWriter.dstSet = common.matData.descSets[i];
     texSetWriter.dstSet = pipelineRepo->at(0).descSets[i];
     texSetWriter.pImageInfo = textureRepo->getDescriptorImageInfoArrayPtr();
     common.setWriters.push_back(texSetWriter);
@@ -745,82 +668,46 @@ void VulkanContext<EcsInterface>::updateDescriptorSets(UboPageMgr *dataStore) {
 
 template<typename EcsInterface>
 void VulkanContext<EcsInterface>::createDepthBuffer() {
-  createImage(common.renderData.depthBuffer.handle, common.swapChain.extent.width, common.swapChain.extent.height,
+  createImage(common.windowDependents.depthBuffer.handle, common.swapChain.extent.width, common.swapChain.extent.height,
               VK_FORMAT_D32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
               VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
   VkMemoryRequirements memRequirements;
-  vkGetImageMemoryRequirements(common.device, common.renderData.depthBuffer.handle, &memRequirements);
+  vkGetImageMemoryRequirements(common.device, common.windowDependents.depthBuffer.handle, &memRequirements);
 
-  VkcAllocationCreateInfo createInfo;
+  AllocationCreateInfo createInfo;
   createInfo.size = memRequirements.size;
   createInfo.memoryTypeIndex = getMemoryType(common.gpu.device, memRequirements.memoryTypeBits,
                                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
   createInfo.usage = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-  allocateDeviceMemory(common.renderData.depthBuffer.imageMemory, createInfo);
+  allocateDeviceMemory(common.windowDependents.depthBuffer.imageMemory, createInfo);
 
-  vkBindImageMemory(common.device, common.renderData.depthBuffer.handle,
-                    common.renderData.depthBuffer.imageMemory.handle,
-                    common.renderData.depthBuffer.imageMemory.offset);
+  vkBindImageMemory(common.device, common.windowDependents.depthBuffer.handle,
+                    common.windowDependents.depthBuffer.imageMemory.handle,
+                    common.windowDependents.depthBuffer.imageMemory.offset);
 
-  createImageView(common.renderData.depthBuffer.view, VK_FORMAT_D32_SFLOAT, VK_IMAGE_ASPECT_DEPTH_BIT, 1,
-                  common.renderData.depthBuffer.handle);
+  createImageView(common.windowDependents.depthBuffer.view, VK_FORMAT_D32_SFLOAT, VK_IMAGE_ASPECT_DEPTH_BIT, 1,
+                  common.windowDependents.depthBuffer.handle);
 
-  transitionImageLayout(common.renderData.depthBuffer.handle, VK_FORMAT_D32_SFLOAT,
+  transitionImageLayout(common.windowDependents.depthBuffer.handle, VK_FORMAT_D32_SFLOAT,
                         VK_IMAGE_LAYOUT_UNDEFINED,
                         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
 template<typename EcsInterface>
-void VulkanContext<EcsInterface>::createMainRenderPass() {
-  VkAttachmentDescription colorAttachment = {};
-  colorAttachment.format = common.swapChain.imageFormat;
-  colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-  colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-  colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+void VulkanContext<EcsInterface>::destroyWindowSizeDependents() {
+  vkDestroyImageView(common.device, common.windowDependents.depthBuffer.view, nullptr);
+  vkDestroyImage(common.device, common.windowDependents.depthBuffer.handle, nullptr);
+  pool::free(common.windowDependents.depthBuffer.imageMemory);
 
-  VkAttachmentDescription depthAttachment = {};
-  depthAttachment.format = VK_FORMAT_D32_SFLOAT;
-  depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-  depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-
-  std::vector<VkAttachmentDescription> renderPassAttachments;
-  renderPassAttachments.push_back(colorAttachment);
-
-  createRenderPass(common.renderData.mainRenderPass, renderPassAttachments, &depthAttachment);
-
-}
-
-template<typename EcsInterface>
-void VulkanContext<EcsInterface>::cleanupRendering() {
-  vkDestroyImageView(common.device, common.renderData.depthBuffer.view, nullptr);
-  vkDestroyImage(common.device, common.renderData.depthBuffer.handle, nullptr);
-  allocators::pool::free(common.renderData.depthBuffer.imageMemory);
-
-  for (size_t i = 0; i < common.renderData.frameBuffers.size(); i++) {
-    vkDestroyFramebuffer(common.device, common.renderData.frameBuffers[i], nullptr);
+  for (size_t i = 0; i < common.windowDependents.frameBuffers.size(); i++) {
+    vkDestroyFramebuffer(common.device, common.windowDependents.frameBuffers[i], nullptr);
   }
 
   vkFreeCommandBuffers(common.device, common.gfxCommandPool,
-                       static_cast<uint32_t>(common.renderData.commandBuffers.size()),
-                       common.renderData.commandBuffers.data());
-
-//  vkDestroyPipeline(common.device, common.matData.graphicsPipeline, nullptr);
-//  vkDestroyPipelineLayout(common.device, common.matData.pipelineLayout, nullptr);
-  vkDestroyPipeline(common.device, pipelineRepo->at(0).handle, nullptr);
-  vkDestroyPipelineLayout(common.device, pipelineRepo->at(0).layout, nullptr);
-  vkDestroyRenderPass(common.device, common.renderData.mainRenderPass, nullptr);
+                       static_cast<uint32_t>(common.windowDependents.commandBuffers.size()),
+                       common.windowDependents.commandBuffers.data());
 
   for (size_t i = 0; i < common.swapChain.imageViews.size(); i++) {
     vkDestroyImageView(common.device, common.swapChain.imageViews[i], nullptr);
@@ -840,15 +727,11 @@ void VulkanContext<EcsInterface>::render(
   proj[1][1] *= -1;
 
 #if !COPY_ON_MAIN_COMMANDBUFFER
-//  ubo_store::updateBuffers(wvMat, proj, nullptr, common);
   dataStore->updateBuffers(wvMat, proj, nullptr, common, ecs, meshAssets);
 #endif
 
   VkResult res;
-
-  //acquire an image from the swap chain
   uint32_t imageIndex;
-
   res = vkAcquireNextImageKHR(common.device, common.swapChain.swapChain, UINT64_MAX,
                               common.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
@@ -856,33 +739,34 @@ void VulkanContext<EcsInterface>::render(
     rtu::topics::publish("window_resized");
     return;
   } else {
-    AT3_ASSERT(res == VK_SUCCESS || res == VK_SUBOPTIMAL_KHR, "failed to acquire swap chain image!");
+    AT3_ASSERT(res == VK_SUCCESS || res == VK_SUBOPTIMAL_KHR, "Failed to acquire swap chain image!");
   }
 
   vkWaitForFences(common.device, 1, &common.frameFences[imageIndex], VK_FALSE, 5000000000);
   vkResetFences(common.device, 1, &common.frameFences[imageIndex]);
 
-  //record drawing
   VkCommandBufferBeginInfo beginInfo = {};
   beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
   beginInfo.pInheritanceInfo = nullptr; // Optional
 
-  vkResetCommandBuffer(common.renderData.commandBuffers[imageIndex], VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
-  res = vkBeginCommandBuffer(common.renderData.commandBuffers[imageIndex], &beginInfo);
+  vkResetCommandBuffer(common.windowDependents.commandBuffers[imageIndex],
+                       VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+  res = vkBeginCommandBuffer(common.windowDependents.commandBuffers[imageIndex], &beginInfo);
+  AT3_ASSERT(res == VK_SUCCESS, "Failed to begin command buffer!");
 
 #if COPY_ON_MAIN_COMMANDBUFFER
   dataStore->updateBuffers(view, proj, &common.renderData.commandBuffers[imageIndex], common);
 #endif
 
-  vkCmdResetQueryPool(common.renderData.commandBuffers[imageIndex], common.queryPool, 0, 10);
-  vkCmdWriteTimestamp(common.renderData.commandBuffers[imageIndex], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+  vkCmdResetQueryPool(common.windowDependents.commandBuffers[imageIndex], common.queryPool, 0, 10);
+  vkCmdWriteTimestamp(common.windowDependents.commandBuffers[imageIndex], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                       common.queryPool, 0);
 
   VkRenderPassBeginInfo renderPassInfo = {};
   renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-  renderPassInfo.renderPass = common.renderData.mainRenderPass;
-  renderPassInfo.framebuffer = common.renderData.frameBuffers[imageIndex];
+  renderPassInfo.renderPass = pipelineRepo->mainRenderPass;
+  renderPassInfo.framebuffer = common.windowDependents.frameBuffers[imageIndex];
   renderPassInfo.renderArea.offset = {0, 0};
   renderPassInfo.renderArea.extent = common.swapChain.extent;
 
@@ -894,13 +778,11 @@ void VulkanContext<EcsInterface>::render(
   renderPassInfo.clearValueCount = static_cast<uint32_t>(2);
   renderPassInfo.pClearValues = &clearColors[0];
 
-  vkCmdBeginRenderPass(common.renderData.commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+  vkCmdBeginRenderPass(common.windowDependents.commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
   int currentlyBound = -1;
 
-//  vkCmdBindPipeline(common.renderData.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
-//                    common.matData.graphicsPipeline);
-  vkCmdBindPipeline(common.renderData.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
+  vkCmdBindPipeline(common.windowDependents.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
                     pipelineRepo->at(0).handle);
 
   for (auto pair : meshAssets) {
@@ -909,51 +791,39 @@ void VulkanContext<EcsInterface>::render(
         glm::uint32 uboPage = instance.indices.getPage();
 
         if (currentlyBound != uboPage) {
-//          vkCmdBindDescriptorSets(common.renderData.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
-//                                  common.matData.pipelineLayout, 0, 1, &common.matData.descSets[uboPage], 0, nullptr);
-          vkCmdBindDescriptorSets(common.renderData.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
+          vkCmdBindDescriptorSets(common.windowDependents.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
                                   pipelineRepo->at(0).layout, 0, 1, &pipelineRepo->at(0).descSets[uboPage], 0, nullptr);
           currentlyBound = uboPage;
         }
 
-//        vkCmdPushConstants(
-//            common.renderData.commandBuffers[imageIndex],
-//            common.matData.pipelineLayout,
-//            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-//            0,
-//            sizeof(MeshInstanceIndices::rawType),
-//            (void *) &instance.indices.raw);
         vkCmdPushConstants(
-            common.renderData.commandBuffers[imageIndex],
+            common.windowDependents.commandBuffers[imageIndex],
             pipelineRepo->at(0).layout,
-            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             0,
             sizeof(MeshInstanceIndices::rawType),
             (void *) &instance.indices.raw);
 
         VkBuffer vertexBuffers[] = {mesh.buffer};
         VkDeviceSize vertexOffsets[] = {0};
-        vkCmdBindVertexBuffers(common.renderData.commandBuffers[imageIndex], 0, 1, vertexBuffers, vertexOffsets);
-        vkCmdBindIndexBuffer(common.renderData.commandBuffers[imageIndex], mesh.buffer, mesh.iOffset,
+        vkCmdBindVertexBuffers(common.windowDependents.commandBuffers[imageIndex], 0, 1, vertexBuffers, vertexOffsets);
+        vkCmdBindIndexBuffer(common.windowDependents.commandBuffers[imageIndex], mesh.buffer, mesh.iOffset,
                              VK_INDEX_TYPE_UINT32);
-        vkCmdDrawIndexed(common.renderData.commandBuffers[imageIndex], static_cast<uint32_t>(mesh.iCount), 1, 0, 0,
+        vkCmdDrawIndexed(common.windowDependents.commandBuffers[imageIndex], static_cast<uint32_t>(mesh.iCount), 1, 0, 0,
                          0);
       }
     }
   }
 
-  vkCmdEndRenderPass(common.renderData.commandBuffers[imageIndex]);
-  vkCmdWriteTimestamp(common.renderData.commandBuffers[imageIndex], VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+  vkCmdEndRenderPass(common.windowDependents.commandBuffers[imageIndex]);
+  vkCmdWriteTimestamp(common.windowDependents.commandBuffers[imageIndex], VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
                       common.queryPool, 1);
 
-  res = vkEndCommandBuffer(common.renderData.commandBuffers[imageIndex]);
+  res = vkEndCommandBuffer(common.windowDependents.commandBuffers[imageIndex]);
   AT3_ASSERT(res == VK_SUCCESS, "Error ending render pass");
-
-  // submit
 
   VkSubmitInfo submitInfo = {};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-  //wait on writing colours to the buffer until the semaphore says the buffer is available
   VkSemaphore waitSemaphores[] = {common.imageAvailableSemaphore};
   VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
   submitInfo.waitSemaphoreCount = 1;
@@ -965,13 +835,11 @@ void VulkanContext<EcsInterface>::render(
   VkSemaphore signalSemaphores[] = {common.renderFinishedSemaphore};
   submitInfo.signalSemaphoreCount = 1;
   submitInfo.pSignalSemaphores = signalSemaphores;
-  submitInfo.pCommandBuffers = &common.renderData.commandBuffers[imageIndex];
+  submitInfo.pCommandBuffers = &common.windowDependents.commandBuffers[imageIndex];
   submitInfo.commandBufferCount = 1;
 
   res = vkQueueSubmit(common.deviceQueues.graphicsQueue, 1, &submitInfo, common.frameFences[imageIndex]);
   AT3_ASSERT(res == VK_SUCCESS, "Error submitting queue");
-
-  //present
 
   VkPresentInfoKHR presentInfo = {};
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

@@ -1,7 +1,7 @@
 
 #include "vkcUboPageMgr.hpp"
 
-namespace at3 {
+namespace at3::vkc {
 
   uint32_t getMemoryType(const VkPhysicalDevice &device, uint32_t memoryTypeBitsRequirement,
                          VkMemoryPropertyFlags requiredProperties) {
@@ -31,8 +31,8 @@ namespace at3 {
     return 0;
   }
 
-  void createBuffer(VkBuffer &outBuffer, VkcAllocation &bufferMemory, VkDeviceSize size, VkBufferUsageFlags usage,
-                    VkMemoryPropertyFlags properties, VkcCommon &ctxt) {
+  void createBuffer(VkBuffer &outBuffer, Allocation &bufferMemory, VkDeviceSize size, VkBufferUsageFlags usage,
+                    VkMemoryPropertyFlags properties, Common &ctxt) {
     VkBufferCreateInfo bufferInfo = {};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
@@ -58,7 +58,7 @@ namespace at3 {
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(ctxt.device, outBuffer, &memRequirements);
 
-    VkcAllocationCreateInfo allocInfo = {};
+    AllocationCreateInfo allocInfo = {};
     allocInfo.size = memRequirements.size;
     allocInfo.memoryTypeIndex = getMemoryType(ctxt.gpu.device, memRequirements.memoryTypeBits, properties);
     allocInfo.usage = properties;

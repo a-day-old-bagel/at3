@@ -25,7 +25,7 @@ namespace at3 {
 
     protected:
       std::unique_ptr<SdlContext> sdlc;
-      std::unique_ptr<VulkanContext<EcsInterface>> vulkan;
+      std::unique_ptr<vkc::VulkanContext<EcsInterface>> vulkan;
       typename EcsInterface::State state;
       Scene<EcsInterface> scene;
 
@@ -77,10 +77,11 @@ namespace at3 {
         if (!graphicsBackend::init(sdlc->getWindow())) { return false; }
       } break;
       case settings::graphics::VULKAN: {
-        VulkanContextCreateInfo<EcsInterface> contextCreateInfo = VulkanContextCreateInfo<EcsInterface>::defaults();
+        vkc::VulkanContextCreateInfo<EcsInterface> contextCreateInfo =
+            vkc::VulkanContextCreateInfo<EcsInterface>::defaults();
         contextCreateInfo.window = sdlc->getWindow();
         contextCreateInfo.ecs = &ecsInterface;
-        vulkan = std::make_unique<VulkanContext<EcsInterface>>(contextCreateInfo);
+        vulkan = std::make_unique<vkc::VulkanContext<EcsInterface>>(contextCreateInfo);
       }
       default: break;
     }

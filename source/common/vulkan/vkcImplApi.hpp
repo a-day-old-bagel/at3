@@ -14,46 +14,44 @@ VulkanContextCreateInfo <EcsInterface> VulkanContextCreateInfo<EcsInterface>::de
 template<typename EcsInterface>
 VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo <EcsInterface> info) {
 
+  // Subscribe to view matrix updates and window resize events
   sub_wvUpdate = SUBSCRIBE_TOPIC("primary_cam_wv", updateWvMat);
   sub_windowResize = SUBSCRIBE_TOPIC("window_resized", reInitRendering);
 
-  // Init the vulkan instance, device, pools, etc.
-
+  // Store the window and entity-component-system pointers.
   common.window = info.window;
-  getWindowSize();
   ecs = info.ecs;
 
+  // Create the fundamental Vulkan backbone objects
   createInstance(info.appName.c_str());
   createDebugCallback();
-
-  createSurface();
+  createSurface();  // The SDL_Vulkan surface
   createPhysicalDevice();
   createLogicalDevice();
 
-  allocators::pool::activate(&common);
+  // Initialize the memory allocation pool
+  pool::activate(&common);
 
-  createSwapchainForSurface(); // window size is needed here
+  // Get the current window size and create a matching swap chain
+  storeWindowSize();
+  createSwapchainForSurface();
 
+  // Create the command, descriptor, and query pools
   createCommandPool(common.gfxCommandPool);
   createCommandPool(common.transferCommandPool);
   createCommandPool(common.presentCommandPool);
-
   createDescriptorPool(common.descriptorPool, info);
-
-  createVkSemaphore(common.imageAvailableSemaphore);
-  createVkSemaphore(common.renderFinishedSemaphore);
-
   createQueryPool(10);
 
+  // Create the synchronization structures
+  createVkSemaphore(common.imageAvailableSemaphore);
+  createVkSemaphore(common.renderFinishedSemaphore);
   common.frameFences.resize(common.swapChain.imageViews.size());
-
   for (uint32_t i = 0; i < common.frameFences.size(); ++i) {
     createFence(common.frameFences[i]);
   }
 
-
-
-
+  // Load the meshes into a repository
   // TODO: put this crap in a proper repository like VkcTextureRepository does, do it when upgrading to gltf
   std::vector<EMeshVertexAttribute> meshLayout;
   meshLayout.push_back(EMeshVertexAttribute::POSITION);
@@ -70,11 +68,9 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo <EcsInterface
   }
   printf("\n");
 
-
-
-  // Open every texture in the texture directory
+  // Load the textures into a repository
   // TODO: Synchronize texture loading (wait for it, ala loading screen). This might be causing the errors on fresh runs.
-  VkcTextureOperationInfo texOpInfo {};
+  TextureOperationInfo texOpInfo {};
   texOpInfo.physicalDevice = common.gpu.device;
   texOpInfo.logicalDevice = common.device;
   texOpInfo.transferCommandPool = common.transferCommandPool;
@@ -82,13 +78,18 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo <EcsInterface
   texOpInfo.physicalMemProps = common.gpu.memProps;
   texOpInfo.samplerAnisotropy = common.gpu.features.samplerAnisotropy;
   texOpInfo.maxSamplerAnisotropy = common.gpu.deviceProps.limits.maxSamplerAnisotropy;
-  textureRepo = std::make_unique<VkcTextureRepository>("./assets/textures", texOpInfo);
+  textureRepo = std::make_unique<TextureRepository>("./assets/textures", texOpInfo);
 
   // Create the paged UBO system for mesh instance data
   dataStore = std::make_unique<UboPageMgr>(common);
 
-  // Create the rest of the rendering pipelines
-  initRendering(textureRepo->getDescriptorImageInfoArrayCount());
+  // Create the pipelines.
+  // The number of textures that got loaded is needed for specialization constants.
+  pipelineRepo = std::make_unique<PipelineRepository>(common, textureRepo->getDescriptorImageInfoArrayCount());
+
+  // Create the frame and depth buffers, command buffers, and other things that depend on window size.
+  // These will need to be recreated (by calling this function again) whenever the window size changes.
+  createWindowSizeDependents();
 }
 
 template<typename EcsInterface>
@@ -111,10 +112,11 @@ template<typename EcsInterface>
 void VulkanContext<EcsInterface>::reInitRendering() {
   printf("Re-initializing vulkan rendering pipeline\n");
   vkDeviceWaitIdle(common.device);
-  cleanupRendering();
-  getWindowSize();
+  destroyWindowSizeDependents();
+  storeWindowSize();
   createSwapchainForSurface();
-  initRendering(textureRepo->getDescriptorImageInfoArrayCount());
+  createWindowSizeDependents();
+  pipelineRepo->reinit(common, textureRepo->getDescriptorImageInfoArrayCount());
 }
 
 template<typename EcsInterface>

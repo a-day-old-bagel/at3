@@ -17,7 +17,7 @@ uint32_t VulkanContext<EcsInterface>::make(
 
   //transfer data to the above buffers
   VkBuffer stagingBuffer;
-  VkcAllocation stagingMemory;
+  Allocation stagingMemory;
 
   createBuffer(stagingBuffer, stagingMemory, vBufferSize + iBufferSize,
                VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,

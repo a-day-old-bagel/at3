@@ -175,13 +175,13 @@ void VulkanContext<EcsInterface>::createDebugCallback() {
 template<typename EcsInterface>
 void VulkanContext<EcsInterface>::createSurface() {
 #   if USE_CUSTOM_SDL_VULKAN
-  bool success = SDL_CreateVulkanSurface(common.window, common.instance, &common.surface.surface);
+  bool success = SDL_CreateVulkanSurface(common.window, common.instance, &common.surface.handle);
 #   else
   bool success = SDL_Vulkan_CreateSurface(common.window, common.instance, &common.surface.surface);
 #   endif
   AT3_ASSERT(success, "SDL_Vulkan_CreateSurface(): %s\n", SDL_GetError());
   if (!success) {
-    common.surface.surface = VK_NULL_HANDLE;
+    common.surface.handle = VK_NULL_HANDLE;
   }
 }
 
@@ -251,25 +251,25 @@ void VulkanContext<EcsInterface>::createPhysicalDevice() {
       }
 
       //make sure the device supports at least one valid image format for our surface
-      VkcSwapChainSupportInfo scSupport;
-      vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, common.surface.surface, &scSupport.capabilities);
+      SwapChainSupportInfo scSupport;
+      vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, common.surface.handle, &scSupport.capabilities);
 
       uint32_t formatCount;
-      vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, common.surface.surface, &formatCount, nullptr);
+      vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, common.surface.handle, &formatCount, nullptr);
 
       if (formatCount != 0) {
         scSupport.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, common.surface.surface, &formatCount, scSupport.formats.data());
+        vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, common.surface.handle, &formatCount, scSupport.formats.data());
       } else {
         continue;
       }
 
       uint32_t presentModeCount;
-      vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, common.surface.surface, &presentModeCount, nullptr);
+      vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, common.surface.handle, &presentModeCount, nullptr);
 
       if (presentModeCount != 0) {
         scSupport.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, common.surface.surface, &presentModeCount,
+        vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, common.surface.handle, &presentModeCount,
                                                   scSupport.presentModes.data());
       }
 
@@ -311,7 +311,7 @@ void VulkanContext<EcsInterface>::createPhysicalDevice() {
   // Iterate over each queue to learn whether it supports presenting:
   VkBool32 *pSupportsPresent = (VkBool32 *) malloc(common.gpu.queueFamilyCount * sizeof(VkBool32));
   for (uint32_t i = 0; i < common.gpu.queueFamilyCount; i++) {
-    vkGetPhysicalDeviceSurfaceSupportKHR(outDevice, i, common.surface.surface, &pSupportsPresent[i]);
+    vkGetPhysicalDeviceSurfaceSupportKHR(outDevice, i, common.surface.handle, &pSupportsPresent[i]);
   }
 
 
@@ -352,9 +352,9 @@ void VulkanContext<EcsInterface>::createPhysicalDevice() {
 
 template<typename EcsInterface>
 void VulkanContext<EcsInterface>::createLogicalDevice() {
-  const VkcPhysicalDevice &physDevice = common.gpu;
+  const PhysicalDevice &physDevice = common.gpu;
   VkDevice &outDevice = common.device;
-  VkcDeviceQueues &outQueues = common.deviceQueues;
+  DeviceQueues &outQueues = common.deviceQueues;
 
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
   std::vector<uint32_t> uniqueQueueFamilies;
@@ -384,14 +384,15 @@ void VulkanContext<EcsInterface>::createLogicalDevice() {
 
   }
 
-  // we don't need anything fancy right now, but this is where you require things
-  // like geo shader support
+  // Enable support for advanced features (geom,tesc,tese shaders, etc.) here
 
   std::vector<const char *> deviceExtensions;
   deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
   VkPhysicalDeviceFeatures deviceFeatures = {};
   deviceFeatures.samplerAnisotropy = VK_TRUE;
+  deviceFeatures.geometryShader = VK_TRUE;
+  deviceFeatures.tessellationShader = VK_TRUE;
 
   VkDeviceCreateInfo createInfo = {};
   createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
