@@ -141,6 +141,7 @@ namespace at3::vkc {
 
 
   enum class EMeshVertexAttribute : uint8_t {
+      INVALID_ATTRIBUTE,
       POSITION,
       UV0,
       UV1,
@@ -150,7 +151,7 @@ namespace at3::vkc {
       COLOR
   };
 
-  struct VertexRenderData {
+  struct VertexAttributes {
     VkVertexInputAttributeDescription *attrDescriptions;
     EMeshVertexAttribute *attributes;
     uint32_t attrCount;

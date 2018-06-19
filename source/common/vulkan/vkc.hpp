@@ -113,13 +113,11 @@ namespace at3::vkc {
 
       void createWindowSizeDependents();
       void updateDescriptorSets(UboPageMgr *dataStore);
-//      void createMainRenderPass();
       void createDepthBuffer();
       void render(UboPageMgr *dataStore, const glm::mat4 &wvMat, const MeshRepository<EcsInterface> &meshAssets,
                   EcsInterface *ecs);
 
 
-      void setGlobalVertexLayout(std::vector<EMeshVertexAttribute> layout);
       uint32_t make(MeshResource<EcsInterface> &outAsset, float *vertices, uint32_t vertexCount, uint32_t *indices,
                     uint32_t indexCount);
       MeshResources <EcsInterface> loadMesh(const char *filepath, bool combineSubMeshes);

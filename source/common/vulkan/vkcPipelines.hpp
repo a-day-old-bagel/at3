@@ -48,21 +48,20 @@ namespace at3::vkc {
     unsigned int length = 0;
   };
 
-  const VertexRenderData *vertexRenderData();
-  void setVertexRenderData(VertexRenderData *renderData);
-
   enum StandardPipeline {
     MESH = 0,
     NORMAL,
     SKYBOX,
     HEIGHT_TERRAIN,
-    PIPELINE_COUNT
+    PIPELINE_COUNT,
+    INVALID_PIPELINE
   };
 
   struct PipelineCreateInfo {
-    StandardPipeline index;
-    Common *ctxt;
-    VkRenderPass renderPass;
+    StandardPipeline index = INVALID_PIPELINE;
+    Common *ctxt = nullptr;
+    VkRenderPass renderPass = VK_NULL_HANDLE;
+    uint32_t subpass = 0;
     std::vector<VkDescriptorSetLayoutCreateInfo> descSetLayoutInfos;
     std::vector<VkPushConstantRange> pcRanges;
     VkSpecializationInfo specializationInfo;
@@ -84,22 +83,43 @@ namespace at3::vkc {
         bool layoutsExist = false;
       };
       std::vector<Pipeline> pipelines;
+      std::unique_ptr<VertexAttributes> vertexAttributes;
 
+      void setVertexAttributes(std::vector<EMeshVertexAttribute> layout);
       void createRenderPass(
           Common &ctxt, VkRenderPass &outPass, std::vector<VkAttachmentDescription> &colorAttachments,
           VkAttachmentDescription *depthAttachment);
       void createMainRenderPass(Common &ctxt);
+
       void createPipelineLayout(PipelineCreateInfo &info);
       void createPipeline(PipelineCreateInfo &info);
+
       void createStandardMeshPipeline(Common &ctxt, uint32_t texArrayLen);
+
+      void createDeferredGBufferPipeline(Common &ctxt, uint32_t texArrayLen);
+      void createDeferredComposePipeline(Common &ctxt, uint32_t texArrayLen);
+
+      void createNormalDebugPipeline(Common &ctxt, uint32_t texArrayLen);
       void createStaticHeightmapTerrainPipeline(Common &ctxt);
+
       void destroy(Common &ctxt);
+
+
+
+      void setupDescriptorSetLayout(PipelineCreateInfo &info);
+      void setupDescriptorSet();
+      void preparePipelines(Common &ctxt, uint32_t texArrayLen);
+      void setupRenderPass(Common &ctxt);
+      void prepareCompositionPass(Common &ctxt);
+
+
 
     public:
 
       VkRenderPass mainRenderPass;
 
       PipelineRepository(Common &ctxt, uint32_t numTextures2D);
+      const VertexAttributes &getVertexAttributes();
       Pipeline &at(uint32_t index);
       void reinit(Common &ctxt, uint32_t numTextures2D);
   };

@@ -3,21 +3,13 @@
 
 // Include the shader codes
 #include "meshDefault.vert.spv.c"
-#include "meshDefault.geom.spv.c"
 #include "meshDefault.frag.spv.c"
 
-namespace at3::vkc {
+#include "normalDebug.vert.spv.c"
+#include "normalDebug.geom.spv.c"
+#include "normalDebug.frag.spv.c"
 
-  VertexRenderData *_vkRenderData = nullptr;
-  const VertexRenderData *vertexRenderData() {
-    AT3_ASSERT(_vkRenderData,
-             "Attempting to get global vertex layout, but it has not been set yet, call setGlobalVertexLayout first.");
-    return _vkRenderData;
-  }
-  void setVertexRenderData(VertexRenderData *renderData) {
-    AT3_ASSERT(_vkRenderData == nullptr, "Attempting to set global vertex layout, but this has already been set");
-    _vkRenderData = renderData;
-  }
+namespace at3::vkc {
 
   void createShaderModule(VkShaderModule &outModule, unsigned char *binaryData, size_t dataSize,
                           const Common &ctxt) {
@@ -40,14 +32,63 @@ namespace at3::vkc {
 
   }
 
-
   PipelineRepository::PipelineRepository(Common &ctxt, uint32_t numTextures2D) {
+    std::vector<EMeshVertexAttribute> meshLayout;
+    meshLayout.push_back(EMeshVertexAttribute::POSITION);
+    meshLayout.push_back(EMeshVertexAttribute::UV0);
+    meshLayout.push_back(EMeshVertexAttribute::NORMAL);
+    setVertexAttributes(meshLayout);
+
     pipelines.resize(PIPELINE_COUNT);
 
     createMainRenderPass(ctxt);
     createStandardMeshPipeline(ctxt, numTextures2D);
+    createNormalDebugPipeline(ctxt, numTextures2D);
     createStaticHeightmapTerrainPipeline(ctxt);
   }
+
+  void PipelineRepository::setVertexAttributes(std::vector<EMeshVertexAttribute> layout) {
+
+    vertexAttributes = std::make_unique<VertexAttributes>();
+
+    vertexAttributes->attrCount = (uint32_t)layout.size();
+    vertexAttributes->attrDescriptions = (VkVertexInputAttributeDescription *) malloc(
+        sizeof(VkVertexInputAttributeDescription) * vertexAttributes->attrCount);
+    vertexAttributes->attributes = (EMeshVertexAttribute *) malloc(
+        sizeof(EMeshVertexAttribute) * vertexAttributes->attrCount);
+    memcpy(vertexAttributes->attributes, layout.data(), sizeof(EMeshVertexAttribute) * vertexAttributes->attrCount);
+
+    uint32_t curOffset = 0;
+    for (uint32_t i = 0; i < layout.size(); ++i) {
+      switch (layout[i]) {
+        case EMeshVertexAttribute::POSITION:
+        case EMeshVertexAttribute::NORMAL:
+        case EMeshVertexAttribute::TANGENT:
+        case EMeshVertexAttribute::BITANGENT: {
+          vertexAttributes->attrDescriptions[i] = {i, 0, VK_FORMAT_R32G32B32_SFLOAT, curOffset};
+          curOffset += sizeof(glm::vec3);
+        } break;
+        case EMeshVertexAttribute::UV0:
+        case EMeshVertexAttribute::UV1: {
+          vertexAttributes->attrDescriptions[i] = {i, 0, VK_FORMAT_R32G32_SFLOAT, curOffset};
+          curOffset += sizeof(glm::vec2);
+        } break;
+        case EMeshVertexAttribute::COLOR: {
+          vertexAttributes->attrDescriptions[i] = {i, 0, VK_FORMAT_R32G32B32A32_SFLOAT, curOffset};
+          curOffset += sizeof(glm::vec4);
+        } break;
+        default:
+          AT3_ASSERT(0, "Invalid vertex attribute specified");
+          break;
+      }
+    }
+    vertexAttributes->vertexSize = curOffset;
+  }
+
+
+
+
+
 
   void PipelineRepository::createRenderPass(
       Common &ctxt, VkRenderPass &outPass, std::vector<VkAttachmentDescription> &colorAttachments,
@@ -132,6 +173,11 @@ namespace at3::vkc {
 
     createRenderPass(ctxt, mainRenderPass, renderPassAttachments, &depthAttachment);
   }
+
+
+
+
+
 
   void PipelineRepository::createPipelineLayout(PipelineCreateInfo &info) {
 
@@ -221,13 +267,10 @@ namespace at3::vkc {
       shaderStages.push_back(fragStageInfo);
     } // shaderStages is now populated and final.
 
-    // TODO: this is stupid. Make a pipeline repository like the texture repository and have this value in there.
-    const VertexRenderData *vertexLayout = vertexRenderData();
-
     VkVertexInputBindingDescription bindingDescription {};
     {
       bindingDescription.binding = 0;
-      bindingDescription.stride = vertexLayout->vertexSize;
+      bindingDescription.stride = vertexAttributes->vertexSize;
       bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
     }
 
@@ -235,9 +278,9 @@ namespace at3::vkc {
     {
       vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
       vertexInputInfo.vertexBindingDescriptionCount = 1;
-      vertexInputInfo.vertexAttributeDescriptionCount = vertexLayout->attrCount;
+      vertexInputInfo.vertexAttributeDescriptionCount = vertexAttributes->attrCount;
       vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-      vertexInputInfo.pVertexAttributeDescriptions = &vertexLayout->attrDescriptions[0];
+      vertexInputInfo.pVertexAttributeDescriptions = &vertexAttributes->attrDescriptions[0];
     }
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly {};
@@ -376,7 +419,6 @@ namespace at3::vkc {
 
     { // Shaders
       info.vertCode = {meshDefault_vert_spv, meshDefault_vert_spv_len};
-      info.geomCode = {meshDefault_geom_spv, meshDefault_geom_spv_len};
       info.fragCode = {meshDefault_frag_spv, meshDefault_frag_spv_len};
     }
 
@@ -385,7 +427,7 @@ namespace at3::vkc {
     {
       VkDescriptorSetLayoutBinding uboBinding{};
       uboBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-      uboBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT;
+      uboBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
       uboBinding.binding = 0;
       uboBinding.descriptorCount = 1;
       layoutBindings.push_back(uboBinding);
@@ -412,7 +454,7 @@ namespace at3::vkc {
     {
       pcRange.offset = 0;
       pcRange.size = sizeof(MeshInstanceIndices::rawType);
-      pcRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+      pcRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
       info.pcRanges.push_back(pcRange);
     }
 
@@ -448,6 +490,608 @@ namespace at3::vkc {
     createPipeline(info);
   }
 
+
+
+  void PipelineRepository::createDeferredGBufferPipeline(Common &ctxt, uint32_t texArrayLen) {
+
+  }
+
+  void PipelineRepository::createDeferredComposePipeline(Common &ctxt, uint32_t texArrayLen) {
+
+  }
+
+
+
+  void PipelineRepository::createNormalDebugPipeline(Common &ctxt, uint32_t texArrayLen) {
+
+    // This is populated and then passed to createPipeline.
+    PipelineCreateInfo info {};
+
+    { // pipeline type, context, and renderpass
+      info.index = NORMAL;
+      info.ctxt = &ctxt;
+      info.renderPass = mainRenderPass;
+    }
+
+    { // Shaders
+      info.vertCode = {normalDebug_vert_spv, normalDebug_vert_spv_len};
+      info.geomCode = {normalDebug_geom_spv, normalDebug_geom_spv_len};
+      info.fragCode = {normalDebug_frag_spv, normalDebug_frag_spv_len};
+    }
+
+    // Descriptor set layout bindings
+    std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
+    {
+      VkDescriptorSetLayoutBinding uboBinding{};
+      uboBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+      uboBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT /*| VK_SHADER_STAGE_GEOMETRY_BIT*/;
+      uboBinding.binding = 0;
+      uboBinding.descriptorCount = 1;
+      layoutBindings.push_back(uboBinding);
+    }
+
+    // Layout creation info
+    VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+    {
+      layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+      layoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
+      layoutInfo.pBindings = layoutBindings.data();
+      info.descSetLayoutInfos.push_back(layoutInfo);
+    }
+
+    // Push constants
+    VkPushConstantRange pcRange = {};
+    {
+      pcRange.offset = 0;
+      pcRange.size = sizeof(MeshInstanceIndices::rawType);
+      pcRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT /*| VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_FRAGMENT_BIT*/;
+      info.pcRanges.push_back(pcRange);
+    }
+
+    // If this is a re-initialization, the layouts will already exist and do not need to be recreated.
+    if (!pipelines.at(info.index).layoutsExist) {
+      createPipelineLayout(info);
+      pipelines.at(info.index).layoutsExist = true;
+    }
+
+    // The pipeline itself will need to be recreated even for a re-initialization, since it's not dynamic.
+    // An alternative would be to make the viewport and scissors dynamic, but that could hurt performance.
+    // Benchmarking would need to be done to make sure, but for now I'm leaving them non-dynamic.
+    // Another option would be to keep both a dynamic and non-dynamic version of each pipeline, so that the dynamic
+    // one could be used while the static ones were being recreated.
+    createPipeline(info);
+  }
+
+
+
+
+
+
+
+
+
+//  void PipelineRepository::setupDescriptorSetLayout(PipelineCreateInfo &info) {
+//
+//    std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings;
+//    {
+//      VkDescriptorSetLayoutBinding setLayoutBinding{};
+//      setLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+//      setLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+//      setLayoutBinding.binding = 0;
+//      setLayoutBinding.descriptorCount = 1;
+//      setLayoutBindings.push_back(setLayoutBinding);
+//    }
+//
+//    VkDescriptorSetLayoutCreateInfo descriptorLayout {};
+//    {
+//      descriptorLayout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+//      descriptorLayout.pBindings = setLayoutBindings.data();
+//      descriptorLayout.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
+//    }
+//
+//
+//
+//    VkResult res = vkCreateDescriptorSetLayout(info.ctxt->device, &descriptorLayout, nullptr, &descriptorSetLayouts.scene);
+//
+//    VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo =
+//        vks::initializers::pipelineLayoutCreateInfo(
+//            &descriptorSetLayouts.scene,
+//            1);
+//
+//    // Offscreen (scene) rendering pipeline layout
+//    VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pPipelineLayoutCreateInfo, nullptr, &pipelineLayouts.offscreen));
+//  }
+
+
+
+
+/*  void PipelineRepository::setupDescriptorSet()
+  {
+    std::vector<VkWriteDescriptorSet> writeDescriptorSets;
+
+    VkDescriptorSetAllocateInfo allocInfo =
+        vks::initializers::descriptorSetAllocateInfo(
+            descriptorPool,
+            &descriptorSetLayouts.scene,
+            1);
+
+    VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets.scene));
+    writeDescriptorSets =
+        {
+            // Binding 0: Vertex shader uniform buffer
+            vks::initializers::writeDescriptorSet(
+                descriptorSets.scene,
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                0,
+                &uniformBuffers.GBuffer.descriptor)
+        };
+    vkUpdateDescriptorSets(device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
+  }
+
+  void PipelineRepository::preparePipelines(Common &ctxt, uint32_t texArrayLen)
+  {
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyState =
+        vks::initializers::pipelineInputAssemblyStateCreateInfo(
+            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            0,
+            VK_FALSE);
+
+    VkPipelineRasterizationStateCreateInfo rasterizationState =
+        vks::initializers::pipelineRasterizationStateCreateInfo(
+            VK_POLYGON_MODE_FILL,
+            VK_CULL_MODE_BACK_BIT,
+            VK_FRONT_FACE_CLOCKWISE,
+            0);
+
+    VkPipelineColorBlendAttachmentState blendAttachmentState =
+        vks::initializers::pipelineColorBlendAttachmentState(
+            0xf,
+            VK_FALSE);
+
+    VkPipelineColorBlendStateCreateInfo colorBlendState =
+        vks::initializers::pipelineColorBlendStateCreateInfo(
+            1,
+            &blendAttachmentState);
+
+    VkPipelineDepthStencilStateCreateInfo depthStencilState =
+        vks::initializers::pipelineDepthStencilStateCreateInfo(
+            VK_TRUE,
+            VK_TRUE,
+            VK_COMPARE_OP_LESS_OR_EQUAL);
+
+    VkPipelineViewportStateCreateInfo viewportState =
+        vks::initializers::pipelineViewportStateCreateInfo(1, 1, 0);
+
+    VkPipelineMultisampleStateCreateInfo multisampleState =
+        vks::initializers::pipelineMultisampleStateCreateInfo(
+            VK_SAMPLE_COUNT_1_BIT,
+            0);
+
+    std::vector<VkDynamicState> dynamicStateEnables = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
+    VkPipelineDynamicStateCreateInfo dynamicState =
+        vks::initializers::pipelineDynamicStateCreateInfo(
+            dynamicStateEnables.data(),
+            static_cast<uint32_t>(dynamicStateEnables.size()),
+            0);
+
+    // Final fullscreen pass pipeline
+    std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
+
+    VkGraphicsPipelineCreateInfo pipelineCreateInfo =
+        vks::initializers::pipelineCreateInfo(
+            pipelineLayouts.offscreen,
+            renderPass,
+            0);
+
+    pipelineCreateInfo.pVertexInputState = &vertices.inputState;
+    pipelineCreateInfo.pInputAssemblyState = &inputAssemblyState;
+    pipelineCreateInfo.pRasterizationState = &rasterizationState;
+    pipelineCreateInfo.pColorBlendState = &colorBlendState;
+    pipelineCreateInfo.pMultisampleState = &multisampleState;
+    pipelineCreateInfo.pViewportState = &viewportState;
+    pipelineCreateInfo.pDepthStencilState = &depthStencilState;
+    pipelineCreateInfo.pDynamicState = &dynamicState;
+    pipelineCreateInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+    pipelineCreateInfo.pStages = shaderStages.data();
+    pipelineCreateInfo.subpass = 0;
+
+    std::array<VkPipelineColorBlendAttachmentState, 4> blendAttachmentStates = {
+        vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+        vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+        vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+        vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE)
+    };
+
+    colorBlendState.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
+    colorBlendState.pAttachments = blendAttachmentStates.data();
+
+    // Offscreen scene rendering pipeline
+    shaderStages[0] = loadShader(getAssetPath() + "shaders/subpasses/gbuffer.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+    shaderStages[1] = loadShader(getAssetPath() + "shaders/subpasses/gbuffer.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+
+    VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.offscreen));
+  }
+
+  void PipelineRepository::setupRenderPass(Common &ctxt)
+  {
+    createGBufferAttachments();
+
+    std::array<VkAttachmentDescription, 5> attachments{};
+    // Color attachment
+    attachments[0].format = swapChain.colorFormat;
+    attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+    attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    // Deferred attachments
+    // Position
+    attachments[1].format = this->attachments.position.format;
+    attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
+    attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachments[1].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    // Normals
+    attachments[2].format = this->attachments.normal.format;
+    attachments[2].samples = VK_SAMPLE_COUNT_1_BIT;
+    attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachments[2].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[2].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachments[2].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    // Albedo
+    attachments[3].format = this->attachments.albedo.format;
+    attachments[3].samples = VK_SAMPLE_COUNT_1_BIT;
+    attachments[3].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachments[3].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[3].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachments[3].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[3].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachments[3].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    // Depth attachment
+    attachments[4].format = depthFormat;
+    attachments[4].samples = VK_SAMPLE_COUNT_1_BIT;
+    attachments[4].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachments[4].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[4].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachments[4].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[4].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachments[4].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    // Three subpasses
+    std::array<VkSubpassDescription,3> subpassDescriptions{};
+
+    // First subpass: Fill G-Buffer components
+    // ----------------------------------------------------------------------------------------
+
+    VkAttachmentReference colorReferences[4];
+    colorReferences[0] = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+    colorReferences[1] = { 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+    colorReferences[2] = { 2, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+    colorReferences[3] = { 3, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+    VkAttachmentReference depthReference = { 4, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+
+    subpassDescriptions[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescriptions[0].colorAttachmentCount = 4;
+    subpassDescriptions[0].pColorAttachments = colorReferences;
+    subpassDescriptions[0].pDepthStencilAttachment = &depthReference;
+
+    // Second subpass: Final composition (using G-Buffer components)
+    // ----------------------------------------------------------------------------------------
+
+    VkAttachmentReference colorReference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+
+    VkAttachmentReference inputReferences[3];
+    inputReferences[0] = { 1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+    inputReferences[1] = { 2, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+    inputReferences[2] = { 3, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+
+    uint32_t preserveAttachmentIndex = 1;
+
+    subpassDescriptions[1].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescriptions[1].colorAttachmentCount = 1;
+    subpassDescriptions[1].pColorAttachments = &colorReference;
+    subpassDescriptions[1].pDepthStencilAttachment = &depthReference;
+    // Use the color attachments filled in the first pass as input attachments
+    subpassDescriptions[1].inputAttachmentCount = 3;
+    subpassDescriptions[1].pInputAttachments = inputReferences;
+
+    // Third subpass: Forward transparency
+    // ----------------------------------------------------------------------------------------
+    colorReference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+
+    inputReferences[0] = { 1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+
+    subpassDescriptions[2].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescriptions[2].colorAttachmentCount = 1;
+    subpassDescriptions[2].pColorAttachments = &colorReference;
+    subpassDescriptions[2].pDepthStencilAttachment = &depthReference;
+    // Use the color/depth attachments filled in the first pass as input attachments
+    subpassDescriptions[2].inputAttachmentCount = 1;
+    subpassDescriptions[2].pInputAttachments = inputReferences;
+
+    // Subpass dependencies for layout transitions
+    std::array<VkSubpassDependency, 4> dependencies;
+
+    dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependencies[0].dstSubpass = 0;
+    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+    // This dependency transitions the input attachment from color attachment to shader read
+    dependencies[1].srcSubpass = 0;
+    dependencies[1].dstSubpass = 1;
+    dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+    dependencies[2].srcSubpass = 1;
+    dependencies[2].dstSubpass = 2;
+    dependencies[2].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[2].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    dependencies[2].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[2].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+    dependencies[3].srcSubpass = 0;
+    dependencies[3].dstSubpass = VK_SUBPASS_EXTERNAL;
+    dependencies[3].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[3].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    dependencies[3].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[3].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[3].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+    VkRenderPassCreateInfo renderPassInfo = {};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+    renderPassInfo.pAttachments = attachments.data();
+    renderPassInfo.subpassCount = static_cast<uint32_t>(subpassDescriptions.size());
+    renderPassInfo.pSubpasses = subpassDescriptions.data();
+    renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+    renderPassInfo.pDependencies = dependencies.data();
+
+    VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
+
+    // Create custom overlay render pass
+    attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    attachments[0].initialLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassInfo, nullptr, &uiRenderPass));
+  }
+
+  void PipelineRepository::prepareCompositionPass(Common &ctxt)
+  {
+    // Descriptor set layout
+    std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings =
+        {
+            // Binding 0: Position input attachment
+            vks::initializers::descriptorSetLayoutBinding(
+                VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+                VK_SHADER_STAGE_FRAGMENT_BIT,
+                0),
+            // Binding 1: Normal input attachment
+            vks::initializers::descriptorSetLayoutBinding(
+                VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+                VK_SHADER_STAGE_FRAGMENT_BIT,
+                1),
+            // Binding 2: Albedo input attachment
+            vks::initializers::descriptorSetLayoutBinding(
+                VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+                VK_SHADER_STAGE_FRAGMENT_BIT,
+                2),
+            // Binding 3: Light positions
+            vks::initializers::descriptorSetLayoutBinding(
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                VK_SHADER_STAGE_FRAGMENT_BIT,
+                3),
+        };
+
+    VkDescriptorSetLayoutCreateInfo descriptorLayout =
+        vks::initializers::descriptorSetLayoutCreateInfo(
+            setLayoutBindings.data(),
+            static_cast<uint32_t>(setLayoutBindings.size()));
+
+    VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorLayout, nullptr, &descriptorSetLayouts.composition));
+
+    // Pipeline layout
+    VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo =
+        vks::initializers::pipelineLayoutCreateInfo(&descriptorSetLayouts.composition, 1);
+
+    VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pPipelineLayoutCreateInfo, nullptr, &pipelineLayouts.composition));
+
+    // Descriptor sets
+    VkDescriptorSetAllocateInfo allocInfo =
+        vks::initializers::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayouts.composition, 1);
+
+    VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets.composition));
+
+    // Image descriptors for the offscreen color attachments
+    VkDescriptorImageInfo texDescriptorPosition =
+        vks::initializers::descriptorImageInfo(
+            VK_NULL_HANDLE,
+            attachments.position.view,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    VkDescriptorImageInfo texDescriptorNormal =
+        vks::initializers::descriptorImageInfo(
+            VK_NULL_HANDLE,
+            attachments.normal.view,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    VkDescriptorImageInfo texDescriptorAlbedo =
+        vks::initializers::descriptorImageInfo(
+            VK_NULL_HANDLE,
+            attachments.albedo.view,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
+        // Binding 0: Position texture target
+        vks::initializers::writeDescriptorSet(
+            descriptorSets.composition,
+            VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+            0,
+            &texDescriptorPosition),
+        // Binding 1: Normals texture target
+        vks::initializers::writeDescriptorSet(
+            descriptorSets.composition,
+            VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+            1,
+            &texDescriptorNormal),
+        // Binding 2: Albedo texture target
+        vks::initializers::writeDescriptorSet(
+            descriptorSets.composition,
+            VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+            2,
+            &texDescriptorAlbedo),
+        // Binding 4: Fragment shader lights
+        vks::initializers::writeDescriptorSet(
+            descriptorSets.composition,
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            3,
+            &uniformBuffers.lights.descriptor),
+    };
+
+    vkUpdateDescriptorSets(device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
+
+    // Pipeline
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyState =
+        vks::initializers::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
+
+    VkPipelineRasterizationStateCreateInfo rasterizationState =
+        vks::initializers::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE, 0);
+
+    VkPipelineColorBlendAttachmentState blendAttachmentState =
+        vks::initializers::pipelineColorBlendAttachmentState(0xf, VK_FALSE);
+
+    VkPipelineColorBlendStateCreateInfo colorBlendState =
+        vks::initializers::pipelineColorBlendStateCreateInfo(1,	&blendAttachmentState);
+
+    VkPipelineDepthStencilStateCreateInfo depthStencilState =
+        vks::initializers::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
+
+    VkPipelineViewportStateCreateInfo viewportState =
+        vks::initializers::pipelineViewportStateCreateInfo(1, 1, 0);
+
+    VkPipelineMultisampleStateCreateInfo multisampleState =
+        vks::initializers::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT, 0);
+
+    std::vector<VkDynamicState> dynamicStateEnables = {	VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+    VkPipelineDynamicStateCreateInfo dynamicState =
+        vks::initializers::pipelineDynamicStateCreateInfo(dynamicStateEnables.data(), static_cast<uint32_t>(dynamicStateEnables.size()), 0);
+
+    std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
+
+    shaderStages[0] = loadShader(getAssetPath() + "shaders/subpasses/composition.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+    shaderStages[1] = loadShader(getAssetPath() + "shaders/subpasses/composition.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+
+    // Use specialization constants to pass number of lights to the shader
+    VkSpecializationMapEntry specializationEntry{};
+    specializationEntry.constantID = 0;
+    specializationEntry.offset = 0;
+    specializationEntry.size = sizeof(uint32_t);
+
+    uint32_t specializationData = NUM_LIGHTS;
+
+    VkSpecializationInfo specializationInfo;
+    specializationInfo.mapEntryCount = 1;
+    specializationInfo.pMapEntries = &specializationEntry;
+    specializationInfo.dataSize = sizeof(specializationData);
+    specializationInfo.pData = &specializationData;
+
+    shaderStages[1].pSpecializationInfo = &specializationInfo;
+
+    VkGraphicsPipelineCreateInfo pipelineCreateInfo =
+        vks::initializers::pipelineCreateInfo(pipelineLayouts.composition, renderPass, 0);
+
+    VkPipelineVertexInputStateCreateInfo emptyInputState{};
+    emptyInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
+    pipelineCreateInfo.pVertexInputState = &emptyInputState;
+    pipelineCreateInfo.pInputAssemblyState = &inputAssemblyState;
+    pipelineCreateInfo.pRasterizationState = &rasterizationState;
+    pipelineCreateInfo.pColorBlendState = &colorBlendState;
+    pipelineCreateInfo.pMultisampleState = &multisampleState;
+    pipelineCreateInfo.pViewportState = &viewportState;
+    pipelineCreateInfo.pDepthStencilState = &depthStencilState;
+    pipelineCreateInfo.pDynamicState = &dynamicState;
+    pipelineCreateInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+    pipelineCreateInfo.pStages = shaderStages.data();
+    // Index of the subpass that this pipeline will be used in
+    pipelineCreateInfo.subpass = 1;
+
+    depthStencilState.depthWriteEnable = VK_FALSE;
+
+    VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.composition));
+
+    // Transparent (forward) pipeline
+
+    // Descriptor set layout
+    setLayoutBindings = {
+        vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0),
+        vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+        vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+    };
+
+    descriptorLayout = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings.data(), static_cast<uint32_t>(setLayoutBindings.size()));
+    VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorLayout, nullptr, &descriptorSetLayouts.transparent));
+
+    // Pipeline layout
+    pPipelineLayoutCreateInfo = vks::initializers::pipelineLayoutCreateInfo(&descriptorSetLayouts.transparent, 1);
+    VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pPipelineLayoutCreateInfo, nullptr, &pipelineLayouts.transparent));
+
+    // Descriptor sets
+    allocInfo = vks::initializers::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayouts.transparent, 1);
+    VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets.transparent));
+
+    writeDescriptorSets = {
+        vks::initializers::writeDescriptorSet(descriptorSets.transparent, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &uniformBuffers.GBuffer.descriptor),
+        vks::initializers::writeDescriptorSet(descriptorSets.transparent, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1, &texDescriptorPosition),
+        vks::initializers::writeDescriptorSet(descriptorSets.transparent, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, &textures.glass.descriptor),
+    };
+    vkUpdateDescriptorSets(device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
+
+    // Enable blending
+    blendAttachmentState.blendEnable = VK_TRUE;
+    blendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    blendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    blendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+    blendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    blendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+    blendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+    pipelineCreateInfo.pVertexInputState = &vertices.inputState;
+    pipelineCreateInfo.layout = pipelineLayouts.transparent;
+    pipelineCreateInfo.subpass = 2;
+
+    shaderStages[0] = loadShader(getAssetPath() + "shaders/subpasses/transparent.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+    shaderStages[1] = loadShader(getAssetPath() + "shaders/subpasses/transparent.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+
+    VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.transparent));
+  }*/
+
+
+
+
+
+
+
+
+
   void PipelineRepository::createStaticHeightmapTerrainPipeline(Common &ctxt) {
 
   }
@@ -474,5 +1118,8 @@ namespace at3::vkc {
   void PipelineRepository::reinit(Common &ctxt, uint32_t numTextures2D) {
     createStandardMeshPipeline(ctxt, numTextures2D);
     createStaticHeightmapTerrainPipeline(ctxt);
+  }
+  const VertexAttributes &PipelineRepository::getVertexAttributes() {
+    return *vertexAttributes;
   }
 }

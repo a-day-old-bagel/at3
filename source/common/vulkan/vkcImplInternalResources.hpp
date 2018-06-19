@@ -4,7 +4,8 @@ template<typename EcsInterface>
 uint32_t VulkanContext<EcsInterface>::make(
     MeshResource <EcsInterface> &outAsset, float *vertices, uint32_t vertexCount,
     uint32_t *indices, uint32_t indexCount) {
-  size_t vBufferSize = vertexRenderData()->vertexSize * vertexCount;
+//  size_t vBufferSize = vertexRenderData()->vertexSize * vertexCount;
+  size_t vBufferSize = pipelineRepo->getVertexAttributes().vertexSize * vertexCount;
   size_t iBufferSize = sizeof(uint32_t) * indexCount;
 
   MeshResource<EcsInterface> &m = outAsset;
@@ -51,7 +52,8 @@ MeshResources <EcsInterface> VulkanContext<EcsInterface>::loadMesh(
 
   std::vector<MeshResource<EcsInterface>> outMeshes;
 
-  const VertexRenderData *globalVertLayout = vertexRenderData();
+//  const VertexAttributes *globalVertLayout = vertexRenderData();
+  const VertexAttributes &globalVertLayout = pipelineRepo->getVertexAttributes();
 
   Assimp::Importer aiImporter;
   const struct aiScene *scene = NULL;
@@ -66,7 +68,7 @@ MeshResources <EcsInterface> VulkanContext<EcsInterface>::loadMesh(
   const aiColor4D ZeroColor(0.0, 0.0, 0.0, 0.0);
 
   if (scene) {
-    uint32_t floatsPerVert = globalVertLayout->vertexSize / sizeof(float);
+    uint32_t floatsPerVert = globalVertLayout.vertexSize / sizeof(float);
     std::vector<float> vertexBuffer;
     std::vector<uint32_t> indexBuffer;
     uint32_t numVerts = 0;
@@ -94,52 +96,47 @@ MeshResources <EcsInterface> VulkanContext<EcsInterface>::loadMesh(
         const aiVector3D *biTan = mesh->HasTangentsAndBitangents() ? &(mesh->mBitangents[vIdx]) : &ZeroVector;
         const aiColor4D *col = mesh->HasVertexColors(0) ? &(mesh->mColors[0][vIdx]) : &ZeroColor;
 
-        for (uint32_t lIdx = 0; lIdx < globalVertLayout->attrCount; ++lIdx) {
-          EMeshVertexAttribute comp = globalVertLayout->attributes[lIdx];
+        for (uint32_t lIdx = 0; lIdx < globalVertLayout.attrCount; ++lIdx) {
+          EMeshVertexAttribute comp = globalVertLayout.attributes[lIdx];
 
           switch (comp) {
             case EMeshVertexAttribute::POSITION: {
               vertexBuffer.push_back(pos->x);
               vertexBuffer.push_back(pos->y);
               vertexBuffer.push_back(pos->z);
-            };
-              break;
+            } break;
             case EMeshVertexAttribute::NORMAL: {
               vertexBuffer.push_back(nrm->x);
               vertexBuffer.push_back(nrm->y);
               vertexBuffer.push_back(nrm->z);
-            };
-              break;
+            } break;
             case EMeshVertexAttribute::UV0: {
               vertexBuffer.push_back(uv0->x);
               vertexBuffer.push_back(uv0->y);
-            };
-              break;
+            } break;
             case EMeshVertexAttribute::UV1: {
               vertexBuffer.push_back(uv1->x);
               vertexBuffer.push_back(uv1->y);
-            };
-              break;
+            } break;
             case EMeshVertexAttribute::TANGENT: {
               vertexBuffer.push_back(tan->x);
               vertexBuffer.push_back(tan->y);
               vertexBuffer.push_back(tan->z);
-            };
-              break;
+            } break;
             case EMeshVertexAttribute::BITANGENT: {
               vertexBuffer.push_back(biTan->x);
               vertexBuffer.push_back(biTan->y);
               vertexBuffer.push_back(biTan->z);
-            };
-              break;
-
+            } break;
             case EMeshVertexAttribute::COLOR: {
               vertexBuffer.push_back(col->r);
               vertexBuffer.push_back(col->g);
               vertexBuffer.push_back(col->b);
               vertexBuffer.push_back(col->a);
-            };
-              break;
+            } break;
+            default: {
+              AT3_ASSERT(false, "Invalid vertex attribute requested");
+            } break;
           }
 
         }

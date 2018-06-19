@@ -51,23 +51,6 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo <EcsInterface
     createFence(common.frameFences[i]);
   }
 
-  // Load the meshes into a repository
-  // TODO: put this crap in a proper repository like VkcTextureRepository does, do it when upgrading to gltf
-  std::vector<EMeshVertexAttribute> meshLayout;
-  meshLayout.push_back(EMeshVertexAttribute::POSITION);
-  meshLayout.push_back(EMeshVertexAttribute::UV0);
-  meshLayout.push_back(EMeshVertexAttribute::NORMAL);
-  setGlobalVertexLayout(meshLayout);
-  // Open every mesh in the mesh directory
-  // TODO: Handle the multiple-objects-in-one-file case (true -> false)?
-  for (auto &path : fs::recursive_directory_iterator("./assets/models")) {
-    if (getFileExtOnly(path) == ".dae") {
-      printf("\n%s:\nLoading Mesh: %s\n", getFileNameOnly(path).c_str(), getFileNameRelative(path).c_str());
-      meshRepo.emplace(getFileNameOnly(path), loadMesh(getFileNameRelative(path).c_str(), true));
-    }
-  }
-  printf("\n");
-
   // Load the textures into a repository
   // TODO: Synchronize texture loading (wait for it, ala loading screen). This might be causing the errors on fresh runs.
   TextureOperationInfo texOpInfo {};
@@ -80,12 +63,23 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo <EcsInterface
   texOpInfo.maxSamplerAnisotropy = common.gpu.deviceProps.limits.maxSamplerAnisotropy;
   textureRepo = std::make_unique<TextureRepository>("./assets/textures", texOpInfo);
 
-  // Create the paged UBO system for mesh instance data
-  dataStore = std::make_unique<UboPageMgr>(common);
-
   // Create the pipelines.
   // The number of textures that got loaded is needed for specialization constants.
   pipelineRepo = std::make_unique<PipelineRepository>(common, textureRepo->getDescriptorImageInfoArrayCount());
+
+  // Load the meshes into a repository
+  // TODO: put this crap in a proper repository like VkcTextureRepository does, do it when upgrading to gltf
+  // TODO: Handle the multiple-objects-in-one-file case (true -> false)?
+  for (auto &path : fs::recursive_directory_iterator("./assets/models")) {
+    if (getFileExtOnly(path) == ".dae") {
+      printf("\n%s:\nLoading Mesh: %s\n", getFileNameOnly(path).c_str(), getFileNameRelative(path).c_str());
+      meshRepo.emplace(getFileNameOnly(path), loadMesh(getFileNameRelative(path).c_str(), true));
+    }
+  }
+  printf("\n");
+
+  // Create the paged UBO system for mesh instance data
+  dataStore = std::make_unique<UboPageMgr>(common);
 
   // Create the frame and depth buffers, command buffers, and other things that depend on window size.
   // These will need to be recreated (by calling this function again) whenever the window size changes.

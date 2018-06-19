@@ -18,3 +18,5 @@
 // TODO: USE GLTF and PBR
 // TODO: investigate the need for custom allocators
 // TODO: find a drop-in replacement for std::vector
+// TODO: use GPUopen's vulkan memory manager https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+// TODO: use volk for loading function pointers for vulkan: https://github.com/zeux/volk
