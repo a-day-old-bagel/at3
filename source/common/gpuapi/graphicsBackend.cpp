@@ -62,8 +62,8 @@ namespace at3 {
           std::cerr << "Failed to change to windowed mode!" << std::endl;
         }
       } else {
-        if ( ! setFullscreenMode(settings::graphics::FULLSCREEN)) {
-          std::cerr << "Failed to change to fullscreen mode!" << std::endl;
+        if ( ! setFullscreenMode(settings::graphics::FAKED_FULLSCREEN)) {
+          std::cerr << "Failed to change to windowed fullscreen mode!" << std::endl;
         }
       }
     }
