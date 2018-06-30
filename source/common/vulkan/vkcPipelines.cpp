@@ -387,7 +387,7 @@ namespace at3::vkc {
       pipelineInfo.renderPass = info.renderPass;
       pipelineInfo.pDepthStencilState = &depthStencil;
 
-      pipelineInfo.subpass = 0;
+      pipelineInfo.subpass = info.subpass;
 
       // Can use this to create new pipelines by deriving from old ones
       pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -570,43 +570,40 @@ namespace at3::vkc {
 
 
 
-//  void PipelineRepository::setupDescriptorSetLayout(PipelineCreateInfo &info) {
-//
-//    std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings;
-//    {
-//      VkDescriptorSetLayoutBinding setLayoutBinding{};
-//      setLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-//      setLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-//      setLayoutBinding.binding = 0;
-//      setLayoutBinding.descriptorCount = 1;
-//      setLayoutBindings.push_back(setLayoutBinding);
-//    }
-//
-//    VkDescriptorSetLayoutCreateInfo descriptorLayout {};
-//    {
-//      descriptorLayout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-//      descriptorLayout.pBindings = setLayoutBindings.data();
-//      descriptorLayout.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
-//    }
-//
-//
-//
-//    VkResult res = vkCreateDescriptorSetLayout(info.ctxt->device, &descriptorLayout, nullptr, &descriptorSetLayouts.scene);
-//
-//    VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo =
-//        vks::initializers::pipelineLayoutCreateInfo(
-//            &descriptorSetLayouts.scene,
-//            1);
-//
-//    // Offscreen (scene) rendering pipeline layout
-//    VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pPipelineLayoutCreateInfo, nullptr, &pipelineLayouts.offscreen));
-//  }
+//  void PipelineRepository::setupDescriptorSetLayout(PipelineCreateInfo &info)
+  /*{
+    std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings;
+    {
+      VkDescriptorSetLayoutBinding setLayoutBinding{};
+      setLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+      setLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+      setLayoutBinding.binding = 0;
+      setLayoutBinding.descriptorCount = 1;
+      setLayoutBindings.push_back(setLayoutBinding);
+    }
+
+    VkDescriptorSetLayoutCreateInfo descriptorLayout {};
+    {
+      descriptorLayout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+      descriptorLayout.pBindings = setLayoutBindings.data();
+      descriptorLayout.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
+    }
 
 
 
+    VkResult res = vkCreateDescriptorSetLayout(info.ctxt->device, &descriptorLayout, nullptr, &descriptorSetLayouts.scene);
 
-/*  void PipelineRepository::setupDescriptorSet()
-  {
+    VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo =
+        vks::initializers::pipelineLayoutCreateInfo(
+            &descriptorSetLayouts.scene,
+            1);
+
+    // Offscreen (scene) rendering pipeline layout
+    VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pPipelineLayoutCreateInfo, nullptr, &pipelineLayouts.offscreen));
+  }*/
+
+//  void PipelineRepository::setupDescriptorSet()
+  /*{
     std::vector<VkWriteDescriptorSet> writeDescriptorSets;
 
     VkDescriptorSetAllocateInfo allocInfo =
@@ -626,10 +623,10 @@ namespace at3::vkc {
                 &uniformBuffers.GBuffer.descriptor)
         };
     vkUpdateDescriptorSets(device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
-  }
+  }*/
 
-  void PipelineRepository::preparePipelines(Common &ctxt, uint32_t texArrayLen)
-  {
+//  void PipelineRepository::preparePipelines(Common &ctxt, uint32_t texArrayLen)
+  /*{
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyState =
         vks::initializers::pipelineInputAssemblyStateCreateInfo(
             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
@@ -713,15 +710,16 @@ namespace at3::vkc {
     shaderStages[1] = loadShader(getAssetPath() + "shaders/subpasses/gbuffer.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
     VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.offscreen));
-  }
+  }*/
 
-  void PipelineRepository::setupRenderPass(Common &ctxt)
+  /*void PipelineRepository::setupRenderPass(Common &ctxt)
   {
-    createGBufferAttachments();
+//    createGBufferAttachments(); // Create attachments in vkc?
 
     std::array<VkAttachmentDescription, 5> attachments{};
     // Color attachment
-    attachments[0].format = swapChain.colorFormat;
+//    attachments[0].format = swapChain.colorFormat;
+    attachments[0].format = ctxt.swapChain.imageFormat;
     attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
     attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -732,7 +730,8 @@ namespace at3::vkc {
 
     // Deferred attachments
     // Position
-    attachments[1].format = this->attachments.position.format;
+//    attachments[1].format = this->attachments.position.format;
+    attachments[1].format = VK_FORMAT_R16G16B16A16_SFLOAT;
     attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
     attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -741,7 +740,8 @@ namespace at3::vkc {
     attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     attachments[1].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     // Normals
-    attachments[2].format = this->attachments.normal.format;
+//    attachments[2].format = this->attachments.normal.format;
+    attachments[2].format = VK_FORMAT_R16G16B16A16_SFLOAT;
     attachments[2].samples = VK_SAMPLE_COUNT_1_BIT;
     attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachments[2].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -750,7 +750,8 @@ namespace at3::vkc {
     attachments[2].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     attachments[2].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     // Albedo
-    attachments[3].format = this->attachments.albedo.format;
+//    attachments[3].format = this->attachments.albedo.format;
+    attachments[3].format = VK_FORMAT_R8G8B8A8_UNORM;
     attachments[3].samples = VK_SAMPLE_COUNT_1_BIT;
     attachments[3].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachments[3].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -759,7 +760,8 @@ namespace at3::vkc {
     attachments[3].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     attachments[3].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     // Depth attachment
-    attachments[4].format = depthFormat;
+//    attachments[4].format = depthFormat;
+    attachments[4].format = VK_FORMAT_D32_SFLOAT;
     attachments[4].samples = VK_SAMPLE_COUNT_1_BIT;
     attachments[4].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachments[4].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
