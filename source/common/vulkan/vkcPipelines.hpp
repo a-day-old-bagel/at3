@@ -15,8 +15,8 @@
 namespace at3::vkc {
 
   struct VShaderInput {
-    glm::mat4 model = glm::mat4(1.f);
-    glm::mat4 normal = glm::mat4(1.f);
+    glm::mat4 vp = glm::mat4(1.f);
+    glm::mat4 m = glm::mat4(1.f);
   };
 
   struct GlobalShaderData {
@@ -86,10 +86,8 @@ namespace at3::vkc {
       std::unique_ptr<VertexAttributes> vertexAttributes;
 
       void setVertexAttributes(std::vector<EMeshVertexAttribute> layout);
-      void createRenderPass(
-          Common &ctxt, VkRenderPass &outPass, std::vector<VkAttachmentDescription> &colorAttachments,
-          VkAttachmentDescription *depthAttachment);
-      void createMainRenderPass(Common &ctxt);
+
+      void createRenderPass(Common &ctxt);
 
       void createPipelineLayout(PipelineCreateInfo &info);
       void createPipeline(PipelineCreateInfo &info);

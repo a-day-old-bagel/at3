@@ -20,3 +20,5 @@
 // TODO: find a drop-in replacement for std::vector
 // TODO: use GPUopen's vulkan memory manager https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
 // TODO: use volk for loading function pointers for vulkan: https://github.com/zeux/volk
+// TODO: switch to using indirect draw to avoid per-instance draw calls, and possibly only need one call for all meshes.
+// TODO: move projection matrix into a global shared uniform thing to avoid duplicating data?

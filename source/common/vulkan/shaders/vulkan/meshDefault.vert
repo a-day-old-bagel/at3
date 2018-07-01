@@ -11,8 +11,8 @@ layout(location=0) out vec3 fragNorm;
 layout(location=1) out vec2 fragUV;
 
 struct transform {
-	mat4 mvp;
-	mat4 it_mv;
+	mat4 vp;
+	mat4 m;
 };
 layout(set = 0, binding = 0) uniform UboPage {
 	transform slot[512];
@@ -23,7 +23,9 @@ layout(push_constant) uniform InstanceIndices {
 
 void main() {
     uint index = indices.raw & 0x1FFu;
-    gl_Position = uboPage.slot[index].mvp * vec4(vertex, 1.0);
-	fragNorm =  (uboPage.slot[index].it_mv * vec4(normal, 0.0)).xyz;
+    gl_Position = uboPage.slot[index].vp * uboPage.slot[index].m * vec4(vertex, 1.0);
+//	fragNorm =  (uboPage.slot[index].it_mv * vec4(normal, 0.0)).xyz;
+//	fragNorm =  normalize((uboPage.slot[index].custom * vec4(normal, 0.0)).xyz);
+	fragNorm =  (uboPage.slot[index].m * vec4(normal, 0.0)).xyz;
 	fragUV = uv;
 }

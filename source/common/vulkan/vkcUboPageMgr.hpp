@@ -181,9 +181,9 @@ namespace at3::vkc {
             for (auto instance : mesh.instances) {
               glm::uint32 uboSlot = instance.indices.getSlot();
               glm::uint32 uboPage = instance.indices.getPage();
-              glm::mat4 modelViewMatrix = viewMatrix * ecs->getAbsTransform(instance.id);
-              objPtrs[uboPage][uboSlot].model = projMatrix * modelViewMatrix;
-              objPtrs[uboPage][uboSlot].normal = glm::transpose(glm::inverse(modelViewMatrix));
+              objPtrs[uboPage][uboSlot].vp = projMatrix * viewMatrix;
+//              objPtrs[uboPage][uboSlot].custom = glm::transpose(glm::inverse(modelViewMatrix));
+              objPtrs[uboPage][uboSlot].m = ecs->getAbsTransform(instance.id);
             }
           }
         }
