@@ -622,7 +622,7 @@ void VulkanContext<EcsInterface>::updateDescriptorSets(UboPageMgr *dataStore) {
   size_t newNumPages = dataStore->getNumPages();
 
   pipelineRepo->at(MESH).descSets.resize(newNumPages);
-  pipelineRepo->at(NORMAL).descSets.resize(newNumPages);
+  pipelineRepo->at(TRI_DEBUG).descSets.resize(newNumPages);
 
   for (size_t i = oldNumPages; i < newNumPages; ++i) {
 
@@ -641,10 +641,10 @@ void VulkanContext<EcsInterface>::updateDescriptorSets(UboPageMgr *dataStore) {
       VkDescriptorSetAllocateInfo allocInfo = {};
       allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
       allocInfo.descriptorPool = common.descriptorPool;
-      allocInfo.descriptorSetCount = static_cast<uint32_t>(pipelineRepo->at(NORMAL).descSetLayouts.size());
-      allocInfo.pSetLayouts = pipelineRepo->at(NORMAL).descSetLayouts.data();
+      allocInfo.descriptorSetCount = static_cast<uint32_t>(pipelineRepo->at(TRI_DEBUG).descSetLayouts.size());
+      allocInfo.pSetLayouts = pipelineRepo->at(TRI_DEBUG).descSetLayouts.data();
 
-      VkResult res = vkAllocateDescriptorSets(common.device, &allocInfo, &pipelineRepo->at(NORMAL).descSets[i]);
+      VkResult res = vkAllocateDescriptorSets(common.device, &allocInfo, &pipelineRepo->at(TRI_DEBUG).descSets[i]);
       AT3_ASSERT(res == VK_SUCCESS, "Error allocating global descriptor set");
     }
 
@@ -683,7 +683,7 @@ void VulkanContext<EcsInterface>::updateDescriptorSets(UboPageMgr *dataStore) {
       uboSetWriter.dstArrayElement = 0;
       uboSetWriter.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
       uboSetWriter.descriptorCount = 1;
-      uboSetWriter.dstSet = pipelineRepo->at(NORMAL).descSets[i];
+      uboSetWriter.dstSet = pipelineRepo->at(TRI_DEBUG).descSets[i];
       uboSetWriter.pBufferInfo = &bufferInfo;
       uboSetWriter.pImageInfo = nullptr;
     }
@@ -852,7 +852,7 @@ void VulkanContext<EcsInterface>::render(
   vkCmdNextSubpass(common.windowDependents.commandBuffers[imageIndex], VK_SUBPASS_CONTENTS_INLINE);
   currentlyBound = -1;
   vkCmdBindPipeline(common.windowDependents.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    pipelineRepo->at(NORMAL).handle);
+                    pipelineRepo->at(TRI_DEBUG).handle);
 
   for (auto pair : meshAssets) {
     for (auto mesh : pair.second) {
@@ -861,14 +861,14 @@ void VulkanContext<EcsInterface>::render(
 
         if (currentlyBound != uboPage) {
           vkCmdBindDescriptorSets(common.windowDependents.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                  pipelineRepo->at(NORMAL).layout, 0, 1,
-                                  &pipelineRepo->at(NORMAL).descSets[uboPage], 0, nullptr);
+                                  pipelineRepo->at(TRI_DEBUG).layout, 0, 1,
+                                  &pipelineRepo->at(TRI_DEBUG).descSets[uboPage], 0, nullptr);
           currentlyBound = uboPage;
         }
 
         vkCmdPushConstants(
             common.windowDependents.commandBuffers[imageIndex],
-            pipelineRepo->at(NORMAL).layout,
+            pipelineRepo->at(TRI_DEBUG).layout,
             VK_SHADER_STAGE_VERTEX_BIT,
             0,
             sizeof(MeshInstanceIndices::rawType),

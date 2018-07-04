@@ -120,8 +120,9 @@ namespace at3::vkc {
 
       uint32_t make(MeshResource<EcsInterface> &outAsset, float *vertices, uint32_t vertexCount, uint32_t *indices,
                     uint32_t indexCount);
-      MeshResources <EcsInterface> loadMesh(const char *filepath, bool combineSubMeshes);
-      void quad(MeshResource<EcsInterface> &outAsset, float width, float height, float xOffset, float yOffset);
+      MeshResources <EcsInterface> loadMesh(const char *filepath, bool combineSubMeshes,
+                                            bool storeTriangles = false);
+//      void quad(MeshResource<EcsInterface> &outAsset, float width, float height, float xOffset, float yOffset);
 
 
       void destroyWindowSizeDependents();

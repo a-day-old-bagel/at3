@@ -50,7 +50,7 @@ namespace at3::vkc {
 
   enum StandardPipeline {
     MESH = 0,
-    NORMAL,
+    TRI_DEBUG,
     SKYBOX,
     HEIGHT_TERRAIN,
     PIPELINE_COUNT,
@@ -97,7 +97,7 @@ namespace at3::vkc {
       void createDeferredGBufferPipeline(Common &ctxt, uint32_t texArrayLen);
       void createDeferredComposePipeline(Common &ctxt, uint32_t texArrayLen);
 
-      void createNormalDebugPipeline(Common &ctxt, uint32_t texArrayLen);
+      void createTriangleDebugPipeline(Common &ctxt, uint32_t texArrayLen);
       void createStaticHeightmapTerrainPipeline(Common &ctxt);
 
       void destroy(Common &ctxt);

@@ -517,7 +517,7 @@ namespace at3::vkc {
     // Create a defaultsampler
     VkSamplerCreateInfo samplerCreateInfo = {};
     samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+    samplerCreateInfo.magFilter = info.magFilterNearest ? VK_FILTER_NEAREST : VK_FILTER_LINEAR;
     samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
     samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
@@ -568,6 +568,8 @@ namespace at3::vkc {
   TextureRepository::TextureRepository(const std::string &textureDirectory, TextureOperationInfo &info) {
     for (auto &path : fs::recursive_directory_iterator(textureDirectory)) {
       if (getFileExtOnly(path) == ".ktx") {
+        printf("TEX: %s : %u\n", getFileNameOnly(path).c_str(), static_cast<unsigned>(getFileNameOnly(path).size()));
+        info.magFilterNearest = getFileNameOnly(path).size() < 3; // FIXME: This is going to irk somebody at some point.
         textures.emplace_back(getFileNameRelative(path), VK_FORMAT_R8G8B8A8_UNORM, info);
         registerNewTexture2D(&textures.back(), info, getFileNameOnly(path));
       }

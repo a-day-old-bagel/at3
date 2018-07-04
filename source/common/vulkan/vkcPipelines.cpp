@@ -5,9 +5,9 @@
 #include "meshDefault.vert.spv.c"
 #include "meshDefault.frag.spv.c"
 
-#include "normalDebug.vert.spv.c"
-#include "normalDebug.geom.spv.c"
-#include "normalDebug.frag.spv.c"
+#include "triangleDebug.vert.spv.c"
+#include "triangleDebug.geom.spv.c"
+#include "triangleDebug.frag.spv.c"
 
 namespace at3::vkc {
 
@@ -43,7 +43,7 @@ namespace at3::vkc {
 
     createRenderPass(ctxt);
     createStandardMeshPipeline(ctxt, numTextures2D);
-    createNormalDebugPipeline(ctxt, numTextures2D);
+    createTriangleDebugPipeline(ctxt, numTextures2D);
     createStaticHeightmapTerrainPipeline(ctxt);
   }
 
@@ -512,22 +512,22 @@ namespace at3::vkc {
 
 
 
-  void PipelineRepository::createNormalDebugPipeline(Common &ctxt, uint32_t texArrayLen) {
+  void PipelineRepository::createTriangleDebugPipeline(Common &ctxt, uint32_t texArrayLen) {
 
     // This is populated and then passed to createPipeline.
     PipelineCreateInfo info {};
 
     { // pipeline type, context, and renderpass
-      info.index = NORMAL;
+      info.index = TRI_DEBUG;
       info.ctxt = &ctxt;
       info.renderPass = mainRenderPass;
       info.subpass = 1;
     }
 
     { // Shaders
-      info.vertCode = {normalDebug_vert_spv, normalDebug_vert_spv_len};
-      info.geomCode = {normalDebug_geom_spv, normalDebug_geom_spv_len};
-      info.fragCode = {normalDebug_frag_spv, normalDebug_frag_spv_len};
+      info.vertCode = {triangleDebug_vert_spv, triangleDebug_vert_spv_len};
+      info.geomCode = {triangleDebug_geom_spv, triangleDebug_geom_spv_len};
+      info.fragCode = {triangleDebug_frag_spv, triangleDebug_frag_spv_len};
     }
 
     // Descriptor set layout bindings
@@ -1130,6 +1130,7 @@ namespace at3::vkc {
 
   void PipelineRepository::reinit(Common &ctxt, uint32_t numTextures2D) {
     createStandardMeshPipeline(ctxt, numTextures2D);
+    createTriangleDebugPipeline(ctxt, numTextures2D);
     createStaticHeightmapTerrainPipeline(ctxt);
   }
   const VertexAttributes &PipelineRepository::getVertexAttributes() {

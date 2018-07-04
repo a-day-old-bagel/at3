@@ -73,7 +73,13 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo <EcsInterface
   for (auto &path : fs::recursive_directory_iterator("./assets/models")) {
     if (getFileExtOnly(path) == ".dae") {
       printf("\n%s:\nLoading Mesh: %s\n", getFileNameOnly(path).c_str(), getFileNameRelative(path).c_str());
-      meshRepo.emplace(getFileNameOnly(path), loadMesh(getFileNameRelative(path).c_str(), true));
+      std::string name = getFileNameOnly(path);
+      bool useAsTerrain = name.substr(name.length() - 8, std::string::npos) == "Terrain";
+      if (useAsTerrain) {
+        printf("@@@@@@@@@@ FFFFFOOOOOOOOBBBBAAAAAARRRRR\n");
+        fflush(stdout);
+      }
+      meshRepo.emplace(getFileNameOnly(path), loadMesh(getFileNameRelative(path).c_str(), true, useAsTerrain));
     }
   }
   printf("\n");

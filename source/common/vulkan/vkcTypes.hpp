@@ -213,6 +213,9 @@ namespace at3::vkc {
     glm::vec3 max;
 
     std::vector<MeshInstance<EcsInterface>> instances;
+
+//    std::shared_ptr<std::vector<float>> storedVertices;
+//    std::shared_ptr<std::vector<uint32_t>> storedIndices;
   };
 
   // TODO: Get this disentangled from VulkanContext like TextureRepository, do it when upgrading to gltf

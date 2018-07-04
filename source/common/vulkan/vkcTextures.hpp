@@ -79,6 +79,7 @@ namespace at3::vkc {
     VkBool32 samplerAnisotropy = VK_FALSE;
     float maxSamplerAnisotropy = 0;
     bool forceLinear = false;
+    bool magFilterNearest = false;
   };
 
   struct Texture {

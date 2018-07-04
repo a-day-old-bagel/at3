@@ -107,8 +107,14 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
 
 
       if (settings::graphics::gpuApi == settings::graphics::VULKAN) {
-        testObj0 = std::make_shared<MeshObjectVk_>(vulkan.get(), "pyramid_bottom", start);
-        testObj1 = std::make_shared<MeshObjectVk_>(vulkan.get(), "pyramid_top", start);
+
+
+        glm::mat4 ark = glm::scale(glm::rotate(ident, (float)M_PI * .5f, {1.f, 0.f, 0.f}), {1.f, 1.f, 1.f});
+        testObj0 = std::make_shared<MeshObjectVk_>(vulkan.get(), "ark", ark);
+//        std::unique_ptr<btBvhTriangleMeshShape> bvhShape = std::make_unique<btBvhTriangleMeshShape>();
+
+
+        testObj1 = std::make_shared<MeshObjectVk_>(vulkan.get(), "pyramid_top", ident);
         testObj0->addChild(testObj1);
         scene.addObject(testObj0);
 

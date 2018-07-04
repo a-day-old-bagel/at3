@@ -4,7 +4,6 @@ template<typename EcsInterface>
 uint32_t VulkanContext<EcsInterface>::make(
     MeshResource <EcsInterface> &outAsset, float *vertices, uint32_t vertexCount,
     uint32_t *indices, uint32_t indexCount) {
-//  size_t vBufferSize = vertexRenderData()->vertexSize * vertexCount;
   size_t vBufferSize = pipelineRepo->getVertexAttributes().vertexSize * vertexCount;
   size_t iBufferSize = sizeof(uint32_t) * indexCount;
 
@@ -48,11 +47,10 @@ uint32_t VulkanContext<EcsInterface>::make(
 
 template<typename EcsInterface>
 MeshResources <EcsInterface> VulkanContext<EcsInterface>::loadMesh(
-    const char *filepath, bool combineSubMeshes) {
+    const char *filepath, bool combineSubMeshes, bool storeTriangles /*= false*/) {
 
   std::vector<MeshResource<EcsInterface>> outMeshes;
 
-//  const VertexAttributes *globalVertLayout = vertexRenderData();
   const VertexAttributes &globalVertLayout = pipelineRepo->getVertexAttributes();
 
   Assimp::Importer aiImporter;
@@ -142,6 +140,10 @@ MeshResources <EcsInterface> VulkanContext<EcsInterface>::loadMesh(
         }
       }
 
+//      if (storeTriangles) {
+//        printf("Storing triangles of %s for later use.\n", filepath);
+//      }
+
       for (unsigned int fIdx = 0; fIdx < mesh->mNumFaces; fIdx++) {
         const aiFace &face = mesh->mFaces[fIdx];
         AT3_ASSERT(face.mNumIndices == 3, "unsupported number of indices in mesh face");
@@ -156,11 +158,19 @@ MeshResources <EcsInterface> VulkanContext<EcsInterface>::loadMesh(
 
       if (!combineSubMeshes) {
         make(outMeshes[mIdx], vertexBuffer.data(), numVerts, indexBuffer.data(), indexBuffer.size());
+//        if (storeTriangles) {
+//          outMeshes[mIdx].storedVertices = std::make_shared<std::vector<float>>(vertexBuffer);
+//          outMeshes[mIdx].storedIndices = std::make_shared<std::vector<uint32_t>>(indexBuffer);
+//        }
       }
     }
 
     if (combineSubMeshes) {
       make(outMeshes[0], vertexBuffer.data(), numVerts, indexBuffer.data(), indexBuffer.size());
+//      if (storeTriangles) {
+//        outMeshes[0].storedVertices = std::make_shared<std::vector<float>>(vertexBuffer);
+//        outMeshes[0].storedIndices = std::make_shared<std::vector<uint32_t>>(indexBuffer);
+//      }
     }
   }
 
