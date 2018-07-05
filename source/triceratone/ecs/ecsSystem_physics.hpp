@@ -26,7 +26,7 @@ namespace at3 {
       btBroadphaseInterface *broadphase;
       btConstraintSolver *solver;
       btCollisionConfiguration *collisionConfiguration;
-      btDynamicsWorld *dynamicsWorld;
+//      btDynamicsWorld *dynamicsWorld;
       btVehicleRaycaster * vehicleRaycaster;
       bool debugDrawMode = false;
 
@@ -38,6 +38,9 @@ namespace at3 {
       btRigidBody* groundRigidBody;
 
     public:
+
+      btDynamicsWorld *dynamicsWorld; // TODO: put back in private
+
       std::vector<compMask> requiredComponents = {
               PHYSICS,
               PHYSICS | PYRAMIDCONTROLS,

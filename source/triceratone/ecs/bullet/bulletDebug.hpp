@@ -28,8 +28,8 @@ namespace at3 {
   /**
    * Conversion from Bullet vector structures to glm vector structures
    */
-  glm::vec3 bulletToGlm(const btVector3& vec);
-  btVector3 glmToBullet(const glm::vec3& vec);
+  glm::vec3 btToGlm(const btVector3 &vec);
+  btVector3 glmToBt(const glm::vec3 &vec);
 
   /**
    * Allows bullet to draw debug stuff with our graphics backend.
@@ -63,14 +63,14 @@ namespace at3 {
           const glm::vec3 &color);
     public:
       BulletDebug();
-      virtual void drawLine(const btVector3& from,const btVector3& to,const btVector3& color);
+      void drawLine(const btVector3& from,const btVector3& to,const btVector3& color) override;
       void drawLineGlm(const glm::vec3& from,const glm::vec3& to,const glm::vec3& color);
-      virtual void drawContactPoint(const btVector3& pointOnB,const btVector3& normalOnB,btScalar distance,
-                                    int lifeTime,const btVector3& color);
-      virtual void reportErrorWarning(const char* warningString);
-      virtual void draw3dText(const btVector3& location,const char* textString);
-      virtual void setDebugMode(int debugMode);
-      virtual inline int getDebugMode() const;
+      void drawContactPoint(const btVector3& pointOnB,const btVector3& normalOnB,btScalar distance,
+                                    int lifeTime,const btVector3& color) override;
+      void reportErrorWarning(const char* warningString) override;
+      void draw3dText(const btVector3& location,const char* textString) override;
+      void setDebugMode(int debugMode) override;
+      inline int getDebugMode() const override;
       void draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
                 bool debug);
   };
@@ -85,7 +85,7 @@ namespace at3 {
 
   template <typename EcsInterface>
   void BulletDebug<EcsInterface>::drawLine(const btVector3 &from, const btVector3 &to, const btVector3 &color) {
-    m_queueLine(bulletToGlm(from), bulletToGlm(to), bulletToGlm(color));
+    m_queueLine(btToGlm(from), btToGlm(to), btToGlm(color));
   }
 
   template <typename EcsInterface>
@@ -96,7 +96,7 @@ namespace at3 {
   template <typename EcsInterface>
   void BulletDebug<EcsInterface>::drawContactPoint(const btVector3 &pointOnB, const btVector3 &normalOnB, btScalar distance,
                                                           int lifeTime, const btVector3 &color) {
-    m_queuePoint(bulletToGlm(pointOnB), bulletToGlm(normalOnB));
+    m_queuePoint(btToGlm(pointOnB), btToGlm(normalOnB));
   }
   template <typename EcsInterface>
   void BulletDebug<EcsInterface>::reportErrorWarning(const char *warningString) {

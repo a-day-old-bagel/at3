@@ -1,15 +1,16 @@
 #pragma once
 
 template<typename EcsInterface>
-uint32_t VulkanContext<EcsInterface>::make(
-    MeshResource <EcsInterface> &outAsset, float *vertices, uint32_t vertexCount,
-    uint32_t *indices, uint32_t indexCount) {
-  size_t vBufferSize = pipelineRepo->getVertexAttributes().vertexSize * vertexCount;
-  size_t iBufferSize = sizeof(uint32_t) * indexCount;
+MeshResource<EcsInterface> VulkanContext<EcsInterface>::loadMeshFromData(
+    const std::vector<float> &vertices, const std::vector<uint32_t> &indices) {
 
-  MeshResource<EcsInterface> &m = outAsset;
-  m.iCount = indexCount;
-  m.vCount = vertexCount;
+  size_t numVertices = vertices.size() / (pipelineRepo->getVertexAttributes().vertexSize / sizeof(float));
+  size_t vBufferSize = pipelineRepo->getVertexAttributes().vertexSize * numVertices;
+  size_t iBufferSize = sizeof(uint32_t) * indices.size();
+
+  MeshResource<EcsInterface> m;
+  m.vCount = static_cast<uint32_t>(numVertices);
+  m.iCount = static_cast<uint32_t>(indices.size());
 
   createBuffer(m.buffer, m.bufferMemory, vBufferSize + iBufferSize,
                VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
@@ -19,6 +20,7 @@ uint32_t VulkanContext<EcsInterface>::make(
   VkBuffer stagingBuffer;
   Allocation stagingMemory;
 
+  // TODO: put all mesh data in the same buffer
   createBuffer(stagingBuffer, stagingMemory, vBufferSize + iBufferSize,
                VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -26,11 +28,11 @@ uint32_t VulkanContext<EcsInterface>::make(
   void *data;
 
   vkMapMemory(common.device, stagingMemory.handle, stagingMemory.offset, vBufferSize, 0, &data);
-  memcpy(data, vertices, (size_t) vBufferSize);
+  memcpy(data, vertices.data(), vBufferSize);
   vkUnmapMemory(common.device, stagingMemory.handle);
 
   vkMapMemory(common.device, stagingMemory.handle, stagingMemory.offset + vBufferSize, iBufferSize, 0, &data);
-  memcpy(data, indices, (size_t) iBufferSize);
+  memcpy(data, indices.data(), iBufferSize);
   vkUnmapMemory(common.device, stagingMemory.handle);
 
   //copy to device local here
@@ -39,14 +41,14 @@ uint32_t VulkanContext<EcsInterface>::make(
   vkDestroyBuffer(common.device, stagingBuffer, nullptr);
 
   m.vOffset = 0;
-  m.iOffset = vBufferSize;
+  m.iOffset = static_cast<uint32_t>(vBufferSize);
 
-  return 0;
+  return m;
 
 }
 
 template<typename EcsInterface>
-MeshResources <EcsInterface> VulkanContext<EcsInterface>::loadMesh(
+MeshResources <EcsInterface> VulkanContext<EcsInterface>::loadMeshFromFile(
     const char *filepath, bool combineSubMeshes, bool storeTriangles /*= false*/) {
 
   std::vector<MeshResource<EcsInterface>> outMeshes;
@@ -70,19 +72,17 @@ MeshResources <EcsInterface> VulkanContext<EcsInterface>::loadMesh(
     std::vector<float> vertexBuffer;
     std::vector<uint32_t> indexBuffer;
     uint32_t numVerts = 0;
-    uint32_t numFaces = 0;
 
     outMeshes.resize(combineSubMeshes ? 1 : scene->mNumMeshes);
 
-    for (uint32_t mIdx = 0; mIdx < scene->mNumMeshes; mIdx++) {
+    for (uint32_t i = 0; i < scene->mNumMeshes; i++) {
       if (!combineSubMeshes) {
         vertexBuffer.clear();
         indexBuffer.clear();
         numVerts = 0;
-        numFaces = 0;
       }
 
-      const aiMesh *mesh = scene->mMeshes[mIdx];
+      const aiMesh *mesh = scene->mMeshes[i];
 
       for (uint32_t vIdx = 0; vIdx < mesh->mNumVertices; ++vIdx) {
 
@@ -140,10 +140,6 @@ MeshResources <EcsInterface> VulkanContext<EcsInterface>::loadMesh(
         }
       }
 
-//      if (storeTriangles) {
-//        printf("Storing triangles of %s for later use.\n", filepath);
-//      }
-
       for (unsigned int fIdx = 0; fIdx < mesh->mNumFaces; fIdx++) {
         const aiFace &face = mesh->mFaces[fIdx];
         AT3_ASSERT(face.mNumIndices == 3, "unsupported number of indices in mesh face");
@@ -154,23 +150,22 @@ MeshResources <EcsInterface> VulkanContext<EcsInterface>::loadMesh(
       }
 
       numVerts += mesh->mNumVertices;
-      numFaces += mesh->mNumFaces;
 
       if (!combineSubMeshes) {
-        make(outMeshes[mIdx], vertexBuffer.data(), numVerts, indexBuffer.data(), indexBuffer.size());
-//        if (storeTriangles) {
-//          outMeshes[mIdx].storedVertices = std::make_shared<std::vector<float>>(vertexBuffer);
-//          outMeshes[mIdx].storedIndices = std::make_shared<std::vector<uint32_t>>(indexBuffer);
-//        }
+        outMeshes[i] = loadMeshFromData(vertexBuffer, indexBuffer);
+        if (storeTriangles) {
+          outMeshes[i].storedVertices = std::make_shared<std::vector<float>>(vertexBuffer);
+          outMeshes[i].storedIndices = std::make_shared<std::vector<uint32_t>>(indexBuffer);
+        }
       }
     }
 
     if (combineSubMeshes) {
-      make(outMeshes[0], vertexBuffer.data(), numVerts, indexBuffer.data(), indexBuffer.size());
-//      if (storeTriangles) {
-//        outMeshes[0].storedVertices = std::make_shared<std::vector<float>>(vertexBuffer);
-//        outMeshes[0].storedIndices = std::make_shared<std::vector<uint32_t>>(indexBuffer);
-//      }
+      outMeshes[0] = loadMeshFromData(vertexBuffer, indexBuffer);
+      if (storeTriangles) {
+        outMeshes[0].storedVertices = std::make_shared<std::vector<float>>(vertexBuffer);
+        outMeshes[0].storedIndices = std::make_shared<std::vector<uint32_t>>(indexBuffer);
+      }
     }
   }
 

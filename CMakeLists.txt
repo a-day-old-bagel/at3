@@ -9,8 +9,6 @@ set( CMAKE_DISABLE_SOURCE_CHANGES ON )
 set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_STANDARD_REQUIRED ON )
 
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++latest" )
-
 # Name the project and set a prefix for naming internal targets and variables
 project( at3 VERSION 0.01.01.01 LANGUAGES CXX C )
 set( AT3_TARGET_PREFIX at3_ )

@@ -70,16 +70,25 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo <EcsInterface
   // Load the meshes into a repository
   // TODO: put this crap in a proper repository like VkcTextureRepository does, do it when upgrading to gltf
   // TODO: Handle the multiple-objects-in-one-file case (true -> false)?
+  {// Load a kludgy triangle to be used for debug lines
+    std::vector<float> verts = {
+        0.0, 0.0, 0.0,    0.0, 0.5,    -0.57735, -0.57735, 0.57735,
+        1.0, 1.0, 1.0,    10., 0.5,    -0.666667, 0.666667, -0.333333,
+        0.5, .46, 0.5,    5.0, 0.5,    0.666667, -0.666667, -0.333333,
+    };
+    std::vector<uint32_t> indices = { 1, 2, 3, 1, 3, 2 };
+    MeshResources<EcsInterface> resources;
+    resources.emplace_back(loadMeshFromData(verts, indices));
+    meshRepo.emplace("debug", resources);
+  }
   for (auto &path : fs::recursive_directory_iterator("./assets/models")) {
     if (getFileExtOnly(path) == ".dae") {
       printf("\n%s:\nLoading Mesh: %s\n", getFileNameOnly(path).c_str(), getFileNameRelative(path).c_str());
-      std::string name = getFileNameOnly(path);
-      bool useAsTerrain = name.substr(name.length() - 8, std::string::npos) == "Terrain";
+      bool useAsTerrain = getFileNameOnly(path).substr(0, 7) == "terrain";
       if (useAsTerrain) {
-        printf("@@@@@@@@@@ FFFFFOOOOOOOOBBBBAAAAAARRRRR\n");
-        fflush(stdout);
+        printf("Storing triangles of %s for use as a static terrain.\n", getFileNameOnly(path).c_str());
       }
-      meshRepo.emplace(getFileNameOnly(path), loadMesh(getFileNameRelative(path).c_str(), true, useAsTerrain));
+      meshRepo.emplace(getFileNameOnly(path), loadMeshFromFile(getFileNameRelative(path).c_str(), true, useAsTerrain));
     }
   }
   printf("\n");
@@ -122,6 +131,7 @@ void VulkanContext<EcsInterface>::reInitRendering() {
 template<typename EcsInterface>
 void VulkanContext<EcsInterface>::registerMeshInstance(
     const typename EcsInterface::EcsId id, const std::string &meshFileName, const std::string &textureFileName) {
+  AT3_ASSERT(meshRepo.count(meshFileName), "No mesh file \"%s\" found\n!", meshFileName.c_str());
   for (auto &mesh : meshRepo.at(meshFileName)) {
     MeshInstance<EcsInterface> instance;
     UboPageMgr::AcquireStatus didAcquire = dataStore->acquire(instance.indices);
@@ -133,9 +143,29 @@ void VulkanContext<EcsInterface>::registerMeshInstance(
     if (textureFileName.length() && textureRepo->textureExists(textureFileName)) {
       instance.indices.setTexture(textureRepo->getTextureArrayIndex(textureFileName));
     } else {
-      instance.indices.setTexture(0u);  // The first texture will be used. Recommend using that slot for debug texture.
+      instance.indices.setTexture(0u);  // The first texture will be used (probably "0.ktx", alphabetically, or debug).
       printf("No texture applied to mesh: %s\n", meshFileName.c_str());
     }
     mesh.instances.push_back(instance);
+  }
+}
+
+template<typename EcsInterface>
+std::vector<float> * VulkanContext<EcsInterface>::getMeshStoredVertices(const std::string &meshName,
+                                                                        const uint32_t internalIndex /*= 0*/) {
+  if(meshRepo.count(meshName)) {
+    return meshRepo.at(meshName).at(internalIndex).storedVertices.get();
+  } else {
+    return nullptr;
+  }
+}
+
+template<typename EcsInterface>
+std::vector<uint32_t> * VulkanContext<EcsInterface>::getMeshStoredIndices(const std::string &meshName,
+                                                                          const uint32_t internalIndex /*= 0*/) {
+  if(meshRepo.count(meshName)) {
+    return meshRepo.at(meshName).at(internalIndex).storedIndices.get();
+  } else {
+    return nullptr;
   }
 }

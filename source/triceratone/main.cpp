@@ -48,7 +48,7 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
 
     std::shared_ptr<SceneObject_> freeCam;
     std::shared_ptr<PerspectiveCamera_> camera;
-    std::shared_ptr<MeshObjectVk_> testObj0;
+    std::shared_ptr<MeshObjectVk_> terrainArk;
     std::shared_ptr<MeshObjectVk_> testObj1;
     std::unique_ptr<PyramidVk> pyramidVk;
     std::unique_ptr<DuneBuggyVk> duneBuggyVk;
@@ -63,6 +63,10 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
     std::unique_ptr<DuneBuggy>       duneBuggy;
     std::shared_ptr<DebugStuff>      debugStuff;
 
+    std::unique_ptr<btTriangleMesh> arkMesh;
+    std::unique_ptr<btCollisionShape> arkShape;
+    std::unique_ptr<btRigidBody> arkRigidBody;
+    std::unique_ptr<btDefaultMotionState> arkState;
 
   public:
 
@@ -109,14 +113,67 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       if (settings::graphics::gpuApi == settings::graphics::VULKAN) {
 
 
-        glm::mat4 ark = glm::scale(glm::rotate(ident, (float)M_PI * .5f, {1.f, 0.f, 0.f}), {1.f, 1.f, 1.f});
-        testObj0 = std::make_shared<MeshObjectVk_>(vulkan.get(), "ark", ark);
-//        std::unique_ptr<btBvhTriangleMeshShape> bvhShape = std::make_unique<btBvhTriangleMeshShape>();
+        glm::vec3 arkScale = {1.f, 1.f, 1.f};
+        glm::mat4 arkMat = glm::scale(glm::rotate(ident, (float)M_PI * .5f, {1.f, 0.f, 0.f}), arkScale);
+        terrainArk = std::make_shared<MeshObjectVk_>(vulkan.get(), "terrainArk", arkMat);
+        arkMesh = std::make_unique<btTriangleMesh>();
+
+        std::vector<float> &verts = *(vulkan->getMeshStoredVertices("terrainArk"));
+        std::vector<uint32_t> &indices = *(vulkan->getMeshStoredIndices("terrainArk"));
+
+//        for (uint32_t i = 0; i < verts.size(); i += 3) {
+//          arkMesh->findOrAddVertex({verts[i], verts[i + 1], verts[i + 2]}, false);
+//        }
+//        for (uint32_t i = 0; i < indices.size(); i += 3) {
+//          arkMesh->addTriangleIndices(indices[i], indices[i + 1], indices[i + 2]);
+//        }
+
+//        for (uint32_t i = 0; i < indices.size(); i += 3) {
+//          arkMesh->addTriangle(
+//              {verts[indices[i + 0] * 3 + 0], verts[indices[i + 0] * 3 + 1], verts[indices[i + 0] * 3 + 2]},
+//              {verts[indices[i + 1] * 3 + 0], verts[indices[i + 1] * 3 + 1], verts[indices[i + 1] * 3 + 2]},
+//              {verts[indices[i + 2] * 3 + 0], verts[indices[i + 2] * 3 + 1], verts[indices[i + 2] * 3 + 2]}
+//          );
+//        }
+
+        arkMesh->findOrAddVertex({ 20,  20, 0}, false);
+        arkMesh->findOrAddVertex({-20,  20, 0}, false);
+        arkMesh->findOrAddVertex({ 20, -20, 0}, false);
+        arkMesh->findOrAddVertex({-20, -20, 0}, false);
+        arkMesh->addTriangleIndices(0, 1, 2);
+        arkMesh->addTriangleIndices(2, 1, 3);
+
+        arkShape = std::make_unique<btBvhTriangleMeshShape>(arkMesh.get(), true);
+
+//        arkShape->setLocalScaling({arkScale.x, arkScale.y, arkScale.z});
+//        arkState = std::make_unique<btDefaultMotionState>(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 0, 0)));
+
+        arkState = std::make_unique<btDefaultMotionState>(btTransform(btMatrix3x3(1, 0, 0, 0, 1, 0, 0, 0, 1)));
+
+//        btTransform transform;
+//        transform.setFromOpenGLMatrix((btScalar *) &arkMat);
+//        arkState = std::make_unique<btDefaultMotionState>(transform);
+
+        btRigidBody::btRigidBodyConstructionInfo terrainRBCI(0, arkState.get(), arkShape.get(), btVector3(0, 0, 0));
+        arkRigidBody = std::make_unique<btRigidBody>(terrainRBCI);
+        arkRigidBody->setRestitution(0.5f);
+        arkRigidBody->setFriction(1.f);
+//        arkRigidBody->setCollisionFlags(arkRigidBody->getCollisionFlags()
+//                                        | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK
+//                                        /*| btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT*/);
+        arkRigidBody->setUserIndex(-(int)terrainArk->getId()); // negative number for static object
+        physicsSystem.dynamicsWorld->addRigidBody(arkRigidBody.get());
 
 
-        testObj1 = std::make_shared<MeshObjectVk_>(vulkan.get(), "pyramid_top", ident);
-        testObj0->addChild(testObj1);
-        scene.addObject(testObj0);
+
+
+
+
+
+
+        testObj1 = std::make_shared<MeshObjectVk_>(vulkan.get(), "debug", "pyramid_flames", ident);
+        terrainArk->addChild(testObj1);
+        scene.addObject(terrainArk);
 
         glm::mat4 playerMat = glm::translate(ident, {0.f, -10.f, 0.f});
         playerVk = std::make_unique<BasicWalkerVk>(state, vulkan.get(), scene, playerMat);
