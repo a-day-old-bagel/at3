@@ -50,13 +50,14 @@ namespace at3::vkc {
           const std::string &meshFileName,
           const std::string &textureFileName = "");
       std::vector<float> * getMeshStoredVertices(const std::string &meshName, const uint32_t internalIndex = 0);
+      uint32_t getMeshStoredVertexStride();
       std::vector<uint32_t> * getMeshStoredIndices(const std::string &meshName, const uint32_t internalIndex = 0);
 
     private:
 
-      EcsInterface *ecs;
       Common common;
       std::unique_ptr<UboPageMgr> dataStore;
+      EcsInterface *ecs;
 
       MeshRepository<EcsInterface> meshRepo;
       std::unique_ptr<TextureRepository> textureRepo;

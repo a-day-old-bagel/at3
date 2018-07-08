@@ -85,6 +85,7 @@ namespace at3 {
 
   template <typename EcsInterface>
   void Scene<EcsInterface>::clear() {
+    printf("Scene is being cleared.\n");
     objects.clear();
   }
 

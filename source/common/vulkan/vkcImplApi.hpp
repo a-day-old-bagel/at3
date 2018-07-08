@@ -72,9 +72,9 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo <EcsInterface
   // TODO: Handle the multiple-objects-in-one-file case (true -> false)?
   {// Load a kludgy triangle to be used for debug lines
     std::vector<float> verts = {
-        0.0, 0.0, 0.0,    0.0, 0.5,    -0.57735, -0.57735, 0.57735,
-        1.0, 1.0, 1.0,    10., 0.5,    -0.666667, 0.666667, -0.333333,
-        0.5, .46, 0.5,    5.0, 0.5,    0.666667, -0.666667, -0.333333,
+        0.0f, 0.0f, 0.0f,    0.0f, 0.f,    -0.57735f, -0.57735f, 0.57735f,
+        1.0f, 1.0f, 1.0f,    10.f, 0.f,    -0.666667f, 0.666667f, -0.333333f,
+        0.5f, .46f, 0.5f,    5.0f, 0.f,    0.666667f, -0.666667f, -0.333333f,
     };
     std::vector<uint32_t> indices = { 1, 2, 3, 1, 3, 2 };
     MeshResources<EcsInterface> resources;
@@ -103,7 +103,7 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo <EcsInterface
 
 template<typename EcsInterface>
 VulkanContext<EcsInterface>::~VulkanContext() {
-
+  printf("VulkanContext is being deconstructed.\n");
 }
 
 template<typename EcsInterface>
@@ -168,4 +168,10 @@ std::vector<uint32_t> * VulkanContext<EcsInterface>::getMeshStoredIndices(const 
   } else {
     return nullptr;
   }
+}
+
+template<typename EcsInterface>
+uint32_t VulkanContext<EcsInterface>::getMeshStoredVertexStride() {
+
+  return pipelineRepo->getVertexAttributes().vertexSize;
 }
