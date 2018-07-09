@@ -172,6 +172,5 @@ std::vector<uint32_t> * VulkanContext<EcsInterface>::getMeshStoredIndices(const 
 
 template<typename EcsInterface>
 uint32_t VulkanContext<EcsInterface>::getMeshStoredVertexStride() {
-
   return pipelineRepo->getVertexAttributes().vertexSize;
 }

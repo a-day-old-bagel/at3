@@ -102,7 +102,10 @@ namespace at3 {
 
   void PyramidVk::spawnSphere() {
     Placement *source;
-    state->get_Placement(base->getId(), &source);
+    state->get_Placement(ctrlId, &source);
+    Physics *sourcePhysics;
+    state->get_Physics(ctrlId, &sourcePhysics);
+
     glm::mat4 sourceMat = glm::translate(source->mat, {0.f, 0.f, 3.f});
     spheres.push_back(std::shared_ptr<MeshObjectVk_>(
         new MeshObjectVk_(vkc, "sphere", "pyramid_flames", sourceMat, MeshObjectVk_::FULLBRIGHT)));
@@ -110,7 +113,7 @@ namespace at3 {
     state->add_Physics(spheres.back()->getId(), 5.f, &sphereRadius, Physics::SPHERE);
     Physics *physics;
     state->get_Physics(spheres.back()->getId(), &physics);
-    physics->rigidBody->applyCentralImpulse({0.f, 0.f, 1.f});
+    physics->rigidBody->setLinearVelocity(sourcePhysics->rigidBody->getLinearVelocity() );//+ btVector3(0.f, 0.f, 1.f));
     scene->addObject(spheres.back());
   }
 

@@ -67,7 +67,8 @@ namespace at3 {
     dispatcher = new btCollisionDispatcher(collisionConfiguration);
     solver = new btSequentialImpulseConstraintSolver();
     dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
-    dynamicsWorld->setGravity(btVector3(0.0f, 0.0f, -9.81f));
+    dynamicsWorld->setGravity(btVector3(0.f, 0.f, -9.81f));
+//    dynamicsWorld->setGravity(btVector3(0.f, 0.f, 0.f));
     vehicleRaycaster = new btDefaultVehicleRaycaster(dynamicsWorld);
 
     // prevent backface collisions with anything that uses the custom collision callback (like terrain)
@@ -75,19 +76,6 @@ namespace at3 {
 
     // set up ghost object collision detection
     dynamicsWorld->getPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
-
-//    if (settings::graphics::gpuApi == settings::graphics::VULKAN) {
-//      // Create a ground object
-//      planeShape = new btStaticPlaneShape(btVector3(0.f, 0.f, 1.f), 0.f);
-//      groundMotionState = new btDefaultMotionState(btTransform(
-//          btQuaternion(0.f, 0.f, 0.f, 1.f),
-//          btVector3(0.f, 0.f, 0.f)));
-//      btRigidBody::btRigidBodyConstructionInfo groundRigidBodyCI(0, groundMotionState, planeShape, btVector3(0, 0, 0));
-//      groundRigidBody = new btRigidBody(groundRigidBodyCI);
-//      groundRigidBody->setRestitution(0.5f);
-//      groundRigidBody->setFriction(1.f);
-//      dynamicsWorld->addRigidBody(groundRigidBody);
-//    }
 
     return true;
   }
@@ -318,6 +306,14 @@ namespace at3 {
         } break;
         default: {
           physics->rigidBody->getMotionState()->getWorldTransform(transform);
+
+//          btVector3 grav = physics->rigidBody->getCenterOfMassPosition();
+//          grav.setY(0.f);
+//          float gravScalar = grav.length() / 160.f;
+//          grav.setX(grav.x() * gravScalar);
+//          grav.setZ(grav.z() * gravScalar);
+//          physics->rigidBody->setGravity(grav);
+
         } break;
       }
       transform.getOpenGLMatrix((btScalar *) &newTransform);
