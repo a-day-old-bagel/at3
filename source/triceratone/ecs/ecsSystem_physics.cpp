@@ -67,8 +67,8 @@ namespace at3 {
     dispatcher = new btCollisionDispatcher(collisionConfiguration);
     solver = new btSequentialImpulseConstraintSolver();
     dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
-    dynamicsWorld->setGravity(btVector3(0.f, 0.f, -9.81f));
-//    dynamicsWorld->setGravity(btVector3(0.f, 0.f, 0.f));
+//    dynamicsWorld->setGravity(btVector3(0.f, 0.f, -9.81f));
+    dynamicsWorld->setGravity(btVector3(0.f, 0.f, 0.f));
     vehicleRaycaster = new btDefaultVehicleRaycaster(dynamicsWorld);
 
     // prevent backface collisions with anything that uses the custom collision callback (like terrain)
@@ -291,7 +291,6 @@ namespace at3 {
       Placement *placement;
       state->get_Placement(id, &placement);
       btTransform transform;
-      glm::mat4 newTransform(1.f);
       switch (physics->geom) {
         case Physics::WHEEL: {
           WheelInfo wi = *((WheelInfo*)physics->customData);
@@ -305,17 +304,20 @@ namespace at3 {
           }
         } break;
         default: {
+          if ( ! physics->rigidBody->isActive()) { continue; }
+
           physics->rigidBody->getMotionState()->getWorldTransform(transform);
 
-//          btVector3 grav = physics->rigidBody->getCenterOfMassPosition();
-//          grav.setY(0.f);
-//          float gravScalar = grav.length() / 160.f;
-//          grav.setX(grav.x() * gravScalar);
-//          grav.setZ(grav.z() * gravScalar);
-//          physics->rigidBody->setGravity(grav);
+          btVector3 grav = physics->rigidBody->getCenterOfMassPosition();
+          grav.setY(0.f);
+          float gravScalar = 9.81f * (grav.length() / 2000.f);
+          grav.setX(grav.x() * gravScalar);
+          grav.setZ(grav.z() * gravScalar);
+          physics->rigidBody->setGravity(grav);
 
         } break;
       }
+      glm::mat4 newTransform(1.f);
       transform.getOpenGLMatrix((btScalar *) &newTransform);
       placement->mat = newTransform;
     }

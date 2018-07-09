@@ -72,19 +72,11 @@ namespace at3 {
 
     sdlc = std::make_unique<SdlContext>(appName);
 
-    switch (settings::graphics::gpuApi) {
-      case settings::graphics::OPENGL_OPENCL: {
-        if (!graphicsBackend::init(sdlc->getWindow())) { return false; }
-      } break;
-      case settings::graphics::VULKAN: {
-        vkc::VulkanContextCreateInfo<EcsInterface> contextCreateInfo =
-            vkc::VulkanContextCreateInfo<EcsInterface>::defaults();
-        contextCreateInfo.window = sdlc->getWindow();
-        contextCreateInfo.ecs = &ecsInterface;
-        vulkan = std::make_unique<vkc::VulkanContext<EcsInterface>>(contextCreateInfo);
-      }
-      default: break;
-    }
+    vkc::VulkanContextCreateInfo<EcsInterface> contextCreateInfo =
+        vkc::VulkanContextCreateInfo<EcsInterface>::defaults();
+    contextCreateInfo.window = sdlc->getWindow();
+    contextCreateInfo.ecs = &ecsInterface;
+    vulkan = std::make_unique<vkc::VulkanContext<EcsInterface>>(contextCreateInfo);
 
     return derived().onInit();
   }
@@ -98,34 +90,17 @@ namespace at3 {
   void Game<EcsInterface, Derived>::deInit() {
     isQuit = true;
     currentCamera.reset();
-    graphicsBackend::deInit();
     settings::saveToIni(settingsFileName.c_str());
   }
 
   template <typename EcsInterface, typename Derived>
   void Game<EcsInterface, Derived>::tick() {
 
-    // Previous draw now finished, put it on screen
-    switch (settings::graphics::gpuApi) {
-      case settings::graphics::OPENGL_OPENCL: { graphicsBackend::swap(); } break;
-      default: break;
-    }
-
     // If this is first frame, make sure timing doesn't cause problems
     if (lastTime == 0.0f) {
       // FIXME: Try to make sure this doesn't ever produce a dt of 0.
       // TODO: Actually, just use the std::chrono stuff and use its "now" function
       lastTime = (float)(std::min((Uint32)0, SDL_GetTicks() - 1)) * TIME_MULTIPLIER_MS;
-    }
-
-    // Update the world-view matrix topic
-    if (currentCamera) {
-      switch (settings::graphics::gpuApi) {
-        case settings::graphics::OPENGL_OPENCL: {
-          rtu::topics::publish<glm::mat4>("primary_cam_wv", currentCamera->lastWorldViewQueried);
-        } break;
-        default: break;
-      }
     }
 
     // Poll SDL events
@@ -152,7 +127,7 @@ namespace at3 {
 
               // SOME FUNCTION KEYS ARE RESERVED: They do not emit a key down signal, but rather
               // the desired effect directly.
-            case SDL_SCANCODE_F1: graphicsBackend::toggleFullscreen(nullptr); break;
+            // TODO: map F1 to new, functional, fullscreen-toggling code (copy from graphicsBackend.cpp to start)
             case SDL_SCANCODE_F2: Shaders::toggleEdgeView(nullptr); break;
             case SDL_SCANCODE_F3: rtu::topics::publish("key_down_f3"); break;
             case SDL_SCANCODE_F4: rtu::topics::publish("key_down_f4"); break;
@@ -199,34 +174,29 @@ namespace at3 {
             rtu::topics::publish<SDL_Event>("mouse_moved", event);
           } break;
         case SDL_WINDOWEVENT:
-          switch (settings::graphics::gpuApi) {
-            case settings::graphics::OPENGL_OPENCL: {
-              graphicsBackend::handleWindowEvent((void*)&event);
+          switch (event.window.event) {
+            case SDL_WINDOWEVENT_SIZE_CHANGED: {
+              settings::graphics::windowDimX = (uint32_t) event.window.data1;
+              settings::graphics::windowDimY = (uint32_t) event.window.data2;
+              vulkan->reInitRendering();
+              std::cout << "Window size changed to: " << settings::graphics::windowDimX << "x"
+                        << settings::graphics::windowDimY << std::endl;
             } break;
-            case settings::graphics::VULKAN: {
-              switch (event.window.event) {
-                case SDL_WINDOWEVENT_SIZE_CHANGED: {
-                  settings::graphics::windowDimX = (uint32_t) event.window.data1;
-                  settings::graphics::windowDimY = (uint32_t) event.window.data2;
-                  vulkan->reInitRendering();
-                  std::cout << "Window size changed to: " << settings::graphics::windowDimX << "x"
-                            << settings::graphics::windowDimY << std::endl;
-                } break;
-                case SDL_WINDOWEVENT_MOVED: {
-                  settings::graphics::windowPosX = event.window.data1;
-                  settings::graphics::windowPosY = event.window.data2;
-                  printf("SDL_WINDOWEVENT_MOVED\n");
-                } break;
-                case SDL_WINDOWEVENT_MAXIMIZED: {
-                  settings::graphics::fullscreen = settings::graphics::MAXIMIZED;
-                  printf("SDL_WINDOWEVENT_MAXIMIZED\n");
-                } break;
-                case SDL_WINDOWEVENT_RESTORED: {
-                  settings::graphics::fullscreen = settings::graphics::WINDOWED;
-                  printf("SDL_WINDOWEVENT_RESTORED\n");
-                } break;
+            case SDL_WINDOWEVENT_MOVED: {
+              settings::graphics::windowPosX = event.window.data1;
+              settings::graphics::windowPosY = event.window.data2;
+              printf("SDL_WINDOWEVENT_MOVED\n");
+            } break;
+            case SDL_WINDOWEVENT_MAXIMIZED: {
+              settings::graphics::fullscreen = settings::graphics::MAXIMIZED;
+              printf("SDL_WINDOWEVENT_MAXIMIZED\n");
+            } break;
+            case SDL_WINDOWEVENT_RESTORED: {
+              settings::graphics::fullscreen = settings::graphics::WINDOWED;
+              printf("SDL_WINDOWEVENT_RESTORED\n");
+            } break;
 #               if AT3_DEBUG_WINDOW_EVENTS
-                case SDL_WINDOWEVENT_SHOWN: {
+            case SDL_WINDOWEVENT_SHOWN: {
                   printf("SDL_WINDOWEVENT_SHOWN\n");
                 } break;
                 case SDL_WINDOWEVENT_HIDDEN: {
@@ -263,11 +233,8 @@ namespace at3 {
                   printf("SDL_WINDOWEVENT_HIT_TEST\n");
                 } break;
 #               endif
-                default: break;
-              }
-            } break;
             default: break;
-          }
+          } break;
         default: break;
       }
     }
@@ -294,19 +261,10 @@ namespace at3 {
     lastTime = currentTime;
     derived().onTick(dt);
 
-    // Clear the graphics scene and begin redraw if a camera is assigned
-    graphicsBackend::clear();
-
     if (currentCamera) {
-      switch (settings::graphics::gpuApi) {
-        case settings::graphics::OPENGL_OPENCL: scene.draw(*currentCamera, false); break;
-        case settings::graphics::VULKAN: {
-          rtu::topics::publish<glm::mat4>("primary_cam_wv", currentCamera->worldView());
-          scene.updateAbsoluteTransformCaches();
-          vulkan->step();
-        } break;
-        default: break;
-      }
+      rtu::topics::publish<glm::mat4>("primary_cam_wv", currentCamera->worldView());
+      scene.updateAbsoluteTransformCaches();
+      vulkan->step();
     }
   }
 
@@ -314,8 +272,5 @@ namespace at3 {
   void Game<EcsInterface, Derived>::setCamera(void *camPtr) {
     std::shared_ptr<Camera<EcsInterface>> *camera = (std::shared_ptr<Camera<EcsInterface>>*)camPtr;
     currentCamera = *camera;
-    if (settings::graphics::gpuApi == settings::graphics::OPENGL_OPENCL) {
-      graphicsBackend::setFovy(currentCamera->getFovy());
-    }
   }
 }
