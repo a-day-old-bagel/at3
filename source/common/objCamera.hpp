@@ -8,16 +8,16 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "sceneObject.hpp"
+#include "obj.hpp"
 
 namespace at3 {
 
   template <typename EcsInterface>
-  class Camera : public SceneObject<EcsInterface> {
+  class ObjCamera : public Obj<EcsInterface> {
     public:
 
-      Camera(glm::mat4 &transform);
-      virtual ~Camera();
+      ObjCamera(glm::mat4 &transform);
+      virtual ~ObjCamera();
 
       virtual glm::mat4 worldView();
       glm::mat4 lastWorldViewQueried = glm::mat4(1.f); // set every time worldView is called (for cache)
@@ -28,19 +28,19 @@ namespace at3 {
   };
 
   template <typename EcsInterface>
-  Camera<EcsInterface>::Camera(glm::mat4 &transform) {
+  ObjCamera<EcsInterface>::ObjCamera(glm::mat4 &transform) {
     SCENE_ECS->addTransform(SCENE_ID, transform);
   }
 
   template <typename EcsInterface>
-  Camera<EcsInterface>::~Camera() { }
+  ObjCamera<EcsInterface>::~ObjCamera() { }
 
   template <typename EcsInterface>
-  glm::mat4 Camera<EcsInterface>::worldView() {
+  glm::mat4 ObjCamera<EcsInterface>::worldView() {
     glm::mat4 wv(1.f);
 
     // TODO: Reinvestigate this horrible crap
-    SCENE_ reverseTransformLookup(wv, true, true, SceneObject<EcsInterface>::InheritedDOF::ALL);
+    SCENE_ reverseTransformLookup(wv, true, true, Obj<EcsInterface>::InheritedDOF::ALL);
 
     lastWorldViewQueried = wv;
     return wv;

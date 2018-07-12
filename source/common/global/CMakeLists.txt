@@ -1,8 +1,8 @@
 
 add_library( ${AT3_TARGET_PREFIX}global STATIC
-  configuration.hpp
+  definitions.hpp
   settings.cpp settings.hpp
-  utilities.cpp utilities.hpp
+  fileSystemHelpers.cpp fileSystemHelpers.hpp
   macros.hpp
   TODO.hpp
   )

@@ -1,5 +1,5 @@
 
-#include "configuration.hpp"
+#include "definitions.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
@@ -27,9 +27,9 @@ namespace at3 {
   }
 
   DuneBuggyVk::DuneBuggyVk(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context,
-                           Scene_ &scene, glm::mat4 &transform) : state(&state), scene(&scene){
+                           Scene &scene, glm::mat4 &transform) : state(&state), scene(&scene){
 
-    chassis = std::make_shared<MeshObjectVk_>(context, "pyramid_bottom", "pyramid_bottom", transform);
+    chassis = std::make_shared<Mesh>(context, "pyramid_bottom", "pyramid_bottom", transform);
 
     ezecs::entityId chassisId = chassis->getId();
 
@@ -71,7 +71,7 @@ namespace at3 {
         { 1.9f, -1.9f, 0.f}
     };
     for (int i = 0; i < 4; ++i) {
-      wheels.push_back(std::make_shared<MeshObjectVk_>(context, "sphere", "pyramid_thrusters", ident));
+      wheels.push_back(std::make_shared<Mesh>(context, "sphere", "pyramid_thrusters", ident));
       entityId wheelId = wheels.back()->getId();
       WheelInitInfo wheelInitInfo{
           {                         // WheelInfo struct - this part of the wheelInitInfo will persist.
@@ -91,8 +91,8 @@ namespace at3 {
       state.add_TransformFunction(wheelId, RTU_FUNC_DLGT(wheelScaler));
     }
 
-    camera = std::make_shared<ThirdPersonCamera_>(2.f, 7.f, (float)M_PI * 0.5f);
-    chassis->addChild(camera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
+    camera = std::make_shared<ThirdPersonCamera>(2.f, 7.f, (float)M_PI * 0.5f);
+    chassis->addChild(camera->mpCamGimbal, Object::TRANSLATION_ONLY);
 
     ctrlId = chassisId;
     camGimbalId = camera->mpCamGimbal->getId();
@@ -111,14 +111,14 @@ namespace at3 {
     physics->rigidBody->applyImpulse({0.f, 0.f, 100.f}, {1.f, 0.f, 0.f});
   }
 
-  std::shared_ptr<PerspectiveCamera_> DuneBuggyVk::getCamPtr() {
+  std::shared_ptr<PerspectiveCamera> DuneBuggyVk::getCamPtr() {
     return camera->mpCamera;
   }
 
   void DuneBuggyVk::makeActiveControl(void *nothing) {
     publish<entityId>("switch_to_track_controls", ctrlId);
     publish<entityId>("switch_to_mouse_controls", camGimbalId);
-    publish<std::shared_ptr<PerspectiveCamera_>>("set_primary_camera", camera->mpCamera);
+    publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", camera->mpCamera);
   }
 
 }

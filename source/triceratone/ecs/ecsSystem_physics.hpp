@@ -5,8 +5,7 @@
 #include <btBulletDynamicsCommon.h>
 #include <LinearMath/btIDebugDraw.h>
 #include "ezecs.hpp"
-#include "sceneObject.hpp"
-#include "bulletDebug.hpp"
+#include "obj.hpp"
 #include "ecsInterface.hpp"
 #include "topics.hpp"
 
@@ -58,7 +57,7 @@ namespace at3 {
       bool onDiscoverTerrain(const entityId& id);
       bool onDiscoverTrackControls(const entityId& id);
       bool onForgetTrackControls(const entityId& id);
-      void setDebugDrawer(std::shared_ptr<BulletDebug_> debug);
+      void setDebugDrawer();
       btCollisionWorld::ClosestRayResultCallback rayTest(const btVector3 &start, const btVector3 &end);
       rayFuncType getRayFunc();
       void toggleDebugDraw(void* nothing);

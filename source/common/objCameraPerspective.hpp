@@ -9,14 +9,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <cmath>
-#include "camera.hpp"
+#include "objCamera.hpp"
 
 namespace at3 {
   /**
    * A camera object with perspective projection.
    */
   template <typename EcsInterface>
-  class PerspectiveCamera : public Camera<EcsInterface> {
+  class ObjCameraPerspective : public ObjCamera<EcsInterface> {
     public:
       /**
        * Constructs a perspective camera object with the given parameters.
@@ -33,8 +33,8 @@ namespace at3 {
        * orientation should be pointed directly at the follow point with the
        * z-axis pointing up.
        */
-      PerspectiveCamera(glm::mat4 &transform);
-      virtual ~PerspectiveCamera();
+      ObjCameraPerspective(glm::mat4 &transform);
+      virtual ~ObjCameraPerspective();
 
       void setFar(float far);
 
@@ -56,17 +56,17 @@ namespace at3 {
   };
 
   template <typename EcsInterface>
-  PerspectiveCamera<EcsInterface>::PerspectiveCamera(glm::mat4 &transform)
-      : Camera<EcsInterface>(transform) {
+  ObjCameraPerspective<EcsInterface>::ObjCameraPerspective(glm::mat4 &transform)
+      : ObjCamera<EcsInterface>(transform) {
     SCENE_ECS->addPerspective(SCENE_ID, settings::graphics::fovy, settings::graphics::near, settings::graphics::far);
   }
 
   template <typename EcsInterface>
-  PerspectiveCamera<EcsInterface>::~PerspectiveCamera() {
+  ObjCameraPerspective<EcsInterface>::~ObjCameraPerspective() {
   }
 
   template <typename EcsInterface>
-  glm::mat4 PerspectiveCamera<EcsInterface>::projection(
+  glm::mat4 ObjCameraPerspective<EcsInterface>::projection(
       float aspect, float alpha) const
   {
     // Linearly interpolate changes in FOV between ticks
@@ -75,17 +75,17 @@ namespace at3 {
   }
 
   template <typename EcsInterface>
-  float PerspectiveCamera<EcsInterface>::focalLength() const {
+  float ObjCameraPerspective<EcsInterface>::focalLength() const {
     return 1.0f / tan(0.5f * SCENE_ECS->getFovy(SCENE_ID));
   }
 
   template <typename EcsInterface>
-  void PerspectiveCamera<EcsInterface>::setFar(float far) {
+  void ObjCameraPerspective<EcsInterface>::setFar(float far) {
     SCENE_ECS->setFar(SCENE_ID, far);
   }
 
   template <typename EcsInterface>
-  float PerspectiveCamera<EcsInterface>::getFovy() const {
+  float ObjCameraPerspective<EcsInterface>::getFovy() const {
     return SCENE_ECS->getFovy(SCENE_ID);
   }
 }

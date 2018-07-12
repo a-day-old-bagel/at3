@@ -14,13 +14,11 @@
 #include <memory>
 #include <unordered_map>
 
-
 #include "transformRAII.hpp"
-//#include "sceneObject.h"
 
-#define SCENE_ SceneObject<EcsInterface>::
-#define SCENE_ECS SceneObject<EcsInterface>::ecs
-#define SCENE_ID SceneObject<EcsInterface>::id
+#define SCENE_ Obj<EcsInterface>::
+#define SCENE_ECS Obj<EcsInterface>::ecs
+#define SCENE_ID Obj<EcsInterface>::id
 
 namespace at3 {
   class Transform;
@@ -29,18 +27,13 @@ namespace at3 {
    * This abstract class defines a typical object in a 3D graphics scene.
    *
    * The SceneObject class has both position and orientation properties useful
-   * for most rigid body objects. This class also stores the position and
-   * orientation from the previous frame so that they may be interpolated with
-   * the appropriate alpha value when it comes time to draw the scene object.
+   * for most rigid body objects.
    */
   template<typename EcsInterface>
-  class SceneObject {
+  class Obj {
     private:
-      std::unordered_map<
-          const SceneObject<EcsInterface> *,
-          std::shared_ptr<SceneObject<EcsInterface>>
-      > children;
-      SceneObject<EcsInterface> *parent = NULL;
+      std::unordered_map<const Obj<EcsInterface> *, std::shared_ptr<Obj<EcsInterface>>> children;
+      Obj<EcsInterface> *parent = NULL;
       int inheritedDOF = ALL;
 
     public:
@@ -48,18 +41,8 @@ namespace at3 {
       static EcsInterface *ecs;
       typename EcsInterface::EcsId id;
 
-      /**
-       * Constructs a scene object with the given position and orientation.
-       *
-       * \param position The position of the scene object.
-       * \param orientation The orientation of the scene object.
-       */
-      SceneObject();
-      /**
-       * Destroys this scene object. Since SceneObject is a polymorphic class,
-       * this destructor is virtual.
-       */
-      virtual ~SceneObject();
+      Obj();
+      virtual ~Obj();
 
       /**
        * When an object is a child of another object, it inherits certain transform information
@@ -79,14 +62,14 @@ namespace at3 {
        *
        * \sa removeChild()
        */
-      void addChild(std::shared_ptr<SceneObject<EcsInterface>> child, int inheritedDOF = ALL);
+      void addChild(std::shared_ptr<Obj<EcsInterface>> child, int inheritedDOF = ALL);
 
       /**
        * \param The address of the child scene object to look for.
        * \return True if a scene object with the given address is a child of
        * this node, false otherwise.
        */
-      bool hasChild(const SceneObject<EcsInterface> *address);
+      bool hasChild(const Obj<EcsInterface> *address);
 
       /**
        * Removes the child of this scene object with the given address.
@@ -95,7 +78,7 @@ namespace at3 {
        *
        * \sa addChild()
        */
-      void removeChild(const SceneObject<EcsInterface> *address);
+      void removeChild(const Obj<EcsInterface> *address);
 
       /**
        * Draws this scene object in the scene. The default behavior of this
@@ -146,27 +129,27 @@ namespace at3 {
   };
 
   template<typename EcsInterface>
-  EcsInterface *SceneObject<EcsInterface>::ecs = NULL;
+  EcsInterface *Obj<EcsInterface>::ecs = NULL;
 
   template<typename EcsInterface>
-  SceneObject<EcsInterface>::SceneObject() {
+  Obj<EcsInterface>::Obj() {
     id = ecs->createEntity();
   }
 
   template<typename EcsInterface>
-  SceneObject<EcsInterface>::~SceneObject() {
+  Obj<EcsInterface>::~Obj() {
     ecs->destroyEntity(id);
   }
 
   template<typename EcsInterface>
-  void SceneObject<EcsInterface>::addChild(std::shared_ptr<SceneObject> child, int inheritedDOF /* = ALL */) {
+  void Obj<EcsInterface>::addChild(std::shared_ptr<Obj> child, int inheritedDOF /* = ALL */) {
     children.insert({child.get(), child});
     child.get()->parent = this;
     child.get()->inheritedDOF = inheritedDOF;
   }
 
   template<typename EcsInterface>
-  void SceneObject<EcsInterface>::removeChild(const SceneObject *address) {
+  void Obj<EcsInterface>::removeChild(const Obj *address) {
     auto iterator = children.find(address);
     assert(iterator != children.end());
     // TODO: Set the parent member of this child to nullptr (SceneObjects
@@ -175,12 +158,12 @@ namespace at3 {
   }
 
   template<typename EcsInterface>
-  bool SceneObject<EcsInterface>::hasChild(const SceneObject *address) {
+  bool Obj<EcsInterface>::hasChild(const Obj *address) {
     return children.find(address) != children.end();
   }
 
   template<typename EcsInterface>
-  void SceneObject<EcsInterface>::drawInternal(
+  void Obj<EcsInterface>::drawInternal(
       Transform &modelWorld, const glm::mat4 &worldView,
       const glm::mat4 &projection, bool debug) {
     TransformRAII mw(modelWorld);
@@ -229,7 +212,7 @@ namespace at3 {
   }
 
   template<typename EcsInterface>
-  void SceneObject<EcsInterface>::traverseAndCache(Transform &modelWorld) {
+  void Obj<EcsInterface>::traverseAndCache(Transform &modelWorld) {
     TransformRAII mw(modelWorld);
     glm::mat4 myTransform(1.f);
     bool hasTransform = false;
@@ -311,11 +294,11 @@ namespace at3 {
   }
 
   template<typename EcsInterface>
-  void SceneObject<EcsInterface>::reverseTransformLookup(glm::mat4 &wv, bool forceTraverse, bool includeTransFunc,
+  void Obj<EcsInterface>::reverseTransformLookup(glm::mat4 &wv, bool forceTraverse, bool includeTransFunc,
                                                            int whichDOFs) const {
     if ( ! forceTraverse) {
       if ( ! includeTransFunc) {
-        printf("SceneObject::reverseTransformLookup: forceTraverse is set to false, so includeTransFunc is ignored.\n");
+        printf("Obj::reverseTransformLookup: forceTraverse is set to false, so includeTransFunc is ignored.\n");
       }
       if (ecs->hasTransform(id)) {
         glm::mat4 fullTransform = ecs->getAbsTransform(id);
@@ -379,16 +362,16 @@ namespace at3 {
   }
 
   template<typename EcsInterface>
-  void SceneObject<EcsInterface>::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView,
+  void Obj<EcsInterface>::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView,
                                        const glm::mat4 &projection, bool debug) { }
 
   template<typename EcsInterface>
-  typename EcsInterface::EcsId SceneObject<EcsInterface>::getId() const {
+  typename EcsInterface::EcsId Obj<EcsInterface>::getId() const {
     return id;
   }
 
   template<typename EcsInterface>
-  void SceneObject<EcsInterface>::linkEcs(EcsInterface &ecs) {
+  void Obj<EcsInterface>::linkEcs(EcsInterface &ecs) {
     SCENE_ECS = &ecs;
   }
 }

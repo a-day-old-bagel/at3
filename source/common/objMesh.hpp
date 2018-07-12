@@ -10,12 +10,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <string>
-#include "sceneObject.hpp"
+#include "obj.hpp"
 #include "vkc.hpp"
 
 namespace at3 {
   template <typename EcsInterface>
-  class MeshObjectVk : public SceneObject<EcsInterface> {
+  class ObjMesh : public Obj<EcsInterface> {
 
       int shaderStyle;
       vkc::VulkanContext<EcsInterface> *vkc;
@@ -24,16 +24,16 @@ namespace at3 {
       enum ShaderStyle {
         NOTEXTURE, FULLBRIGHT, SUNNY
       };
-      MeshObjectVk(vkc::VulkanContext<EcsInterface> *vkc, const std::string &meshFile, const std::string &textureFile,
+      ObjMesh(vkc::VulkanContext<EcsInterface> *vkc, const std::string &meshFile, const std::string &textureFile,
                    glm::mat4 &transform, int style = SUNNY);
-      MeshObjectVk(vkc::VulkanContext<EcsInterface> *vkc, const std::string &meshFile, glm::mat4 &transform);
-      virtual ~MeshObjectVk() = default;
+      ObjMesh(vkc::VulkanContext<EcsInterface> *vkc, const std::string &meshFile, glm::mat4 &transform);
+      virtual ~ObjMesh() = default;
 
       virtual void draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &proj, bool debug);
   };
 
   template <typename EcsInterface>
-  MeshObjectVk<EcsInterface>::MeshObjectVk(vkc::VulkanContext<EcsInterface> *vkc, const std::string &meshFile,
+  ObjMesh<EcsInterface>::ObjMesh(vkc::VulkanContext<EcsInterface> *vkc, const std::string &meshFile,
                                            const std::string &textureFile, glm::mat4 &transform,
                                            int style) :shaderStyle(style), vkc(vkc) {
     SCENE_ECS->addTransform(SCENE_ID, transform);
@@ -41,14 +41,14 @@ namespace at3 {
   }
 
   template <typename EcsInterface>
-  MeshObjectVk<EcsInterface>::MeshObjectVk(vkc::VulkanContext<EcsInterface> *vkc, const std::string &meshFile,
+  ObjMesh<EcsInterface>::ObjMesh(vkc::VulkanContext<EcsInterface> *vkc, const std::string &meshFile,
                                            glm::mat4 &transform) : shaderStyle(NOTEXTURE), vkc(vkc) {
     SCENE_ECS->addTransform(SCENE_ID, transform);
     vkc->registerMeshInstance(SCENE_ID, meshFile);
   }
 
   template <typename EcsInterface>
-  void MeshObjectVk<EcsInterface>::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView,
+  void ObjMesh<EcsInterface>::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView,
                                              const glm::mat4 &proj, bool debug)
   {  }
 }

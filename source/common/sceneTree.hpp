@@ -6,32 +6,32 @@
 #include <vector>
 
 #include "settings.hpp"
-#include "graphicsBackend.hpp"
-#include "camera.hpp"
-#include "sceneObject.hpp"
+#include "objCamera.hpp"
+#include "obj.hpp"
 #include "transformStack.hpp"
 
 namespace at3 {
 
-  template <typename EcsInterface> class Camera;
-  template <typename EcsInterface> class SceneObject;
+  template <typename EcsInterface> class ObjCamera;
+  template <typename EcsInterface> class Obj;
 
   /**
    * This class implements a scene graph.
    */
   template <typename EcsInterface>
-  class Scene {
+  class SceneTree {
     private:
-      std::unordered_map<const SceneObject<EcsInterface> *, std::shared_ptr<SceneObject<EcsInterface>>> objects;
+      // TODO: Use the ECS ID instead of the raw pointer as a key here? Will this make removal more convenient?
+      std::unordered_map<const Obj<EcsInterface> *, std::shared_ptr<Obj<EcsInterface>>> objects;
 
     public:
 
-      ~Scene();
+      ~SceneTree();
 
       /**
        * Adds a top level object to the scene graph
        */
-      void addObject(std::shared_ptr<SceneObject<EcsInterface>> object);
+      void addObject(std::shared_ptr<Obj<EcsInterface>> object);
 
       /**
        * Removes a top level object from the scene graph. This should
@@ -40,7 +40,7 @@ namespace at3 {
        *
        * \param address The memory address of the object.
        */
-      void removeObject(const SceneObject<EcsInterface> *address);
+      void removeObject(const Obj<EcsInterface> *address);
 
       /**
        * Clears the scene graph
@@ -53,7 +53,7 @@ namespace at3 {
        * \param camera A Camera object
        * \param debug Indicates that object should draw with debug information
        */
-      void draw(Camera<EcsInterface> &camera, bool debug = false) const;
+      void draw(ObjCamera<EcsInterface> &camera, bool debug = false) const;
 
       /**
        * For any objects with transform data, updateAbsoluteTransformCaches traverses the graph,
@@ -68,15 +68,15 @@ namespace at3 {
   };
 
   template <typename EcsInterface>
-  Scene<EcsInterface>::~Scene() = default;
+  SceneTree<EcsInterface>::~SceneTree() = default;
 
   template <typename EcsInterface>
-  void Scene<EcsInterface>::addObject(std::shared_ptr<SceneObject<EcsInterface>> object) {
+  void SceneTree<EcsInterface>::addObject(std::shared_ptr<Obj<EcsInterface>> object) {
     this->objects.insert({object.get(), object});
   }
 
   template <typename EcsInterface>
-  void Scene<EcsInterface>::removeObject(const SceneObject<EcsInterface> *address) {
+  void SceneTree<EcsInterface>::removeObject(const Obj<EcsInterface> *address) {
     auto iterator = objects.find(address);
     if (iterator != objects.end()) {
       objects.erase(iterator);
@@ -84,20 +84,20 @@ namespace at3 {
   }
 
   template <typename EcsInterface>
-  void Scene<EcsInterface>::clear() {
-    printf("Scene is being cleared.\n");
+  void SceneTree<EcsInterface>::clear() {
+    printf("SceneTree is being cleared.\n");
     objects.clear();
   }
 
   template <typename EcsInterface>
-  void Scene<EcsInterface>::draw(Camera<EcsInterface> &camera, bool debug) const
+  void SceneTree<EcsInterface>::draw(ObjCamera<EcsInterface> &camera, bool debug) const
   {
     // Transform stack starts out empty
     TransformStack modelWorld;
 
     // Get camera transforms
     auto worldView = camera.worldView();
-    auto projection = camera.projection(graphicsBackend::getAspect());
+    auto projection = camera.projection((float)settings::graphics::windowDimX / (float)settings::graphics::windowDimY);
 
     // draw each top level object
     for (auto object : this->objects) {
@@ -110,7 +110,7 @@ namespace at3 {
   }
 
   template <typename EcsInterface>
-  void Scene<EcsInterface>::updateAbsoluteTransformCaches() const
+  void SceneTree<EcsInterface>::updateAbsoluteTransformCaches() const
   {
     // Transform stack starts out empty
     TransformStack modelWorld;

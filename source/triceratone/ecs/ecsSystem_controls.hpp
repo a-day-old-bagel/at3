@@ -54,7 +54,7 @@ namespace at3 {
    * ControlSystem has a single unique_ptr that points to one of these at a time, corresponding
    * to the entity currently being controlled by the player.
    */
-  class EntityAssociatedERM : public EventResponseMap {
+  class EntityAssociatedERM : public rtu::EventResponseMap {
     protected:
       State *state;
       entityId id;

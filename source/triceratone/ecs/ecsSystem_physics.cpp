@@ -6,8 +6,6 @@
 #include <BulletCollision/CollisionShapes/btTriangleShape.h>
 //#include <BulletDynamics/Character/btKinematicCharacterController.h>
 
-#include "debug.hpp"
-
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "IncompatibleTypes"
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"
@@ -506,8 +504,8 @@ namespace at3 {
     return true;
   }
 
-  void PhysicsSystem::setDebugDrawer(std::shared_ptr<BulletDebug_> debug) {
-    dynamicsWorld->setDebugDrawer(debug.get());
+  void PhysicsSystem::setDebugDrawer() {
+//    dynamicsWorld->setDebugDrawer(thing);
   }
 
   btCollisionWorld::ClosestRayResultCallback PhysicsSystem::rayTest(const btVector3 &start, const btVector3 &end) {

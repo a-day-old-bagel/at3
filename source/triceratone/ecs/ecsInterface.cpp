@@ -128,22 +128,6 @@ namespace at3 {
     perspective->far = far;
   }
 
-  void
-  EntityComponentSystemInterface::addTerrain(const ezecs::entityId &id, const glm::mat4 &transform, floatVecPtr heights,
-                                             const size_t resX, const size_t resY, const float sclX, const float sclY,
-                                             const float sclZ, const float minZ, const float maxZ) {
-    addTransform(id, transform);
-
-    ezecs::CompOpReturn status;
-    status = this->state->add_Terrain(id, heights, resX, resY, sclX, sclY, sclZ, minZ, maxZ);
-    EZECS_CHECK_PRINT(EZECS_ERR(status));
-    assert(status == ezecs::SUCCESS);
-
-    status = this->state->add_Physics(id, 0.f, NULL, Physics::TERRAIN);
-    EZECS_CHECK_PRINT(EZECS_ERR(status));
-    assert(status == ezecs::SUCCESS);
-  }
-
   void EntityComponentSystemInterface::addMouseControl(const ezecs::entityId &id) {
     CompOpReturn status = state->add_MouseControls(id, false, false);
     EZECS_CHECK_PRINT(EZECS_ERR(status));

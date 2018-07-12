@@ -1,7 +1,7 @@
 #pragma once
 
 #include <experimental/filesystem>
-#include "configuration.hpp"
+#include "definitions.hpp"
 namespace fs = std::experimental::filesystem;
 
 // Thanks MSVC. I always love your shoddy implementations.

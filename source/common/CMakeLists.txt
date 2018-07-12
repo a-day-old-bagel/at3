@@ -9,32 +9,24 @@ set (EZECS_SET_PATH_ONLY OFF CACHE BOOL "Only set the variable 'EZECS_SOURCE_DIR
 target_link_libraries( ${AT3_TARGET_PREFIX}external INTERFACE realtimeutils )
 
 add_subdirectory( global )
-add_subdirectory( gpuapi )
 add_subdirectory( vulkan )
 
 add_library( ${AT3_TARGET_PREFIX}common STATIC
-  eventResponseMap.cpp eventResponseMap.hpp
-  camera.hpp
-  debug.hpp
   game.hpp
-  meshObject.hpp
-  meshObjectVk.hpp
-  perspectiveCamera.hpp
-  scene.hpp
-  sceneObject.hpp
-  sdlContext.hpp sdlContext.cpp
-  skyBox.hpp
-  terrainObject.hpp
-  thirdPersonCamera.hpp
+
+  obj.hpp
+  objCamera.hpp
+  objCameraPerspective.hpp
+  objCameraThirdPerson.hpp
+  objMesh.hpp
+  sceneTree.hpp
+
   transform.cpp transform.hpp
   transformRAII.cpp transformRAII.hpp
   transformStack.cpp transformStack.hpp
-  textureView.cpp textureView.hpp
-  imageProcessing.hpp imageProcessing.cpp
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}common
-  ${AT3_TARGET_PREFIX}external
-  ${AT3_TARGET_PREFIX}graphics
+  ${AT3_TARGET_PREFIX}vulkan
   )
 target_include_directories( ${AT3_TARGET_PREFIX}common PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}

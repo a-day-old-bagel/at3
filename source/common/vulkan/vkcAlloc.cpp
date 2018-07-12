@@ -1,6 +1,6 @@
 
 #include "vkcAlloc.hpp"
-#include "configuration.hpp"
+#include "definitions.hpp"
 
 //Simple Passthrough allocator -> sub allocators responsible for actually parcelling out memory
 namespace at3::vkc::passthrough {

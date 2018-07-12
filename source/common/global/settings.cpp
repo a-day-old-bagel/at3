@@ -10,7 +10,6 @@ namespace at3 {
 
     // Hard values given here are just default values. They are be overwritten at runtime with the ini file.
     namespace graphics {
-      uint32_t gpuApi = VULKAN;
       uint32_t fullscreen = WINDOWED;
       uint32_t windowDimX = 1200;
       uint32_t windowDimY = 700;
@@ -70,7 +69,6 @@ namespace at3 {
      * before any custom settings.
      */
     void setupRegistry() {
-      registry.insert(std::make_pair( "graphics_api_gpu_u", &graphics::gpuApi));
       registry.insert(std::make_pair( "graphics_fullscr_u", &graphics::fullscreen));
       registry.insert(std::make_pair( "graphics_win_dimx_u", &graphics::windowDimX));
       registry.insert(std::make_pair( "graphics_win_dimy_u", &graphics::windowDimY));

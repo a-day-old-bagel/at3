@@ -1,5 +1,5 @@
 
-#include "configuration.hpp"
+#include "definitions.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
@@ -29,18 +29,18 @@ static glm::mat4 pyrTopRotate(const glm::mat4& transformIn, uint32_t time) {
 
 namespace at3 {
 
-  PyramidVk::PyramidVk(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context, Scene_ &scene,
+  PyramidVk::PyramidVk(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context, Scene &scene,
                        glm::mat4 &transform) : state(&state), scene(&scene), vkc(context) {
 
     glm::mat4 ident(1.f);
     glm::mat4 pyrFirMat = glm::scale(glm::rotate(glm::translate(ident, {0.f, 0.f, -0.4f}),
                                                  (float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f)), {0.105f, 0.105f, 0.15f});
 
-    base = std::make_shared<MeshObjectVk_> (context, "pyramid_bottom", "pyramid_bottom", transform);
-    top = std::make_shared<MeshObjectVk_> (context, "pyramid_top", "pyramid_top", ident);
-    thrusters = std::make_shared<MeshObjectVk_> (context, "pyramid_thrusters", "pyramid_thrusters", ident);
-    fire = std::make_shared<MeshObjectVk_> (context, "pyramid_thruster_flames", "pyramid_flames", pyrFirMat,
-        MeshObjectVk_::FULLBRIGHT);
+    base = std::make_shared<Mesh> (context, "pyramid_bottom", "pyramid_bottom", transform);
+    top = std::make_shared<Mesh> (context, "pyramid_top", "pyramid_top", ident);
+    thrusters = std::make_shared<Mesh> (context, "pyramid_thrusters", "pyramid_thrusters", ident);
+    fire = std::make_shared<Mesh> (context, "pyramid_thruster_flames", "pyramid_flames", pyrFirMat,
+        Mesh::FULLBRIGHT);
 
     entityId bottomId = base->getId();
     std::vector<float> hullVerts = {
@@ -73,8 +73,8 @@ namespace at3 {
     entityId fireId = fire->getId();
     state.add_TransformFunction(fireId, RTU_FUNC_DLGT(pyrFireWiggle));
 
-    camera = std::make_shared<ThirdPersonCamera_> (2.5f, 5.f, (float)M_PI * 0.5f);
-    base->addChild(camera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
+    camera = std::make_shared<ThirdPersonCamera> (2.5f, 5.f, (float)M_PI * 0.5f);
+    base->addChild(camera->mpCamGimbal, Object::TRANSLATION_ONLY);
 
     ctrlId = bottomId;
     camGimbalId = camera->mpCamGimbal->getId();
@@ -107,8 +107,8 @@ namespace at3 {
     state->get_Physics(ctrlId, &sourcePhysics);
 
     glm::mat4 sourceMat = glm::translate(source->mat, {0.f, 0.f, 3.f});
-    spheres.push_back(std::shared_ptr<MeshObjectVk_>(
-        new MeshObjectVk_(vkc, "sphere", "pyramid_flames", sourceMat, MeshObjectVk_::FULLBRIGHT)));
+    spheres.push_back(std::shared_ptr<Mesh>(
+        new Mesh(vkc, "sphere", "pyramid_flames", sourceMat, Mesh::FULLBRIGHT)));
     float sphereRadius = 1.0f;
     state->add_Physics(spheres.back()->getId(), 5.f, &sphereRadius, Physics::SPHERE);
     Physics *physics;
@@ -117,14 +117,14 @@ namespace at3 {
     scene->addObject(spheres.back());
   }
 
-  std::shared_ptr<PerspectiveCamera_> PyramidVk::getCamPtr() {
+  std::shared_ptr<PerspectiveCamera> PyramidVk::getCamPtr() {
     return camera->mpCamera;
   }
 
   void PyramidVk::makeActiveControl(void *nothing) {
     publish<entityId>("switch_to_pyramid_controls", ctrlId);
     publish<entityId>("switch_to_mouse_controls", camGimbalId);
-    publish<std::shared_ptr<PerspectiveCamera_>>("set_primary_camera", camera->mpCamera);
+    publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", camera->mpCamera);
   }
 }
 #pragma clang diagnostic pop

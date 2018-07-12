@@ -9,16 +9,15 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "sdlContext.hpp"
+#include "sdlc.hpp"
 #include "vkc.hpp"
-#include "debug.hpp"
-#include "scene.hpp"
+#include "sceneTree.hpp"
 #include "keyInput.hpp"
 
 namespace at3 {
 
-  template <typename EcsInterface> class Camera;
-  template <typename EcsInterface> class Scene;
+  template <typename EcsInterface> class ObjCamera;
+  template <typename EcsInterface> class SceneTree;
 
   template <typename EcsInterface, typename Derived>
   class Game {
@@ -27,11 +26,11 @@ namespace at3 {
       std::unique_ptr<SdlContext> sdlc;
       std::unique_ptr<vkc::VulkanContext<EcsInterface>> vulkan;
       typename EcsInterface::State state;
-      Scene<EcsInterface> scene;
+      SceneTree<EcsInterface> scene;
 
     private:
       EcsInterface ecsInterface;
-      std::shared_ptr<Camera<EcsInterface>> currentCamera = nullptr;
+      std::shared_ptr<ObjCamera<EcsInterface>> currentCamera = nullptr;
       float lastTime = 0.f;
       std::string settingsFileName;
       bool isQuit = false;
@@ -50,13 +49,13 @@ namespace at3 {
       void deInit();
 
       void setCamera(void *camPtr);
-      std::shared_ptr<Camera<EcsInterface>> getCamera() { return currentCamera; }
+      std::shared_ptr<ObjCamera<EcsInterface>> getCamera() { return currentCamera; }
   };
 
   template <typename EcsInterface, typename Derived>
   Game<EcsInterface, Derived>::Game() : ecsInterface(&state),
           switchToCamSub("set_primary_camera", RTU_MTHD_DLGT((&Game<EcsInterface, Derived>::setCamera), this))
-  { SceneObject_::linkEcs(ecsInterface); }
+  { Object::linkEcs(ecsInterface); }
 
   template <typename EcsInterface, typename Derived>
   Derived & Game<EcsInterface, Derived>::derived() {
@@ -128,7 +127,9 @@ namespace at3 {
               // SOME FUNCTION KEYS ARE RESERVED: They do not emit a key down signal, but rather
               // the desired effect directly.
             // TODO: map F1 to new, functional, fullscreen-toggling code (copy from graphicsBackend.cpp to start)
-            case SDL_SCANCODE_F2: Shaders::toggleEdgeView(nullptr); break;
+            // TODO: map F2 to new, functional, debug-draw-toggling code (this used to do terrain edge view)
+            case SDL_SCANCODE_F1: rtu::topics::publish("key_down_f1"); break;
+            case SDL_SCANCODE_F2: rtu::topics::publish("key_down_f2"); break;
             case SDL_SCANCODE_F3: rtu::topics::publish("key_down_f3"); break;
             case SDL_SCANCODE_F4: rtu::topics::publish("key_down_f4"); break;
             case SDL_SCANCODE_F5: rtu::topics::publish("key_down_f5"); break;
@@ -270,7 +271,7 @@ namespace at3 {
 
   template <typename EcsInterface, typename Derived>
   void Game<EcsInterface, Derived>::setCamera(void *camPtr) {
-    std::shared_ptr<Camera<EcsInterface>> *camera = (std::shared_ptr<Camera<EcsInterface>>*)camPtr;
+    std::shared_ptr<ObjCamera<EcsInterface>> *camera = (std::shared_ptr<ObjCamera<EcsInterface>>*)camPtr;
     currentCamera = *camera;
   }
 }

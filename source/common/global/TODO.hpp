@@ -7,7 +7,7 @@
 // TODO: voxel stuff: OpenVDB (voxel engine): http://www.openvdb.org/ Subreddit: https://www.reddit.com/r/VoxelGameDev/
 // TODO: use steam audio c api for awsome 3d sound stuff
 // TODO: Investigate pooled main memory management: TLSF : https://github.com/mattconte/tlsf
-// TODO: Investigate parallel CPU task scheduler: enkits : https://github.com/dougbinks/enkiTS
+// TODO: Investigate parallel CPU task scheduler: enkiTS : https://github.com/dougbinks/enkiTS
 // TODO: Investigate a better hash map than unordered_map : sparsepp : https://github.com/greg7mdp/sparsepp
 // TODO: Possibly use precompiled sdl and vulkan sdk's in extern instead of relying on system-installed sdk's
 // TODO: Stop using custom SDLvulkan.h, now that SDL supports Vulkan - but must find way to force XCB over X11 - search SDL2 repo for "VK_USE_PLATFORM_XCB_KHR"

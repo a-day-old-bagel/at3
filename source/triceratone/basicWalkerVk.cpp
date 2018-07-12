@@ -11,13 +11,13 @@ using namespace rtu::topics;
 namespace at3 {
 
   BasicWalkerVk::BasicWalkerVk(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context,
-                               Scene_ &scene, glm::mat4 &transform)
+                               Scene &scene, glm::mat4 &transform)
       : state(&state), scene(&scene) {
 
     glm::mat4 ident(1.f);
     glm::mat4 rotatedTransform = glm::rotate(transform, (float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f));
 
-    physicsBody = std::make_shared<SceneObject_>();
+    physicsBody = std::make_shared<Object>();
     entityId physicalId = physicsBody->getId();
     state.add_Placement(physicalId, transform);
     state.add_Physics(physicalId, 1.f, nullptr, Physics::CHARA);
@@ -26,21 +26,21 @@ namespace at3 {
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
     state.add_PlayerControls(physicalId);
 
-    visualBody = std::make_shared<MeshObjectVk_>(context, "sphere", "grass1024_00", ident);
+    visualBody = std::make_shared<Mesh>(context, "sphere", "grass1024_00", ident);
 
     entityId bodyId = visualBody->getId();
     state.add_TransformFunction(bodyId, RTU_MTHD_DLGT(&BasicWalkerVk::bodyVisualTransform, this));
     physicsBody->addChild(visualBody);
 
-    camera = std::make_shared<ThirdPersonCamera_> (0.f, 5.f, (float) M_PI * 0.5f);
-    visualBody->addChild(camera->mpCamGimbal, SceneObject_::TRANSLATION_ONLY);
+    camera = std::make_shared<ThirdPersonCamera> (0.f, 5.f, (float) M_PI * 0.5f);
+    visualBody->addChild(camera->mpCamGimbal, Object::TRANSLATION_ONLY);
 
     ctrlId = physicalId;
     camGimbalId = camera->mpCamGimbal->getId();
 
     addToScene();
   }
-  std::shared_ptr<PerspectiveCamera_> BasicWalkerVk::getCamPtr() {
+  std::shared_ptr<PerspectiveCamera> BasicWalkerVk::getCamPtr() {
     return camera->mpCamera;
   }
   void BasicWalkerVk::addToScene() {
@@ -74,7 +74,7 @@ namespace at3 {
   void BasicWalkerVk::makeActiveControl(void *nothing) {
     publish<entityId>("switch_to_walking_controls", ctrlId);
     publish<entityId>("switch_to_mouse_controls", camGimbalId);
-    publish<std::shared_ptr<PerspectiveCamera_>>("set_primary_camera", camera->mpCamera);
+    publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", camera->mpCamera);
   }
 }
 #pragma clang diagnostic pop

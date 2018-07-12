@@ -15,7 +15,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "utilities.hpp"
+#include "fileSystemHelpers.hpp"
 #include "vkcTextures.hpp"
 
 namespace at3::vkc {

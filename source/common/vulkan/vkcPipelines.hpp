@@ -1,6 +1,6 @@
 #pragma once
 
-#include "configuration.hpp"
+#include "definitions.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
