@@ -103,7 +103,7 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo <EcsInterface
 
 template<typename EcsInterface>
 VulkanContext<EcsInterface>::~VulkanContext() {
-  printf("VulkanContext is being deconstructed.\n");
+
 }
 
 template<typename EcsInterface>

@@ -42,7 +42,7 @@ namespace at3 {
               FREECONTROLS
       };
       ControlSystem(State* state);
-      ~ControlSystem();
+      ~ControlSystem() override;
       bool onInit();
       void onTick(float dt);
   };
@@ -61,6 +61,7 @@ namespace at3 {
     public:
       EntityAssociatedERM(State *state, entityId id);
       virtual ~EntityAssociatedERM() = default;
+      virtual void tick() = 0;
       entityId getId();
   };
 }

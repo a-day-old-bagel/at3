@@ -2,9 +2,6 @@
 #ifndef EZECS_ECSCONFIG_HPP
 #define EZECS_ECSCONFIG_HPP
 
-// This doesn't really matter - it's just so IDE parsers can see the Component base class and stuff (for editing only).
-//#include "../../../extern/ezecs/source/ecsComponents.hpp"
-
 // BEGIN INCLUDES
 
 #include <vector>
@@ -33,8 +30,11 @@ namespace {
 
   // BEGIN DECLARATIONS
 
-  typedef rtu::Delegate<glm::mat4(const glm::mat4&, uint32_t time)> transformFunc;
+  // NOTE: The parsing done on this file isn't currently able to understand template arguments unless they're
+  // typedef'ed here as a single symbol. Sorry. This is on an absurdly long laundry list of things to fix.
+  typedef rtu::Delegate<glm::mat4(const glm::mat4&, const glm::mat4&, uint32_t time)> transformFunc;
   typedef std::vector<float>* floatVecPtr;
+  typedef std::vector<uint32_t>* uintVecPtr;
 
   struct Placement : public Component<Placement> {
     glm::mat4 mat = glm::mat4(1.f);
@@ -72,17 +72,21 @@ namespace {
     float suspensionRestLength, wheelRadius;
     bool isFrontWheel;
   };
+  struct TriangleMeshInfo {
+    floatVecPtr vertices;
+    uintVecPtr indices;
+    uint32_t vertexStride;
+  };
   struct Physics : public Component<Physics> {
-    enum Geometry {
-      NONE, PLANE, SPHERE, BOX, MESH, TERRAIN, WHEEL, CHARA
+    enum UseCase {
+      NONE, PLANE, SPHERE, BOX, DYNAMIC_CONVEX_MESH, STATIC_MESH, WHEEL, CHARA
     };
-    int geom;
+    int useCase;
     float mass;
-    btCollisionShape* shape;
     btRigidBody* rigidBody;
-    void* geomInitData;
-    void* customData = NULL;
-    Physics(float mass, void* geomData, Geometry geom);
+    void* initData;
+    void* customData = nullptr;
+    Physics(float mass, void* initData, UseCase useCase);
     ~Physics();
     void setTransform(glm::mat4 &newTrans);
     void beStill();
@@ -131,19 +135,15 @@ namespace {
   EZECS_COMPONENT_DEPENDENCIES(FreeControls, Placement)
 
   struct MouseControls : public Component<MouseControls> {
-    float sinOfVertTolerance = 0.5;
+    enum Style {
+        NONE, FLAT_Z_UP, CYLINDRICAL_ABOUT_Y
+    };
+    Style style;
+    float yaw = 0, pitch = 0;
     bool invertedX, invertedY;
-    MouseControls(bool invertedX, bool invertedY);
+    MouseControls(bool invertedX, bool invertedY, Style style);
   };
   EZECS_COMPONENT_DEPENDENCIES(MouseControls, Placement)
-
-  struct Terrain : public Component<Terrain> {
-    floatVecPtr heights;
-    size_t resX, resY;
-    float sclX, sclY, sclZ, minZ, maxZ;
-    Terrain(floatVecPtr heights, size_t resX, size_t resY, float sclX, float sclY, float sclZ, float minZ, float maxZ);
-  };
-  EZECS_COMPONENT_DEPENDENCIES(Terrain, Placement)
 
   // END DECLARATIONS
 
@@ -184,11 +184,11 @@ namespace {
   Perspective::Perspective(float fovy, float near, float far)
       : fovy(fovy), prevFovy(fovy), near(near), far(far) { }
 
-  Physics::Physics(float mass, void* geomData, Physics::Geometry geom)
-      : geom(geom), mass(mass), geomInitData(geomData) { }
+  Physics::Physics(float mass, void* initData, Physics::UseCase useCase)
+      : useCase(useCase), mass(mass), initData(initData) { }
   Physics::~Physics() {
-    if (customData && geom == WHEEL) {
-      switch (geom) {
+    if (customData && useCase == WHEEL) {
+      switch (useCase) {
         case WHEEL: {
           delete ((WheelInfo*)customData);
         } break;
@@ -206,19 +206,16 @@ namespace {
     rigidBody->setAngularVelocity( {0.f, 0.f, 0.f} );
   }
 
-  PyramidControls::PyramidControls() {}
+  PyramidControls::PyramidControls() { }
 
-  TrackControls::TrackControls() {}
+  TrackControls::TrackControls() { }
 
-  PlayerControls::PlayerControls() {}
+  PlayerControls::PlayerControls() { }
 
-  FreeControls::FreeControls() {}
+  FreeControls::FreeControls() { }
 
-  MouseControls::MouseControls(bool invertedX, bool invertedY)
-      : invertedX(invertedX), invertedY(invertedY) { }
-
-  Terrain::Terrain(floatVecPtr heights, size_t resX, size_t resY, float sclX, float sclY, float sclZ, float minZ, float maxZ)
-      : heights(heights), resX(resX), resY(resY), sclX(sclX), sclY(sclY), sclZ(sclZ), minZ(minZ), maxZ(maxZ) { }
+  MouseControls::MouseControls(bool invertedX, bool invertedY, MouseControls::Style style)
+      : invertedX(invertedX), invertedY(invertedY), style(style) { }
 
   // END DEFINITIONS
 

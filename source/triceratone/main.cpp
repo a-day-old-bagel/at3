@@ -14,6 +14,7 @@
 #endif
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include "settings.hpp"
 #include "topics.hpp"
@@ -25,9 +26,9 @@
 #include "ecsSystem_controls.hpp"
 #include "ecsSystem_physics.hpp"
 
-#include "basicWalkerVk.hpp"
-#include "duneBuggyVk.hpp"
-#include "pyramidVk.hpp"
+#include "walker.hpp"
+#include "duneBuggy.hpp"
+#include "pyramid.hpp"
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"
@@ -43,18 +44,14 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
     PhysicsSystem     physicsSystem;
 
     std::shared_ptr<Object> freeCam;
-    std::shared_ptr<PerspectiveCamera> camera;
+//    std::shared_ptr<PerspectiveCamera> camera;
+    std::shared_ptr<ThirdPersonCamera> camera;
     std::shared_ptr<Mesh> terrainArk;
-    std::unique_ptr<PyramidVk> pyramidVk;
-    std::unique_ptr<DuneBuggyVk> duneBuggyVk;
-    std::unique_ptr<BasicWalkerVk> playerVk;
+    std::unique_ptr<Pyramid> pyramid;
+    std::unique_ptr<DuneBuggy> duneBuggy;
+    std::unique_ptr<Walker> player;
 
     std::unique_ptr<Subscription> keyRSub, key0Sub, key1Sub, key2Sub, key3Sub;
-
-    std::unique_ptr<btTriangleMesh> arkMesh;
-    std::unique_ptr<btCollisionShape> arkShape;
-    std::unique_ptr<btRigidBody> arkRigidBody;
-    std::unique_ptr<btDefaultMotionState> arkState;
 
   public:
 
@@ -64,7 +61,6 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
           physicsSystem(&state) { }
 
     ~Triceratone() {
-      printf("Triceratone is being deconstructed.\n");
       scene.clear();
     }
 
@@ -81,61 +77,51 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       glm::mat4 ident(1.f);
 
 
-      glm::mat4 start = glm::rotate(glm::translate(ident, {0.f, 0.f, 5.f}), 0.f, {1.0f, 0.0f, 0.0f});
+      glm::mat4 start = glm::translate(ident, {0.f, 0.f, -50.f});
+//      glm::mat4 start = glm::translate(ident, {0.f, 0.f, 0.f});
       freeCam = std::make_shared<Object>();
       state.add_Placement(freeCam->getId(), start);
       state.add_FreeControls(freeCam->getId());
-      camera = std::make_shared<PerspectiveCamera> (ident);
-      state.add_MouseControls(camera->getId(), false, false);
-      freeCam->addChild(camera);
+
+//      camera = std::make_shared<PerspectiveCamera> (ident);
+//      state.add_MouseControls(camera->getId(), false, false);
+//      freeCam->addChild(camera);
+//      scene.addObject(freeCam);
+//      makeFreeCamActiveControl();
+
+      camera = std::make_shared<ThirdPersonCamera>(0.f, 0.f, 0.f);
+      camera->anchorTo(freeCam);
       scene.addObject(freeCam);
       makeFreeCamActiveControl();
 
 
-      glm::vec3 arkScale = {10.f, 10.f, 10.f};
+      glm::vec3 arkScale = {100.f, 100.f, 100.f};
       glm::mat4 arkMat = glm::scale(glm::rotate(ident, (float)M_PI * .5f, {1.f, 0.f, 0.f}), arkScale);
       terrainArk = std::make_shared<Mesh>(vulkan.get(), "terrainArk", "cliff1024_01", arkMat);
-      arkMesh = std::make_unique<btTriangleMesh>();
-
-      std::vector<float> &verts = *(vulkan->getMeshStoredVertices("terrainArk"));
-      std::vector<uint32_t> &indices = *(vulkan->getMeshStoredIndices("terrainArk"));
-
-      for (uint32_t i = 0; i < verts.size(); i += vulkan->getMeshStoredVertexStride() / sizeof(float)) {
-        glm::vec4 pos = arkMat * glm::vec4(verts[i], verts[i + 1], verts[i + 2], 1.f);
-        arkMesh->findOrAddVertex({pos.x, pos.y, pos.z}, false);
-      }
-      for (uint32_t i = 0; i < indices.size(); i += 3) {
-        arkMesh->addTriangleIndices(indices[i], indices[i + 1], indices[i + 2]);
-      }
-      arkShape = std::make_unique<btBvhTriangleMeshShape>(arkMesh.get(), true);
-
-      arkState = std::make_unique<btDefaultMotionState>();
-      btRigidBody::btRigidBodyConstructionInfo terrainRBCI(0, arkState.get(), arkShape.get());
-      arkRigidBody = std::make_unique<btRigidBody>(terrainRBCI);
-      arkRigidBody->setRestitution(0.5f);
-      arkRigidBody->setFriction(1.f);
-      arkRigidBody->setCollisionFlags(arkRigidBody->getCollisionFlags() | btCollisionObject::CF_STATIC_OBJECT);
-      arkRigidBody->setUserIndex(-(int)terrainArk->getId()); // negative of its ID signifies a static object
-      physicsSystem.dynamicsWorld->addRigidBody(arkRigidBody.get());
-
+      TriangleMeshInfo info = {
+          vulkan->getMeshStoredVertices("terrainArk"),
+          vulkan->getMeshStoredIndices("terrainArk"),
+          vulkan->getMeshStoredVertexStride(),
+      };
+      state.add_Physics(terrainArk->getId(), 0, &info, Physics::STATIC_MESH);
       scene.addObject(terrainArk);
 
 
-      glm::mat4 playerMat = glm::translate(ident, {0.f, -10.f, 0.f});
-      playerVk = std::make_unique<BasicWalkerVk>(state, vulkan.get(), scene, playerMat);
+      glm::mat4 playerMat = glm::translate(ident, {0.f, -10.f, -10.f});
+      player = std::make_unique<Walker>(state, vulkan.get(), scene, playerMat);
 
-      glm::mat4 buggyMat = glm::translate(ident, {0.f, 10.f, 0.f});
-      duneBuggyVk = std::make_unique<DuneBuggyVk>(state, vulkan.get(), scene, buggyMat);
+      glm::mat4 buggyMat = glm::translate(ident, {0.f, 10.f, -10.f});
+      duneBuggy = std::make_unique<DuneBuggy>(state, vulkan.get(), scene, buggyMat);
 
-      glm::mat4 pyramidMat = glm::translate(ident, {0.f, 0.f, 0.f});
-      pyramidVk = std::make_unique<PyramidVk>(state, vulkan.get(), scene, pyramidMat);
+      glm::mat4 pyramidMat = glm::translate(ident, {0.f, 0.f, -10.f});
+      pyramid = std::make_unique<Pyramid>(state, vulkan.get(), scene, pyramidMat);
 
 
       key0Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_0", Triceratone::makeFreeCamActiveControl, this);
-      key1Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_1", BasicWalkerVk::makeActiveControl, playerVk.get());
-      key2Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_2", DuneBuggyVk::makeActiveControl, duneBuggyVk.get());
-      key3Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_3", PyramidVk::makeActiveControl, pyramidVk.get());
-      keyRSub = RTU_MAKE_SUB_UNIQUEPTR("key_down_r", PyramidVk::spawnSphere, pyramidVk.get());
+      key1Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_1", Walker::makeActiveControl, player.get());
+      key2Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_2", DuneBuggy::makeActiveControl, duneBuggy.get());
+      key3Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_3", Pyramid::makeActiveControl, pyramid.get());
+      keyRSub = RTU_MAKE_SUB_UNIQUEPTR("key_down_r", Pyramid::spawnSphere, pyramid.get());
 
 
       return true;
@@ -149,17 +135,23 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
     void onTick(float dt) {
       controlSystem.tick(dt);
 
-      // TODO: Not working IN WINDOWS ONLY for some reason
-      pyramidVk->resizeFire();
+      // TODO: Not working IN WINDOWS DEBUG BUILD ONLY for some reason?
+      pyramid->resizeFire();
+
+//      Placement *placement;
+//      state.get_Placement(pyramid->camera->actual->getId(), &placement);
+//      printf("%s\n\n", glm::to_string(placement->absMat).c_str());
 
       physicsSystem.tick(dt);
       animationSystem.tick(dt);
     }
 
     void makeFreeCamActiveControl() {
-      publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", camera);
+//      publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", camera);
+      publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", camera->actual);
       publish<entityId>("switch_to_free_controls", freeCam->getId());
-      publish<entityId>("switch_to_mouse_controls", camera->getId());
+//      publish<entityId>("switch_to_mouse_controls", camera->getId());
+      publish<entityId>("switch_to_mouse_controls", camera->gimbal->getId());
     }
 };
 

@@ -68,13 +68,20 @@ namespace at3 {
     placement->absMat = transform;
   }
 
-  bool EntityComponentSystemInterface::hasTransformFunction(const entityId &id) {
+  void EntityComponentSystemInterface::addCustomModelTransform(const ezecs::entityId &id,
+                                                               const ezecs::transformFunc &func) {
+    CompOpReturn status = state->add_TransformFunction(id, func);
+    EZECS_CHECK_PRINT(EZECS_ERR(status));
+    assert(status == SUCCESS);
+  }
+
+  bool EntityComponentSystemInterface::hasCustomModelTransform(const entityId &id) {
     compMask compsPresent = state->getComponents(id);
     assert(compsPresent);
     return (bool) (compsPresent & TRANSFORMFUNCTION);
   }
 
-  glm::mat4 EntityComponentSystemInterface::getTransformFunction(const entityId &id) {
+  glm::mat4 EntityComponentSystemInterface::getCustomModelTransform(const entityId &id) {
     TransformFunction *transformFunction;
     ezecs::CompOpReturn status = state->get_TransformFunction(id, &transformFunction);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
@@ -128,8 +135,8 @@ namespace at3 {
     perspective->far = far;
   }
 
-  void EntityComponentSystemInterface::addMouseControl(const ezecs::entityId &id) {
-    CompOpReturn status = state->add_MouseControls(id, false, false);
+  void EntityComponentSystemInterface::addMouseControl(const ezecs::entityId &id, ezecs::MouseControls::Style style) {
+    CompOpReturn status = state->add_MouseControls(id, false, false, style);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == SUCCESS);
   }

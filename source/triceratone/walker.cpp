@@ -1,5 +1,5 @@
 
-#include "basicWalkerVk.hpp"
+#include "walker.hpp"
 #include "topics.hpp"
 
 using namespace ezecs;
@@ -10,7 +10,7 @@ using namespace rtu::topics;
 
 namespace at3 {
 
-  BasicWalkerVk::BasicWalkerVk(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context,
+  Walker::Walker(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context,
                                Scene &scene, glm::mat4 &transform)
       : state(&state), scene(&scene) {
 
@@ -29,27 +29,27 @@ namespace at3 {
     visualBody = std::make_shared<Mesh>(context, "sphere", "grass1024_00", ident);
 
     entityId bodyId = visualBody->getId();
-    state.add_TransformFunction(bodyId, RTU_MTHD_DLGT(&BasicWalkerVk::bodyVisualTransform, this));
+    state.add_TransformFunction(bodyId, RTU_MTHD_DLGT(&Walker::bodyVisualTransform, this));
     physicsBody->addChild(visualBody);
 
-    camera = std::make_shared<ThirdPersonCamera> (0.f, 5.f, (float) M_PI * 0.5f);
-    visualBody->addChild(camera->mpCamGimbal, Object::TRANSLATION_ONLY);
+    camera = std::make_shared<ThirdPersonCamera> (0.f, 5.f, 0.f);
+    camera->anchorTo(visualBody);
 
     ctrlId = physicalId;
-    camGimbalId = camera->mpCamGimbal->getId();
+    camGimbalId = camera->gimbal->getId();
 
     addToScene();
   }
-  std::shared_ptr<PerspectiveCamera> BasicWalkerVk::getCamPtr() {
-    return camera->mpCamera;
+  std::shared_ptr<PerspectiveCamera> Walker::getCamPtr() {
+    return camera->actual;
   }
-  void BasicWalkerVk::addToScene() {
+  void Walker::addToScene() {
     scene->addObject(physicsBody);
   }
 
-  glm::mat4 BasicWalkerVk::bodyVisualTransform(const glm::mat4 &transformIn, uint32_t time) {
+  glm::mat4 Walker::bodyVisualTransform(const glm::mat4 &transIn, const glm::mat4& absTransIn, uint32_t time) {
     Placement *camPlacement;
-    state->get_Placement(camera->mpCamGimbal->getId(), &camPlacement);
+    state->get_Placement(camera->gimbal->getId(), &camPlacement);
     PlayerControls *controls;
     state->get_PlayerControls(physicsBody->getId(), &controls);
     float correction = 0.f;
@@ -62,7 +62,7 @@ namespace at3 {
         correction *= pow((correctionThresholdHigh - correction) / range, 2);
       }
     }
-    return glm::scale(
+    return transIn * glm::scale(
         glm::rotate(
             glm::translate(
                 glm::mat4(1.f),
@@ -71,10 +71,10 @@ namespace at3 {
         {HUMAN_WIDTH * 0.5f, HUMAN_DEPTH * 0.5f, HUMAN_HEIGHT * 0.5f});
   }
 
-  void BasicWalkerVk::makeActiveControl(void *nothing) {
+  void Walker::makeActiveControl(void *nothing) {
     publish<entityId>("switch_to_walking_controls", ctrlId);
     publish<entityId>("switch_to_mouse_controls", camGimbalId);
-    publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", camera->mpCamera);
+    publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", camera->actual);
   }
 }
 #pragma clang diagnostic pop

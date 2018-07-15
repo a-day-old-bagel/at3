@@ -81,31 +81,6 @@ namespace at3 {
       void removeChild(const Obj<EcsInterface> *address);
 
       /**
-       * Draws this scene object in the scene. The default behavior of this
-       * method is to draw nothing.
-       *
-       * \param modelWorld The model-space to world-space transform for this
-       * scene object's position and orientation.
-       * \param worldView The world-space to view-space transform for the
-       * position and orientation of the camera currently being used.
-       * \param projection The view-space to projection-space transform for
-       * the camera that is currently being used.
-       * \param debug Flag indicating whether or not debug information is to be
-       * drawn.
-       *
-       * Derived classes must implement this method in order for their scene
-       * objects to be visible.
-       */
-      virtual void draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection,
-                        bool debug);
-
-      /**
-       * Was private, but template friend classes do not work in a cross-platform way... :(
-       * This method recursively draws this object and all of its children.
-       */
-      void drawInternal(Transform &modelWorld, const glm::mat4 &worldView, const glm::mat4 &projection, bool debug);
-
-      /**
        * Caches this scene object's absolute world transform inside it's ECS transform component.
        * This is done by traversing the scene graph. This objects children will inherit its transform.
        *
@@ -163,75 +138,23 @@ namespace at3 {
   }
 
   template<typename EcsInterface>
-  void Obj<EcsInterface>::drawInternal(
-      Transform &modelWorld, const glm::mat4 &worldView,
-      const glm::mat4 &projection, bool debug) {
-    TransformRAII mw(modelWorld);
-    glm::mat4 myTransform(1.f);
-    bool hasTransform = false;
-
-    if (ecs->hasTransform(id)) {
-      myTransform = ecs->getTransform(id);
-      mw *= myTransform;
-      hasTransform = true;
-    }
-
-    // Delegate the actual drawing to derived classes
-    this->draw(mw.peek(), worldView, projection, debug);
-
-    // Draw our children
-    for (auto child : children) {
-      switch (child.second->inheritedDOF) {
-        case TRANSLATION_ONLY: {
-          if (hasTransform) { break; }
-          TransformRAII mw_transOnly(modelWorld);
-          mw_transOnly *= glm::mat4({
-                                        1, 0, 0, 0,
-                                        0, 1, 0, 0,
-                                        0, 0, 1, 0,
-                                        myTransform[3][0], myTransform[3][1], myTransform[3][2], 1
-                                    });
-          child.second->drawInternal(mw_transOnly, worldView, projection, debug);
-        } return;
-        case WITHOUT_TRANSLATION: {
-          if (hasTransform) { break; }
-          TransformRAII mw_noTrans(modelWorld);
-          mw_noTrans *= glm::mat4({
-                                      myTransform[0][0], myTransform[0][1], myTransform[0][2], 0,
-                                      myTransform[1][0], myTransform[1][1], myTransform[1][2], 0,
-                                      myTransform[2][0], myTransform[2][1], myTransform[2][2], 0,
-                                      0, 0, 0, 1
-                                  });
-          child.second->drawInternal(mw_noTrans, worldView, projection, debug);
-        } return;
-        default:
-          break;
-      }
-      child.second->drawInternal(mw, worldView, projection, debug);
-    }
-  }
-
-  template<typename EcsInterface>
   void Obj<EcsInterface>::traverseAndCache(Transform &modelWorld) {
     TransformRAII mw(modelWorld);
     glm::mat4 myTransform(1.f);
-    bool hasTransform = false;
 
     if (ecs->hasTransform(id)) {
-      myTransform = ecs->getTransform(id);
-      mw *= myTransform;
-      if (ecs->hasTransformFunction(id)) {
-        mw *= ecs->getTransformFunction(id);
+      if (ecs->hasCustomModelTransform(id)) {
+        myTransform = ecs->getCustomModelTransform(id);
+      } else {
+        myTransform = ecs->getTransform(id);
       }
+      mw *= myTransform;
       ecs->setAbsTransform(id, mw.peek());
-      hasTransform = true;
     }
 
-    // Draw our children
     for (auto child : children) {
       switch (child.second->inheritedDOF) {
         case TRANSLATION_ONLY: {
-          if (hasTransform) { break; }
           TransformRAII mw_transOnly(modelWorld);
           mw_transOnly *= glm::mat4({
                                         1, 0, 0, 0,
@@ -240,10 +163,8 @@ namespace at3 {
                                         myTransform[3][0], myTransform[3][1], myTransform[3][2], 1
                                     });
           child.second->traverseAndCache(mw_transOnly);
-        }
-          return;
+        } break;
         case WITHOUT_TRANSLATION: {
-          if (hasTransform) { break; }
           TransformRAII mw_noTrans(modelWorld);
           mw_noTrans *= glm::mat4({
                                       myTransform[0][0], myTransform[0][1], myTransform[0][2], 0,
@@ -252,85 +173,57 @@ namespace at3 {
                                       0, 0, 0, 1
                                   });
           child.second->traverseAndCache(mw_noTrans);
-        }
-          return;
-        default:
-          break;
+        } break;
+        default: child.second->traverseAndCache(mw);
       }
-      child.second->traverseAndCache(mw);
     }
-
-//    // Draw our children TODO: Why isn't this way correct? Why are there returns after each case above? Does the above case limit objects to one child each? The same goes for m_draw...
-//    for (auto child : m_children) {
-//      switch (child.second->m_inheritedDOF) {
-//        case TRANSLATION_ONLY: {
-//          if (hasTransform) { break; }
-//          TransformRAII mw_transOnly(modelWorld);
-//          mw_transOnly *= glm::mat4({
-//                                        1, 0, 0, 0,
-//                                        0, 1, 0, 0,
-//                                        0, 0, 1, 0,
-//                                        myTransform[3][0], myTransform[3][1], myTransform[3][2], 1
-//                                    });
-//          child.second->m_traverseAndCache(mw_transOnly);
-//        } break;
-//        case WITHOUT_TRANSLATION: {
-//          if (hasTransform) { break; }
-//          TransformRAII mw_noTrans(modelWorld);
-//          mw_noTrans *= glm::mat4({
-//                                      myTransform[0][0], myTransform[0][1], myTransform[0][2], 0,
-//                                      myTransform[1][0], myTransform[1][1], myTransform[1][2], 0,
-//                                      myTransform[2][0], myTransform[2][1], myTransform[2][2], 0,
-//                                      0, 0, 0, 1
-//                                  });
-//          child.second->m_traverseAndCache(mw_noTrans);
-//        } break;
-//        default: {
-//          child.second->m_traverseAndCache(mw);
-//        } break;
-//      }
-//    }
-
   }
 
   template<typename EcsInterface>
   void Obj<EcsInterface>::reverseTransformLookup(glm::mat4 &wv, bool forceTraverse, bool includeTransFunc,
                                                            int whichDOFs) const {
-    if ( ! forceTraverse) {
-      if ( ! includeTransFunc) {
-        printf("Obj::reverseTransformLookup: forceTraverse is set to false, so includeTransFunc is ignored.\n");
-      }
-      if (ecs->hasTransform(id)) {
-        glm::mat4 fullTransform = ecs->getAbsTransform(id);
-        switch (whichDOFs) {
-          case TRANSLATION_ONLY: {
-            wv *= glm::inverse(glm::mat4({
-                                             1, 0, 0, 0,
-                                             0, 1, 0, 0,
-                                             0, 0, 1, 0,
-                                             fullTransform[3][0], fullTransform[3][1], fullTransform[3][2], 1
-                                         }));
-          } break;
-          case WITHOUT_TRANSLATION: {
-            wv *= glm::inverse(glm::mat4({
-                                             fullTransform[0][0], fullTransform[0][1], fullTransform[0][2], 0,
-                                             fullTransform[1][0], fullTransform[1][1], fullTransform[1][2], 0,
-                                             fullTransform[2][0], fullTransform[2][1], fullTransform[2][2], 0,
-                                             0, 0, 0, 1
-                                         }));
-          } break;
-          default: {
-            wv *= glm::inverse(fullTransform);
-          } break;
-        }
-      } else if (parent != NULL) {
-        parent->reverseTransformLookup(wv, forceTraverse, includeTransFunc, inheritedDOF);
-      }
+
+
+//    wv = glm::inverse(ecs->getAbsTransform(id));
+
+
+    if ( ! forceTraverse) { // FIXME: NOT WORKING - inverse abs trans should be enough
+//      if ( ! includeTransFunc) {
+//        printf("Obj::reverseTransformLookup: forceTraverse is set to false, so includeTransFunc is ignored.\n");
+//      }
+//      if (ecs->hasTransform(id)) {
+//        glm::mat4 fullTransform = ecs->getAbsTransform(id);
+//        switch (whichDOFs) {
+//          case TRANSLATION_ONLY: {
+//            wv *= glm::inverse(glm::mat4({
+//                                             1, 0, 0, 0,
+//                                             0, 1, 0, 0,
+//                                             0, 0, 1, 0,
+//                                             fullTransform[3][0], fullTransform[3][1], fullTransform[3][2], 1
+//                                         }));
+//          } break;
+//          case WITHOUT_TRANSLATION: {
+//            wv *= glm::inverse(glm::mat4({
+//                                             fullTransform[0][0], fullTransform[0][1], fullTransform[0][2], 0,
+//                                             fullTransform[1][0], fullTransform[1][1], fullTransform[1][2], 0,
+//                                             fullTransform[2][0], fullTransform[2][1], fullTransform[2][2], 0,
+//                                             0, 0, 0, 1
+//                                         }));
+//          } break;
+//          default: {
+//            wv *= glm::inverse(fullTransform);
+//          } break;
+//        }
+//      } else if (parent != NULL) {
+//        parent->reverseTransformLookup(wv, forceTraverse, includeTransFunc, inheritedDOF);
+//      }
     } else { // the way that actually works for the camera :(
       if (ecs->hasTransform(id)) {
-        glm::mat4 fullTransform = ecs->getTransform(id);
-        if (includeTransFunc && ecs->hasTransformFunction(id)) {
-          fullTransform *= ecs->getTransformFunction(id);
+        glm::mat4 fullTransform;
+        if (includeTransFunc && ecs->hasCustomModelTransform(id)) {
+          fullTransform = ecs->getCustomModelTransform(id);
+        } else {
+          fullTransform = ecs->getTransform(id);
         }
         switch (whichDOFs) {
           case TRANSLATION_ONLY: {
@@ -360,10 +253,6 @@ namespace at3 {
       }
     }
   }
-
-  template<typename EcsInterface>
-  void Obj<EcsInterface>::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView,
-                                       const glm::mat4 &projection, bool debug) { }
 
   template<typename EcsInterface>
   typename EcsInterface::EcsId Obj<EcsInterface>::getId() const {

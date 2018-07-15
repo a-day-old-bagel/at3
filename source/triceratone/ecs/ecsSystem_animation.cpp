@@ -16,7 +16,7 @@ namespace at3 {
       state->get_Placement(id, &placement);
       TransformFunction* transformFunction;
       state->get_TransformFunction(id, &transformFunction);
-      transformFunction->transformed = transformFunction->func(placement->mat, SDL_GetTicks());
+      transformFunction->transformed = transformFunction->func(placement->mat, placement->absMat, SDL_GetTicks());
     }
   }
 }

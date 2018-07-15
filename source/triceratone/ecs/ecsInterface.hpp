@@ -38,8 +38,9 @@ namespace at3 {
       glm::mat4 getAbsTransform(const ezecs::entityId& id);
       void setAbsTransform(const ezecs::entityId& id, const glm::mat4& transform);
 
-      bool hasTransformFunction(const ezecs::entityId& id);
-      glm::mat4 getTransformFunction(const ezecs::entityId& id);
+      void addCustomModelTransform(const ezecs::entityId &id, const ezecs::transformFunc &func);
+      bool hasCustomModelTransform(const ezecs::entityId &id);
+      glm::mat4 getCustomModelTransform(const ezecs::entityId &id);
 
       void addPerspective(const ezecs::entityId &id, float fovy, float near, float far);
       float getFovy(const ezecs::entityId& id);
@@ -48,7 +49,8 @@ namespace at3 {
       float getFar(const ezecs::entityId& id);
       void setFar(const ezecs::entityId &id, float far);
 
-      void addMouseControl(const ezecs::entityId& id);
+      void addMouseControl(const ezecs::entityId& id,
+                           ezecs::MouseControls::Style style = ezecs::MouseControls::FLAT_Z_UP);
   };
 
   typedef SceneTree<EntityComponentSystemInterface> Scene;

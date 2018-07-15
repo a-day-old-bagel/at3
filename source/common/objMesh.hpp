@@ -28,8 +28,6 @@ namespace at3 {
                    glm::mat4 &transform, int style = SUNNY);
       ObjMesh(vkc::VulkanContext<EcsInterface> *vkc, const std::string &meshFile, glm::mat4 &transform);
       virtual ~ObjMesh() = default;
-
-      virtual void draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView, const glm::mat4 &proj, bool debug);
   };
 
   template <typename EcsInterface>
@@ -47,8 +45,4 @@ namespace at3 {
     vkc->registerMeshInstance(SCENE_ID, meshFile);
   }
 
-  template <typename EcsInterface>
-  void ObjMesh<EcsInterface>::draw(const glm::mat4 &modelWorld, const glm::mat4 &worldView,
-                                             const glm::mat4 &proj, bool debug)
-  {  }
 }

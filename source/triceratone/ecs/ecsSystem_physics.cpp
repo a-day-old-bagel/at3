@@ -25,7 +25,7 @@ namespace at3 {
       int index1
       )
   {
-    // one-sided triangles
+    // one-sided triangles - This is used to allow for going back through the backside of terrain if you fall through.
     if (colObj1Wrap->getCollisionShape()->getShapeType() == TRIANGLE_SHAPE_PROXYTYPE)
     {
       auto triShape = static_cast<const btTriangleShape*>( colObj1Wrap->getCollisionShape() );
@@ -34,7 +34,8 @@ namespace at3 {
       faceNormalLs.normalize();
       btVector3 faceNormalWs = colObj1Wrap->getWorldTransform().getBasis() * faceNormalLs;
       float nDotF = btDot( faceNormalWs, cp.m_normalWorldOnB );
-      if ( nDotF <= 0.0f )
+//      if ( nDotF <= 0.0f )
+      if ( nDotF >= 0.0f )  // cylinder is backwards?
       {
         // flip the contact normal to be aligned with the face normal
         cp.m_normalWorldOnB += -2.0f * nDotF * faceNormalWs;
@@ -56,16 +57,14 @@ namespace at3 {
   bool PhysicsSystem::onInit() {
     registries[0].discoverHandler = RTU_MTHD_DLGT(&PhysicsSystem::onDiscover, this);
     registries[0].forgetHandler = RTU_MTHD_DLGT(&PhysicsSystem::onForget, this);
-    registries[2].discoverHandler = RTU_MTHD_DLGT(&PhysicsSystem::onDiscoverTerrain, this);
-    registries[3].discoverHandler = RTU_MTHD_DLGT(&PhysicsSystem::onDiscoverTrackControls, this);
-    registries[3].forgetHandler = RTU_MTHD_DLGT(&PhysicsSystem::onForgetTrackControls, this);
+    registries[2].discoverHandler = RTU_MTHD_DLGT(&PhysicsSystem::onDiscoverTrackControls, this);
+    registries[2].forgetHandler = RTU_MTHD_DLGT(&PhysicsSystem::onForgetTrackControls, this);
 
     broadphase = new btDbvtBroadphase();
     collisionConfiguration = new btDefaultCollisionConfiguration();
     dispatcher = new btCollisionDispatcher(collisionConfiguration);
     solver = new btSequentialImpulseConstraintSolver();
     dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
-//    dynamicsWorld->setGravity(btVector3(0.f, 0.f, -9.81f));
     dynamicsWorld->setGravity(btVector3(0.f, 0.f, 0.f));
     vehicleRaycaster = new btDefaultVehicleRaycaster(dynamicsWorld);
 
@@ -89,19 +88,29 @@ namespace at3 {
       physics->rigidBody->applyForce({ctrls->force.x, ctrls->force.y, ctrls->force.z},
                                      btVector3(ctrls->up.x, ctrls->up.y, ctrls->up.z) * 0.05f);
 
-      // Custom constraint to keep the pyramid up FixMe: this sometimes gets stuck in a horizontal position?
-      glm::vec3 up{0.f, 0.f, 1.f};
-      float tip = glm::dot(ctrls->up, up);
-      glm::vec3 rotAxis = glm::cross(ctrls->up, up);
+      // Custom constraint to keep the pyramid pointing in the correct "up" direction
+
+//      Placement *placement;
+//      state->get_Placement(id, &placement);
+//
+//      glm::vec3 up = glm::normalize(glm::vec3(placement->mat[3][0], 0.f, placement->mat[3][2]));
+//      if ( up.x != up.x ) {
+//        continue; // checking for NaN
+//      }
+
+      glm::vec3 up = {0, 0, 1};
+
+      float tip = glm::dot(ctrls->up, up) - 1.f;  // magnitude greatest @ 180 degrees (good)
+      glm::vec3 rotAxis = glm::cross(ctrls->up, up);  // magnitude greatest @ 90 degrees, weak @ 180 (not ideal)
       physics->rigidBody->applyTorque(
-          btVector3(rotAxis.x, rotAxis.y, rotAxis.z) * tip * (ctrls->up.z < 0 ? -1000.f : 1000.f)
+          btVector3(rotAxis.x, rotAxis.y, rotAxis.z) * tip * 1000.f
       );
     }
 
     // PlayerControls
     // TODO: create a kinematic body (0 mass, recalc inertia) to which to anchor
     //       the capsule when it lands from a height (point to point constraint, AKA ball joint, maybe)?
-    for (auto id : registries[4].ids) {
+    for (auto id : registries[3].ids) {
       PlayerControls *ctrls;
       state->get_PlayerControls(id, &ctrls);
       Physics *physics;
@@ -240,7 +249,7 @@ namespace at3 {
     if (debugDrawMode) { dynamicsWorld->debugDrawWorld(); }
 
     // TrackControls
-    for (auto id : registries[3].ids) {
+    for (auto id : registries[2].ids) {
       TrackControls *trackControls;
       state->get_TrackControls(id, &trackControls);
       //Todo: put engine force application *before* the sim update, with wheel update after?
@@ -289,7 +298,7 @@ namespace at3 {
       Placement *placement;
       state->get_Placement(id, &placement);
       btTransform transform;
-      switch (physics->geom) {
+      switch (physics->useCase) {
         case Physics::WHEEL: {
           WheelInfo wi = *((WheelInfo*)physics->customData);
           TrackControls *trackControls;
@@ -308,7 +317,7 @@ namespace at3 {
 
           btVector3 grav = physics->rigidBody->getCenterOfMassPosition();
           grav.setY(0.f);
-          float gravScalar = 9.81f * (grav.length() / 2000.f);
+          float gravScalar = 0.f;//9.81f * (grav.length() / 2500.f);
           grav.setX(grav.x() * gravScalar);
           grav.setZ(grav.z() * gravScalar);
           physics->rigidBody->setGravity(grav);
@@ -323,11 +332,12 @@ namespace at3 {
 
   void PhysicsSystem::deInit() {
 	  // onForget will be called for each remaining id
+    // TODO: does this need to be updated?
     std::vector<entityId> ids = registries[1].ids;
     for (auto id : ids) {
       state->rem_PyramidControls((entityId) id);
     }
-    ids = registries[4].ids;
+    ids = registries[3].ids;
     for (auto id : ids) {
       state->rem_PlayerControls((entityId) id);
     }
@@ -349,28 +359,56 @@ namespace at3 {
     state->get_Placement(id, &placement);
     Physics *physics;
     state->get_Physics(id, &physics);
-    switch (physics->geom) {
+    // TODO: Re-use shapes instead of making a new one for each instance
+    btCollisionShape* shape = nullptr;
+    switch (physics->useCase) {
       case Physics::SPHERE: {
-        physics->shape = new btSphereShape(*((float *) physics->geomInitData));
+        shape = new btSphereShape(*((float *) physics->initData));
       } break;
       case Physics::PLANE: {
-        assert("missing plane collision implementation" == nullptr);
+        AT3_ASSERT(false, "missing plane collision implementation");
       } break;
       case Physics::BOX: {
-        physics->shape = new btBoxShape(*((btVector3*) physics->geomInitData));
+        shape = new btBoxShape(*((btVector3*) physics->initData));
       } break;
-      case Physics::MESH: {
-        std::vector<float> *points = (std::vector<float> *) physics->geomInitData;
-        physics->shape = new btConvexHullShape(points->data(), (int) points->size() / 3, 3 * sizeof(float));
+      case Physics::DYNAMIC_CONVEX_MESH: {
+        auto *points = (std::vector<float> *) physics->initData;
+        shape = new btConvexHullShape(points->data(), (int) points->size() / 3, 3 * sizeof(float));
       } break;
       case Physics::CHARA: {
-        physics->shape = new btCapsuleShapeZ(HUMAN_WIDTH * 0.5f, HUMAN_HEIGHT * 0.33f);
+        shape = new btCapsuleShapeZ(HUMAN_WIDTH * 0.5f, HUMAN_HEIGHT * 0.33f);
       } break;
-      case Physics::TERRAIN: {
-        return false; // do not track, wait for terrain component to appear
-      }
+      case Physics::STATIC_MESH: {
+
+        physics->customData = new btTriangleMesh();
+        auto *mesh = reinterpret_cast<btTriangleMesh*>(physics->customData);
+
+        std::vector<float> &verts = *(static_cast<TriangleMeshInfo*>(physics->initData)->vertices);
+        std::vector<uint32_t> &indices = *(static_cast<TriangleMeshInfo*>(physics->initData)->indices);
+        uint32_t vertexStride = static_cast<TriangleMeshInfo*>(physics->initData)->vertexStride;
+        for (uint32_t i = 0; i < verts.size(); i += vertexStride / sizeof(float)) {
+          glm::vec4 pos = placement->mat * glm::vec4(verts[i], verts[i + 1], verts[i + 2], 1.f);
+          mesh->findOrAddVertex({pos.x, pos.y, pos.z}, false);
+        }
+        for (uint32_t i = 0; i < indices.size(); i += 3) {
+          mesh->addTriangleIndices(indices[i], indices[i + 1], indices[i + 2]);
+        }
+        shape = new btBvhTriangleMeshShape(mesh, true);
+
+        auto *motionState = new btDefaultMotionState();
+        btRigidBody::btRigidBodyConstructionInfo rbci(0, motionState, shape);
+        physics->rigidBody = new btRigidBody(rbci);
+        physics->rigidBody->setRestitution(0.5f);
+        physics->rigidBody->setFriction(1.f);
+        physics->rigidBody->setCollisionFlags(physics->rigidBody->getCollisionFlags() |
+                                              btCollisionObject::CF_STATIC_OBJECT |
+                                              btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
+        physics->rigidBody->setUserIndex(-(int)id); // negative of its ID signifies a static object
+        dynamicsWorld->addRigidBody(physics->rigidBody);
+
+      } return true; // Too different from dynamic objects to use the code below, but do track.
       case Physics::WHEEL: {
-        WheelInitInfo initInfo = *((WheelInitInfo*)physics->geomInitData);
+        WheelInitInfo initInfo = *((WheelInitInfo*)physics->initData);
         TrackControls *trackControls;
         CompOpReturn status = state->get_TrackControls(initInfo.wi.parentVehicle, &trackControls);
         if (status != SUCCESS) {
@@ -388,15 +426,15 @@ namespace at3 {
       }
       default: break;
     }
-    physics->geomInitData = nullptr;
+    physics->initData = nullptr;
     btTransform transform;
     transform.setFromOpenGLMatrix((btScalar *) &placement->mat);
-    btDefaultMotionState *motionState = new btDefaultMotionState(transform);
+    auto *motionState = new btDefaultMotionState(transform);
     btVector3 inertia(0.f, 0.f, 0.f);
-    physics->shape->calculateLocalInertia(physics->mass, inertia);
-    btRigidBody::btRigidBodyConstructionInfo ci(physics->mass, motionState, physics->shape, inertia);
+    shape->calculateLocalInertia(physics->mass, inertia);
+    btRigidBody::btRigidBodyConstructionInfo ci(physics->mass, motionState, shape, inertia);
     physics->rigidBody = new btRigidBody(ci);
-    switch (physics->geom) {
+    switch (physics->useCase) {
       case Physics::CHARA: {
         physics->rigidBody->setAngularFactor({0.f, 0.f, 0.f});
         physics->rigidBody->setRestitution(0.f);
@@ -419,7 +457,7 @@ namespace at3 {
   bool PhysicsSystem::onForget(const entityId &id) {
     Physics *physics;
     state->get_Physics(id, &physics);
-    switch (physics->geom) {
+    switch (physics->useCase) {
       case Physics::WHEEL: {
         // TODO: delete wheel from vehicle somehow? also remove from trackControl's vector?
         /*WheelInfo *wheelInfo = ((WheelInfo*)physics->customData);
@@ -430,54 +468,18 @@ namespace at3 {
           return false;
         }
         btWheelInfo& wheelInfoBt = trackControls->vehicle->getWheelInfo(wheelInfo->bulletWheelId);*/
+      } return true;
+      case Physics::STATIC_MESH: {
+        dynamicsWorld->removeRigidBody(physics->rigidBody);
+        delete (reinterpret_cast<btTriangleMeshShape*>(physics->rigidBody->getCollisionShape()))->getMeshInterface();
       } break;
       default: {
         dynamicsWorld->removeRigidBody(physics->rigidBody);
-        delete physics->rigidBody->getMotionState();
-        delete physics->rigidBody;
-        delete physics->shape;
       } break;
     }
-    return true;
-  }
-
-  bool PhysicsSystem::onDiscoverTerrain(const entityId &id) {
-    Placement *placement;
-    state->get_Placement(id, &placement);
-    Physics *physics;
-    state->get_Physics(id, &physics);
-    Terrain *terrain;
-    state->get_Terrain(id, &terrain);
-
-    physics->shape = new btHeightfieldTerrainShape(
-        (int)terrain->resX,         // int heightStickWidth  (stupid name - I think it just means width
-        (int)terrain->resY,         // int heightStickLength (sutpid name - I think it just means height
-        terrain->heights->data(),   // const void *heightfieldData
-        0,                          // btScalar heightScale (doesn't matter for float data)
-        terrain->minZ,              // btScalar minHeight
-        terrain->maxZ,              // btScalar maxHeight
-        2,                          // int upAxis
-        PHY_FLOAT,                  // PHY_ScalarType heightDataType
-        false                       // bool flipQuadEdges
-    );
-
-    physics->shape->setLocalScaling({
-        terrain->sclX / (float)terrain->resX,
-        terrain->sclY / (float)terrain->resY,
-        terrain->sclZ });
-    btTransform transform;
-    transform.setFromOpenGLMatrix((btScalar *) &placement->mat);
-    auto *terrainMotionState = new btDefaultMotionState(transform);
-    btRigidBody::btRigidBodyConstructionInfo terrainRBCI(0, terrainMotionState, physics->shape, btVector3(0, 0, 0));
-    physics->rigidBody = new btRigidBody(terrainRBCI);
-    physics->rigidBody->setRestitution(0.5f);
-    physics->rigidBody->setFriction(1.f);
-    physics->rigidBody->setCollisionFlags(physics->rigidBody->getCollisionFlags()
-                                          | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK
-                                          | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
-    physics->rigidBody->setUserIndex(-(int)id); // negative numbers for static objects, let's say. TODO: follow-up
-    dynamicsWorld->addRigidBody(physics->rigidBody);
-
+    delete physics->rigidBody->getMotionState();
+    delete physics->rigidBody->getCollisionShape();
+    delete physics->rigidBody;
     return true;
   }
 

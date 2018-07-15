@@ -16,45 +16,34 @@ namespace at3 {
 
   typedef std::function<btCollisionWorld::ClosestRayResultCallback(btVector3 &, btVector3 &)> rayFuncType;
 
-  /*
-   * The physics system
-   */
+//  glm::mat3
+
   class PhysicsSystem : public System<PhysicsSystem> {
       /* Global physics data structures */
       btDispatcher *dispatcher;
       btBroadphaseInterface *broadphase;
       btConstraintSolver *solver;
       btCollisionConfiguration *collisionConfiguration;
-//      btDynamicsWorld *dynamicsWorld;
+      btDynamicsWorld *dynamicsWorld;
       btVehicleRaycaster * vehicleRaycaster;
       bool debugDrawMode = false;
 
       rtu::topics::Subscription debugDrawToggleSub;
 
-      // Ground objects
-      btCollisionShape* planeShape;
-      btDefaultMotionState* groundMotionState;
-      btRigidBody* groundRigidBody;
-
     public:
-
-      btDynamicsWorld *dynamicsWorld; // TODO: put back in private
-
       std::vector<compMask> requiredComponents = {
               PHYSICS,
               PHYSICS | PYRAMIDCONTROLS,
-              PHYSICS | TERRAIN,
               PHYSICS | TRACKCONTROLS,
               PHYSICS | PLAYERCONTROLS,
       };
       PhysicsSystem(State* state);
-      ~PhysicsSystem();
+      ~PhysicsSystem() override;
       bool onInit();
       void onTick(float dt);
       void deInit();
       bool onDiscover(const entityId& id);
       bool onForget(const entityId& id);
-      bool onDiscoverTerrain(const entityId& id);
       bool onDiscoverTrackControls(const entityId& id);
       bool onForgetTrackControls(const entityId& id);
       void setDebugDrawer();

@@ -8,7 +8,7 @@
 #endif
 
 #include <glm/gtc/matrix_transform.hpp>
-#include "duneBuggyVk.hpp"
+#include "duneBuggy.hpp"
 #include "topics.hpp"
 
 #pragma clang diagnostic push
@@ -19,14 +19,14 @@ using namespace rtu::topics;
 
 namespace at3 {
 
-  static glm::mat4 wheelScaler(const glm::mat4& transformIn, uint32_t time) {
-    return glm::scale(glm::mat4(1.f), {0.5f, WHEEL_RADIUS, WHEEL_RADIUS});
+  static glm::mat4 wheelScaler(const glm::mat4& transIn, const glm::mat4& absTransIn, uint32_t time) {
+    return transIn * glm::scale(glm::mat4(1.f), {0.5f, WHEEL_RADIUS, WHEEL_RADIUS});
   }
-  static glm::mat4 chassisScalar(const glm::mat4& transformIn, uint32_t time) {
-    return glm::rotate(glm::scale(glm::mat4(1.f), {1.8f, 2.8f, 1.f}), (float)M_PI, glm::vec3(1.f, 0.f, 0.f));
+  static glm::mat4 chassisScalar(const glm::mat4& transIn, const glm::mat4& absTransIn, uint32_t time) {
+    return transIn * glm::rotate(glm::scale(glm::mat4(1.f), {1.8f, 2.8f, 1.f}), (float)M_PI, glm::vec3(1.f, 0.f, 0.f));
   }
 
-  DuneBuggyVk::DuneBuggyVk(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context,
+  DuneBuggy::DuneBuggy(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context,
                            Scene &scene, glm::mat4 &transform) : state(&state), scene(&scene){
 
     chassis = std::make_shared<Mesh>(context, "pyramid_bottom", "pyramid_bottom", transform);
@@ -45,7 +45,7 @@ namespace at3 {
         -2.1f,  2.1f,  0.4f,
     };
     state.add_TransformFunction(chassisId, RTU_FUNC_DLGT(chassisScalar));
-    state.add_Physics(chassisId, 50.f, &chassisVerts, Physics::MESH);
+    state.add_Physics(chassisId, 50.f, &chassisVerts, Physics::DYNAMIC_CONVEX_MESH);
     Physics *physics;
     state.get_Physics(chassisId, &physics);
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
@@ -91,34 +91,34 @@ namespace at3 {
       state.add_TransformFunction(wheelId, RTU_FUNC_DLGT(wheelScaler));
     }
 
-    camera = std::make_shared<ThirdPersonCamera>(2.f, 7.f, (float)M_PI * 0.5f);
-    chassis->addChild(camera->mpCamGimbal, Object::TRANSLATION_ONLY);
+    camera = std::make_shared<ThirdPersonCamera>(2.f, 7.f, 0.f);
+    camera->anchorTo(chassis);
 
     ctrlId = chassisId;
-    camGimbalId = camera->mpCamGimbal->getId();
+    camGimbalId = camera->gimbal->getId();
 
     addToScene();
   }
-  void DuneBuggyVk::addToScene() {
+  void DuneBuggy::addToScene() {
     scene->addObject(chassis);
     for (auto wheel : wheels) {
       scene->addObject(wheel);
     }
   }
-  void DuneBuggyVk::tip() {
+  void DuneBuggy::tip() {
     Physics *physics;
     state->get_Physics(chassis->getId(), &physics);
     physics->rigidBody->applyImpulse({0.f, 0.f, 100.f}, {1.f, 0.f, 0.f});
   }
 
-  std::shared_ptr<PerspectiveCamera> DuneBuggyVk::getCamPtr() {
-    return camera->mpCamera;
+  std::shared_ptr<PerspectiveCamera> DuneBuggy::getCamPtr() {
+    return camera->actual;
   }
 
-  void DuneBuggyVk::makeActiveControl(void *nothing) {
+  void DuneBuggy::makeActiveControl(void *nothing) {
     publish<entityId>("switch_to_track_controls", ctrlId);
     publish<entityId>("switch_to_mouse_controls", camGimbalId);
-    publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", camera->mpCamera);
+    publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", camera->actual);
   }
 
 }
