@@ -21,7 +21,6 @@ namespace at3 {
       DuneBuggy(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context,
                   Scene &scene, glm::mat4 &transform);
       std::shared_ptr<PerspectiveCamera> getCamPtr();
-      void tip();
       void makeActiveControl(void* nothing);
   };
 }

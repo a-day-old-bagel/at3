@@ -30,23 +30,24 @@ namespace at3 {
   glm::vec3 getCylGravDir(const glm::vec3 & pos) {
     return glm::normalize(getCylGrav(pos));
   }
-  glm::mat3 getCylStandingRot(const glm::vec3 & pos) {
-
+  float getCylGravMag(const glm::vec3 & pos) {
+    return glm::length(getCylGrav(pos));
+  }
+  glm::mat3 getCylGroundPlaneRot(const glm::vec3 &pos) {
     glm::vec3 gravDir = getCylGravDir(pos);
     float pitchAngle = acosf(-gravDir.z);
     float yawAngle = atan2f(pos.x, -pos.y);
     glm::mat3 pitchRot = glm::mat3(glm::rotate(pitchAngle, getNativePitchAxis()));
     glm::mat3 yawRot = glm::mat3(glm::rotate(yawAngle, getNativeUp()));
     return yawRot * pitchRot;
-
   }
-  glm::mat3 getCylStandingRot(const float &pitch, const float &yaw) {
-    glm::mat3 nativeLook = glm::mat3(glm::lookAt(glm::vec3(), getNativeAt(), getNativeUp()));
-    glm::mat3 pitchRot = glm::mat3(glm::rotate(pitch, getNativePitchAxis()));
-    glm::mat3 yawRot = glm::mat3(glm::rotate(yaw, getNativeUp()));
-    return yawRot * pitchRot * nativeLook;
+  glm::mat3 getNativeViewRot(const float &pitch, const float &yaw) {
+    glm::mat3 nativeStart = glm::mat3(glm::lookAt(glm::vec3(), getNativeAt(), getNativeUp()));
+    glm::mat3 nativePitch = glm::mat3(glm::rotate(pitch, getNativePitchAxis()));
+    glm::mat3 nativeYaw = glm::mat3(glm::rotate(yaw, getNativeUp()));
+    return nativeYaw * nativePitch * nativeStart;
   }
   glm::mat3 getCylStandingRot(const glm::vec3 &pos, const float &pitch, const float &yaw) {
-    return getCylStandingRot(pos) * getCylStandingRot(pitch, yaw);
+    return getCylGroundPlaneRot(pos) * getNativeViewRot(pitch, yaw);
   }
 }

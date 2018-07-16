@@ -98,7 +98,7 @@ namespace {
     glm::vec3 accel = glm::vec3(0, 0, 0);
     glm::vec3 force = glm::vec3(0, 0, 0);
     glm::vec3 up = glm::vec3(0, 0, 1);
-    int style;
+    bool turbo = false;
     PyramidControls();
   };
   EZECS_COMPONENT_DEPENDENCIES(PyramidControls, Physics)

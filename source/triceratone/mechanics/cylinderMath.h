@@ -14,7 +14,6 @@ namespace at3 {
 
   glm::vec3 getCylGrav(const glm::vec3 & pos);
   glm::vec3 getCylGravDir(const glm::vec3 & pos);
-  glm::mat3 getCylStandingRot(const glm::vec3 & pos);
-  glm::mat3 getCylStandingRot(const float &pitch, const float &yaw);
+  float getCylGravMag(const glm::vec3 & pos);
   glm::mat3 getCylStandingRot(const glm::vec3 &pos, const float &pitch, const float &yaw);
 }

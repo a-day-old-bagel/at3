@@ -37,12 +37,7 @@ namespace at3 {
 
   template <typename EcsInterface>
   glm::mat4 ObjCamera<EcsInterface>::worldView() {
-    glm::mat4 wv(1.f);
-
-    // TODO: Reinvestigate this horrible crap
-    SCENE_ reverseTransformLookup(wv, true, true, Obj<EcsInterface>::InheritedDOF::ALL);
-
-    lastWorldViewQueried = wv;
-    return wv;
+    lastWorldViewQueried = glm::inverse(ecs->getAbsTransform(id));
+    return lastWorldViewQueried;
   }
 }

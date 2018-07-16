@@ -13,18 +13,18 @@ namespace at3 {
   class EntityAssociatedERM;
   class ControlSystem : public System<ControlSystem> {
       glm::mat4 lastKnownWorldView = glm::mat4(1.f);
-      glm::mat3 lastKnownHorizCtrlRot = glm::mat3(1.f);
+      glm::mat3 lastKnownCylCtrlRot = glm::mat3(1.f);
       bool lookInfoIsFresh = false;
 
       rtu::topics::Subscription updateWvMatSub;
       rtu::topics::Subscription switchToWalkCtrlSub;
-      rtu::topics::Subscription switchToPyrmCtrlSub;
-      rtu::topics::Subscription switchToTrakCtrlSub;
+      rtu::topics::Subscription switchToPyramidCtrlSub;
+      rtu::topics::Subscription switchToTrackCtrlSub;
       rtu::topics::Subscription switchToFreeCtrlSub;
       std::unique_ptr<EntityAssociatedERM> currentCtrlKeys;
 
-      rtu::topics::Subscription switchToMousCtrlSub;
-      std::unique_ptr<EntityAssociatedERM> currentCtrlMous;
+      rtu::topics::Subscription switchToMouseCtrlSub;
+      std::unique_ptr<EntityAssociatedERM> currentCtrlMouse;
 
       void updateLookInfos();
       void setWorldView(void* p_wv);

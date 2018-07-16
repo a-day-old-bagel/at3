@@ -27,56 +27,28 @@ namespace at3 {
   // or restructure in some other way.
   template <typename EcsInterface>
   class ObjCameraThirdPerson {
-      void init(float up, float back, float tilt);
     public:
       std::shared_ptr<ObjCameraPerspective<EcsInterface>> actual;
       std::shared_ptr<Obj<EcsInterface>> gimbal;
-      std::shared_ptr<Obj<EcsInterface>> orient;
-      ObjCameraThirdPerson(float up, float back, float tilt);
-      ObjCameraThirdPerson(float up, float back, float tilt, ezecs::transformFunc &orientationFunction);
+      ObjCameraThirdPerson(float back, float tilt);
       virtual ~ObjCameraThirdPerson();
       void anchorTo(std::shared_ptr<Obj<EcsInterface>> anchor);
   };
 
   template <typename EcsInterface>
-  ObjCameraThirdPerson<EcsInterface>::ObjCameraThirdPerson(float up, float back, float tilt) {
-    init(up, back, tilt);
-  }
-
-  template <typename EcsInterface>
-  ObjCameraThirdPerson<EcsInterface>::ObjCameraThirdPerson(float up, float back, float tilt,
-                                                           ezecs::transformFunc &orientationFunction) {
-    init(up, back, tilt);
-
-    // add a custom transform to the camera orient-er so that it can rotate in place if it needs to
-    typename EcsInterface::EcsId orientId = orient->getId();
-    SCENE_ECS->addTransform(orientId, glm::mat4(1.f));
-    SCENE_ECS->addCustomModelTransform(orientId, orientationFunction);
-  }
-
-  template <typename EcsInterface>
-  void ObjCameraThirdPerson<EcsInterface>::init(float up, float back, float tilt) {
+  ObjCameraThirdPerson<EcsInterface>::ObjCameraThirdPerson(float back, float tilt) {
     glm::mat4 ident(1.f);
-    glm::mat4 camMat = glm::rotate(glm::translate(ident, {0.f, /*-back*/0.f,/* 0.f*/ back}),
-                                   tilt /*+ (float)M_PI * .5f*/, glm::vec3(1.0f, 0.0f, 0.0f));
+    glm::mat4 camMat = glm::rotate(glm::translate(ident, {0.f, 0.f, back}), tilt , glm::vec3(1.0f, 0.0f, 0.0f));
     actual = std::shared_ptr<ObjCameraPerspective<EcsInterface>>
         (new ObjCameraPerspective<EcsInterface>(camMat));
     gimbal = std::shared_ptr<Obj<EcsInterface>>
         (new Obj<EcsInterface>());
-    orient = std::shared_ptr<Obj<EcsInterface>>
-        (new Obj<EcsInterface>());
     // add mouse controls to the camera gimbal so that it rotates with the mouse
     typename EcsInterface::EcsId gimbalId = gimbal->getId();
-    SCENE_ECS->addTransform(gimbalId, {
-        1,  0,  0,  0,
-        0,  1,  0,  0,
-        0,  0,  1,  0,
-        0,  0, up,  1  // at (0, 0, up)
-    });
-    SCENE_ECS->addMouseControl(gimbalId);
+    SCENE_ECS->addTransform(gimbalId, ident);
     SCENE_ECS->setLocalMat3Override(gimbalId, true);
-    gimbal->addChild(orient);
-    orient->addChild(actual);
+    SCENE_ECS->addMouseControl(gimbalId);
+    gimbal->addChild(actual);
   }
 
   template <typename EcsInterface>
@@ -86,6 +58,6 @@ namespace at3 {
 
   template <typename EcsInterface>
   void ObjCameraThirdPerson<EcsInterface>::anchorTo(std::shared_ptr<Obj<EcsInterface>> anchor) {
-    anchor->addChild(gimbal, SCENE_ TRANSLATION_ONLY);
+    anchor->addChild(gimbal);
   }
 }

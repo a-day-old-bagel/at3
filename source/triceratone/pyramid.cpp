@@ -28,35 +28,6 @@ static glm::mat4 pyrTopRotate(const glm::mat4& transIn, const glm::mat4& absTran
   return transIn * glm::rotate(glm::mat4(1.f), time * 0.002f, {0.f, 0.f, 1.f});
 }
 
-static glm::mat4 cylindricalCameraRotate(const glm::mat4 &transIn, const glm::mat4& absTransIn, uint32_t time) {
-//  float xPos = absTransIn[3][0];
-//  float zPos = absTransIn[3][2];
-//  float cylAngle = atan2f(-xPos, -zPos);
-//  return transIn * glm::rotate(cylAngle, glm::vec3(0.f, 1.f, 0.f));
-
-//  printf("%s\n\n", glm::to_string(absTransIn).c_str());
-//  glm::vec3 pos = {absTransIn[3][0], absTransIn[3][1], absTransIn[3][2]};
-////  printf("%.1f %.1f %.1f\n", pos.x, pos.y, pos.z);
-//  if (pos.x || pos.z) {
-//    printf("%f %f\n", pos.x, pos.z);
-//    glm::vec3 cylUp = glm::normalize(glm::vec3(-pos.x, 0, -pos.z));
-//    glm::vec3 at = glm::mat3(absTransIn) * glm::vec3(0, 1, 0);
-////  printf("%.1f %.1f %.1f\n", at.x, at.y, at.z);
-//    glm::mat4 final = glm::lookAt(glm::vec3(0, 0, 0), at, cylUp);
-////  printf("%s\n\n", glm::to_string(final).c_str());
-////  glm::vec4 newAt = final * glm::vec4(0, 1, 0, 1);
-////  printf("%.1f %.1f %.1f\n", newAt.x, newAt.y, newAt.z);
-//////  return glm::lookAt(glm::vec3(), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0));
-//    return glm::lookAt(glm::vec3(), glm::vec3(0, 1, 0), cylUp);
-//  } else {
-//    printf("foo\n");
-//    return glm::mat4(1.f);
-//  }
-
-//  return transIn;
-  return glm::mat4(1.f);
-}
-
 namespace at3 {
 
   Pyramid::Pyramid(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context, Scene &scene,
@@ -91,7 +62,7 @@ namespace at3 {
     Physics* physics;
     state.get_Physics(bottomId, &physics);
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
-    physics->rigidBody->setDamping(0.1f, 0.8f);
+    physics->rigidBody->setDamping(0.f, 0.8f);
 
     // The slow stuff (CCD)
     physics->rigidBody->setCcdMotionThreshold(1);
@@ -103,9 +74,7 @@ namespace at3 {
     entityId fireId = fire->getId();
     state.add_TransformFunction(fireId, RTU_FUNC_DLGT(pyrFireWiggle));
 
-//    camera = std::make_shared<ThirdPersonCamera> (0.f, 5.f, 0.f, RTU_FUNC_DLGT(cylindricalCameraRotate));
-    camera = std::make_shared<ThirdPersonCamera> (0.f, 5.f, 0.f);
-//    camera = std::make_shared<ThirdPersonCamera> (0.f, 0.f, 0.f);
+    camera = std::make_shared<ThirdPersonCamera> (5.f, .35f);
     camera->anchorTo(base);
 
     ctrlId = bottomId;
@@ -123,12 +92,23 @@ namespace at3 {
     // make the fire look big if the pyramid is thrusting upwards
     PyramidControls* controls;
     state->get_PyramidControls(base->getId(), &controls);
-    if (controls->force.z > 0) {
-      pyrFireSize = 1.5f;
-      pyrFireScale = 1.f;
-    } else {
-      pyrFireSize = 0.3f;
-      pyrFireScale = 0.15f;
+    int level = 0;
+    if (controls->turbo && controls->accel.y >= 0 && glm::length(controls->accel)) { ++level; }
+    if (controls->accel.y > 0) { ++level; }
+    switch (level) {
+      case 2: {
+        pyrFireSize = 3.f;
+        pyrFireScale = 2.f;
+      } break;
+      case 1: {
+        pyrFireSize = 1.5f;
+        pyrFireScale = 1.f;
+      } break;
+      case 0:
+      default: {
+        pyrFireSize = 0.3f;
+        pyrFireScale = 0.15f;
+      }
     }
   }
 

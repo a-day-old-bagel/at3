@@ -32,7 +32,7 @@ namespace at3 {
     state.add_TransformFunction(bodyId, RTU_MTHD_DLGT(&Walker::bodyVisualTransform, this));
     physicsBody->addChild(visualBody);
 
-    camera = std::make_shared<ThirdPersonCamera> (0.f, 5.f, 0.f);
+    camera = std::make_shared<ThirdPersonCamera> (5.f, 0.3f);
     camera->anchorTo(visualBody);
 
     ctrlId = physicalId;

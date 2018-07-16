@@ -10,6 +10,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "duneBuggy.hpp"
 #include "topics.hpp"
+#include "cylinderMath.h"
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"
@@ -91,7 +92,7 @@ namespace at3 {
       state.add_TransformFunction(wheelId, RTU_FUNC_DLGT(wheelScaler));
     }
 
-    camera = std::make_shared<ThirdPersonCamera>(2.f, 7.f, 0.f);
+    camera = std::make_shared<ThirdPersonCamera>(7.f, 0.35f);
     camera->anchorTo(chassis);
 
     ctrlId = chassisId;
@@ -104,11 +105,6 @@ namespace at3 {
     for (auto wheel : wheels) {
       scene->addObject(wheel);
     }
-  }
-  void DuneBuggy::tip() {
-    Physics *physics;
-    state->get_Physics(chassis->getId(), &physics);
-    physics->rigidBody->applyImpulse({0.f, 0.f, 100.f}, {1.f, 0.f, 0.f});
   }
 
   std::shared_ptr<PerspectiveCamera> DuneBuggy::getCamPtr() {

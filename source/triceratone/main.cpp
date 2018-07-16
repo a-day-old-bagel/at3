@@ -44,7 +44,6 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
     PhysicsSystem     physicsSystem;
 
     std::shared_ptr<Object> freeCam;
-//    std::shared_ptr<PerspectiveCamera> camera;
     std::shared_ptr<ThirdPersonCamera> camera;
     std::shared_ptr<Mesh> terrainArk;
     std::unique_ptr<Pyramid> pyramid;
@@ -77,19 +76,16 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       glm::mat4 ident(1.f);
 
 
-      glm::mat4 start = glm::translate(ident, {0.f, 0.f, -200.f});
-//      glm::mat4 start = glm::translate(ident, {0.f, 0.f, 0.f});
+      glm::mat4 start = glm::translate(ident, {0, -750, -120});
       freeCam = std::make_shared<Object>();
       state.add_Placement(freeCam->getId(), start);
       state.add_FreeControls(freeCam->getId());
-      camera = std::make_shared<ThirdPersonCamera>(0.f, 0.f, 0.f);
+      camera = std::make_shared<ThirdPersonCamera>(0.f, 0.f);
       camera->anchorTo(freeCam);
       scene.addObject(freeCam);
       makeFreeCamActiveControl();
 
 
-//      glm::vec3 arkScale = {100.f, 100.f, 100.f};
-//      glm::mat4 arkMat = glm::scale(glm::rotate(ident, (float)M_PI * .5f, {1.f, 0.f, 0.f}), arkScale);
       glm::mat4 arkMat = glm::scale(ident, glm::vec3(100.f, 100.f, 100.f));
       terrainArk = std::make_shared<Mesh>(vulkan.get(), "terrainArk", "cliff1024_01", arkMat);
       TriangleMeshInfo info = {
@@ -101,13 +97,13 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       scene.addObject(terrainArk);
 
 
-      glm::mat4 playerMat = glm::translate(ident, {0.f, -10.f, -10.f});
+      glm::mat4 playerMat = glm::translate(ident, {10, -750, -100});
       player = std::make_unique<Walker>(state, vulkan.get(), scene, playerMat);
 
-      glm::mat4 buggyMat = glm::translate(ident, {0.f, 10.f, -10.f});
+      glm::mat4 buggyMat = glm::translate(ident, {0, -750, -100});
       duneBuggy = std::make_unique<DuneBuggy>(state, vulkan.get(), scene, buggyMat);
 
-      glm::mat4 pyramidMat = glm::translate(ident, {0.f, 0.f, -10.f});
+      glm::mat4 pyramidMat = glm::translate(ident, {-10, -750, -100});
       pyramid = std::make_unique<Pyramid>(state, vulkan.get(), scene, pyramidMat);
 
 
@@ -127,20 +123,18 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
     }
 
     void onTick(float dt) {
-      controlSystem.tick(dt);
 
       // TODO: Not working IN WINDOWS DEBUG BUILD ONLY for some reason?
       pyramid->resizeFire();
 
+      controlSystem.tick(dt);
       physicsSystem.tick(dt);
       animationSystem.tick(dt);
     }
 
     void makeFreeCamActiveControl() {
-//      publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", camera);
       publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", camera->actual);
       publish<entityId>("switch_to_free_controls", freeCam->getId());
-//      publish<entityId>("switch_to_mouse_controls", camera->getId());
       publish<entityId>("switch_to_mouse_controls", camera->gimbal->getId());
     }
 };

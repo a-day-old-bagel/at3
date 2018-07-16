@@ -144,7 +144,6 @@ void VulkanContext<EcsInterface>::registerMeshInstance(
       instance.indices.setTexture(textureRepo->getTextureArrayIndex(textureFileName));
     } else {
       instance.indices.setTexture(0u);  // The first texture will be used (probably "0.ktx", alphabetically, or debug).
-      printf("No texture applied to mesh: %s\n", meshFileName.c_str());
     }
     mesh.instances.push_back(instance);
   }

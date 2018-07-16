@@ -83,6 +83,8 @@ namespace at3 {
 
     // PyramidControls
     for (auto id : registries[1].ids) {
+      Placement *placement;
+      state->get_Placement(id, &placement);
       PyramidControls *ctrls;
       state->get_PyramidControls(id, &ctrls);
       Physics *physics;
@@ -90,12 +92,11 @@ namespace at3 {
       physics->rigidBody->applyForce({ctrls->force.x, ctrls->force.y, ctrls->force.z},
                                      btVector3(ctrls->up.x, ctrls->up.y, ctrls->up.z) * 0.05f);
 
+      // Gravity affecting pyramid
+      glm::vec3 grav = getCylGrav(placement->getTranslation(true));
+
       // Custom constraint to keep the pyramid pointing in the correct "up" direction
-
-      Placement *placement;
-      state->get_Placement(id, &placement);
-      glm::vec3 up = -getCylGravDir(placement->getTranslation(true));
-
+      glm::vec3 up = -glm::normalize(grav);
       float tip = glm::dot(ctrls->up, up) + 1.f;  // magnitude greatest @ 180 degrees (good) (but why positive 1...?)
       glm::vec3 rotAxis = glm::cross(ctrls->up, up);  // magnitude greatest @ 90 degrees, weak @ 180 (not ideal)
       physics->rigidBody->applyTorque(
@@ -311,12 +312,9 @@ namespace at3 {
 
           physics->rigidBody->getMotionState()->getWorldTransform(transform);
 
-          btVector3 grav = physics->rigidBody->getCenterOfMassPosition();
-          grav.setY(0.f);
-          float gravScalar = 0.f;//9.81f * (grav.length() / 2500.f);
-          grav.setX(grav.x() * gravScalar);
-          grav.setZ(grav.z() * gravScalar);
-          physics->rigidBody->setGravity(grav);
+          glm::vec3 grav = getCylGrav(placement->getTranslation(true));
+          btVector3 btGrav = btVector3(grav.x, grav.y, grav.z);
+          physics->rigidBody->setGravity(btGrav);
 
         } break;
       }

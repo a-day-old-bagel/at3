@@ -31,16 +31,16 @@ namespace at3 {
       : System(state),
         updateWvMatSub("primary_cam_wv", RTU_MTHD_DLGT(&ControlSystem::setWorldView, this)),
         switchToWalkCtrlSub("switch_to_walking_controls", RTU_MTHD_DLGT(&ControlSystem::switchToWalkCtrl, this)),
-        switchToPyrmCtrlSub("switch_to_pyramid_controls", RTU_MTHD_DLGT(&ControlSystem::switchToPyramidCtrl, this)),
-        switchToTrakCtrlSub("switch_to_track_controls", RTU_MTHD_DLGT(&ControlSystem::switchToTrackCtrl, this)),
-        switchToMousCtrlSub("switch_to_mouse_controls", RTU_MTHD_DLGT(&ControlSystem::switchToMouseCtrl, this)),
+        switchToPyramidCtrlSub("switch_to_pyramid_controls", RTU_MTHD_DLGT(&ControlSystem::switchToPyramidCtrl, this)),
+        switchToTrackCtrlSub("switch_to_track_controls", RTU_MTHD_DLGT(&ControlSystem::switchToTrackCtrl, this)),
+        switchToMouseCtrlSub("switch_to_mouse_controls", RTU_MTHD_DLGT(&ControlSystem::switchToMouseCtrl, this)),
         switchToFreeCtrlSub("switch_to_free_controls", RTU_MTHD_DLGT(&ControlSystem::switchToFreeCtrl, this))
   {
     name = "Control System";
   }
   ControlSystem::~ControlSystem() {
     currentCtrlKeys.reset();
-    currentCtrlMous.reset();
+    currentCtrlMouse.reset();
   }
 
   bool ControlSystem::onInit() {
@@ -49,7 +49,9 @@ namespace at3 {
 
   void ControlSystem::onTick(float dt) {
 
-    currentCtrlMous->tick();
+    if (currentCtrlMouse) {
+      currentCtrlMouse->tick();
+    }
 
     // renew look infos
     lookInfoIsFresh = false;
@@ -67,25 +69,19 @@ namespace at3 {
       pyramidControls->force = glm::vec3(0, 0, 0);
 
       if (length(pyramidControls->accel) > 0.0f) {
-
-
-
         updateLookInfos();
+        // handle turbo
+        float turbo = 1.f;
+        if (pyramidControls->turbo) {
+          turbo = 2.f;
+          pyramidControls->turbo = false;
+        }
         // Rotate the movement axis to the correct orientation
         pyramidControls->force = glm::mat3 {
             PYR_SIDE_ACCEL, 0, 0,
             0, PYR_SIDE_ACCEL, 0,
             0, 0, PYR_UP_ACCEL
-//        } * glm::normalize(cylRot * lastKnownHorizCtrlRot * pyramidControls->accel);
-        } * glm::normalize(lastKnownHorizCtrlRot * pyramidControls->accel);
-
-
-
-//        pyramidControls->force = PYR_SIDE_ACCEL * glm::normalize(
-//            glm::inverse(glm::mat3(lastKnownWorldView)) * pyramidControls->accel);
-
-
-
+        } * glm::normalize(lastKnownCylCtrlRot * pyramidControls->accel) * turbo;
         pyramidControls->accel = glm::vec3(0, 0, 0);
       }
     }
@@ -116,7 +112,7 @@ namespace at3 {
         updateLookInfos();
         // Rotate the movement axis to the correct orientation
         playerControls->forces = (playerControls->isRunning ? CHARA_RUN : CHARA_WALK) *
-            glm::normalize(lastKnownHorizCtrlRot * glm::vec3(playerControls->horizControl, 0.f));
+            glm::normalize(lastKnownCylCtrlRot * glm::vec3(playerControls->horizControl, 0.f));
         // Clear the input
         playerControls->horizControl = glm::vec2(0, 0);
       }
@@ -148,29 +144,11 @@ namespace at3 {
 
   void ControlSystem::updateLookInfos() {
     if (! lookInfoIsFresh) {
-
-      float sinPitch = -lastKnownWorldView[2][0];
-      float cosPitch = sqrt(1 - sinPitch*sinPitch);
-      float sinYaw = lastKnownWorldView[1][0] / cosPitch;
-      float cosYaw = lastKnownWorldView[0][0] / cosPitch;
-      float yaw   = atan2f(sinYaw, cosYaw);
-      lastKnownHorizCtrlRot = glm::mat3(glm::rotate(yaw, glm::vec3(0.f, 0.f, 1.f)));
-
-
-
-
-//      float xPos = lastKnownWorldView[3][0];
-//      float zPos = lastKnownWorldView[3][2];
-//      float cylAngle = atan2f(xPos, -zPos);
-//      glm::mat3 deCyl = glm::mat3(glm::rotate(cylAngle, glm::vec3(0.f, 1.f, 0.f)));
-//      glm::mat3 deCylView = glm::mat3(lastKnownWorldView) * deCyl;
-//
-//      float sinPitch = -deCylView[2][0];
-//      float cosPitch = sqrt(1 - sinPitch*sinPitch);
-//      float sinYaw = deCylView[1][0] / cosPitch;
-//      float cosYaw = deCylView[0][0] / cosPitch;
-//      float yaw   = atan2f(sinYaw, cosYaw);
-//      lastKnownHorizCtrlRot = glm::mat3(glm::rotate(yaw, glm::vec3(0.f, 0.f, 1.f)));
+      Placement *placement;
+      state->get_Placement(currentCtrlMouse->getId(), &placement);
+      MouseControls *mouseControls;
+      state->get_MouseControls(currentCtrlMouse->getId(), &mouseControls);
+      lastKnownCylCtrlRot = getCylStandingRot(placement->getTranslation(true), 0.f, mouseControls->yaw);
     }
   }
 
@@ -208,7 +186,6 @@ namespace at3 {
         MouseControls *mouseControls = getComponent();
         Placement *placement = getPlacement();
 
-
         // Update values used in tick()
         float dx = (float)event->motion.xrel * (mouseControls->invertedX ? 1.f : -1.f) * settings::controls::mouseSpeed;
         float dy = (float)event->motion.yrel * (mouseControls->invertedY ? 1.f : -1.f) * settings::controls::mouseSpeed;
@@ -226,78 +203,6 @@ namespace at3 {
         } else if (mouseControls->yaw < -twoPi) {
           mouseControls->yaw += twoPi;
         }
-
-
-
-//        // Get some input values, used in the next two options
-//
-//        float dx = (float)event->motion.xrel * (mouseControls->invertedX ? 1.f : -1.f) * settings::controls::mouseSpeed;
-//        float dy = (float)event->motion.yrel * (mouseControls->invertedY ? 1.f : -1.f) * settings::controls::mouseSpeed;
-//        float yawI = mouseControls->yaw;
-//        float pitchI = mouseControls->pitch;
-//        mouseControls->yaw += dx;
-//        mouseControls->pitch += dy;
-//        float yawF = mouseControls->yaw;
-//        float pitchF = mouseControls->pitch;
-
-
-
-//        // Rotate the orientation by a difference between old and new cached pitch and yaw (cylindrical)
-//        // This seems to produce drift.
-//
-//        glm::mat3 nativeLook = glm::mat3(glm::lookAt(glm::vec3(), glm::vec3(0, -1, 0), glm::vec3(0, 0, 1)));
-//        glm::vec3 pos = placement->getTranslation(true);
-//        glm::mat3 cylRot = glm::mat3(glm::rotate(atan2f(pos.x, -pos.z), glm::vec3(0, -1, 0)));
-//
-//        glm::mat3 pitchMatI = glm::mat3(glm::rotate(pitchI, glm::vec3(1, 0, 0)));
-//        glm::mat3 yawMatI = glm::mat3(glm::rotate(yawI, glm::vec3(0, 0, 1)));
-//        glm::mat3 rotI = cylRot * yawMatI * pitchMatI * nativeLook;
-//
-//        glm::mat3 pitchMatF = glm::mat3(glm::rotate(pitchF, glm::vec3(1, 0, 0)));
-//        glm::mat3 yawMatF = glm::mat3(glm::rotate(yawF, glm::vec3(0, 0, 1)));
-//        glm::mat3 rotF = cylRot * yawMatF * pitchMatF * nativeLook;
-//
-//        glm::mat4 rot = glm::mat4(rotF * glm::transpose(rotI));
-//        placement->mat = rot * placement->mat;
-
-
-
-//        // Set the orientation to the correct view given cached pitch and yaw (cylindrical)
-//        // This doesn't drift, but is abrupt if not updated every frame.
-//
-//        glm::mat3 pitch = glm::mat3(glm::rotate(mouseControls->pitch, glm::vec3(1, 0, 0)));
-//        glm::mat3 yaw = glm::mat3(glm::rotate(mouseControls->yaw, glm::vec3(0, 0, 1)));
-//        glm::mat3 nativeLook = glm::mat3(glm::lookAt(glm::vec3(), glm::vec3(0, -1, 0), glm::vec3(0, 0, 1)));
-//        glm::vec3 pos = placement->getTranslation(true);
-//        glm::mat3 cylRot = glm::mat3(glm::rotate(atan2f(pos.x, -pos.z), glm::vec3(0, -1, 0)));
-//        glm::mat3 rot = cylRot * yaw * pitch * nativeLook;
-//
-//        rot[3][0] = placement->mat[3][0];
-//        rot[3][1] = placement->mat[3][1];
-//        rot[3][2] = placement->mat[3][2];
-//        placement->mat = rot;
-
-
-
-
-//        // Rotate object orientation according to the mouse motion (flat)
-//        // This doesn't seem to drift, likely because it's flat.
-//
-//        float inversionValue = (mouseControls->invertedX ? 1.f : -1.f);
-//        placement->mat = glm::rotate(
-//            glm::mat4(1.f),
-//            (float)event->motion.xrel * settings::controls::mouseSpeed * inversionValue,
-//            { 0.0f, 0.0f, 1.0f }
-//        ) * placement->mat;
-//        inversionValue = (mouseControls->invertedY ? 1.f : -1.f);
-//        placement->mat = placement->mat * glm::rotate(
-//            glm::mat4(1.f),
-//            (float)event->motion.yrel * settings::controls::mouseSpeed * inversionValue,
-//            { 1.0f, 0.0f, 0.0f }
-//        );
-
-
-
       }
     public:
       ActiveMouseControl(State *state, const entityId id) : EntityAssociatedERM(state, id) {
@@ -311,10 +216,6 @@ namespace at3 {
         glm::vec3 pos = placement->getTranslation(true);
         glm::mat3 rot = getCylStandingRot(pos, mouseControls->pitch, mouseControls->yaw);
 
-//        glm::vec3 grv = getCylGrav(pos);
-//        printf("%.1f %.1f %.1f     %.1f %.1f %.1f\n", pos.x, pos.y, pos.z, grv.x, grv.y, grv.z);
-
-        // TODO: overwrite absolute values instead? (keep abs position)
         rot[3][0] = placement->mat[3][0];
         rot[3][1] = placement->mat[3][1];
         rot[3][2] = placement->mat[3][2];
@@ -323,7 +224,7 @@ namespace at3 {
       }
   };
   void ControlSystem::switchToMouseCtrl(void *id) {
-    currentCtrlMous = std::make_unique<ActiveMouseControl>(state, *(entityId*)id);
+    currentCtrlMouse = std::make_unique<ActiveMouseControl>(state, *(entityId*)id);
   }
 
   class ActiveWalkControl : public EntityAssociatedERM {
@@ -369,9 +270,9 @@ namespace at3 {
         assert(pyramidControls);
         return pyramidControls;
       }
-      void forwardOrBackward(float amount) { getComponent()->accel.y += amount; }
+      void forwardOrBackward(float amount) { getComponent()->accel.z -= amount; }
       void rightOrLeft(float amount) { getComponent()->accel.x += amount; }
-      void upOrDown(float amount) { getComponent()->accel.z += amount; }
+      void upOrDown(float amount) { getComponent()->accel.y += amount; }
 
       // These are used as actions for "key held" topic subscriptions
       void key_forward() { forwardOrBackward(1.f); }
@@ -380,6 +281,7 @@ namespace at3 {
       void key_left() { rightOrLeft(-1.f); }
       void key_up() { upOrDown(1.f); }
       void key_down() { upOrDown(-1.f); }
+      void turbo() { getComponent()->turbo = true; }
     public:
       ActivePyramidControl(State *state, const entityId id) : EntityAssociatedERM(state, id) {
         setAction("key_held_w", RTU_MTHD_DLGT(&ActivePyramidControl::key_forward, this));
@@ -388,6 +290,7 @@ namespace at3 {
         setAction("key_held_a", RTU_MTHD_DLGT(&ActivePyramidControl::key_left, this));
         setAction("key_held_lshift", RTU_MTHD_DLGT(&ActivePyramidControl::key_down, this));
         setAction("key_held_space", RTU_MTHD_DLGT(&ActivePyramidControl::key_up, this));
+        setAction("key_held_f", RTU_MTHD_DLGT(&ActivePyramidControl::turbo, this));
       }
       void tick() override {
 
@@ -409,6 +312,12 @@ namespace at3 {
         assert(physics);
         return physics;
       }
+      Placement *getPlacement() {
+        Placement *placement = nullptr;
+        state->get_Placement(id, &placement);
+        assert(placement);
+        return placement;
+      }
       void forwardOrBackward(float amount) {
         getComponent()->control += glm::vec2(amount, amount);
       }
@@ -419,7 +328,9 @@ namespace at3 {
         getComponent()->brakes += glm::vec2(std::max(0.f, -amount * 5.f), std::max(0.f, amount * 5.f));
       }
       void flip() {
-        getPhysics()->rigidBody->applyImpulse({0.f, 0.f, 100.f}, {1.f, 0.f, 0.f});
+        glm::vec3 cen = glm::vec3(0, 0, 1);
+        glm::vec3 dir = -getCylGrav(getPlacement()->getTranslation(true)) * 25.f;
+        getPhysics()->rigidBody->applyImpulse({dir.x, dir.y, dir.z}, {cen.x, cen.y, cen.z});
       }
 
       // These are used as actions for "key held" topic subscriptions
