@@ -263,8 +263,8 @@ namespace at3 {
     derived().onTick(dt);
 
     if (currentCamera) {
-      rtu::topics::publish<glm::mat4>("primary_cam_wv", currentCamera->worldView());
       scene.updateAbsoluteTransformCaches();
+      rtu::topics::publish<glm::mat4>("primary_cam_wv", currentCamera->worldView());
       vulkan->step();
     }
   }

@@ -50,6 +50,9 @@ namespace at3 {
       const glm::mat4 &peek() const {
         return this->stack.top();
       }
+      glm::mat4 &peek()  {
+        return this->stack.top();
+      }
       size_t size() { return stack.size(); }
 
     protected:

@@ -39,6 +39,7 @@ namespace {
   struct Placement : public Component<Placement> {
     glm::mat4 mat = glm::mat4(1.f);
     glm::mat4 absMat = glm::mat4(1.f);
+    bool forceLocalRotationAndScale = false;
     Placement(glm::mat4 mat);
     glm::vec3 getTranslation(bool abs = false);
     glm::vec3 getLookAt(bool abs = false);

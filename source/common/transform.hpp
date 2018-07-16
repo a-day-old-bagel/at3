@@ -76,6 +76,12 @@ namespace at3 {
       virtual const glm::mat4 &peek() const = 0;
 
       /**
+       * Returns the topmost transform of the transformation stack without
+       * removing it, but allowing modifications.
+       */
+      virtual glm::mat4 &peek() = 0;
+
+      /**
        * Removes the topmost element of the transformation stack.
        */
       virtual void pop() = 0;

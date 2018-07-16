@@ -25,7 +25,6 @@ static glm::mat4 pyrFireWiggle(const glm::mat4& transIn, const glm::mat4& absTra
 }
 
 static glm::mat4 pyrTopRotate(const glm::mat4& transIn, const glm::mat4& absTransIn, uint32_t time) {
-//  printf("%s\n\n", glm::to_string(absTransIn).c_str());
   return transIn * glm::rotate(glm::mat4(1.f), time * 0.002f, {0.f, 0.f, 1.f});
 }
 
@@ -105,8 +104,8 @@ namespace at3 {
     state.add_TransformFunction(fireId, RTU_FUNC_DLGT(pyrFireWiggle));
 
 //    camera = std::make_shared<ThirdPersonCamera> (0.f, 5.f, 0.f, RTU_FUNC_DLGT(cylindricalCameraRotate));
-//    camera = std::make_shared<ThirdPersonCamera> (0.f, 5.f, 0.f);
-    camera = std::make_shared<ThirdPersonCamera> (0.f, 0.f, 0.f);
+    camera = std::make_shared<ThirdPersonCamera> (0.f, 5.f, 0.f);
+//    camera = std::make_shared<ThirdPersonCamera> (0.f, 0.f, 0.f);
     camera->anchorTo(base);
 
     ctrlId = bottomId;

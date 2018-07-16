@@ -149,34 +149,45 @@ namespace at3 {
         myTransform = ecs->getTransform(id);
       }
       mw *= myTransform;
+      if (ecs->hasLocalMat3Override(id)) {
+        for (int i = 0; i < 3; ++i) {
+          for (int j = 0; j < 3; ++j) {
+            mw.peek()[i][j] = myTransform[i][j];
+          }
+        }
+      }
       ecs->setAbsTransform(id, mw.peek());
     }
 
     for (auto child : children) {
-      switch (child.second->inheritedDOF) {
-        case TRANSLATION_ONLY: {
-          TransformRAII mw_transOnly(modelWorld);
-          mw_transOnly *= glm::mat4({
-                                        1, 0, 0, 0,
-                                        0, 1, 0, 0,
-                                        0, 0, 1, 0,
-                                        myTransform[3][0], myTransform[3][1], myTransform[3][2], 1
-                                    });
-          child.second->traverseAndCache(mw_transOnly);
-        } break;
-        case WITHOUT_TRANSLATION: {
-          TransformRAII mw_noTrans(modelWorld);
-          mw_noTrans *= glm::mat4({
-                                      myTransform[0][0], myTransform[0][1], myTransform[0][2], 0,
-                                      myTransform[1][0], myTransform[1][1], myTransform[1][2], 0,
-                                      myTransform[2][0], myTransform[2][1], myTransform[2][2], 0,
-                                      0, 0, 0, 1
-                                  });
-          child.second->traverseAndCache(mw_noTrans);
-        } break;
-        default: child.second->traverseAndCache(mw);
-      }
+      child.second->traverseAndCache(mw);
     }
+
+//    for (auto child : children) {
+//      switch (child.second->inheritedDOF) {
+//        case TRANSLATION_ONLY: {
+//          TransformRAII mw_transOnly(modelWorld);
+//          mw_transOnly *= glm::mat4({
+//                                        1, 0, 0, 0,
+//                                        0, 1, 0, 0,
+//                                        0, 0, 1, 0,
+//                                        myTransform[3][0], myTransform[3][1], myTransform[3][2], 1
+//                                    });
+//          child.second->traverseAndCache(mw_transOnly);
+//        } break;
+//        case WITHOUT_TRANSLATION: {
+//          TransformRAII mw_noTrans(modelWorld);
+//          mw_noTrans *= glm::mat4({
+//                                      myTransform[0][0], myTransform[0][1], myTransform[0][2], 0,
+//                                      myTransform[1][0], myTransform[1][1], myTransform[1][2], 0,
+//                                      myTransform[2][0], myTransform[2][1], myTransform[2][2], 0,
+//                                      0, 0, 0, 1
+//                                  });
+//          child.second->traverseAndCache(mw_noTrans);
+//        } break;
+//        default: child.second->traverseAndCache(mw);
+//      }
+//    }
   }
 
   template<typename EcsInterface>
@@ -185,6 +196,9 @@ namespace at3 {
 
 
 //    wv = glm::inverse(ecs->getAbsTransform(id));
+////    wv[3][0] *= 0.5f;
+////    wv[3][1] *= 0.5f;
+////    wv[3][2] *= 0.5f;
 
 
     if ( ! forceTraverse) { // FIXME: NOT WORKING - inverse abs trans should be enough

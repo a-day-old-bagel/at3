@@ -1,6 +1,9 @@
 set( TARGET_NAME ${AT3_TARGET_PREFIX}triceratone )
 set( TARGET_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR} )
-add_subdirectory( "./ecs" )
+
+add_subdirectory( mechanics )
+add_subdirectory( ecs )
+
 add_executable( ${TARGET_NAME}
   main.cpp
   duneBuggy.cpp duneBuggy.hpp

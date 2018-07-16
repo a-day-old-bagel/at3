@@ -6,6 +6,8 @@
 #include <BulletCollision/CollisionShapes/btTriangleShape.h>
 //#include <BulletDynamics/Character/btKinematicCharacterController.h>
 
+#include "cylinderMath.h"
+
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "IncompatibleTypes"
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"
@@ -90,17 +92,11 @@ namespace at3 {
 
       // Custom constraint to keep the pyramid pointing in the correct "up" direction
 
-//      Placement *placement;
-//      state->get_Placement(id, &placement);
-//
-//      glm::vec3 up = glm::normalize(glm::vec3(placement->mat[3][0], 0.f, placement->mat[3][2]));
-//      if ( up.x != up.x ) {
-//        continue; // checking for NaN
-//      }
+      Placement *placement;
+      state->get_Placement(id, &placement);
+      glm::vec3 up = -getCylGravDir(placement->getTranslation(true));
 
-      glm::vec3 up = {0, 0, 1};
-
-      float tip = glm::dot(ctrls->up, up) - 1.f;  // magnitude greatest @ 180 degrees (good)
+      float tip = glm::dot(ctrls->up, up) + 1.f;  // magnitude greatest @ 180 degrees (good) (but why positive 1...?)
       glm::vec3 rotAxis = glm::cross(ctrls->up, up);  // magnitude greatest @ 90 degrees, weak @ 180 (not ideal)
       physics->rigidBody->applyTorque(
           btVector3(rotAxis.x, rotAxis.y, rotAxis.z) * tip * 1000.f

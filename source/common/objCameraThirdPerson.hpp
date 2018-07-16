@@ -74,6 +74,7 @@ namespace at3 {
         0,  0, up,  1  // at (0, 0, up)
     });
     SCENE_ECS->addMouseControl(gimbalId);
+    SCENE_ECS->setLocalMat3Override(gimbalId, true);
     gimbal->addChild(orient);
     orient->addChild(actual);
   }

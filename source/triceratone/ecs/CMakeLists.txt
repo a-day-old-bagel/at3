@@ -12,6 +12,7 @@ add_library( ${TARGET_NAME}_systems STATIC
   )
 target_link_libraries( ${TARGET_NAME}_systems
   ${AT3_TARGET_PREFIX}common
+  ${TARGET_NAME}_mechanics
   ${EZECS_TARGET_PREFIX}ecs
   )
 target_include_directories( ${TARGET_NAME}_systems PUBLIC

@@ -37,6 +37,8 @@ namespace at3 {
       void setTransform(const ezecs::entityId& id, const glm::mat4& transform);
       glm::mat4 getAbsTransform(const ezecs::entityId& id);
       void setAbsTransform(const ezecs::entityId& id, const glm::mat4& transform);
+      bool hasLocalMat3Override(const ezecs::entityId &id);
+      void setLocalMat3Override(const ezecs::entityId &id, bool value);
 
       void addCustomModelTransform(const ezecs::entityId &id, const ezecs::transformFunc &func);
       bool hasCustomModelTransform(const ezecs::entityId &id);

@@ -77,26 +77,20 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       glm::mat4 ident(1.f);
 
 
-      glm::mat4 start = glm::translate(ident, {0.f, 0.f, -50.f});
+      glm::mat4 start = glm::translate(ident, {0.f, 0.f, -200.f});
 //      glm::mat4 start = glm::translate(ident, {0.f, 0.f, 0.f});
       freeCam = std::make_shared<Object>();
       state.add_Placement(freeCam->getId(), start);
       state.add_FreeControls(freeCam->getId());
-
-//      camera = std::make_shared<PerspectiveCamera> (ident);
-//      state.add_MouseControls(camera->getId(), false, false);
-//      freeCam->addChild(camera);
-//      scene.addObject(freeCam);
-//      makeFreeCamActiveControl();
-
       camera = std::make_shared<ThirdPersonCamera>(0.f, 0.f, 0.f);
       camera->anchorTo(freeCam);
       scene.addObject(freeCam);
       makeFreeCamActiveControl();
 
 
-      glm::vec3 arkScale = {100.f, 100.f, 100.f};
-      glm::mat4 arkMat = glm::scale(glm::rotate(ident, (float)M_PI * .5f, {1.f, 0.f, 0.f}), arkScale);
+//      glm::vec3 arkScale = {100.f, 100.f, 100.f};
+//      glm::mat4 arkMat = glm::scale(glm::rotate(ident, (float)M_PI * .5f, {1.f, 0.f, 0.f}), arkScale);
+      glm::mat4 arkMat = glm::scale(ident, glm::vec3(100.f, 100.f, 100.f));
       terrainArk = std::make_shared<Mesh>(vulkan.get(), "terrainArk", "cliff1024_01", arkMat);
       TriangleMeshInfo info = {
           vulkan->getMeshStoredVertices("terrainArk"),
@@ -137,10 +131,6 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
 
       // TODO: Not working IN WINDOWS DEBUG BUILD ONLY for some reason?
       pyramid->resizeFire();
-
-//      Placement *placement;
-//      state.get_Placement(pyramid->camera->actual->getId(), &placement);
-//      printf("%s\n\n", glm::to_string(placement->absMat).c_str());
 
       physicsSystem.tick(dt);
       animationSystem.tick(dt);

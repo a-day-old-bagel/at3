@@ -67,6 +67,20 @@ namespace at3 {
     assert(status == ezecs::SUCCESS);
     placement->absMat = transform;
   }
+  bool EntityComponentSystemInterface::hasLocalMat3Override(const ezecs::entityId &id) {
+    Placement *placement;
+    ezecs::CompOpReturn status = state->get_Placement(id, &placement);
+    EZECS_CHECK_PRINT(EZECS_ERR(status));
+    assert(status == ezecs::SUCCESS);
+    return placement->forceLocalRotationAndScale;
+  }
+  void EntityComponentSystemInterface::setLocalMat3Override(const ezecs::entityId &id, bool value) {
+    Placement *placement;
+    ezecs::CompOpReturn status = state->get_Placement(id, &placement);
+    EZECS_CHECK_PRINT(EZECS_ERR(status));
+    assert(status == ezecs::SUCCESS);
+    placement->forceLocalRotationAndScale = value;
+  }
 
   void EntityComponentSystemInterface::addCustomModelTransform(const ezecs::entityId &id,
                                                                const ezecs::transformFunc &func) {

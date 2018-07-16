@@ -10,9 +10,14 @@
 #include "glm/gtx/transform.hpp"
 #include "glm/gtx/matrix_decompose.hpp"
 
+#include "cylinderMath.h"
+
 using namespace rtu::topics;
 
 namespace at3 {
+
+  constexpr float halfPi = ((float)M_PI * 0.5f);
+  constexpr float twoPi = ((float)M_PI * 2.f);
 
   #if !SDL_VERSION_ATLEAST(2, 0, 4)
   SDL_Window *grabbedWindow = nullptr;
@@ -56,21 +61,15 @@ namespace at3 {
       state->get_Placement(id, &placement);
 
       // provide the up vector
-      pyramidControls->up = glm::quat_cast(placement->mat) * glm::vec3(0.f, 0.f, 1.f);
+      pyramidControls->up = glm::mat3(placement->absMat) * glm::vec3(0.f, 0.f, 1.f);
 
       // zero control forces
       pyramidControls->force = glm::vec3(0, 0, 0);
 
-
-
-      float xPos = placement->mat[3][0];
-      float zPos = placement->mat[3][2];
-      float cylAngle = atan2f(xPos, -zPos);
-      glm::mat3 cylRot = glm::mat3(glm::rotate(cylAngle, glm::vec3(0.f, 1.f, 0.f)));
-
-
-
       if (length(pyramidControls->accel) > 0.0f) {
+
+
+
         updateLookInfos();
         // Rotate the movement axis to the correct orientation
         pyramidControls->force = glm::mat3 {
@@ -79,6 +78,13 @@ namespace at3 {
             0, 0, PYR_UP_ACCEL
 //        } * glm::normalize(cylRot * lastKnownHorizCtrlRot * pyramidControls->accel);
         } * glm::normalize(lastKnownHorizCtrlRot * pyramidControls->accel);
+
+
+
+//        pyramidControls->force = PYR_SIDE_ACCEL * glm::normalize(
+//            glm::inverse(glm::mat3(lastKnownWorldView)) * pyramidControls->accel);
+
+
 
         pyramidControls->accel = glm::vec3(0, 0, 0);
       }
@@ -206,21 +212,19 @@ namespace at3 {
         // Update values used in tick()
         float dx = (float)event->motion.xrel * (mouseControls->invertedX ? 1.f : -1.f) * settings::controls::mouseSpeed;
         float dy = (float)event->motion.yrel * (mouseControls->invertedY ? 1.f : -1.f) * settings::controls::mouseSpeed;
-        mouseControls->yaw -= dx;
+        mouseControls->yaw += dx;
         mouseControls->pitch += dy;
         // limited pitch value
-        if (mouseControls->pitch > M_PI * .5) {
-          mouseControls->pitch = (float)M_PI * .5f;
-        } else if (mouseControls->pitch < -M_PI * .5) {
-          mouseControls->pitch = -(float)M_PI * .5f;
+        if (mouseControls->pitch > halfPi) {
+          mouseControls->pitch = halfPi;
+        } else if (mouseControls->pitch < -halfPi) {
+          mouseControls->pitch = -halfPi;
         }
         // wrap-around yaw value
-        if (mouseControls->yaw > M_PI * 2) {
-          mouseControls->yaw -= (float)M_PI * 2.f;
-          printf("foo\n");
-        } else if (mouseControls->yaw < -M_PI * 2) {
-          mouseControls->yaw += (float)M_PI * 2.f;
-          printf("bar\n");
+        if (mouseControls->yaw > twoPi) {
+          mouseControls->yaw -= twoPi;
+        } else if (mouseControls->yaw < -twoPi) {
+          mouseControls->yaw += twoPi;
         }
 
 
@@ -300,82 +304,22 @@ namespace at3 {
         setAction("mouse_moved", RTU_MTHD_DLGT(&ActiveMouseControl::mouseMove, this));
       }
       void tick() override {
+
         MouseControls *mouseControls = getComponent();
         Placement *placement = getPlacement();
 
-        // Set the orientation to the correct view given cached pitch and yaw (cylindrical)
-        // This doesn't drift, but is abrupt if not updated every frame.
+        glm::vec3 pos = placement->getTranslation(true);
+        glm::mat3 rot = getCylStandingRot(pos, mouseControls->pitch, mouseControls->yaw);
 
-        glm::mat3 pitch = glm::mat3(glm::rotate(mouseControls->pitch, glm::vec3(1, 0, 0)));
-        glm::mat3 yaw = glm::mat3(glm::rotate(mouseControls->yaw, glm::vec3(0, 0, 1)));
-        glm::mat3 nativeLook = glm::mat3(glm::lookAt(glm::vec3(), glm::vec3(0, 1, 0), glm::vec3(0, 0, 1)));
-        glm::vec3 cylPos = placement->getTranslation(true);
-        glm::mat3 cylRot = glm::mat3(glm::rotate(atan2f(cylPos.x, cylPos.z), glm::vec3(0, 1, 0)));
-
-//        glm::mat3 engRot;
-//        if (cylPos.x || cylPos.z) {
-//          cylPos.y = 0.f;
-//          float cylRadius = glm::length(cylPos);
-//          float engEffect = std::min((float)M_PI * 0.5f, 1000.f / cylRadius);
-//          engRot = glm::mat3(glm::rotate(engEffect, glm::vec3(1, 0, 0)));
-//        } else {
-//          engRot = glm::mat3(1.f);
-//        }
-
-        cylPos.y = 0.f;
-        float cylRadius = glm::length(cylPos);
-        float engEffect = std::min((float)M_PI * 0.5f, 100.f / cylRadius);
-        glm::mat3 engRot = glm::mat3(glm::rotate(engEffect, glm::vec3(1, 0, 0)));
-
-        glm::mat3 rot = cylRot * engRot * yaw * pitch * nativeLook;
-
-//        glm::mat3 rot = cylRot * yaw * pitch * nativeLook;
-
-
-
-////        glm::mat3 pitch = glm::mat3(glm::rotate(mouseControls->pitch, glm::vec3(1, 0, 0)));
-////        glm::mat3 yaw = glm::mat3(glm::rotate(mouseControls->yaw, glm::vec3(0, 0, 1)));
-////        glm::vec3 nativeUp = {0, 0, 1};
-////        glm::mat3 nativeLook = glm::mat3(glm::lookAt(glm::vec3(), glm::vec3(0, 1, 0), nativeUp));
-//
-//        glm::vec3 nativeUp = {0, 1, 0};
-//        glm::mat3 pitch = glm::mat3(glm::rotate(-mouseControls->pitch, glm::vec3(1, 0, 0)));
-//        glm::mat3 yaw = glm::mat3(glm::rotate(-mouseControls->yaw, nativeUp));
-//        glm::mat3 nativeLook = glm::mat3(glm::lookAt(glm::vec3(), glm::vec3(0, 0, 1), nativeUp));
-//
-//        glm::vec3 gravity = placement->getTranslation(true); // artificial gravity is created by rotating cylinder
-//        printf("%.1f %.1f %.1f\n", gravity.x, gravity.y, gravity.z);
-//        gravity.y = 0; // no cylinder-generated gravity along axis of cylinder
-//        gravity += glm::vec3(0.f, 100.f, 0.f); // thrust of engines generates some gravity along axis of cylinder
-//        gravity = glm::normalize(gravity); // we only need the direction of the total artificial gravity
-//
-//        glm::mat3 gravRot;
-//        if (gravity.x || gravity.z) {
-//          glm::vec3 rotAxis = glm::cross(nativeUp, -gravity);
-//          float rotAngle = acosf(glm::dot(nativeUp, -gravity));
-//          gravRot = glm::mat3(glm::rotate(rotAngle, rotAxis));
-//        } else {
-//          gravRot = glm::mat3(1.f);
-//        }
-//
-////        glm::mat3 gravRot;
-////        if (gravity.x || gravity.z) {
-////          glm::vec3 rotAxis = glm::vec3(-gravity.z, 0.f, gravity.x);
-////          float rotAngle = acosf(gravity.y);
-////          gravRot = glm::mat3(glm::rotate(rotAngle, rotAxis));
-////        } else {
-////          gravRot = glm::mat3(1.f);
-////        }
-//
-//        glm::mat3 rot = gravRot * yaw * pitch * nativeLook;
-
-
+//        glm::vec3 grv = getCylGrav(pos);
+//        printf("%.1f %.1f %.1f     %.1f %.1f %.1f\n", pos.x, pos.y, pos.z, grv.x, grv.y, grv.z);
 
         // TODO: overwrite absolute values instead? (keep abs position)
         rot[3][0] = placement->mat[3][0];
         rot[3][1] = placement->mat[3][1];
         rot[3][2] = placement->mat[3][2];
         placement->mat = rot;
+
       }
   };
   void ControlSystem::switchToMouseCtrl(void *id) {
@@ -425,9 +369,9 @@ namespace at3 {
         assert(pyramidControls);
         return pyramidControls;
       }
-      void forwardOrBackward(float amount) { getComponent()->accel += glm::vec3(0.0f, amount, 0.f); }
-      void rightOrLeft(float amount) { getComponent()->accel += glm::vec3(amount, 0.f, 0.f); }
-      void upOrDown(float amount) { getComponent()->accel += glm::vec3(0.f, 0.f, amount); }
+      void forwardOrBackward(float amount) { getComponent()->accel.y += amount; }
+      void rightOrLeft(float amount) { getComponent()->accel.x += amount; }
+      void upOrDown(float amount) { getComponent()->accel.z += amount; }
 
       // These are used as actions for "key held" topic subscriptions
       void key_forward() { forwardOrBackward(1.f); }

@@ -64,6 +64,12 @@ namespace at3 {
       const glm::mat4 &peek() const { return base->peek(); }
 
       /**
+       * Look at the current transform represented by the stack.
+       * Allows modification.
+       */
+       glm::mat4 &peek() { return base->peek(); }
+
+      /**
        * Push the given matrix onto the transform stack. This is essentially a
        * matrix multiplication.
        *
