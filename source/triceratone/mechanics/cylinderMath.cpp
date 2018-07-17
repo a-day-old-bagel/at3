@@ -61,7 +61,7 @@ namespace at3 {
     float cylSpeed = glm::length(cylVel);
     if (!cylSpeed) { return 0.f; } // c'ya NaN
     float dot = glm::dot(nativeVel + cylVel, cylVel);
-    glm::vec3 projVelOntoCyl = cylVel * (dot / pow(cylSpeed, 2));
+    glm::vec3 projVelOntoCyl = cylVel * (dot / powf(cylSpeed, 2));
     float gravAdjustment = (sign(dot) * (glm::length(projVelOntoCyl) / cylSpeed)) * 2.f - 1.f;
 
     // FIXME: To clamp or not to clamp? That is the math question.
@@ -82,12 +82,6 @@ namespace at3 {
    * @return
    */
   glm::vec3 getCylGrav(const glm::vec3 & pos, const glm::vec3 & nativeVel) {
-
-    // hack to stop things from flying off to infinity if they escape the cylinder
-    if (glm::length(glm::vec2(pos.x, pos.y)) > 810.f || pos.z < -2510.f) {
-      return -glm::normalize(pos) * 20.f;
-    }
-
     // magnitude is angular velocity (rad/sec) times radius squared
     glm::vec3 fakeGrav = glm::vec3(pos.x, pos.y, 0.f) * powf(angVel, 2);
     fakeGrav *= getCylGravApplicationFactor(pos, nativeVel);

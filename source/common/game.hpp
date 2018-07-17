@@ -1,6 +1,10 @@
 
 #pragma once
 
+#if !SDL_VERSION_ATLEAST(2, 0, 8)
+#error "SDL2 version 2.0.8 or newer required."
+#endif
+
 #define TIME_MULTIPLIER_MS 0.001f
 
 #include <memory>
@@ -113,15 +117,14 @@ namespace at3 {
         case SDL_KEYDOWN:
           switch (event.key.keysym.scancode) {
             case SDL_SCANCODE_ESCAPE: {
-              SDL_Window *window = SDL_GetGrabbedWindow();
-              if (window == nullptr)
-                break;
-              // Release the mouse cursor from the window on escape pressed
-              SDL_SetWindowGrab(window, SDL_FALSE);
-#             if !SDL_VERSION_ATLEAST(2, 0, 4)
-                grabbedWindow = nullptr;
-#             endif
-              SDL_SetRelativeMouseMode(SDL_FALSE);
+              SDL_Window *window = sdlc->getWindow();
+              if(SDL_GetWindowGrab(window)) {  // window is currently grabbed - ungrab.
+                SDL_SetWindowGrab(window, SDL_FALSE);
+                SDL_SetRelativeMouseMode(SDL_FALSE);
+              } else {  // window is not currently grabbed - grab.
+                SDL_SetWindowGrab(window, SDL_TRUE);
+                SDL_SetRelativeMouseMode(SDL_TRUE);
+              }
             } break;
 
               // SOME FUNCTION KEYS ARE RESERVED: They do not emit a key down signal, but rather
@@ -157,18 +160,13 @@ namespace at3 {
             default: break;
           } break;
         case SDL_MOUSEBUTTONDOWN:
-          // Make sure the window has grabbed the mouse cursor
-          if (SDL_GetGrabbedWindow() == nullptr) {
-            // Somehow obtain a pointer for the window
-            SDL_Window *window = SDL_GetWindowFromID(event.button.windowID);
-            if (window == nullptr)
-              break;
-            // Grab the mouse cursor
-            SDL_SetWindowGrab(window, SDL_TRUE);
-#           if (!SDL_VERSION_ATLEAST(2, 0, 4))
-              grabbedWindow = window;
-#           endif
-            SDL_SetRelativeMouseMode(SDL_TRUE);
+          switch(event.button.button) {
+            case SDL_BUTTON_LEFT: rtu::topics::publish("mouse_down_left"); break;
+            case SDL_BUTTON_RIGHT: rtu::topics::publish("mouse_down_right"); break;
+            case SDL_BUTTON_MIDDLE: rtu::topics::publish("mouse_down_middle"); break;
+            case SDL_BUTTON_X1: rtu::topics::publish("mouse_down_x1"); break;
+            case SDL_BUTTON_X2: rtu::topics::publish("mouse_down_x2"); break;
+            default: break;
           } break;
         case SDL_MOUSEMOTION:
           if (SDL_GetRelativeMouseMode()) {
@@ -240,9 +238,8 @@ namespace at3 {
       }
     }
 
-    // Get current keyboard state
+    // publish current keyboard state
     const Uint8 *keyStates = SDL_GetKeyboardState(NULL);
-    // Publish to "key_held" topics
     RTU_DO_ON_KEYS(rtu::topics::publish("key_held_w"), keyStates, SDL_SCANCODE_W)
     RTU_DO_ON_KEYS(rtu::topics::publish("key_held_s"), keyStates, SDL_SCANCODE_S)
     RTU_DO_ON_KEYS(rtu::topics::publish("key_held_d"), keyStates, SDL_SCANCODE_D)
@@ -255,6 +252,14 @@ namespace at3 {
     RTU_DO_ON_KEYS(rtu::topics::publish("key_held_lshift"), keyStates, SDL_SCANCODE_LSHIFT)
     RTU_DO_ON_KEYS(rtu::topics::publish("key_held_lalt"), keyStates, SDL_SCANCODE_LALT)
     RTU_DO_ON_KEYS(rtu::topics::publish("key_held_lctrl"), keyStates, SDL_SCANCODE_LCTRL)
+
+    // publish current mouse state
+    const uint32_t mouseState = SDL_GetMouseState(nullptr, nullptr);
+    if (mouseState & SDL_BUTTON(SDL_BUTTON_LEFT)) rtu::topics::publish("mouse_held_left");
+    if (mouseState & SDL_BUTTON(SDL_BUTTON_RIGHT)) rtu::topics::publish("mouse_held_right");
+    if (mouseState & SDL_BUTTON(SDL_BUTTON_MIDDLE)) rtu::topics::publish("mouse_held_middle");
+    if (mouseState & SDL_BUTTON(SDL_BUTTON_X1)) rtu::topics::publish("mouse_held_x1");
+    if (mouseState & SDL_BUTTON(SDL_BUTTON_X2)) rtu::topics::publish("mouse_held_x2");
 
     // Update logic given the time since the last frame was drawn TODO: SDL_GetTicks may be too granular
     float currentTime = (float)SDL_GetTicks() * TIME_MULTIPLIER_MS;

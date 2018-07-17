@@ -37,7 +37,7 @@ namespace at3 {
 
   template <typename EcsInterface>
   glm::mat4 ObjCamera<EcsInterface>::worldView() {
-    lastWorldViewQueried = glm::inverse(ecs->getAbsTransform(id));
+    lastWorldViewQueried = glm::inverse(SCENE_ECS->getAbsTransform(SCENE_ID));
     return lastWorldViewQueried;
   }
 }

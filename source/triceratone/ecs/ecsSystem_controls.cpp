@@ -19,14 +19,6 @@ namespace at3 {
   constexpr float halfPi = ((float)M_PI * 0.5f);
   constexpr float twoPi = ((float)M_PI * 2.f);
 
-  #if !SDL_VERSION_ATLEAST(2, 0, 4)
-  SDL_Window *grabbedWindow = nullptr;
-
-  SDL_Window *SDL_GetGrabbedWindow() {
-    return grabbedWindow;
-  }
-  #endif
-
   ControlSystem::ControlSystem(State *state)
       : System(state),
         updateWvMatSub("primary_cam_wv", RTU_MTHD_DLGT(&ControlSystem::setWorldView, this)),
@@ -119,18 +111,6 @@ namespace at3 {
         } * glm::normalize(lastKnownCylCtrlRot * playerControls->accel);
         playerControls->accel = glm::vec3(0, 0, 0);
       }
-
-//      // TODO: fixme
-//      // FIXME: rotation is a little off - try checking forward movement vector.
-//
-//      if (length(playerControls->horizControl) > 0.0f) {
-//        updateLookInfos();
-//        // Rotate the movement axis to the correct orientation
-//        playerControls->forces = (playerControls->isRunning ? CHARA_RUN : CHARA_WALK) *
-//            glm::normalize(lastKnownCylCtrlRot * glm::vec3(playerControls->horizControl, 0.f));
-//        // Clear the input
-//        playerControls->horizControl = glm::vec2(0, 0);
-//      }
     }
     for (auto id: (registries[3].ids)) { // Free Control
       FreeControls *freeControls;
@@ -229,7 +209,7 @@ namespace at3 {
         Placement *placement = getPlacement();
 
         glm::vec3 pos = placement->getTranslation(true);
-        glm::mat3 rot = getCylStandingRot(pos, mouseControls->pitch, mouseControls->yaw);
+        glm::mat4 rot = glm::mat4(getCylStandingRot(pos, mouseControls->pitch, mouseControls->yaw));
 
         rot[3][0] = placement->mat[3][0];
         rot[3][1] = placement->mat[3][1];
@@ -249,8 +229,6 @@ namespace at3 {
         assert(playerControls);
         return playerControls;
       }
-//      void forwardOrBackward(float amount) { getComponent()->horizControl += glm::vec2(0.0f, amount); }
-//      void rightOrLeft(float amount) { getComponent()->horizControl += glm::vec2(amount, 0.f); }
       void forwardOrBackward(float amount) { getComponent()->accel.z -= amount; }
       void rightOrLeft(float amount) { getComponent()->accel.x += amount; }
       void upOrDown(float amount) { getComponent()->accel.y += amount; }

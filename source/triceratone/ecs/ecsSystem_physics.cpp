@@ -326,6 +326,17 @@ namespace at3 {
           btVector3 btGrav = btVector3(grav.x, grav.y, grav.z);
           physics->rigidBody->setGravity(btGrav);
 
+          // temporary hack to stop things from flying off to infinity if they escape the cylinder FIXME: hack
+          glm::vec3 pos = placement->getTranslation(true);
+          if (glm::length(glm::vec2(pos.x, pos.y)) > 810.f || pos.z < -2510.f) {
+            btTransform writeTransform = physics->rigidBody->getCenterOfMassTransform();
+            float xOffset = (rand() % 400) * .1f - 20.f;
+            float yOffset = (rand() % 400) * .1f - 20.f;
+            writeTransform.setOrigin(btVector3(xOffset, yOffset, 2200)); // appears near "top" end of cylinder
+            physics->rigidBody->setCenterOfMassTransform(writeTransform);
+            physics->rigidBody->setLinearVelocity(btVector3(0, 0, 0));
+          }
+
         } break;
       }
       glm::mat4 newTransform(1.f);
