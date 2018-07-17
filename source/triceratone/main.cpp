@@ -26,6 +26,8 @@
 #include "ecsSystem_controls.hpp"
 #include "ecsSystem_physics.hpp"
 
+#include "cylinderMath.h"
+
 #include "walker.hpp"
 #include "duneBuggy.hpp"
 #include "pyramid.hpp"
@@ -96,14 +98,18 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       state.add_Physics(terrainArk->getId(), 0, &info, Physics::STATIC_MESH);
       scene.addObject(terrainArk);
 
-
-      glm::mat4 playerMat = glm::translate(ident, {10, -790, -100});
+      glm::vec3 playerPos = glm::vec3(10, -790, -100);
+      glm::mat4 playerMat = glm::translate(ident, playerPos);
       player = std::make_unique<Walker>(state, vulkan.get(), scene, playerMat);
 
-      glm::mat4 buggyMat = glm::translate(ident, {0, -790, -100});
+      glm::vec3 buggyPos = glm::vec3(0, -790, -100);
+      glm::mat4 buggyMat = glm::translate(ident, buggyPos);
+      buggyMat *= glm::mat4(getCylStandingRot(buggyPos, (float)M_PI * -0.5f, 0));
       duneBuggy = std::make_unique<DuneBuggy>(state, vulkan.get(), scene, buggyMat);
 
-      glm::mat4 pyramidMat = glm::translate(ident, {-10, -790, -100});
+      glm::vec3 pyramidPos = glm::vec3(-10, -790, -100);
+      glm::mat4 pyramidMat = glm::translate(ident, pyramidPos);
+      pyramidMat *= glm::mat4(getCylStandingRot(pyramidPos, (float)M_PI * -0.5f, 0));
       pyramid = std::make_unique<Pyramid>(state, vulkan.get(), scene, pyramidMat);
 
 

@@ -20,12 +20,12 @@ namespace at3 {
       float far = 10000.f;
 
       namespace vulkan {
-        bool forceFifo = false;
+        bool forceFifo = true;
       }
     }
 
     namespace controls {
-      float mouseSpeed = 0.1f;
+      float mouseSpeed = 0.005f;
     }
 
     // The settings registry contains mappings from setting name to memory location.
