@@ -48,27 +48,29 @@ namespace at3 {
   }
 
   glm::mat4 Walker::bodyVisualTransform(const glm::mat4 &transIn, const glm::mat4& absTransIn, uint32_t time) {
-    Placement *camPlacement;
-    state->get_Placement(camera->gimbal->getId(), &camPlacement);
-    PlayerControls *controls;
-    state->get_PlayerControls(physicsBody->getId(), &controls);
-    float correction = 0.f;
-    if (controls->isGrounded) {
-      correction = controls->equilibriumOffset;
-      float correctionThresholdHigh = -1.f;
-      float correctionThresholdLow = 0.f;
-      if (correction < correctionThresholdLow && correction > correctionThresholdHigh) {
-        float range = correctionThresholdHigh - correctionThresholdLow;
-        correction *= pow((correctionThresholdHigh - correction) / range, 2);
-      }
-    }
-    return transIn * glm::scale(
-        glm::rotate(
-            glm::translate(
-                glm::mat4(1.f),
-                {0.f, 0.f, -HUMAN_HEIGHT * 0.165f + correction}),
-            camPlacement->getHorizRot(), glm::vec3(0.0f, 0.0f, 1.0f)),
-        {HUMAN_WIDTH * 0.5f, HUMAN_DEPTH * 0.5f, HUMAN_HEIGHT * 0.5f});
+    return glm::scale(transIn, glm::vec3(.4f, .4f, .4f));
+
+//    Placement *camPlacement;
+//    state->get_Placement(camera->gimbal->getId(), &camPlacement);
+//    PlayerControls *controls;
+//    state->get_PlayerControls(physicsBody->getId(), &controls);
+//    float correction = 0.f;
+//    if (controls->isGrounded) {
+//      correction = controls->equilibriumOffset;
+//      float correctionThresholdHigh = -1.f;
+//      float correctionThresholdLow = 0.f;
+//      if (correction < correctionThresholdLow && correction > correctionThresholdHigh) {
+//        float range = correctionThresholdHigh - correctionThresholdLow;
+//        correction *= pow((correctionThresholdHigh - correction) / range, 2);
+//      }
+//    }
+//    return transIn * glm::scale(
+//        glm::rotate(
+//            glm::translate(
+//                glm::mat4(1.f),
+//                {0.f, 0.f, -HUMAN_HEIGHT * 0.165f + correction}),
+//            camPlacement->getHorizRot(), glm::vec3(0.0f, 0.0f, 1.0f)),
+//        {HUMAN_WIDTH * 0.5f, HUMAN_DEPTH * 0.5f, HUMAN_HEIGHT * 0.5f});
   }
 
   void Walker::makeActiveControl(void *nothing) {

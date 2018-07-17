@@ -116,8 +116,8 @@ namespace {
   EZECS_COMPONENT_DEPENDENCIES(TrackControls, Physics)
 
   struct PlayerControls : public Component<PlayerControls> {
-    glm::vec2 horizControl = glm::vec2(0, 0);
-    glm::vec3 forces = glm::vec3(0, 0, 0);
+    glm::vec3 accel = glm::vec3(0, 0, 0);
+    glm::vec3 force = glm::vec3(0, 0, 0);
     glm::vec3 up = glm::vec3(0, 0, 0);
     float equilibriumOffset = 0.f;
     bool jumpRequested = false;

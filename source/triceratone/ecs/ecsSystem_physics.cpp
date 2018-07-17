@@ -28,17 +28,14 @@ namespace at3 {
       )
   {
     // one-sided triangles - This is used to allow for going back through the backside of terrain if you fall through.
-    if (colObj1Wrap->getCollisionShape()->getShapeType() == TRIANGLE_SHAPE_PROXYTYPE)
-    {
+    if (colObj1Wrap->getCollisionShape()->getShapeType() == TRIANGLE_SHAPE_PROXYTYPE) {
       auto triShape = static_cast<const btTriangleShape*>( colObj1Wrap->getCollisionShape() );
       const btVector3* v = triShape->m_vertices1;
       btVector3 faceNormalLs = btCross(v[2] - v[0], v[1] - v[0]);
       faceNormalLs.normalize();
       btVector3 faceNormalWs = colObj1Wrap->getWorldTransform().getBasis() * faceNormalLs;
       float nDotF = btDot( faceNormalWs, cp.m_normalWorldOnB );
-//      if ( nDotF <= 0.0f )
-      if ( nDotF >= 0.0f )  // cylinder is backwards?
-      {
+      if ( nDotF >= 0.0f ) { // switch this to switch forward/back faces
         // flip the contact normal to be aligned with the face normal
         cp.m_normalWorldOnB += -2.0f * nDotF * faceNormalWs;
       }
@@ -92,8 +89,8 @@ namespace at3 {
       physics->rigidBody->applyForce({ctrls->force.x, ctrls->force.y, ctrls->force.z},
                                      btVector3(ctrls->up.x, ctrls->up.y, ctrls->up.z) * 0.05f);
 
-      // Gravity affecting pyramid
-      glm::vec3 grav = getCylGrav(placement->getTranslation(true));
+      // simplified gravity affecting pyramid, not accounting for tangential motion.
+      glm::vec3 grav = getNaiveCylGrav(placement->getTranslation(true));
 
       // Custom constraint to keep the pyramid pointing in the correct "up" direction
       glm::vec3 up = -glm::normalize(grav);
@@ -106,16 +103,17 @@ namespace at3 {
 
     // PlayerControls
     // TODO: create a kinematic body (0 mass, recalc inertia) to which to anchor
-    //       the capsule when it lands from a height (point to point constraint, AKA ball joint, maybe)?
+    //       the body when it lands from a height (point to point constraint, AKA ball joint, maybe)?
     for (auto id : registries[3].ids) {
+      Placement *placement;
+      state->get_Placement(id, &placement);
       PlayerControls *ctrls;
       state->get_PlayerControls(id, &ctrls);
       Physics *physics;
       state->get_Physics(id, &physics);
 
-      // Fire some rays straight down
-      btTransform capsuleTrans;
-      physics->rigidBody->getMotionState()->getWorldTransform(capsuleTrans);
+      // Fire some rays straight "down"
+
       float rayLength = 2.f;//HUMAN_HEIGHT * 1.5f;
       float rayDistTravelledAvg = 0.f;
       btVector3 rayHitPointAvg = {0.f, 0.f, 0.f};
@@ -123,23 +121,30 @@ namespace at3 {
       btVector3 groundVelocity;
       bool groundVelocityFound = false;
       bool anyRayHitGoodGround = false;
-      btVector3 orig = capsuleTrans.getOrigin();
+
+      glm::vec3 pos = placement->getTranslation(true);
+      btVector3 btPos = glmToBullet(pos);
+      glm::vec3 btVel = bulletToGlm(physics->rigidBody->getLinearVelocity());
+      glm::vec3 down = getNaiveCylGravDir(pos);
+      btVector3 rayDirection = glmToBullet(down);
+
       std::vector<btVector3> rayStartLocations = {
-#         if CHARA_USE_FOUR_RAYS
-            {orig.x(), orig.y() + HUMAN_DEPTH * 0.5f, orig.z() - HUMAN_HEIGHT * 0.15f},
-            {orig.x(), orig.y() - HUMAN_DEPTH * 0.5f, orig.z() - HUMAN_HEIGHT * 0.15f},
-            {orig.x() + HUMAN_WIDTH * 0.5f, orig.y(), orig.z() - HUMAN_HEIGHT * 0.15f},
-            {orig.x() - HUMAN_WIDTH * 0.5f, orig.y(), orig.z() - HUMAN_HEIGHT * 0.15f}
-#         else
-            {orig.x(), orig.y(), orig.z() - HUMAN_HEIGHT * 0.15f},
-#         endif
+          {btPos.x(), btPos.y(), btPos.z()},
       };
+
       for (auto rayStart : rayStartLocations) {
-        btVector3 rayEnd = rayStart + btVector3(0.f, 0.f, -rayLength);
+
+        btVector3 rayEnd = rayStart + rayDirection * rayLength;
+
         btCollisionWorld::ClosestRayResultCallback groundSpringRayCallback(rayStart, rayEnd);
         dynamicsWorld->rayTest(rayStart, rayEnd, groundSpringRayCallback);
         rayDistTravelledAvg += (groundSpringRayCallback.m_hitPointWorld - rayStart).length();
-        anyRayHitGoodGround |= (groundSpringRayCallback.hasHit() && groundSpringRayCallback.m_hitNormalWorld.z() > 0.4);
+
+
+//        anyRayHitGoodGround |= (groundSpringRayCallback.hasHit() && groundSpringRayCallback.m_hitNormalWorld.z() > 0.4);
+        anyRayHitGoodGround |= (groundSpringRayCallback.hasHit());
+
+
         rayHitPointAvg += groundSpringRayCallback.m_hitPointWorld;
         rayNormalAvg += groundSpringRayCallback.m_hitNormalWorld;
         if ( ! groundVelocityFound && groundSpringRayCallback.m_collisionObject) { // Use the results of the first ray
@@ -160,13 +165,13 @@ namespace at3 {
       ctrls->equilibriumOffset = springForceLinear;
 
       // Handle jumping
-      float zVel = physics->rigidBody->getLinearVelocity().z();
+      float upSpeed = glm::dot(btVel, -down);
       if (ctrls->jumpInProgress) {
-        if (springForceLinear >= -0.1f && zVel < 0.f) {
+        if (springForceLinear >= -0.1f && upSpeed < 0.f) {
           ctrls->jumpInProgress = false;
         }
       } else if (ctrls->jumpRequested) {
-        physics->rigidBody->applyImpulse({0.f, 0.f, CHARA_JUMP}, {0.f, 0.f, 0.f});
+        physics->rigidBody->applyCentralImpulse(-rayDirection * CHARA_JUMP);
         ctrls->jumpInProgress = true;
       }
 
@@ -193,50 +198,53 @@ namespace at3 {
 
         float springForceFinal = springForceMagnitude * ((0 < springForceLinear) - (springForceLinear < 0));
 
-        // Add a strong damping and negation of falling motion if the character is moving down fast past equilibrium
-        if (zVel < -0.2f && springForceLinear > 0.05f) {
-          physics->rigidBody->setLinearVelocity(btVector3(
-              physics->rigidBody->getLinearVelocity().x(),
-              physics->rigidBody->getLinearVelocity().y(), 0));
-          zFactor = 0.0f;
-        }
+//        // Add a strong damping and negation of falling motion if the character is moving down fast past equilibrium
+////        if (zVel < -0.2f && springForceLinear > 0.05f) {
+//        if (upSpeed < -0.2f && springForceLinear > 0.05f) {
+//          physics->rigidBody->setLinearVelocity(btVector3(
+//              physics->rigidBody->getLinearVelocity().x(),
+//              physics->rigidBody->getLinearVelocity().y(), 0));
+//          zFactor = 0.0f;
+//        }
 
-        // If the character is on top of a moving object, match its velocity TODO: This is poop. Riding car is ghetto.
-        float groundSpeedFactor = 1.f;
-        if (groundVelocity.length()) {
-          btVector3 groundForce = groundVelocity - physics->rigidBody->getLinearVelocity();
-          physics->rigidBody->applyCentralImpulse(groundForce);
-          linDamp = 0;
-          groundSpeedFactor = 2.5f;
-        }
+//        // If the character is on top of a moving object, match its velocity TODO: This is poop. Riding car is ghetto.
+//        float groundSpeedFactor = 1.f;
+//        if (groundVelocity.length()) {
+//          btVector3 groundForce = groundVelocity - physics->rigidBody->getLinearVelocity();
+//          physics->rigidBody->applyCentralImpulse(groundForce);
+//          linDamp = 0;
+//          groundSpeedFactor = 2.5f;
+//        }
 
-        // modify walking force to be perpendicular to the ground normal so as not to point into or out of the ground.
-        // this avoids "jiggling" as you walk up or down a hill, especially on slow hardware.
-        float origForceMag = glm::length(ctrls->forces);
-        ctrls->forces.z = -1 * ( ctrls->forces.x * rayNormalAvg.x() +
-                                 ctrls->forces.y * rayNormalAvg.y() ) ;
-        // re-normalize the new walking force vector to match the magnitude of the old one
-        if ( glm::length(ctrls->forces) ) {
-          ctrls->forces = origForceMag * glm::normalize(ctrls->forces);
-        }
+//        // modify walking force to be perpendicular to the ground normal so as not to point into or out of the ground.
+//        // this avoids "jiggling" as you walk up or down a hill, especially on slow hardware.
+//        float origForceMag = glm::length(ctrls->force);
+//        ctrls->force.z = -1 * ( ctrls->force.x * rayNormalAvg.x() +
+//                                 ctrls->force.y * rayNormalAvg.y() ) ;
+//        // re-normalize the new walking force vector to match the magnitude of the old one
+//        if ( glm::length(ctrls->force) ) {
+//          ctrls->force = origForceMag * glm::normalize(ctrls->force);
+//        }
 
-        physics->rigidBody->applyCentralForce({
-            ctrls->forces.x * mvmntForceMagnitude * groundSpeedFactor,
-            ctrls->forces.y * mvmntForceMagnitude * groundSpeedFactor,
-            ctrls->forces.z * mvmntForceMagnitude * groundSpeedFactor + springForceFinal });
+        btVector3 springForceFinalVector = springForceFinal * glmToBullet(-down);
+        btVector3 finalForceVector = btVector3(
+            ctrls->force.x * mvmntForceMagnitude,
+            ctrls->force.y * mvmntForceMagnitude,
+            ctrls->force.z * mvmntForceMagnitude) + springForceFinalVector;
+        physics->rigidBody->applyCentralForce(finalForceVector);
 
       } else { // movement while in air - apply greatly reduced controls
         physics->rigidBody->applyCentralForce({
-            ctrls->forces.x * CHARA_MIDAIR_FACTOR,
-            ctrls->forces.y * CHARA_MIDAIR_FACTOR,
-            0.f});
+              ctrls->force.x * CHARA_MIDAIR_FACTOR,
+              ctrls->force.y * CHARA_MIDAIR_FACTOR,
+              ctrls->force.z * CHARA_MIDAIR_FACTOR});
       }
 
       physics->rigidBody->setDamping(linDamp, angDamp); // Set damping
       physics->rigidBody->setLinearFactor(btVector3(1, 1, zFactor));
 
       // zero controls
-      ctrls->forces = glm::vec3(0, 0, 0);
+      ctrls->force = glm::vec3(0, 0, 0);
       ctrls->jumpRequested = false;
       ctrls->isRunning = false;
     }
@@ -312,7 +320,9 @@ namespace at3 {
 
           physics->rigidBody->getMotionState()->getWorldTransform(transform);
 
-          glm::vec3 grav = getCylGrav(placement->getTranslation(true));
+          btVector3 vel = physics->rigidBody->getLinearVelocity();
+          glm::vec3 grav = getCylGrav(placement->getTranslation(true), glm::vec3(vel.x(), vel.y(), vel.z()));
+
           btVector3 btGrav = btVector3(grav.x, grav.y, grav.z);
           physics->rigidBody->setGravity(btGrav);
 
@@ -370,7 +380,8 @@ namespace at3 {
         shape = new btConvexHullShape(points->data(), (int) points->size() / 3, 3 * sizeof(float));
       } break;
       case Physics::CHARA: {
-        shape = new btCapsuleShapeZ(HUMAN_WIDTH * 0.5f, HUMAN_HEIGHT * 0.33f);
+//        shape = new btCapsuleShapeZ(HUMAN_WIDTH * 0.5f, HUMAN_HEIGHT * 0.33f);
+        shape = new btSphereShape(HUMAN_WIDTH * 0.5f);
       } break;
       case Physics::STATIC_MESH: {
 

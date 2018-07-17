@@ -45,7 +45,7 @@
 #define HUMAN_DEPTH 0.3f
 
 #define CHARA_JUMP 8.f
-#define CHARA_MIDAIR_FACTOR 0.f // 0.02f
+#define CHARA_MIDAIR_FACTOR 0.05f // 0.02f
 #define CHARA_SPRING_FACTOR 140.f
 #define CHARA_USE_FOUR_RAYS 0
 #define CHARA_WALK 100.f

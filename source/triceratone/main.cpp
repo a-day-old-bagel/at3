@@ -76,7 +76,7 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       glm::mat4 ident(1.f);
 
 
-      glm::mat4 start = glm::translate(ident, {0, -750, -120});
+      glm::mat4 start = glm::translate(ident, {0, -790, -120});
       freeCam = std::make_shared<Object>();
       state.add_Placement(freeCam->getId(), start);
       state.add_FreeControls(freeCam->getId());
@@ -97,13 +97,13 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       scene.addObject(terrainArk);
 
 
-      glm::mat4 playerMat = glm::translate(ident, {10, -750, -100});
+      glm::mat4 playerMat = glm::translate(ident, {10, -790, -100});
       player = std::make_unique<Walker>(state, vulkan.get(), scene, playerMat);
 
-      glm::mat4 buggyMat = glm::translate(ident, {0, -750, -100});
+      glm::mat4 buggyMat = glm::translate(ident, {0, -790, -100});
       duneBuggy = std::make_unique<DuneBuggy>(state, vulkan.get(), scene, buggyMat);
 
-      glm::mat4 pyramidMat = glm::translate(ident, {-10, -750, -100});
+      glm::mat4 pyramidMat = glm::translate(ident, {-10, -790, -100});
       pyramid = std::make_unique<Pyramid>(state, vulkan.get(), scene, pyramidMat);
 
 

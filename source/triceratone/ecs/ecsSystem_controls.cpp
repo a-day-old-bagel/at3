@@ -103,19 +103,34 @@ namespace at3 {
       state->get_Placement(id, &placement);
 
       // provide the up vector
-      playerControls->up = glm::quat_cast(placement->mat) * glm::vec3(0.f, 0.f, 1.f);
+      playerControls->up = glm::mat3(placement->absMat) * glm::vec3(0.f, 0.f, 1.f);
 
-      // TODO: fixme
-      // FIXME: rotation is a little off - try checking forward movement vector.
+      // zero control forces
+      playerControls->force = glm::vec3(0, 0, 0);
 
-      if (length(playerControls->horizControl) > 0.0f) {
+      if (length(playerControls->accel) > 0.0f) {
         updateLookInfos();
         // Rotate the movement axis to the correct orientation
-        playerControls->forces = (playerControls->isRunning ? CHARA_RUN : CHARA_WALK) *
-            glm::normalize(lastKnownCylCtrlRot * glm::vec3(playerControls->horizControl, 0.f));
-        // Clear the input
-        playerControls->horizControl = glm::vec2(0, 0);
+        float speed = playerControls->isRunning ? CHARA_RUN : CHARA_WALK;
+        playerControls->force = glm::mat3 {
+            speed, 0, 0,
+            0, speed, 0,
+            0, 0, speed
+        } * glm::normalize(lastKnownCylCtrlRot * playerControls->accel);
+        playerControls->accel = glm::vec3(0, 0, 0);
       }
+
+//      // TODO: fixme
+//      // FIXME: rotation is a little off - try checking forward movement vector.
+//
+//      if (length(playerControls->horizControl) > 0.0f) {
+//        updateLookInfos();
+//        // Rotate the movement axis to the correct orientation
+//        playerControls->forces = (playerControls->isRunning ? CHARA_RUN : CHARA_WALK) *
+//            glm::normalize(lastKnownCylCtrlRot * glm::vec3(playerControls->horizControl, 0.f));
+//        // Clear the input
+//        playerControls->horizControl = glm::vec2(0, 0);
+//      }
     }
     for (auto id: (registries[3].ids)) { // Free Control
       FreeControls *freeControls;
@@ -234,8 +249,11 @@ namespace at3 {
         assert(playerControls);
         return playerControls;
       }
-      void forwardOrBackward(float amount) { getComponent()->horizControl += glm::vec2(0.0f, amount); }
-      void rightOrLeft(float amount) { getComponent()->horizControl += glm::vec2(amount, 0.f); }
+//      void forwardOrBackward(float amount) { getComponent()->horizControl += glm::vec2(0.0f, amount); }
+//      void rightOrLeft(float amount) { getComponent()->horizControl += glm::vec2(amount, 0.f); }
+      void forwardOrBackward(float amount) { getComponent()->accel.z -= amount; }
+      void rightOrLeft(float amount) { getComponent()->accel.x += amount; }
+      void upOrDown(float amount) { getComponent()->accel.y += amount; }
       void run() { getComponent()->isRunning = true; }
       void jump() { getComponent()->jumpRequested = true; }
 
@@ -329,7 +347,7 @@ namespace at3 {
       }
       void flip() {
         glm::vec3 cen = glm::vec3(0, 0, 1);
-        glm::vec3 dir = -getCylGrav(getPlacement()->getTranslation(true)) * 25.f;
+        glm::vec3 dir = -getNaiveCylGrav(getPlacement()->getTranslation(true)) * 25.f;
         getPhysics()->rigidBody->applyImpulse({dir.x, dir.y, dir.z}, {cen.x, cen.y, cen.z});
       }
 
