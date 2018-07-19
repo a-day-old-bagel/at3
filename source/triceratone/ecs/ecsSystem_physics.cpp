@@ -6,7 +6,8 @@
 #include <BulletCollision/CollisionShapes/btTriangleShape.h>
 //#include <BulletDynamics/Character/btKinematicCharacterController.h>
 
-#include "cylinderMath.h"
+#include "math.hpp"
+#include "cylinderMath.hpp"
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "IncompatibleTypes"
@@ -133,18 +134,11 @@ namespace at3 {
       };
 
       for (auto rayStart : rayStartLocations) {
-
         btVector3 rayEnd = rayStart + rayDirection * rayLength;
-
         btCollisionWorld::ClosestRayResultCallback groundSpringRayCallback(rayStart, rayEnd);
         dynamicsWorld->rayTest(rayStart, rayEnd, groundSpringRayCallback);
         rayDistTravelledAvg += (groundSpringRayCallback.m_hitPointWorld - rayStart).length();
-
-
-//        anyRayHitGoodGround |= (groundSpringRayCallback.hasHit() && groundSpringRayCallback.m_hitNormalWorld.z() > 0.4);
-        anyRayHitGoodGround |= (groundSpringRayCallback.hasHit());
-
-
+        anyRayHitGoodGround |= (groundSpringRayCallback.hasHit()); // TODO: add steepness check?
         rayHitPointAvg += groundSpringRayCallback.m_hitPointWorld;
         rayNormalAvg += groundSpringRayCallback.m_hitNormalWorld;
         if ( ! groundVelocityFound && groundSpringRayCallback.m_collisionObject) { // Use the results of the first ray

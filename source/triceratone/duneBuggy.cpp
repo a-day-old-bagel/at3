@@ -10,7 +10,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "duneBuggy.hpp"
 #include "topics.hpp"
-#include "cylinderMath.h"
+#include "cylinderMath.hpp"
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"
@@ -21,16 +21,13 @@ using namespace rtu::topics;
 namespace at3 {
 
   static glm::mat4 wheelScaler(const glm::mat4& transIn, const glm::mat4& absTransIn, uint32_t time) {
-    return transIn * glm::scale(glm::mat4(1.f), {0.5f, WHEEL_RADIUS, WHEEL_RADIUS});
-  }
-  static glm::mat4 chassisScalar(const glm::mat4& transIn, const glm::mat4& absTransIn, uint32_t time) {
-    return transIn * glm::rotate(glm::scale(glm::mat4(1.f), {1.8f, 2.8f, 1.f}), (float)M_PI, glm::vec3(1.f, 0.f, 0.f));
+    return glm::scale(transIn, glm::vec3(WHEEL_RADIUS * 2.f));
   }
 
   DuneBuggy::DuneBuggy(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context,
                            Scene &scene, glm::mat4 &transform) : state(&state), scene(&scene){
 
-    chassis = std::make_shared<Mesh>(context, "pyramid_bottom", "pyramid_bottom", transform);
+    chassis = std::make_shared<Mesh>(context, "chassis", "cliff1024_00", transform);
 
     ezecs::entityId chassisId = chassis->getId();
 
@@ -45,7 +42,6 @@ namespace at3 {
         -2.1f, -2.1f,  0.4f,
         -2.1f,  2.1f,  0.4f,
     };
-    state.add_TransformFunction(chassisId, RTU_FUNC_DLGT(chassisScalar));
     state.add_Physics(chassisId, 50.f, &chassisVerts, Physics::DYNAMIC_CONVEX_MESH);
     Physics *physics;
     state.get_Physics(chassisId, &physics);
@@ -72,7 +68,7 @@ namespace at3 {
         { 1.9f, -1.9f, 0.f}
     };
     for (int i = 0; i < 4; ++i) {
-      wheels.push_back(std::make_shared<Mesh>(context, "sphere", "pyramid_thrusters", ident));
+      wheels.push_back(std::make_shared<Mesh>(context, "wheel", "pyramid_thrusters", ident));
       entityId wheelId = wheels.back()->getId();
       WheelInitInfo wheelInitInfo{
           {                         // WheelInfo struct - this part of the wheelInitInfo will persist.
@@ -92,7 +88,7 @@ namespace at3 {
       state.add_TransformFunction(wheelId, RTU_FUNC_DLGT(wheelScaler));
     }
 
-    camera = std::make_shared<ThirdPersonCamera>(7.f, 0.35f);
+    camera = std::make_shared<ThirdPersonCamera>(10.f, 0.35f);
     camera->anchorTo(chassis);
 
     ctrlId = chassisId;

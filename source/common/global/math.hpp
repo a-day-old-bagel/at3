@@ -1,5 +1,6 @@
-
 #pragma once
+
+#include "definitions.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
@@ -10,15 +11,18 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 
-#include <btBulletDynamicsCommon.h> // for bullet vector types
+#include <btBulletDynamicsCommon.h>
 
 namespace at3 {
+  extern const float pi;
+  extern const float halfPi;
+  extern const float twoPi;
+  extern const float rpm;// multiply by this to go from revolutions/minute to radians/sec.
+
+  template <typename T> int sign(T val) {
+    return (T(0) < val) - (val < T(0));
+  }
 
   glm::vec3 bulletToGlm(const btVector3& vec);
   btVector3 glmToBullet(const glm::vec3& vec);
-
-  glm::vec3 getCylGrav(const glm::vec3 & pos, const glm::vec3 & nativeVel);
-  glm::vec3 getNaiveCylGrav(const glm::vec3 &pos);
-  glm::vec3 getNaiveCylGravDir(const glm::vec3 &pos);
-  glm::mat3 getCylStandingRot(const glm::vec3 &pos, const float &pitch, const float &yaw);
 }

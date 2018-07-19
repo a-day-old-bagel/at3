@@ -6,7 +6,7 @@ using namespace ezecs;
 
 namespace at3 {
 
-  EntityComponentSystemInterface::EntityComponentSystemInterface(State *state) : state(state) {
+  EntityComponentSystemInterface::EntityComponentSystemInterface(ezecs::State *state) : state(state) {
 
   }
 

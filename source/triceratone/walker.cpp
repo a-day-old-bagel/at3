@@ -1,6 +1,8 @@
 
 #include "walker.hpp"
 #include "topics.hpp"
+#include "math.hpp"
+#include "cylinderMath.hpp"
 
 using namespace ezecs;
 using namespace rtu::topics;
@@ -26,7 +28,7 @@ namespace at3 {
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
     state.add_PlayerControls(physicalId);
 
-    visualBody = std::make_shared<Mesh>(context, "sphere", "grass1024_00", ident);
+    visualBody = std::make_shared<Mesh>(context, "humanBean", "grass1024_00", ident);
 
     entityId bodyId = visualBody->getId();
     state.add_TransformFunction(bodyId, RTU_MTHD_DLGT(&Walker::bodyVisualTransform, this));
@@ -48,7 +50,13 @@ namespace at3 {
   }
 
   glm::mat4 Walker::bodyVisualTransform(const glm::mat4 &transIn, const glm::mat4& absTransIn, uint32_t time) {
-    return glm::scale(transIn, glm::vec3(.4f, .4f, .4f));
+//    return glm::scale(transIn, glm::vec3(.4f, .4f, .4f));
+
+    MouseControls *mouseControls;
+    state->get_MouseControls(camera->gimbal->getId(), &mouseControls);
+    glm::vec3 pos = {absTransIn[3][0], absTransIn[3][1], absTransIn[3][2]};
+    glm::mat4 rot = glm::mat4(getCylStandingRot(pos, -halfPi, mouseControls->yaw));
+    return transIn * rot;
 
 //    Placement *camPlacement;
 //    state->get_Placement(camera->gimbal->getId(), &camPlacement);

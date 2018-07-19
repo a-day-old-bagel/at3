@@ -34,3 +34,6 @@
 [submodule "extern/gli"]
 	path = extern/gli
 	url = https://github.com/g-truc/gli
+[submodule "extern/slikenet"]
+	path = extern/slikenet
+	url = https://github.com/slikesoft/slikenet

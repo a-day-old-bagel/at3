@@ -1,9 +1,10 @@
 
 add_library( ${AT3_TARGET_PREFIX}global STATIC
   definitions.hpp
-  settings.cpp settings.hpp
   fileSystemHelpers.cpp fileSystemHelpers.hpp
   macros.hpp
+  math.hpp math.cpp
+  settings.cpp settings.hpp
   TODO.hpp
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}global

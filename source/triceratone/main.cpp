@@ -26,11 +26,14 @@
 #include "ecsSystem_controls.hpp"
 #include "ecsSystem_physics.hpp"
 
-#include "cylinderMath.h"
+#include "cylinderMath.hpp"
 
 #include "walker.hpp"
 #include "duneBuggy.hpp"
 #include "pyramid.hpp"
+
+#include "server.hpp"
+#include "client.hpp"
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"
@@ -118,6 +121,25 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       key2Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_2", DuneBuggy::makeActiveControl, duneBuggy.get());
       key3Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_3", Pyramid::makeActiveControl, pyramid.get());
       keyRSub = RTU_MAKE_SUB_UNIQUEPTR("key_down_r", Pyramid::spawnSphere, pyramid.get());
+
+
+      printf("Networking Test\n=======================\n");
+      std::unique_ptr<Server> server = std::make_unique<Server>();
+      std::unique_ptr<Client> client = std::make_unique<Client>();
+      for (int i = 0; i < 3; ++i) {
+        SDL_Delay(100);
+        printf(".\n");
+        server->tick();
+        client->tick();
+      }
+      client.reset();
+      for (int i = 0; i < 3; ++i) {
+        SDL_Delay(100);
+        printf(".\n");
+        server->tick();
+      }
+      server.reset();
+      printf("=======================\n");
 
 
       return true;

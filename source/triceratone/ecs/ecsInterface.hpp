@@ -23,11 +23,16 @@
 namespace at3 {
 
   class EntityComponentSystemInterface {
+
       ezecs::State* state;
+
     public:
+
       typedef ezecs::entityId EcsId;
       typedef ezecs::State State;
+
       explicit EntityComponentSystemInterface(ezecs::State* state);
+
       ezecs::entityId createEntity();
       void destroyEntity(const ezecs::entityId& id);
 

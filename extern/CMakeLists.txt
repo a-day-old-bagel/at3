@@ -112,12 +112,19 @@ target_include_directories( fastnoise PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/fastnoise
   )
 
+# SLIKENET
+option( RAKNET_ENABLE_DLL	"Generate the DLL project if true." FALSE )
+option( RAKNET_ENABLE_STATIC "Generate the static library project if true." TRUE )
+option( RAKNET_GENERATE_INCLUDE_ONLY_DIR "Setup a include/RakNet/ directory in which all the headers are copied." FALSE)
+option( RAKNET_ENABLE_SAMPLES "Generate RakNet sample projects if true." FALSE )
+add_subdirectory( slikenet )
+
 # TODO: Look again at runtime compiled C++
 
 # Add <experimental/filesystem> and other linker flags if necessary
 if ( MSVC )
 else ( MSVC )
-  list( APPEND ${AT3_TARGET_PREFIX}extra_linker_flags stdc++fs )
+  list( APPEND ${AT3_TARGET_PREFIX}extra_linker_flags stdc++fs)
 endif ( MSVC )
 
 # Assemble the external dependencies together into a linkable interface that also automatically includes all
@@ -130,6 +137,7 @@ target_include_directories( ${AT3_TARGET_PREFIX}external INTERFACE SYSTEM
   ${CMAKE_CURRENT_SOURCE_DIR}/stb
   ${CMAKE_CURRENT_SOURCE_DIR}/gli
   ${CMAKE_CURRENT_SOURCE_DIR}/gli/external  # GLM is here
+  ${CMAKE_CURRENT_SOURCE_DIR}/slikenet/Source
   ${${AT3_TARGET_PREFIX}external_includes}
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}external INTERFACE
@@ -143,6 +151,7 @@ target_link_libraries( ${AT3_TARGET_PREFIX}external INTERFACE
   ${${AT3_TARGET_PREFIX}bullet_libs}
   spirv-cross-glsl
   fastnoise
+  RakNetLibStatic
   ${${AT3_TARGET_PREFIX}extra_linker_flags}
   )
 target_compile_definitions( ${AT3_TARGET_PREFIX}external INTERFACE

@@ -89,7 +89,7 @@ namespace at3 {
   };
 
   template<typename EcsInterface>
-  EcsInterface *Obj<EcsInterface>::ecs = NULL;
+  EcsInterface *Obj<EcsInterface>::ecs = nullptr;
 
   template<typename EcsInterface>
   Obj<EcsInterface>::Obj() {
@@ -131,10 +131,6 @@ namespace at3 {
       } else {
         myTransform = ecs->getTransform(id);
       }
-//      if (ecs->hasLocalMat3Override(id)) {
-//        myTransform[3][2] += 5.f;
-////        printf("%u\n", id);
-//      }
       mw *= myTransform;
       if (ecs->hasLocalMat3Override(id)) {
         for (int i = 0; i < 3; ++i) {
