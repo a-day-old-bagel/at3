@@ -95,8 +95,8 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
         glm::mat4 start = glm::translate(ident, {0, -790, -120});
         players.back().freeCam = std::make_shared<Object>();
         state.add_Placement(players.back().freeCam->getId(), start);
-        state.add_FreeControls(players.back().freeCam->getId());
         players.back().camera = std::make_shared<ThirdPersonCamera>(0.f, 0.f);
+        state.add_FreeControls(players.back().freeCam->getId(), players.back().camera->gimbal->getId());
         players.back().camera->anchorTo(players.back().freeCam);
         scene.addObject(players.back().freeCam);
 
@@ -125,8 +125,8 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       key1Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_1", Walker::makeActiveControl, player().walker.get());
       key2Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_2", DuneBuggy::makeActiveControl, player().duneBuggy.get());
       key3Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_3", Pyramid::makeActiveControl, player().pyramid.get());
-//      lClickSub = RTU_MAKE_SUB_UNIQUEPTR("mouse_down_left", Pyramid::shootSphere, player().pyramid.get());
-//      rClickSub = RTU_MAKE_SUB_UNIQUEPTR("mouse_down_right", Pyramid::dropSphere, player().pyramid.get());
+      lClickSub = RTU_MAKE_SUB_UNIQUEPTR("mouse_down_left", Pyramid::shootSphere, player().pyramid.get());
+      rClickSub = RTU_MAKE_SUB_UNIQUEPTR("mouse_down_right", Pyramid::dropSphere, player().pyramid.get());
 
 
       return true;

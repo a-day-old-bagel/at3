@@ -17,7 +17,7 @@ namespace at3 {
       Server();
       virtual ~Server();
       void tick(std::vector<SLNet::Packet*> & buffer);
-      void send(SLNet::BitStream &stream);
+      void send(SLNet::BitStream &stream, PacketPriority priority, PacketReliability reliability);
       void deallocatePacket(SLNet::Packet * packet);
   };
 }

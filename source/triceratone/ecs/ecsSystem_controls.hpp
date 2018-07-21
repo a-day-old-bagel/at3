@@ -12,11 +12,7 @@ using namespace ezecs;
 namespace at3 {
   class EntityAssociatedERM;
   class ControlSystem : public System<ControlSystem> {
-      glm::mat4 lastKnownWorldView = glm::mat4(1.f);
-      glm::mat3 lastKnownCylCtrlRot = glm::mat3(1.f);
-      bool lookInfoIsFresh = false;
 
-      rtu::topics::Subscription updateWvMatSub;
       rtu::topics::Subscription switchToWalkCtrlSub;
       rtu::topics::Subscription switchToPyramidCtrlSub;
       rtu::topics::Subscription switchToTrackCtrlSub;
@@ -26,8 +22,6 @@ namespace at3 {
       rtu::topics::Subscription switchToMouseCtrlSub;
       std::unique_ptr<EntityAssociatedERM> currentCtrlMouse;
 
-      void updateLookInfos();
-      void setWorldView(void* p_wv);
       void switchToMouseCtrl(void *id);
       void switchToWalkCtrl(void* id);
       void switchToPyramidCtrl(void *id);
@@ -36,6 +30,7 @@ namespace at3 {
 
     public:
       std::vector<compMask> requiredComponents = {
+              MOUSECONTROLS,
               PYRAMIDCONTROLS,
               TRACKCONTROLS,
               PLAYERCONTROLS,
@@ -61,7 +56,6 @@ namespace at3 {
     public:
       EntityAssociatedERM(State *state, entityId id);
       virtual ~EntityAssociatedERM() = default;
-      virtual void tick() = 0;
       entityId getId();
   };
 }

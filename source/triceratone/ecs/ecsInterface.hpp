@@ -114,8 +114,7 @@ namespace at3 {
        * so I need to rethink it. Sorry. I'll probably move the third-person camera code up into my implementation
        * layer instead of putting it in common, since it's NOT really common to all game genres. TODO: this.
        */
-      void addMouseControl(const EcsId& id,
-                           ezecs::MouseControls::Style style = ezecs::MouseControls::FLAT_Z_UP);
+      void addMouseControl(const EcsId& id);
   };
 
   /*

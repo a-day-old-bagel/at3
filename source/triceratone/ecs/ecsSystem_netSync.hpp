@@ -12,7 +12,6 @@ namespace at3 {
   enum FurtherPacketEnums {
       ID_SYNC_PLACEMENT = ID_USER_PACKET_FURTHER_ENUM,
       ID_SYNC_PHYSICS,
-      ID_SYNC_MOUSECONTROLS,
       ID_SYNC_WALKCONTROLS,
       ID_SYNC_PYRAMIDCONTROLS,
       ID_SYNC_TRACKCONTROLS,
@@ -25,8 +24,11 @@ namespace at3 {
       std::shared_ptr<NetInterface> network;
       entityId mouseControlId = 0;
       entityId keyControlId = 0;
+      SLNet::MessageID keyControlMessageId = ID_USER_PACKET_END_ENUM;
       uint32_t currentPlacementIndex = 0;
       uint32_t currentPhysicsIndex = 0;
+      SLNet::Time lastPlacementSyncTime = SLNet::GetTime();
+      SLNet::Time lastPhysicsSyncTime = SLNet::GetTime();
 
       rtu::topics::Subscription setNetInterfaceSub;
       rtu::topics::Subscription switchToMouseCtrlSub;
@@ -43,8 +45,9 @@ namespace at3 {
       void switchToFreeCtrl(void *id);
 
       void beginSyncStream(SLNet::BitStream &stream, SLNet::MessageID messageType, uint16_t numComponents);
-      void sendPlacementSync();
-      void sendPhysicsSync();
+      void sendPlacementSyncs();
+      void sendPhysicsSyncs();
+      void sendControlsSyncs();
 
       void receiveSyncPacketsFromClients();
       void receiveSyncPacketsFromServer();

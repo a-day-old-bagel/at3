@@ -8,7 +8,8 @@ using namespace SLNet;
 namespace at3 {
   Client::Client() {
     peer = RakPeerInterface::GetInstance();
-    SocketDescriptor sock;
+//    SocketDescriptor sock;
+    SocketDescriptor sock(static_cast<uint8_t>(settings::network::clientPort), nullptr);
     StartupResult startResult = peer->Startup(1, &sock, 1);
     if (startResult != RAKNET_STARTED) {
       printf("Client failed to start.\n");
@@ -55,8 +56,8 @@ namespace at3 {
     receive(buffer);
   }
 
-  void Client::send(BitStream &stream) {
-    peer->Send(&stream, LOW_PRIORITY, UNRELIABLE_SEQUENCED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+  void Client::send(BitStream &stream, PacketPriority priority, PacketReliability reliability) {
+    peer->Send(&stream, priority, reliability, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
   }
 
   void Client::deallocatePacket(Packet *packet) {

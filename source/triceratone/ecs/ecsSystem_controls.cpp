@@ -14,7 +14,6 @@ namespace at3 {
 
   ControlSystem::ControlSystem(State *state)
       : System(state),
-        updateWvMatSub("primary_cam_wv", RTU_MTHD_DLGT(&ControlSystem::setWorldView, this)),
         switchToWalkCtrlSub("switch_to_walking_controls", RTU_MTHD_DLGT(&ControlSystem::switchToWalkCtrl, this)),
         switchToPyramidCtrlSub("switch_to_pyramid_controls", RTU_MTHD_DLGT(&ControlSystem::switchToPyramidCtrl, this)),
         switchToTrackCtrlSub("switch_to_track_controls", RTU_MTHD_DLGT(&ControlSystem::switchToTrackCtrl, this)),
@@ -34,18 +33,30 @@ namespace at3 {
 
   void ControlSystem::onTick(float dt) {
 
-    if (currentCtrlMouse) {
-      currentCtrlMouse->tick();
+    // TODO: put a clean/dirty bool in control components in order to only update the dirty ones?
+
+    for (auto id : (registries[0].ids)) { // Mouse controls
+      MouseControls *mouseControls;
+      state->get_MouseControls(id, &mouseControls);
+      Placement *placement;
+      state->get_Placement(id, &placement);
+
+      glm::vec3 pos = placement->getTranslation(true);
+      mouseControls->lastCtrlRot = getCylStandingRot(pos, 0, mouseControls->yaw);
+      glm::mat4 rot = glm::mat4(getCylStandingRot(pos, mouseControls->pitch, mouseControls->yaw));
+
+      rot[3][0] = placement->mat[3][0];
+      rot[3][1] = placement->mat[3][1];
+      rot[3][2] = placement->mat[3][2];
+      placement->mat = rot;
     }
-
-    // renew look infos
-    lookInfoIsFresh = false;
-
-    for (auto id : (registries[0].ids)) { // Pyramid
+    for (auto id : (registries[1].ids)) { // Pyramid
       PyramidControls* pyramidControls;
       state->get_PyramidControls(id, &pyramidControls);
       Placement* placement;
       state->get_Placement(id, &placement);
+      MouseControls *mouseControls;
+      state->get_MouseControls(pyramidControls->mouseCtrlId, &mouseControls);
 
       // provide the up vector
       pyramidControls->up = glm::mat3(placement->absMat) * glm::vec3(0.f, 0.f, 1.f);
@@ -54,7 +65,6 @@ namespace at3 {
       pyramidControls->force = glm::vec3(0, 0, 0);
 
       if (length(pyramidControls->accel) > 0.0f) {
-        updateLookInfos();
         // handle turbo
         float turbo = 1.f;
         if (pyramidControls->turbo) {
@@ -66,11 +76,11 @@ namespace at3 {
             PYR_SIDE_ACCEL, 0, 0,
             0, PYR_SIDE_ACCEL, 0,
             0, 0, PYR_UP_ACCEL
-        } * glm::normalize(lastKnownCylCtrlRot * pyramidControls->accel) * turbo;
+        } * glm::normalize(mouseControls->lastCtrlRot * pyramidControls->accel) * turbo;
         pyramidControls->accel = glm::vec3(0, 0, 0);
       }
     }
-    for (auto id : (registries[1].ids)) { // Track/buggy
+    for (auto id : (registries[2].ids)) { // Track/buggy
       TrackControls* trackControls;
       state->get_TrackControls(id, &trackControls);
 
@@ -81,11 +91,13 @@ namespace at3 {
         trackControls->control = glm::vec2(0, 0);
       }
     }
-    for (auto id : (registries[2].ids)) { // Player/Walking
+    for (auto id : (registries[3].ids)) { // Player/Walking
       PlayerControls* playerControls;
       state->get_PlayerControls(id, &playerControls);
       Placement* placement;
       state->get_Placement(id, &placement);
+      MouseControls *mouseControls;
+      state->get_MouseControls(playerControls->mouseCtrlId, &mouseControls);
 
       // provide the up vector
       playerControls->up = glm::mat3(placement->absMat) * glm::vec3(0.f, 0.f, 1.f);
@@ -94,29 +106,28 @@ namespace at3 {
       playerControls->force = glm::vec3(0, 0, 0);
 
       if (length(playerControls->accel) > 0.0f) {
-        updateLookInfos();
         // Rotate the movement axis to the correct orientation
         float speed = playerControls->isRunning ? CHARA_RUN : CHARA_WALK;
         playerControls->force = glm::mat3 {
             speed, 0, 0,
             0, speed, 0,
             0, 0, speed
-        } * glm::normalize(lastKnownCylCtrlRot * playerControls->accel);
+        } * glm::normalize(mouseControls->lastCtrlRot * playerControls->accel);
         playerControls->accel = glm::vec3(0, 0, 0);
       }
     }
-    for (auto id: (registries[3].ids)) { // Free Control
+    for (auto id: (registries[4].ids)) { // Free Control
       FreeControls *freeControls;
       state->get_FreeControls(id, &freeControls);
+      MouseControls *mouseControls;
+      state->get_MouseControls(freeControls->mouseCtrlId, &mouseControls);
 
       if (length(freeControls->control) > 0.0f) {
         Placement *placement;
         state->get_Placement(id, &placement);
 
-        // Rotate the movement axis to the correct orientation
-        // TODO: Figure out math to avoid inverse; use lastKnownHorizCtrlRot, etc? Or better not?
         glm::vec3 movement = (float)(FREE_SPEED * pow(10.f, freeControls->x10) * dt) * glm::normalize(
-            glm::inverse(glm::mat3(lastKnownWorldView)) * freeControls->control);
+            mouseControls->lastCtrlRot * freeControls->control);
 
         placement->mat[3][0] += movement.x;
         placement->mat[3][1] += movement.y;
@@ -129,22 +140,6 @@ namespace at3 {
       }
     }
   }
-
-  void ControlSystem::updateLookInfos() {
-    if (! lookInfoIsFresh) {
-      Placement *placement;
-      state->get_Placement(currentCtrlMouse->getId(), &placement);
-      MouseControls *mouseControls;
-      state->get_MouseControls(currentCtrlMouse->getId(), &mouseControls);
-      lastKnownCylCtrlRot = getCylStandingRot(placement->getTranslation(true), 0.f, mouseControls->yaw);
-    }
-  }
-
-  // used as a subscription action
-  void ControlSystem::setWorldView(void *p_wv) {
-    lastKnownWorldView = *((glm::mat4*)p_wv);
-  }
-
 
   /*
    * This section deals with the current active control interface and defines actions for key
@@ -174,7 +169,7 @@ namespace at3 {
         MouseControls *mouseControls = getComponent();
         Placement *placement = getPlacement();
 
-        // Update values used in tick()
+        // Update pitch and yaw values
         float dx = (float)event->motion.xrel * (mouseControls->invertedX ? 1.f : -1.f) * settings::controls::mouseSpeed;
         float dy = (float)event->motion.yrel * (mouseControls->invertedY ? 1.f : -1.f) * settings::controls::mouseSpeed;
         mouseControls->yaw += dx;
@@ -195,20 +190,6 @@ namespace at3 {
     public:
       ActiveMouseControl(State *state, const entityId id) : EntityAssociatedERM(state, id) {
         setAction("mouse_moved", RTU_MTHD_DLGT(&ActiveMouseControl::mouseMove, this));
-      }
-      void tick() override {
-
-        MouseControls *mouseControls = getComponent();
-        Placement *placement = getPlacement();
-
-        glm::vec3 pos = placement->getTranslation(true);
-        glm::mat4 rot = glm::mat4(getCylStandingRot(pos, mouseControls->pitch, mouseControls->yaw));
-
-        rot[3][0] = placement->mat[3][0];
-        rot[3][1] = placement->mat[3][1];
-        rot[3][2] = placement->mat[3][2];
-        placement->mat = rot;
-
       }
   };
   void ControlSystem::switchToMouseCtrl(void *id) {
@@ -244,9 +225,6 @@ namespace at3 {
         setAction("key_held_lshift", RTU_MTHD_DLGT(&ActiveWalkControl::key_run, this));
         setAction("key_held_space", RTU_MTHD_DLGT(&ActiveWalkControl::key_jump, this));
       }
-      void tick() override {
-
-      }
   };
   void ControlSystem::switchToWalkCtrl(void *id) {
     currentCtrlKeys = std::make_unique<ActiveWalkControl>(state, *(entityId*)id);
@@ -280,9 +258,6 @@ namespace at3 {
         setAction("key_held_lshift", RTU_MTHD_DLGT(&ActivePyramidControl::key_down, this));
         setAction("key_held_space", RTU_MTHD_DLGT(&ActivePyramidControl::key_up, this));
         setAction("key_held_f", RTU_MTHD_DLGT(&ActivePyramidControl::turbo, this));
-      }
-      void tick() override {
-
       }
   };
   void ControlSystem::switchToPyramidCtrl(void *id) {
@@ -344,11 +319,8 @@ namespace at3 {
       ~ActiveTrackControl() override {
         TrackControls *controls = getComponent();
         if (controls) {
-          getComponent()->hasDriver = false;
+          getComponent()->hasDriver = false;  // FIXME: This doesn't sync over the network
         }
-      }
-      void tick() override {
-
       }
   };
   void ControlSystem::switchToTrackCtrl(void *id) {
@@ -386,9 +358,6 @@ namespace at3 {
         setAction("key_held_lshift", RTU_MTHD_DLGT(&ActiveFreeControl::key_faster, this));
         setAction("key_held_lalt", RTU_MTHD_DLGT(&ActiveFreeControl::key_faster, this));
         setAction("key_held_lctrl", RTU_MTHD_DLGT(&ActiveFreeControl::key_faster, this));
-      }
-      void tick() override {
-
       }
   };
   void ControlSystem::switchToFreeCtrl(void *id) {

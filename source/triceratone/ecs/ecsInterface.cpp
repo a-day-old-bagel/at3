@@ -134,8 +134,8 @@ namespace at3 {
     perspective->far = far;
   }
 
-  void EntityComponentSystemInterface::addMouseControl(const ezecs::entityId &id, ezecs::MouseControls::Style style) {
-    CompOpReturn status = state->add_MouseControls(id, false, false, style);
+  void EntityComponentSystemInterface::addMouseControl(const ezecs::entityId &id) {
+    CompOpReturn status = state->add_MouseControls(id, false, false);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == SUCCESS);
   }

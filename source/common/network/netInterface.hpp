@@ -26,7 +26,9 @@ namespace at3 {
       void switchToServer();
       void switchToClient();
       void tick();
-      void send(SLNet::BitStream &stream);
+      void send(SLNet::BitStream &stream,
+                PacketPriority priority = LOW_PRIORITY,
+                PacketReliability reliability = UNRELIABLE_SEQUENCED);
       const std::vector<SLNet::Packet*> & getSyncPackets();
       void discardSyncPackets();
   };

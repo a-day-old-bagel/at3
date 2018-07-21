@@ -91,8 +91,9 @@ namespace {
     glm::vec3 accel = glm::vec3(0, 0, 0);
     glm::vec3 force = glm::vec3(0, 0, 0);
     glm::vec3 up = glm::vec3(0, 0, 1);
+    entityId mouseCtrlId = 0;
     bool turbo = false;
-    PyramidControls();
+    PyramidControls(entityId mouseCtrlId);
   };
   EZECS_COMPONENT_DEPENDENCIES(PyramidControls, Physics)
 
@@ -112,30 +113,29 @@ namespace {
     glm::vec3 accel = glm::vec3(0, 0, 0);
     glm::vec3 force = glm::vec3(0, 0, 0);
     glm::vec3 up = glm::vec3(0, 0, 0);
+    entityId mouseCtrlId = 0;
     float equilibriumOffset = 0.f;
     bool jumpRequested = false;
     bool jumpInProgress = false;
     bool isGrounded = false;
     bool isRunning = false;
-    PlayerControls();
+    PlayerControls(entityId mouseCtrlId);
   };
   EZECS_COMPONENT_DEPENDENCIES(PlayerControls, Physics)
 
   struct FreeControls : public Component<FreeControls> {
     glm::vec3 control = glm::vec3(0, 0, 0);
+    entityId mouseCtrlId = 0;
     int x10 = 0;
-    FreeControls();
+    FreeControls(entityId mouseCtrlId);
   };
   EZECS_COMPONENT_DEPENDENCIES(FreeControls, Placement)
 
   struct MouseControls : public Component<MouseControls> {
-    enum Style {
-        INVALID, FLAT_Z_UP, CYLINDRICAL_ABOUT_Y
-    };
-    Style style;
     float yaw = 0, pitch = 0;
+    glm::mat3 lastCtrlRot = glm::mat4(1.f);
     bool invertedX, invertedY;
-    MouseControls(bool invertedX, bool invertedY, Style style);
+    MouseControls(bool invertedX, bool invertedY);
   };
   EZECS_COMPONENT_DEPENDENCIES(MouseControls, Placement)
 
@@ -212,16 +212,19 @@ namespace {
     rigidBody->setAngularVelocity( {0.f, 0.f, 0.f} );
   }
 
-  PyramidControls::PyramidControls() { }
+  PyramidControls::PyramidControls(entityId mouseCtrlId)
+      : mouseCtrlId(mouseCtrlId) { }
 
   TrackControls::TrackControls() { }
 
-  PlayerControls::PlayerControls() { }
+  PlayerControls::PlayerControls(entityId mouseCtrlId)
+      : mouseCtrlId(mouseCtrlId) { }
 
-  FreeControls::FreeControls() { }
+  FreeControls::FreeControls(entityId mouseCtrlId)
+      : mouseCtrlId(mouseCtrlId) { }
 
-  MouseControls::MouseControls(bool invertedX, bool invertedY, MouseControls::Style style)
-      : invertedX(invertedX), invertedY(invertedY), style(style) { }
+  MouseControls::MouseControls(bool invertedX, bool invertedY)
+      : invertedX(invertedX), invertedY(invertedY) { }
 
   // END DEFINITIONS
 

@@ -19,6 +19,9 @@ namespace at3 {
     glm::mat4 ident(1.f);
     glm::mat4 rotatedTransform = glm::rotate(transform, (float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f));
 
+    camera = std::make_shared<ThirdPersonCamera> (5.f, 0.3f);
+    camGimbalId = camera->gimbal->getId();
+
     physicsBody = std::make_shared<Object>();
     entityId physicalId = physicsBody->getId();
     state.add_Placement(physicalId, transform);
@@ -26,7 +29,8 @@ namespace at3 {
     Physics* physics;
     state.get_Physics(physicalId, &physics);
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
-    state.add_PlayerControls(physicalId);
+    state.add_PlayerControls(physicalId, camGimbalId);
+    ctrlId = physicalId;
 
     visualBody = std::make_shared<Mesh>(context, "humanBean", "grass1024_00", ident);
 
@@ -34,11 +38,7 @@ namespace at3 {
     state.add_TransformFunction(bodyId, RTU_MTHD_DLGT(&Walker::bodyVisualTransform, this));
     physicsBody->addChild(visualBody);
 
-    camera = std::make_shared<ThirdPersonCamera> (5.f, 0.3f);
     camera->anchorTo(visualBody);
-
-    ctrlId = physicalId;
-    camGimbalId = camera->gimbal->getId();
 
     addToScene();
   }

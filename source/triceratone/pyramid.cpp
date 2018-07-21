@@ -33,6 +33,9 @@ namespace at3 {
     fire = std::make_shared<Mesh> (context, "pyramid_thruster_flames", "pyramid_flames", pyrFirMat,
         Mesh::FULLBRIGHT);
 
+    camera = std::make_shared<ThirdPersonCamera> (5.f, .35f);
+    camGimbalId = camera->gimbal->getId();
+
     entityId bottomId = base->getId();
     std::vector<float> hullVerts = {
         1.0f,  1.0f, -0.4f,
@@ -47,12 +50,13 @@ namespace at3 {
         -1.0f, -1.0f, -0.4f,
     };
     state.add_Physics(bottomId, 100.f, &hullVerts, Physics::DYNAMIC_CONVEX_MESH);
-    state.add_PyramidControls(bottomId);
+    state.add_PyramidControls(bottomId, camGimbalId);
 
     Physics* physics;
     state.get_Physics(bottomId, &physics);
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
     physics->rigidBody->setDamping(0.f, 0.8f);
+    ctrlId = bottomId;
 
     // The slow stuff (CCD)
     physics->rigidBody->setCcdMotionThreshold(1);
@@ -64,11 +68,7 @@ namespace at3 {
     entityId fireId = fire->getId();
     state.add_TransformFunction(fireId, RTU_FUNC_DLGT(pyrFireWiggle));
 
-    camera = std::make_shared<ThirdPersonCamera> (5.f, .35f);
     camera->anchorTo(base);
-
-    ctrlId = bottomId;
-    camGimbalId = camera->gimbal->getId();
 
     addToScene();
   }
