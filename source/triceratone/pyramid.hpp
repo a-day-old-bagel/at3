@@ -25,7 +25,9 @@ namespace at3 {
       Pyramid(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context, Scene &scene,
                 glm::mat4 &transform);
       void resizeFire();
-      void spawnSphere();
+      ezecs::entityId spawnSphere(bool shoot = false);
+      void dropSphere();
+      void shootSphere();
       std::shared_ptr<PerspectiveCamera> getCamPtr();
       void makeActiveControl(void* nothing);
   };

@@ -6,8 +6,9 @@ add_subdirectory( "${EZECS_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/ezecs" )
 
 add_library( ${TARGET_NAME}_systems STATIC
   ecsInterface.cpp ecsInterface.hpp
-  ecsSystem_controls.cpp ecsSystem_controls.hpp
   ecsSystem_animation.cpp ecsSystem_animation.hpp
+  ecsSystem_controls.cpp ecsSystem_controls.hpp
+  ecsSystem_netSync.hpp ecsSystem_netSync.cpp
   ecsSystem_physics.cpp ecsSystem_physics.hpp
   )
 target_link_libraries( ${TARGET_NAME}_systems

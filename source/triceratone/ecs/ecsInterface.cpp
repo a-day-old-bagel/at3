@@ -44,14 +44,6 @@ namespace at3 {
     return placement->mat;
   }
 
-  void EntityComponentSystemInterface::setTransform(const ezecs::entityId &id, const glm::mat4 &transform) {
-    Placement *placement;
-    ezecs::CompOpReturn status = state->get_Placement(id, &placement);
-    EZECS_CHECK_PRINT(EZECS_ERR(status));
-    assert(status == ezecs::SUCCESS);
-    placement->mat = transform;
-  }
-
   glm::mat4 EntityComponentSystemInterface::getAbsTransform(const entityId &id) {
     Placement *placement;
     ezecs::CompOpReturn status = state->get_Placement(id, &placement);
@@ -80,13 +72,6 @@ namespace at3 {
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
     placement->forceLocalRotationAndScale = value;
-  }
-
-  void EntityComponentSystemInterface::addCustomModelTransform(const ezecs::entityId &id,
-                                                               const ezecs::transformFunc &func) {
-    CompOpReturn status = state->add_TransformFunction(id, func);
-    EZECS_CHECK_PRINT(EZECS_ERR(status));
-    assert(status == SUCCESS);
   }
 
   bool EntityComponentSystemInterface::hasCustomModelTransform(const entityId &id) {

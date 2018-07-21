@@ -1,13 +1,5 @@
 #pragma once
 
-#define GLM_FORCE_RADIANS
-#define GLM_ENABLE_EXPERIMENTAL
-#if USE_VULKAN_COORDS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#endif
-
-#include <glm/gtc/matrix_transform.hpp>
-
 #include <cmath>
 #include "objCamera.hpp"
 
@@ -58,7 +50,8 @@ namespace at3 {
   template <typename EcsInterface>
   ObjCameraPerspective<EcsInterface>::ObjCameraPerspective(glm::mat4 &transform)
       : ObjCamera<EcsInterface>(transform) {
-    SCENE_ECS->addPerspective(SCENE_ID, settings::graphics::fovy, settings::graphics::near, settings::graphics::far);
+    // TODO: switch near and far planes using the infinite z depth trick
+    SCENE_ECS->addPerspective(SCENE_ID, settings::graphics::fovy, 0.1f, 10000.f);
   }
 
   template <typename EcsInterface>

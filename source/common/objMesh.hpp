@@ -1,14 +1,5 @@
 #pragma once
 
-#define GLM_FORCE_RADIANS
-#define GLM_ENABLE_EXPERIMENTAL
-#if USE_VULKAN_COORDS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#endif
-
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
 #include <string>
 #include "obj.hpp"
 #include "vkc.hpp"

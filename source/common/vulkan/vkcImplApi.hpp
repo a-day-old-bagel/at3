@@ -150,8 +150,9 @@ void VulkanContext<EcsInterface>::registerMeshInstance(
 }
 
 template<typename EcsInterface>
-std::vector<float> * VulkanContext<EcsInterface>::getMeshStoredVertices(const std::string &meshName,
-                                                                        const uint32_t internalIndex /*= 0*/) {
+std::vector<float> * VulkanContext<EcsInterface>::getMeshStoredVertices(
+    const std::string &meshName,
+    uint32_t internalIndex /*= 0*/) {
   if(meshRepo.count(meshName)) {
     return meshRepo.at(meshName).at(internalIndex).storedVertices.get();
   } else {
@@ -160,8 +161,9 @@ std::vector<float> * VulkanContext<EcsInterface>::getMeshStoredVertices(const st
 }
 
 template<typename EcsInterface>
-std::vector<uint32_t> * VulkanContext<EcsInterface>::getMeshStoredIndices(const std::string &meshName,
-                                                                          const uint32_t internalIndex /*= 0*/) {
+std::vector<uint32_t> * VulkanContext<EcsInterface>::getMeshStoredIndices(
+    const std::string &meshName,
+    uint32_t internalIndex /*= 0*/) {
   if(meshRepo.count(meshName)) {
     return meshRepo.at(meshName).at(internalIndex).storedIndices.get();
   } else {

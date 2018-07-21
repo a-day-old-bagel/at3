@@ -5,8 +5,6 @@
 #error "SDL2 version 2.0.8 or newer required."
 #endif
 
-#define TIME_MULTIPLIER_MS 0.001f
-
 #include <memory>
 #include <functional>
 #include <cstdio>
@@ -16,6 +14,7 @@
 #include "sdlc.hpp"
 #include "vkc.hpp"
 #include "sceneTree.hpp"
+#include "netInterface.hpp"
 #include "keyInput.hpp"
 
 namespace at3 {
@@ -26,51 +25,54 @@ namespace at3 {
   template <typename EcsInterface, typename Derived>
   class Game {
 
-    protected:
-      std::unique_ptr<SdlContext> sdlc;
-      std::unique_ptr<vkc::VulkanContext<EcsInterface>> vulkan;
-      typename EcsInterface::State state;
-      SceneTree<EcsInterface> scene;
-
-    private:
-      EcsInterface ecsInterface;
-      std::shared_ptr<ObjCamera<EcsInterface>> currentCamera = nullptr;
-      float lastTime = 0.f;
-      std::string settingsFileName;
-      bool isQuit = false;
-      rtu::topics::Subscription switchToCamSub;
-
-      Derived &derived();
-
     public:
 
       Game();
       virtual ~Game() = default;
-
       bool init(const char *appName, const char *settingsName);
       void tick();
       bool getIsQuit();
+
+    protected:
+
+      typename EcsInterface::State state;
+      SceneTree<EcsInterface> scene;
+
+      std::unique_ptr<SdlContext> sdlc;
+      std::unique_ptr<vkc::VulkanContext<EcsInterface>> vulkan;
+      std::shared_ptr<NetInterface> network;
+
+    private:
+
+      std::unique_ptr<EcsInterface> ecsInterface;
+      std::shared_ptr<ObjCamera<EcsInterface>> currentCamera = nullptr;
+      rtu::topics::Subscription switchToCamSub;
+      float lastTime = 0.f;
+      std::string settingsFileName;
+      bool isQuit = false;
+
+      Derived &topLevel();
+      void setCamera(void *camPtr);
       void deInit();
 
-      void setCamera(void *camPtr);
-      std::shared_ptr<ObjCamera<EcsInterface>> getCamera() { return currentCamera; }
   };
 
-  template <typename EcsInterface, typename Derived>
-  Game<EcsInterface, Derived>::Game() : ecsInterface(&state),
-          switchToCamSub("set_primary_camera", RTU_MTHD_DLGT((&Game<EcsInterface, Derived>::setCamera), this))
-  { Object::linkEcs(ecsInterface); }
+  template<typename EcsInterface, typename Derived>
+  Game<EcsInterface, Derived>::Game() : switchToCamSub("set_primary_camera", RTU_MTHD_DLGT(&Game::setCamera, this)) { }
 
   template <typename EcsInterface, typename Derived>
-  Derived & Game<EcsInterface, Derived>::derived() {
+  Derived & Game<EcsInterface, Derived>::topLevel() {
     return *static_cast<Derived*>(this);
   }
 
   template <typename EcsInterface, typename Derived>
   bool Game<EcsInterface, Derived>::init(const char *appName, const char *settingsName) {
 
+    ecsInterface = std::make_unique<EcsInterface>(&state);
+    Object::linkEcs(*ecsInterface);
+
     settingsFileName = settingsName;
-    derived().registerCustomSettings();
+    topLevel().registerCustomSettings();
     settings::loadFromIni(settingsFileName.c_str());
 
     sdlc = std::make_unique<SdlContext>(appName);
@@ -78,10 +80,13 @@ namespace at3 {
     vkc::VulkanContextCreateInfo<EcsInterface> contextCreateInfo =
         vkc::VulkanContextCreateInfo<EcsInterface>::defaults();
     contextCreateInfo.window = sdlc->getWindow();
-    contextCreateInfo.ecs = &ecsInterface;
+    contextCreateInfo.ecs = ecsInterface.get();
     vulkan = std::make_unique<vkc::VulkanContext<EcsInterface>>(contextCreateInfo);
 
-    return derived().onInit();
+    network = std::make_shared<NetInterface>();
+    rtu::topics::publish<std::shared_ptr<NetInterface> &>("set_network_interface", network);
+
+    return topLevel().onInit();
   }
 
   template <typename EcsInterface, typename Derived>
@@ -261,11 +266,14 @@ namespace at3 {
     if (mouseState & SDL_BUTTON(SDL_BUTTON_X1)) rtu::topics::publish("mouse_held_x1");
     if (mouseState & SDL_BUTTON(SDL_BUTTON_X2)) rtu::topics::publish("mouse_held_x2");
 
+    // Call any network updates that need to happen
+    network->tick();
+
     // Update logic given the time since the last frame was drawn TODO: SDL_GetTicks may be too granular
     float currentTime = (float)SDL_GetTicks() * TIME_MULTIPLIER_MS;
     float dt = currentTime - lastTime;
     lastTime = currentTime;
-    derived().onTick(dt);
+    topLevel().onTick(dt);
 
     if (currentCamera) {
       scene.updateAbsoluteTransformCaches();

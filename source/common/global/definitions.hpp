@@ -2,6 +2,8 @@
 
 #include "macros.hpp"
 
+#define TIME_MULTIPLIER_MS 0.001f
+
 // Vulkan stuff
 #define USE_CUSTOM_SDL_VULKAN 1
 #define USE_VULKAN_COORDS 1

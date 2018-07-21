@@ -6,18 +6,11 @@
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"
 #pragma ide diagnostic ignored "IncompatibleTypes"
 
-#define GLM_ENABLE_EXPERIMENTAL
-#include "glm/gtx/transform.hpp"
-#include "glm/gtx/matrix_decompose.hpp"
-
 #include "cylinderMath.hpp"
 
 using namespace rtu::topics;
 
 namespace at3 {
-
-  constexpr float halfPi = ((float)M_PI * 0.5f);
-  constexpr float twoPi = ((float)M_PI * 2.f);
 
   ControlSystem::ControlSystem(State *state)
       : System(state),

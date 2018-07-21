@@ -1,21 +1,9 @@
 
 #pragma once
 
-#define GLM_FORCE_RADIANS
-#define GLM_ENABLE_EXPERIMENTAL
-#if USE_VULKAN_COORDS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#endif
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/transform.hpp>
-
-//#include <btBulletDynamicsCommon.h> // for bullet vector types
+#include "math.hpp"
 
 namespace at3 {
-
-//  glm::vec3 bulletToGlm(const btVector3& vec);
-//  btVector3 glmToBullet(const glm::vec3& vec);
 
   /**
    * Get the faked cylinder gravity to apply to a mass.
@@ -24,6 +12,12 @@ namespace at3 {
    * I may have gotten this wrong.
    * The non-tangential component of a mass's motion might need to be rotated every step to match the tangent.
    * Right now I'm just applying a negative cylinder-gravity and hoping that it's equivalent (I haven't done the math.)
+   *
+   * EDIT: TODO: FIXME: This is not completely right - a projectile shot "upwards" from the ground surface should curve,
+   * but right now I'm only applying the curve based on tangential velocity, while neglecting change to radial velocity.
+   * It might not be correct to just add another curve factor multiplied by 1 - dot(tangential, vel), but that might
+   * be closer and good enough.
+   *
    * @param pos
    * @param nativeVel
    * @return

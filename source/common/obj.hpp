@@ -1,20 +1,11 @@
 #pragma once
 
-#define GLM_FORCE_RADIANS
-#define GLM_ENABLE_EXPERIMENTAL
-#if USE_VULKAN_COORDS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#endif
-
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
 #include <SDL.h>
 #include <memory>
 #include <unordered_map>
 
 #include "transformRAII.hpp"
+#include "math.hpp"
 
 #define SCENE_ Obj<EcsInterface>::
 #define SCENE_ECS Obj<EcsInterface>::ecs

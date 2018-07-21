@@ -5,17 +5,7 @@
 #include <vector>
 #include <functional>
 
-#include "definitions.hpp"
-
-#define GLM_FORCE_RADIANS
-#define GLM_ENABLE_EXPERIMENTAL
-#if USE_VULKAN_COORDS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#endif
-
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/string_cast.hpp>
-
+#include "math.hpp"
 #include "settings.hpp"
 #include "topics.hpp"
 #include "ezecs.hpp"
@@ -24,6 +14,7 @@
 
 #include "ecsSystem_animation.hpp"
 #include "ecsSystem_controls.hpp"
+#include "ecsSystem_netSync.hpp"
 #include "ecsSystem_physics.hpp"
 
 #include "cylinderMath.hpp"
@@ -35,36 +26,38 @@
 #include "server.hpp"
 #include "client.hpp"
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "TemplateArgumentsIssues"
-
 using namespace at3;
 using namespace ezecs;
 using namespace rtu::topics;
 
-class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
-
-    ControlSystem     controlSystem;
-    AnimationSystem   animationSystem;
-    PhysicsSystem     physicsSystem;
-
+struct PlayerAvatarSet{
     std::shared_ptr<Object> freeCam;
     std::shared_ptr<ThirdPersonCamera> camera;
-    std::shared_ptr<Mesh> terrainArk;
     std::unique_ptr<Pyramid> pyramid;
     std::unique_ptr<DuneBuggy> duneBuggy;
-    std::unique_ptr<Walker> player;
+    std::unique_ptr<Walker> walker;
+};
 
-    std::unique_ptr<Subscription> keyRSub, key0Sub, key1Sub, key2Sub, key3Sub;
+class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
+
+    AnimationSystem   animationSystem;
+    ControlSystem     controlSystem;
+    NetSyncSystem     netSyncSystem;
+    PhysicsSystem     physicsSystem;
+
+    std::shared_ptr<Mesh> terrainArk;
+    std::vector<PlayerAvatarSet> players;
+
+    std::unique_ptr<Subscription> lClickSub, rClickSub, key0Sub, key1Sub, key2Sub, key3Sub;
+
+    PlayerAvatarSet & player() {
+      return network->getRole() == settings::network::SERVER ? players.at(0) : players.at(1);
+    }
 
   public:
 
-    Triceratone()
-        : controlSystem(&state),
-          animationSystem(&state),
-          physicsSystem(&state) { }
-
-    ~Triceratone() {
+    Triceratone() : animationSystem(&state), controlSystem(&state), netSyncSystem(&state), physicsSystem(&state) { }
+    ~Triceratone() override {
       scene.clear();
     }
 
@@ -72,25 +65,17 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
 
       // Initialize the systems
       bool initSuccess = true;
-      initSuccess &= controlSystem.init();
-      initSuccess &= physicsSystem.init();
       initSuccess &= animationSystem.init();
+      initSuccess &= controlSystem.init();
+      initSuccess &= netSyncSystem.init();
+      initSuccess &= physicsSystem.init();
       assert(initSuccess);
 
       // an identity matrix
       glm::mat4 ident(1.f);
 
 
-      glm::mat4 start = glm::translate(ident, {0, -790, -120});
-      freeCam = std::make_shared<Object>();
-      state.add_Placement(freeCam->getId(), start);
-      state.add_FreeControls(freeCam->getId());
-      camera = std::make_shared<ThirdPersonCamera>(0.f, 0.f);
-      camera->anchorTo(freeCam);
-      scene.addObject(freeCam);
-      makeFreeCamActiveControl();
-
-
+      // the ark (the cylinder)
       glm::mat4 arkMat = glm::scale(ident, glm::vec3(100.f, 100.f, 100.f));
       terrainArk = std::make_shared<Mesh>(vulkan.get(), "terrainArk", "cliff1024_01", arkMat);
       TriangleMeshInfo info = {
@@ -101,69 +86,74 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       state.add_Physics(terrainArk->getId(), 0, &info, Physics::STATIC_MESH);
       scene.addObject(terrainArk);
 
-      glm::vec3 playerPos = glm::vec3(10, -790, -100);
-      glm::mat4 playerMat = glm::translate(ident, playerPos);
-      player = std::make_unique<Walker>(state, vulkan.get(), scene, playerMat);
 
-      glm::vec3 buggyPos = glm::vec3(0, -790, -100);
-      glm::mat4 buggyMat = glm::translate(ident, buggyPos);
-      buggyMat *= glm::mat4(getCylStandingRot(buggyPos, (float)M_PI * -0.5f, 0));
-      duneBuggy = std::make_unique<DuneBuggy>(state, vulkan.get(), scene, buggyMat);
+      // the player avatars
+      for (int i = 0; i < 2; ++i) {
+        players.emplace_back();
 
-      glm::vec3 pyramidPos = glm::vec3(-10, -790, -100);
-      glm::mat4 pyramidMat = glm::translate(ident, pyramidPos);
-      pyramidMat *= glm::mat4(getCylStandingRot(pyramidPos, (float)M_PI * -0.5f, 0));
-      pyramid = std::make_unique<Pyramid>(state, vulkan.get(), scene, pyramidMat);
+        // the free cameras
+        glm::mat4 start = glm::translate(ident, {0, -790, -120});
+        players.back().freeCam = std::make_shared<Object>();
+        state.add_Placement(players.back().freeCam->getId(), start);
+        state.add_FreeControls(players.back().freeCam->getId());
+        players.back().camera = std::make_shared<ThirdPersonCamera>(0.f, 0.f);
+        players.back().camera->anchorTo(players.back().freeCam);
+        scene.addObject(players.back().freeCam);
+
+        // the human
+        glm::vec3 walkerPos = glm::vec3(10, -790, -100 + i * 10);
+        glm::mat4 walkerMat = glm::translate(ident, walkerPos);
+        players.back().walker = std::make_unique<Walker>(state, vulkan.get(), scene, walkerMat);
+
+        // the car
+        glm::vec3 buggyPos = glm::vec3(0, -790, -100 + i * 10);
+        glm::mat4 buggyMat = glm::translate(ident, buggyPos);
+        buggyMat *= glm::mat4(getCylStandingRot(buggyPos, (float) M_PI * -0.5f, 0));
+        players.back().duneBuggy = std::make_unique<DuneBuggy>(state, vulkan.get(), scene, buggyMat);
+
+        // the flying illuminati pyramid
+        glm::vec3 pyramidPos = glm::vec3(-10, -790, -100 + i * 10);
+        glm::mat4 pyramidMat = glm::translate(ident, pyramidPos);
+        pyramidMat *= glm::mat4(getCylStandingRot(pyramidPos, (float) M_PI * -0.5f, 0));
+        players.back().pyramid = std::make_unique<Pyramid>(state, vulkan.get(), scene, pyramidMat);
+      }
+      makeFreeCamActiveControl();
 
 
+      // the event subscriptions
       key0Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_0", Triceratone::makeFreeCamActiveControl, this);
-      key1Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_1", Walker::makeActiveControl, player.get());
-      key2Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_2", DuneBuggy::makeActiveControl, duneBuggy.get());
-      key3Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_3", Pyramid::makeActiveControl, pyramid.get());
-      keyRSub = RTU_MAKE_SUB_UNIQUEPTR("key_down_r", Pyramid::spawnSphere, pyramid.get());
-
-
-      printf("Networking Test\n=======================\n");
-      std::unique_ptr<Server> server = std::make_unique<Server>();
-      std::unique_ptr<Client> client = std::make_unique<Client>();
-      for (int i = 0; i < 3; ++i) {
-        SDL_Delay(100);
-        printf(".\n");
-        server->tick();
-        client->tick();
-      }
-      client.reset();
-      for (int i = 0; i < 3; ++i) {
-        SDL_Delay(100);
-        printf(".\n");
-        server->tick();
-      }
-      server.reset();
-      printf("=======================\n");
+      key1Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_1", Walker::makeActiveControl, player().walker.get());
+      key2Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_2", DuneBuggy::makeActiveControl, player().duneBuggy.get());
+      key3Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_3", Pyramid::makeActiveControl, player().pyramid.get());
+//      lClickSub = RTU_MAKE_SUB_UNIQUEPTR("mouse_down_left", Pyramid::shootSphere, player().pyramid.get());
+//      rClickSub = RTU_MAKE_SUB_UNIQUEPTR("mouse_down_right", Pyramid::dropSphere, player().pyramid.get());
 
 
       return true;
     }
 
-    int32_t customSetting = 1337;
+    std::string exampleSetting = "1337_H4XX0R5";
     virtual void registerCustomSettings() {
-      settings::addCustom("triceratone_customSetting_i", &customSetting);
+      settings::addCustom("example_custom_setting_s", &exampleSetting);
     }
 
     void onTick(float dt) {
 
       // TODO: Not working IN WINDOWS DEBUG BUILD ONLY for some reason?
-      pyramid->resizeFire();
+      for (int i = 0; i < 2; ++i) {
+        players[i].pyramid->resizeFire();
+      }
 
+      netSyncSystem.tick(dt);
       controlSystem.tick(dt);
       physicsSystem.tick(dt);
       animationSystem.tick(dt);
     }
 
     void makeFreeCamActiveControl() {
-      publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", camera->actual);
-      publish<entityId>("switch_to_free_controls", freeCam->getId());
-      publish<entityId>("switch_to_mouse_controls", camera->gimbal->getId());
+      publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", player().camera->actual);
+      publish<entityId>("switch_to_free_controls", player().freeCam->getId());
+      publish<entityId>("switch_to_mouse_controls", player().camera->gimbal->getId());
     }
 };
 
@@ -177,12 +167,10 @@ int main(int argc, char **argv) {
   }
 
   std::cout << std::endl << "AT3 has started." << std::endl;
-  while ( !game.getIsQuit()) {
+  while ( ! game.getIsQuit()) {
     game.tick();
   }
 
   std::cout << std::endl << "AT3 has finished." << std::endl;
   return 0;
 }
-
-#pragma clang diagnostic pop

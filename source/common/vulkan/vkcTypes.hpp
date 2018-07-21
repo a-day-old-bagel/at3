@@ -7,14 +7,7 @@
 #include <string>
 #include <unordered_map>
 
-#define GLM_FORCE_RADIANS
-#define GLM_ENABLE_EXPERIMENTAL
-#if USE_VULKAN_COORDS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#endif
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
+#include "math.hpp"
 #include "fileSystemHelpers.hpp"
 #include "vkcTextures.hpp"
 

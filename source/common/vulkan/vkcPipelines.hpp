@@ -1,16 +1,7 @@
 #pragma once
 
-#include "definitions.hpp"
-
-#define GLM_FORCE_RADIANS
-#define GLM_ENABLE_EXPERIMENTAL
-#if USE_VULKAN_COORDS
-#  define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#endif
-
-#include <glm/glm.hpp>
-
 #include "vkcTypes.hpp"
+#include "math.hpp"
 
 namespace at3::vkc {
 

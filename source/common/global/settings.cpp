@@ -16,8 +16,6 @@ namespace at3 {
       int32_t  windowPosX = SDL_WINDOWPOS_CENTERED;
       int32_t  windowPosY = SDL_WINDOWPOS_CENTERED;
       float fovy = 1.1f;
-      float near = 0.1f;
-      float far = 10000.f;
 
       namespace vulkan {
         bool forceFifo = true;
@@ -26,6 +24,14 @@ namespace at3 {
 
     namespace controls {
       float mouseSpeed = 0.005f;
+    }
+
+    namespace network {
+      uint32_t role = Role::NONE;
+      std::string serverAddress = "127.0.0.1";
+      uint32_t serverPort = 22022;
+      uint32_t clientPort = 22122;
+      uint32_t maxServerConnections = 150;
     }
 
     // The settings registry contains mappings from setting name to memory location.
@@ -47,6 +53,8 @@ namespace at3 {
      *      'u' : indicates that the variable will be a 'uint32_t' in memory
      *      'i' : indicates that the variable will be a 'int32_t' in memory
      *      'f' : indicates that the variable will be a 'float' in memory
+     *      'b' : indicates that the variable will be a 'bool' in memory
+     *      's' : indicates that the variable will be a 'string' in memory
      *
      * This operation will fail if the desired setting name is already taken or if
      * the settings file has already been loaded.
@@ -76,6 +84,11 @@ namespace at3 {
       registry.insert(std::make_pair( "graphics_win_posy_i", &graphics::windowPosY));
       registry.insert(std::make_pair( "graphics_vk_forceFifo_b", &graphics::vulkan::forceFifo));
       registry.insert(std::make_pair( "controls_mouse_speed_f", &controls::mouseSpeed));
+      registry.insert(std::make_pair( "network_role_u", &network::role));
+      registry.insert(std::make_pair( "network_server_address_s", &network::serverAddress));
+      registry.insert(std::make_pair( "network_server_port_u", &network::serverPort));
+      registry.insert(std::make_pair( "network_client_port_u", &network::clientPort));
+      registry.insert(std::make_pair( "network_max_server_connections_u", &network::maxServerConnections));
 
       // Now add the custom entries after - they will never overwrite the standard ones.
       registry.insert(customRegistry.begin(), customRegistry.end());
@@ -119,6 +132,7 @@ namespace at3 {
                 CASE_CHAR_TYPE_READ('i', int32_t)
                 CASE_CHAR_TYPE_READ('f', float)
                 CASE_CHAR_TYPE_READ('b', bool)
+                CASE_CHAR_TYPE_READ('s', std::string)
 
                 default: {
                   reportProblem << "Encountered user setting with invalid type postfix: "
@@ -179,6 +193,7 @@ namespace at3 {
           CASE_CHAR_TYPE_WRITE('i', int32_t)
           CASE_CHAR_TYPE_WRITE('f', float)
           CASE_CHAR_TYPE_WRITE('b', bool)
+          CASE_CHAR_TYPE_WRITE('s', std::string)
 
           default: {
             reportProblem << "Did not save user setting (invalid type postfix): "

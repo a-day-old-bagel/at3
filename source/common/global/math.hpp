@@ -8,8 +8,10 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #endif
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include <btBulletDynamicsCommon.h>
 
@@ -25,4 +27,6 @@ namespace at3 {
 
   glm::vec3 bulletToGlm(const btVector3& vec);
   btVector3 glmToBullet(const glm::vec3& vec);
+  glm::quat bulletToGlm(const btQuaternion& vec);
+  btQuaternion glmToBullet(const glm::quat& vec);
 }

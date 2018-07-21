@@ -8,18 +8,6 @@
 
 namespace at3 {
 
-  // bullet/glm conversions TODO: put somewhere more appropriate
-
-//  glm::vec3 bulletToGlm(const btVector3 &vec) {
-//    return {vec.x(), vec.y(), vec.z()};
-//  }
-//  btVector3 glmToBullet(const glm::vec3& vec) {
-//    return {vec.x, vec.y, vec.z};
-//  }
-
-
-  // cylinder specific stuff
-
   const float angVel = 1.0553f * rpm; // generates about 9.77 m/s acceleration from spinning alone at 800m radius
   constexpr float engAcc = 1.f; // an added orthogonal 1 m/s creates slightly over 1g at 800m
   constexpr bool engIsOn = true; // toggle engine acceleration on/off for testing. Maybe make runtime later.

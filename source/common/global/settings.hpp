@@ -19,7 +19,7 @@ namespace at3 {
       extern uint32_t fullscreen;
       extern uint32_t windowDimX, windowDimY;
       extern int32_t windowPosX, windowPosY;
-      extern float fovy, near, far;
+      extern float fovy;
 
       namespace vulkan {
         extern bool forceFifo;
@@ -28,6 +28,19 @@ namespace at3 {
 
     namespace controls {
       extern float mouseSpeed;
+    }
+
+    namespace network {
+      enum Role {
+          NONE,
+          SERVER,
+          CLIENT
+      };
+      extern uint32_t role;
+      extern std::string serverAddress;
+      extern uint32_t serverPort;
+      extern uint32_t clientPort;
+      extern uint32_t maxServerConnections;
     }
 
     bool addCustom(const char *name, void *data);

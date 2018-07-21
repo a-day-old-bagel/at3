@@ -1,17 +1,15 @@
 
 #include "server.hpp"
+#include "settings.hpp"
 
 using namespace SLNet;
-
-constexpr uint32_t serverPort = 22022;
-constexpr uint32_t maxConns = 150;
 
 namespace at3 {
   Server::Server() {
     peer = RakPeerInterface::GetInstance();
-    peer->SetMaximumIncomingConnections(maxConns);
-    SocketDescriptor socket(serverPort, nullptr);
-    StartupResult startResult = peer->Startup(maxConns, &socket, 1);
+    peer->SetMaximumIncomingConnections(static_cast<uint8_t>(settings::network::maxServerConnections));
+    SocketDescriptor sock(static_cast<uint8_t>(settings::network::serverPort), nullptr);
+    StartupResult startResult = peer->Startup(static_cast<uint8_t>(settings::network::maxServerConnections), &sock, 1);
     if (startResult != RAKNET_STARTED) {
       printf("Server failed to start.\n");
     }
@@ -23,9 +21,9 @@ namespace at3 {
     RakPeerInterface::DestroyInstance(peer);
   }
 
-  void Server::receive() {
+  void Server::receive(std::vector<Packet*> & buffer) {
     Packet *packet;
-    for (packet=peer->Receive(); packet; peer->DeallocatePacket(packet), packet=peer->Receive()) {
+    for (packet=peer->Receive(); packet; packet=peer->Receive()) {
       switch (packet->data[0]) {
         case ID_NEW_INCOMING_CONNECTION: {
           printf("A remote system has successfully connected.\n");
@@ -37,13 +35,25 @@ namespace at3 {
           printf("A remote system lost the connection.\n");
         } break;
         default: {
-          printf("Server received unknown packet.\n");
+          if ((MessageID)packet->data[0] >= ID_USER_PACKET_ENUM) {
+            buffer.emplace_back(packet);
+            continue; // Do not deallocate - pointer to packet now in buffer
+          }
         }
       }
+      deallocatePacket(packet);
     }
   }
 
-  void Server::tick() {
-    receive();
+  void Server::tick(std::vector<Packet*> & buffer) {
+    receive(buffer);
+  }
+
+  void Server::send(BitStream &stream) {
+    peer->Send(&stream, LOW_PRIORITY, UNRELIABLE_SEQUENCED, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+  }
+
+  void Server::deallocatePacket(Packet *packet) {
+    peer->DeallocatePacket(packet);
   }
 }

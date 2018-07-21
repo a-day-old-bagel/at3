@@ -1,17 +1,7 @@
 
-#include "definitions.hpp"
-
-#define GLM_FORCE_RADIANS
-#define GLM_ENABLE_EXPERIMENTAL
-#if USE_VULKAN_COORDS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#endif
-
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/string_cast.hpp>
-
 #include "pyramid.hpp"
 #include "topics.hpp"
+#include "cylinderMath.hpp"
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"
@@ -112,20 +102,41 @@ namespace at3 {
     }
   }
 
-  void Pyramid::spawnSphere() {
+  entityId Pyramid::spawnSphere(bool shoot) {
     Placement *source;
     state->get_Placement(ctrlId, &source);
     Physics *sourcePhysics;
     state->get_Physics(ctrlId, &sourcePhysics);
 
-    glm::mat4 sourceMat = glm::translate(source->mat, {0.f, 0.f, 3.f});
+    glm::mat4 sourceMat = glm::translate(source->absMat, {0.f, 0.f, 3.f});
     spheres.push_back(std::make_shared<Mesh>(vkc, "sphere", sourceMat));
     float sphereRadius = 1.0f;
     state->add_Physics(spheres.back()->getId(), 5.f, &sphereRadius, Physics::SPHERE);
     Physics *physics;
     state->get_Physics(spheres.back()->getId(), &physics);
-    physics->rigidBody->setLinearVelocity(sourcePhysics->rigidBody->getLinearVelocity() );//+ btVector3(0.f, 0.f, 1.f));
+    physics->rigidBody->setLinearVelocity(sourcePhysics->rigidBody->getLinearVelocity() );
+
+    if (shoot) {
+      MouseControls *mouseControls;
+      state->get_MouseControls(camGimbalId, &mouseControls);
+      glm::mat3 tiltRot = glm::rotate(.35f , glm::vec3(1.0f, 0.0f, 0.0f));
+      glm::mat3 rot = getCylStandingRot(source->getTranslation(true), mouseControls->pitch, mouseControls->yaw);
+      glm::vec3 shootDir = rot * tiltRot * glm::vec3(0, 0, -1);
+      btVector3 shot = btVector3(shootDir.x, shootDir.y, shootDir.z) * 1000.f;
+      physics->rigidBody->applyCentralImpulse(shot);
+    }
+
     scene->addObject(spheres.back());
+
+    return spheres.back()->getId();
+  }
+
+  void Pyramid::dropSphere() {
+    spawnSphere(false);
+  }
+
+  void Pyramid::shootSphere() {
+    spawnSphere(true);
   }
 
   std::shared_ptr<PerspectiveCamera> Pyramid::getCamPtr() {

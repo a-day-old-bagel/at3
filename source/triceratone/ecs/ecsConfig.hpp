@@ -6,21 +6,12 @@
 
 #include <vector>
 
-#include "definitions.hpp"
-
-#define GLM_FORCE_RADIANS
-#define GLM_ENABLE_EXPERIMENTAL
-#if USE_VULKAN_COORDS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#endif
-
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include "glm/gtx/transform.hpp"
-
 #include <btBulletDynamicsCommon.h>
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
+
+#include "math.hpp"
+#include "delegate.hpp"
 
 // END INCLUDES
 
@@ -42,10 +33,12 @@ namespace {
     bool forceLocalRotationAndScale = false;
     Placement(glm::mat4 mat);
     glm::vec3 getTranslation(bool abs = false);
+    void setTranslation(glm::vec3 &pos);
     glm::vec3 getLookAt(bool abs = false);
     float getHorizRot(bool abs = false);
     glm::mat3 getHorizRotMat(bool abs = false);
     glm::quat getQuat(bool abs = false);
+    void setQuat(glm::quat &quat);
   };
 
   struct TransformFunction : public Component<TransformFunction> {
@@ -80,7 +73,7 @@ namespace {
   };
   struct Physics : public Component<Physics> {
     enum UseCase {
-      NONE, PLANE, SPHERE, BOX, DYNAMIC_CONVEX_MESH, STATIC_MESH, WHEEL, CHARA
+      INVALID, PLANE, SPHERE, BOX, DYNAMIC_CONVEX_MESH, STATIC_MESH, WHEEL, CHARA
     };
     int useCase;
     float mass;
@@ -137,7 +130,7 @@ namespace {
 
   struct MouseControls : public Component<MouseControls> {
     enum Style {
-        NONE, FLAT_Z_UP, CYLINDRICAL_ABOUT_Y
+        INVALID, FLAT_Z_UP, CYLINDRICAL_ABOUT_Y
     };
     Style style;
     float yaw = 0, pitch = 0;
@@ -156,6 +149,12 @@ namespace {
   glm::vec3 Placement::getTranslation(bool abs) {
     return abs ? glm::vec3(absMat[3][0], absMat[3][1], absMat[3][2]) :
                  glm::vec3(   mat[3][0],    mat[3][1],    mat[3][2]);
+  }
+
+  void Placement::setTranslation(glm::vec3 &pos) {
+    mat[3][0] = pos.x;
+    mat[3][1] = pos.y;
+    mat[3][2] = pos.z;
   }
 
   glm::vec3 Placement::getLookAt(bool abs) {
@@ -177,6 +176,12 @@ namespace {
 
   glm::quat Placement::getQuat(bool abs) {
     return glm::quat_cast( abs ? absMat : mat );
+  }
+
+  void Placement::setQuat(glm::quat &quat) {
+    glm::vec3 pos = getTranslation(false);
+    mat = glm::mat4(glm::mat3_cast(quat));
+    setTranslation(pos);
   }
 
   TransformFunction::TransformFunction(transformFunc func)
