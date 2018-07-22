@@ -42,8 +42,9 @@ namespace at3 {
       state->get_Placement(id, &placement);
 
       glm::vec3 pos = placement->getTranslation(true);
-      mouseControls->lastCtrlRot = getCylStandingRot(pos, 0, mouseControls->yaw);
-      glm::mat4 rot = glm::mat4(getCylStandingRot(pos, mouseControls->pitch, mouseControls->yaw));
+      mouseControls->lastHorizCtrlRot = getCylStandingRot(pos, 0, mouseControls->yaw);
+      mouseControls->lastCtrlRot = glm::mat4(getCylStandingRot(pos, mouseControls->pitch, mouseControls->yaw));
+      glm::mat3 rot = mouseControls->lastCtrlRot;
 
       rot[3][0] = placement->mat[3][0];
       rot[3][1] = placement->mat[3][1];
@@ -76,7 +77,7 @@ namespace at3 {
             PYR_SIDE_ACCEL, 0, 0,
             0, PYR_SIDE_ACCEL, 0,
             0, 0, PYR_UP_ACCEL
-        } * glm::normalize(mouseControls->lastCtrlRot * pyramidControls->accel) * turbo;
+        } * glm::normalize(mouseControls->lastHorizCtrlRot * pyramidControls->accel) * turbo;
         pyramidControls->accel = glm::vec3(0, 0, 0);
       }
     }
@@ -87,7 +88,7 @@ namespace at3 {
       if (length(trackControls->control) > 0.f) {
         // Calculate torque to apply
         trackControls->torque += TRACK_TORQUE * trackControls->control;
-
+        // Zero the controls for next time
         trackControls->control = glm::vec2(0, 0);
       }
     }
@@ -112,7 +113,7 @@ namespace at3 {
             speed, 0, 0,
             0, speed, 0,
             0, 0, speed
-        } * glm::normalize(mouseControls->lastCtrlRot * playerControls->accel);
+        } * glm::normalize(mouseControls->lastHorizCtrlRot * playerControls->accel);
         playerControls->accel = glm::vec3(0, 0, 0);
       }
     }
@@ -126,7 +127,7 @@ namespace at3 {
         Placement *placement;
         state->get_Placement(id, &placement);
 
-        glm::vec3 movement = (float)(FREE_SPEED * pow(10.f, freeControls->x10) * dt) * glm::normalize(
+        glm::vec3 movement = (FREE_SPEED * powf(10.f, freeControls->x10) * dt) * glm::normalize(
             mouseControls->lastCtrlRot * freeControls->control);
 
         placement->mat[3][0] += movement.x;
@@ -291,11 +292,6 @@ namespace at3 {
       void brakeRightOrLeft(float amount) {
         getComponent()->brakes += glm::vec2(std::max(0.f, -amount * 5.f), std::max(0.f, amount * 5.f));
       }
-      void flip() {
-        glm::vec3 cen = glm::vec3(0, 0, 1);
-        glm::vec3 dir = -getNaiveCylGrav(getPlacement()->getTranslation(true)) * 25.f;
-        getPhysics()->rigidBody->applyImpulse({dir.x, dir.y, dir.z}, {cen.x, cen.y, cen.z});
-      }
 
       // These are used as actions for "key held" topic subscriptions
       void key_forward() { forwardOrBackward(1.f); }
@@ -304,7 +300,7 @@ namespace at3 {
       void key_left() { rightOrLeft(-1.f); }
       void key_brakeRight() { brakeRightOrLeft(1.f); }
       void key_brakeLeft() { brakeRightOrLeft(-1.f); }
-      void key_flip() { flip(); }
+      void key_flip() { getComponent()->flipRequested = true; }
     public:
       ActiveTrackControl(State *state, const entityId id) : EntityAssociatedERM(state, id) {
         setAction("key_held_w", RTU_MTHD_DLGT(&ActiveTrackControl::key_forward, this));

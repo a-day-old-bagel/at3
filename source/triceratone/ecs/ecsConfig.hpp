@@ -102,6 +102,7 @@ namespace {
     glm::vec2 brakes = glm::vec2(0, 0);
     glm::vec2 torque = glm::vec2(0, 0);
     bool hasDriver = false;
+    bool flipRequested = false;
     std::vector<WheelInfo> wheels;
     btRaycastVehicle *vehicle;
     btRaycastVehicle::btVehicleTuning tuning;
@@ -134,6 +135,7 @@ namespace {
   struct MouseControls : public Component<MouseControls> {
     float yaw = 0, pitch = 0;
     glm::mat3 lastCtrlRot = glm::mat4(1.f);
+    glm::mat3 lastHorizCtrlRot = glm::mat4(1.f);
     bool invertedX, invertedY;
     MouseControls(bool invertedX, bool invertedY);
   };

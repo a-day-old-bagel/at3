@@ -74,6 +74,9 @@ namespace at3 {
     // set up ghost object collision detection
     dynamicsWorld->getPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
 
+    // TODO: somehow do this at the same time for a server and a client upon connect?
+//    solver->reset();
+
     return true;
   }
 
@@ -281,6 +284,16 @@ namespace at3 {
         }
       }
 
+      if (trackControls->flipRequested) {
+        Physics *physics;
+        state->get_Physics(id, &physics);
+        Placement *placement;
+        state->get_Placement(id, &placement);
+        glm::vec3 cen = glm::vec3(0, 0, 1);
+        glm::vec3 dir = -getNaiveCylGrav(placement->getTranslation(true)) * 25.f;
+        physics->rigidBody->applyImpulse({dir.x, dir.y, dir.z}, {cen.x, cen.y, cen.z});
+        trackControls->flipRequested = false;
+      }
 
       for (int i = 0; i < trackControls->vehicle->getNumWheels(); ++i) {
         trackControls->vehicle->updateWheelTransform(i, true);

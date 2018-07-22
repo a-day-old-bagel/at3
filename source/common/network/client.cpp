@@ -8,8 +8,7 @@ using namespace SLNet;
 namespace at3 {
   Client::Client() {
     peer = RakPeerInterface::GetInstance();
-//    SocketDescriptor sock;
-    SocketDescriptor sock(static_cast<uint8_t>(settings::network::clientPort), nullptr);
+    SocketDescriptor sock;
     StartupResult startResult = peer->Startup(1, &sock, 1);
     if (startResult != RAKNET_STARTED) {
       printf("Client failed to start.\n");

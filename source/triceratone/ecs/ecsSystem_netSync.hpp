@@ -45,14 +45,21 @@ namespace at3 {
       void switchToFreeCtrl(void *id);
 
       void beginSyncStream(SLNet::BitStream &stream, SLNet::MessageID messageType, uint16_t numComponents);
-      void sendPlacementSyncs();
-      void sendPhysicsSyncs();
-      void sendControlsSyncs();
+      void sendPlacementSyncs(SLNet::BitStream &stream);
+      void sendPhysicsSyncs(SLNet::BitStream &stream);
+      void sendControlsSyncs(SLNet::BitStream &stream);
 
       void receiveSyncPacketsFromClients();
       void receiveSyncPacketsFromServer();
-      void receivePlacementSyncs(SLNet::BitStream &stream, uint16_t count);
-      void receivePhysicsSyncs(SLNet::BitStream &stream, uint16_t count);
+      void receivePlacementSyncs(SLNet::BitStream &stream);
+      void receivePhysicsSyncs(SLNet::BitStream &stream);
+      void receiveControlSyncs(SLNet::BitStream &stream, SLNet::MessageID syncType);
+
+      void serializePlacementSync(SLNet::BitStream &, entityId id, bool rw);
+      void serializePhysicsSync(SLNet::BitStream &, entityId id, bool rw);
+      void serializeControlSync(
+          SLNet::BitStream &, entityId id, bool rw,
+          SLNet::MessageID syncType = ID_USER_PACKET_END_ENUM);
 
     public:
       std::vector<compMask> requiredComponents = {
