@@ -6,7 +6,6 @@
 #include "RakPeerInterface.h"
 #include "MessageIdentifiers.h"
 #include "BitStream.h"
-#include "GetTime.h"
 #include "RakNetTypes.h"
 
 namespace at3 {
@@ -17,7 +16,7 @@ namespace at3 {
       Server();
       virtual ~Server();
       void tick(std::vector<SLNet::Packet*> & buffer);
-      void send(SLNet::BitStream &stream, PacketPriority priority, PacketReliability reliability);
+      void send(SLNet::BitStream &stream, PacketPriority priority, PacketReliability reliability, char channel);
       void deallocatePacket(SLNet::Packet * packet);
   };
 }

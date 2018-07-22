@@ -10,8 +10,7 @@ using namespace ezecs;
 namespace at3 {
 
   enum FurtherPacketEnums {
-      ID_SYNC_PLACEMENT = ID_USER_PACKET_FURTHER_ENUM,
-      ID_SYNC_PHYSICS,
+      ID_SYNC_PHYSICS = ID_USER_PACKET_FURTHER_ENUM,
       ID_SYNC_WALKCONTROLS,
       ID_SYNC_PYRAMIDCONTROLS,
       ID_SYNC_TRACKCONTROLS,
@@ -25,10 +24,9 @@ namespace at3 {
       entityId mouseControlId = 0;
       entityId keyControlId = 0;
       SLNet::MessageID keyControlMessageId = ID_USER_PACKET_END_ENUM;
-      uint32_t currentPlacementIndex = 0;
-      uint32_t currentPhysicsIndex = 0;
-      SLNet::Time lastPlacementSyncTime = SLNet::GetTime();
-      SLNet::Time lastPhysicsSyncTime = SLNet::GetTime();
+      float timeAccumulator = 0;
+
+      SLNet::BitStream outStream;
 
       rtu::topics::Subscription setNetInterfaceSub;
       rtu::topics::Subscription switchToMouseCtrlSub;
@@ -44,22 +42,15 @@ namespace at3 {
       void switchToTrackCtrl(void *id);
       void switchToFreeCtrl(void *id);
 
-      void beginSyncStream(SLNet::BitStream &stream, SLNet::MessageID messageType, uint16_t numComponents);
-      void sendPlacementSyncs(SLNet::BitStream &stream);
-      void sendPhysicsSyncs(SLNet::BitStream &stream);
-      void sendControlsSyncs(SLNet::BitStream &stream);
+      bool writePhysicsSyncs(float dt);
+      void writeControlSyncs();
+      void send(PacketPriority priority, PacketReliability reliability, char channel);
 
-      void receiveSyncPacketsFromClients();
-      void receiveSyncPacketsFromServer();
-      void receivePlacementSyncs(SLNet::BitStream &stream);
-      void receivePhysicsSyncs(SLNet::BitStream &stream);
-      void receiveControlSyncs(SLNet::BitStream &stream, SLNet::MessageID syncType);
+      void receiveSyncPackets();
 
-      void serializePlacementSync(SLNet::BitStream &, entityId id, bool rw);
-      void serializePhysicsSync(SLNet::BitStream &, entityId id, bool rw);
-      void serializeControlSync(
-          SLNet::BitStream &, entityId id, bool rw,
-          SLNet::MessageID syncType = ID_USER_PACKET_END_ENUM);
+      void serializePhysicsSync(bool rw, SLNet::BitStream &);
+      void serializeControlSync(bool rw, SLNet::BitStream &, entityId mId, entityId cId,
+                                SLNet::MessageID syncType = ID_USER_PACKET_END_ENUM);
 
     public:
       std::vector<compMask> requiredComponents = {

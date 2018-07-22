@@ -19,7 +19,8 @@ namespace at3 {
   extern const float pi;
   extern const float halfPi;
   extern const float twoPi;
-  extern const float rpm;// multiply by this to go from revolutions/minute to radians/sec.
+  extern const float rpm; // multiply by this to go from revolutions/minute to radians/sec.
+  extern const float msToS; // multiply by this to go from milliseconds to seconds
 
   template <typename T> int sign(T val) {
     return (T(0) < val) - (val < T(0));

@@ -49,8 +49,8 @@ namespace at3 {
     receive(buffer);
   }
 
-  void Server::send(BitStream &stream, PacketPriority priority, PacketReliability reliability) {
-    peer->Send(&stream, priority, reliability, 0, UNASSIGNED_SYSTEM_ADDRESS, true);
+  void Server::send(BitStream &stream, PacketPriority priority, PacketReliability reliability, char channel) {
+    peer->Send(&stream, priority, reliability, channel, UNASSIGNED_SYSTEM_ADDRESS, true);
   }
 
   void Server::deallocatePacket(Packet *packet) {

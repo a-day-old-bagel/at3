@@ -108,7 +108,7 @@ namespace at3 {
     if (lastTime == 0.0f) {
       // FIXME: Try to make sure this doesn't ever produce a dt of 0.
       // TODO: Actually, just use the std::chrono stuff and use its "now" function
-      lastTime = (float)(std::min((Uint32)0, SDL_GetTicks() - 1)) * TIME_MULTIPLIER_MS;
+      lastTime = (float)(std::min((Uint32)0, SDL_GetTicks() - 1)) * msToS;
     }
 
     // Poll SDL events
@@ -270,7 +270,7 @@ namespace at3 {
     network->tick();
 
     // Update logic given the time since the last frame was drawn TODO: SDL_GetTicks may be too granular
-    float currentTime = (float)SDL_GetTicks() * TIME_MULTIPLIER_MS;
+    float currentTime = (float)SDL_GetTicks() * msToS;
     float dt = currentTime - lastTime;
     lastTime = currentTime;
     topLevel().onTick(dt);

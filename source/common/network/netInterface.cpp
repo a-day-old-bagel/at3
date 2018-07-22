@@ -52,13 +52,13 @@ namespace at3 {
     }
   }
 
-  void NetInterface::send(BitStream &stream, PacketPriority priority, PacketReliability reliability) {
+  void NetInterface::send(BitStream &stream, PacketPriority priority, PacketReliability reliability, char channel) {
     switch(role) {
       case settings::network::Role::SERVER: {
-        server->send(stream, priority, reliability);
+        server->send(stream, priority, reliability, channel);
       } break;
       case settings::network::Role::CLIENT: {
-        client->send(stream, priority, reliability);
+        client->send(stream, priority, reliability, channel);
       } break;
       default: break;
     }
