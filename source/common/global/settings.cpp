@@ -30,7 +30,7 @@ namespace at3 {
       uint32_t role = Role::NONE;
       std::string serverAddress = "127.0.0.1";
       uint32_t serverPort = 22022; // 22122 is also available and everything in between.
-      uint32_t maxServerConnections = 150;
+      uint32_t maxServerConns = 150;
     }
 
     // The settings registry contains mappings from setting name to memory location.
@@ -86,7 +86,7 @@ namespace at3 {
       registry.insert(std::make_pair( "network_role_u", &network::role));
       registry.insert(std::make_pair( "network_server_address_s", &network::serverAddress));
       registry.insert(std::make_pair( "network_server_port_u", &network::serverPort));
-      registry.insert(std::make_pair( "network_server_max_clients_u", &network::maxServerConnections));
+      registry.insert(std::make_pair( "network_server_max_clients_u", &network::maxServerConns));
 
       // Now add the custom entries after - they will never overwrite the standard ones.
       registry.insert(customRegistry.begin(), customRegistry.end());

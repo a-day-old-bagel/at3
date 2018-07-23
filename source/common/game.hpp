@@ -47,7 +47,7 @@ namespace at3 {
       std::unique_ptr<EcsInterface> ecsInterface;
       std::shared_ptr<ObjCamera<EcsInterface>> currentCamera = nullptr;
       rtu::topics::Subscription switchToCamSub;
-      float lastTime = 0.f;
+      float lastTime = (float)SDL_GetTicks() * msToS;
       std::string settingsFileName;
       bool isQuit = false;
 
@@ -103,13 +103,6 @@ namespace at3 {
 
   template <typename EcsInterface, typename Derived>
   void Game<EcsInterface, Derived>::tick() {
-
-    // If this is first frame, make sure timing doesn't cause problems
-    if (lastTime == 0.0f) {
-      // FIXME: Try to make sure this doesn't ever produce a dt of 0.
-      // TODO: Actually, just use the std::chrono stuff and use its "now" function
-      lastTime = (float)(std::min((Uint32)0, SDL_GetTicks() - 1)) * msToS;
-    }
 
     // Poll SDL events
     SDL_Event event;

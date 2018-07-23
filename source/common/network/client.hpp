@@ -13,6 +13,7 @@ namespace at3 {
       SLNet::RakPeerInterface *peer;
       void connect();
       void receive(std::vector<SLNet::Packet*> & buffer);
+      std::string getConnectionAttemptResultString(SLNet::ConnectionAttemptResult result);
     public:
       Client();
       virtual ~Client();

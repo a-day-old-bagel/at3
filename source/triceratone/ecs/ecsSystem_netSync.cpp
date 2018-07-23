@@ -24,7 +24,7 @@ namespace at3 {
     switch(network->getRole()) {
       case settings::network::SERVER: {
         writeControlSyncs();
-        send(IMMEDIATE_PRIORITY, RELIABLE_ORDERED, 0);  // TODO: Is immediate priority even helpful here? Or bad?
+        send(HIGH_PRIORITY, RELIABLE_ORDERED, 0);  // TODO: Is immediate or high priority even helpful here? Or bad?
         if (writePhysicsSyncs(dt)) {
           send(LOW_PRIORITY, UNRELIABLE_SEQUENCED, 1);
         }
@@ -89,34 +89,52 @@ namespace at3 {
     for (auto id : registries[1].ids) {
       Physics *physics;
       state->get_Physics(id, &physics);
+
       bool include;
       if (rw) {
         include = physics->useCase != Physics::WHEEL &&
                   physics->useCase != Physics::STATIC_MESH &&
                   physics->rigidBody->isActive();
-      }
+      } // else it's written to by the stream
       stream.SerializeCompressed(rw, include);
+
       if (include) {
-        btVector3 pos, lin, ang;
+
+        bool needsRotation;
+        if (rw) {
+          needsRotation = physics->useCase != Physics::CHARA && physics->useCase != Physics::SPHERE;
+        } // else it's written to by the stream
+        stream.SerializeCompressed(rw, needsRotation);
+
+        glm::vec3 pos, lin, ang;  // glm conversion because bullet uses four floats for its vec3's for *SOME* reason.
         btQuaternion rot;
         btTransform transform;
         if (rw) {
           physics->rigidBody->getMotionState()->getWorldTransform(transform);
-          pos = transform.getOrigin();
-          rot = transform.getRotation();
-          lin = physics->rigidBody->getLinearVelocity();
-          ang = physics->rigidBody->getAngularVelocity();
+          pos = bulletToGlm(transform.getOrigin());
+          lin = bulletToGlm(physics->rigidBody->getLinearVelocity());
+          if (needsRotation) {
+            rot = transform.getRotation();
+            ang = bulletToGlm(physics->rigidBody->getAngularVelocity());
+          }
         }
         stream.Serialize(rw, pos);
-        stream.Serialize(rw, rot);
         stream.Serialize(rw, lin);
-        stream.Serialize(rw, ang);
+        if (needsRotation) {
+          stream.Serialize(rw, rot);
+          stream.Serialize(rw, ang);
+        }
         if ( ! rw) {
-          transform.setOrigin(pos);
-          transform.setRotation(rot);
+          if (needsRotation) {
+            transform.setRotation(rot);
+            physics->rigidBody->setAngularVelocity(glmToBullet(ang));
+
+          } else {
+            physics->rigidBody->getMotionState()->getWorldTransform(transform);
+          }
+          transform.setOrigin(glmToBullet(pos));
+          physics->rigidBody->setLinearVelocity(glmToBullet(lin));
           physics->rigidBody->setCenterOfMassTransform(transform);
-          physics->rigidBody->setLinearVelocity(lin);
-          physics->rigidBody->setAngularVelocity(ang);
         }
       }
     }

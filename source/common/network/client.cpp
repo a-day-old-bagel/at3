@@ -9,9 +9,10 @@ namespace at3 {
   Client::Client() {
     peer = RakPeerInterface::GetInstance();
     SocketDescriptor sock;
-    StartupResult startResult = peer->Startup(1, &sock, 1);
+    // TODO: this priority won't work on Linux.
+    StartupResult startResult = peer->Startup(1, &sock, 1, THREAD_PRIORITY_NORMAL);
     if (startResult != RAKNET_STARTED) {
-      printf("Client failed to start.\n");
+      fprintf(stderr, "Peer interface failed to start!\n");
     }
     connect();
   }
@@ -22,24 +23,23 @@ namespace at3 {
   }
 
   void Client::connect() {
-    printf("Client is connecting to %s:%d\n", settings::network::serverAddress.c_str(), settings::network::serverPort);
+    printf("Connecting to server %s:%d ...\n", settings::network::serverAddress.c_str(), settings::network::serverPort);
+    PublicKey publicKey = {PKM_INSECURE_CONNECTION, nullptr, nullptr, nullptr};
     ConnectionAttemptResult connectionResult = peer->Connect
-        (settings::network::serverAddress.c_str(),static_cast<uint8_t>(settings::network::serverPort), nullptr, 0);
-    if (connectionResult != CONNECTION_ATTEMPT_STARTED) {
-      printf("Client failed to connect to the server.\n");
-    }
+        (settings::network::serverAddress.c_str(), static_cast<uint16_t>(settings::network::serverPort),
+         nullptr, 0, // password char* and password length
+         &publicKey, 0, // public key pointer and socket index (sock in constructor can be array pointer)
+         10, 1000, 0);  // num tries, ms between tries, timeout once connected (0 picks default)
+    printf("Returned: %s.\n", getConnectionAttemptResultString(connectionResult).c_str());
   }
 
+# define CASE_REPORT_PACKET(e, s) case ID_ ##e: fprintf(s, "Received %s\n", #e); break
   void Client::receive(std::vector<Packet*> & buffer) {
     Packet *packet;
     for (packet=peer->Receive(); packet; packet=peer->Receive()) {
       switch (packet->data[0]) {
-        case ID_CONNECTION_REQUEST_ACCEPTED: {
-          printf("Client has connnected to server.\n");
-        } break;
-        case ID_CONNECTION_ATTEMPT_FAILED: {
-          fprintf(stderr, "Client could not connect to server!\n");
-        }
+        CASE_REPORT_PACKET(CONNECTION_REQUEST_ACCEPTED, stdout);
+        CASE_REPORT_PACKET(CONNECTION_ATTEMPT_FAILED, stderr);
         default: {
           if ((MessageID)packet->data[0] >= ID_USER_PACKET_ENUM) {
             buffer.emplace_back(packet);
@@ -50,6 +50,21 @@ namespace at3 {
       deallocatePacket(packet);
     }
   }
+# undef CASE_REPORT_PACKET
+
+# define CASE_EMIT_RESULT(e) case e: return #e
+  std::string Client::getConnectionAttemptResultString(SLNet::ConnectionAttemptResult result) {
+    switch (result) {
+      CASE_EMIT_RESULT(CONNECTION_ATTEMPT_STARTED);
+      CASE_EMIT_RESULT(INVALID_PARAMETER);
+      CASE_EMIT_RESULT(CANNOT_RESOLVE_DOMAIN_NAME);
+      CASE_EMIT_RESULT(ALREADY_CONNECTED_TO_ENDPOINT);
+      CASE_EMIT_RESULT(CONNECTION_ATTEMPT_ALREADY_IN_PROGRESS);
+      CASE_EMIT_RESULT(SECURITY_INITIALIZATION_FAILED);
+      default: return "unknown error";
+    }
+  }
+# undef CASE_EMIT_RESULT
 
   void Client::tick(std::vector<Packet*> & buffer) {
     receive(buffer);

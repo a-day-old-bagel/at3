@@ -60,7 +60,7 @@ namespace at3 {
         { 1.9f, -1.9f, 0.f}
     };
     for (int i = 0; i < 4; ++i) {
-      wheels.push_back(std::make_shared<Mesh>(context, "wheel", "pyramid_thrusters", ident));
+      wheels.push_back(std::make_shared<Mesh>(context, "wheel", "tire", ident));
       entityId wheelId = wheels.back()->getId();
       WheelInitInfo wheelInitInfo{
           {                         // WheelInfo struct - this part of the wheelInitInfo will persist.

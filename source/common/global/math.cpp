@@ -15,10 +15,10 @@ namespace at3 {
   btVector3 glmToBullet(const glm::vec3& vec) {
     return {vec.x, vec.y, vec.z};
   }
-  glm::quat bulletToGlm(const btQuaternion& vec) {
-    return glm::quat(vec.x(), vec.y(), vec.z(), vec.w());
-  }
-  btQuaternion glmToBullet(const glm::quat& vec) {
-    return {vec.x, vec.y, vec.z, vec.w};
-  }
+//  glm::quat bulletToGlm(const btQuaternion& vec) {  // FIXME: NOT WORKING
+//    return glm::quat(vec.x(), vec.y(), vec.z(), vec.w());
+//  }
+//  btQuaternion glmToBullet(const glm::quat& vec) {  // FIXME: NOT WORKING
+//    return {vec.x, vec.y, vec.z, vec.w};
+//  }
 }

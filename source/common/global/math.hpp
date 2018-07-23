@@ -28,6 +28,6 @@ namespace at3 {
 
   glm::vec3 bulletToGlm(const btVector3& vec);
   btVector3 glmToBullet(const glm::vec3& vec);
-  glm::quat bulletToGlm(const btQuaternion& vec);
-  btQuaternion glmToBullet(const glm::quat& vec);
+//  glm::quat bulletToGlm(const btQuaternion& vec); // FIXME: NOT WORKING
+//  btQuaternion glmToBullet(const glm::quat& vec); // FIXME: NOT WORKING
 }

@@ -20,6 +20,9 @@ namespace at3 {
    * and rendering routines), while you can modify what these calls actually do within your ECS/state however you want.
    * It doesn't even have to wrap a real ECS, for that matter. It just has to act like it does.
    *
+   * In my case, I'm also using this interface as a network access layer, and so I also access it from any of my high-
+   * level code that needs to add or remove things from the ECS.
+   *
    * For example, in a simple single-player game for which you've implemented a straightforward ECS, you can basically
    * just wrap a pointer to your ECS and some methods to access a subset of its functions in here. In that case, you'd
    * probably be asking yourself why you need an extra layer like this at all.
@@ -112,7 +115,7 @@ namespace at3 {
       /*
        * This is used when creating mouse-controlled cameras, but it's not a very clean or portable way to manage this,
        * so I need to rethink it. Sorry. I'll probably move the third-person camera code up into my implementation
-       * layer instead of putting it in common, since it's NOT really common to all game genres. TODO: this.
+       * layer instead of putting it in common, since it's NOT really common to all kinds of games. TODO: this.
        */
       void addMouseControl(const EcsId& id);
   };
