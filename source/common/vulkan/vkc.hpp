@@ -26,6 +26,8 @@
 
 namespace at3::vkc {
 
+  // TODO: get rid of templating ... ugh. The only reason they're here is for the getAbsTransform function...
+
   template<typename EcsInterface>
   struct VulkanContextCreateInfo {
       std::string appName;

@@ -3,6 +3,7 @@
 
 #include "math.hpp"
 #include "ezecs.hpp"
+#include "netInterface.hpp"
 #include "sceneTree.hpp"
 #include "obj.hpp"
 #include "objCameraPerspective.hpp"
@@ -14,7 +15,7 @@ namespace at3 {
   /**
    * The purpose of an "entity component system interface" is to provide an abstraction layer around whatever entity
    * component system or other game state machine you choose to implement, to be accessed by the scene tree and other
-   * internal engine code. This is helpful because depending on factors like whether you're networking the game or not,
+   * engine or game code. This is helpful because depending on factors like whether you're networking the game or not,
    * or how you organize your actual components in your ECS implementation, the API of your ECS (or equivalent state
    * machine) may change. An interface like this provides a consistent API to the lower-level engine stuff (scene tree
    * and rendering routines), while you can modify what these calls actually do within your ECS/state however you want.
@@ -45,10 +46,24 @@ namespace at3 {
   class EntityComponentSystemInterface {
 
       ezecs::State* state;
+      std::shared_ptr<NetInterface> network;
+      rtu::topics::Subscription setNetInterfaceSub;
+
+      void setNetInterface(void *netInterface);
 
     public:
 
       explicit EntityComponentSystemInterface(ezecs::State* state);
+
+      /*
+       * These members are NOT required in order to use this as a template argument to Game. These are just wrapper
+       * functions that include networking awareness for use in my specific case. If your game is networked, similar
+       * helpers might be good for you too.
+       * Essentially, where I would normally just call the ECS function to add a given component, now I call these
+       * instead from my high-level code so that I can hide the network access. These functions, instead of directly
+       * calling the corresponding ECS functions, will make appropriate requests to a server if the game is running
+       * in client mode, and will broadcast the changes if running in server mode, etc.
+       */
 
       /*
        * All of the following members of EntityComponentSystemInterface are required by any such interface.
@@ -105,12 +120,12 @@ namespace at3 {
        * These methods assume you keep some sort of state representing your cameras, which will include keeping
        * data like the field of view and the near ans far planes.
        */
-      void addPerspective(const EcsId &id, float fovy, float near, float far);
+      void addPerspective(const EcsId &id, float fovy, float nearPlane, float farPlane);
       float getFovy(const EcsId& id);
       float getFovyPrev(const EcsId& id);
       float getNear(const EcsId& id);
       float getFar(const EcsId& id);
-      void setFar(const EcsId &id, float far);
+      void setFar(const EcsId &id, float farPlane);
 
       /*
        * This is used when creating mouse-controlled cameras, but it's not a very clean or portable way to manage this,

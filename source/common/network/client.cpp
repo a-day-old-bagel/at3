@@ -2,6 +2,7 @@
 #include <string>
 #include "client.hpp"
 #include "settings.hpp"
+#include "userPacketEnums.hpp"
 
 using namespace SLNet;
 
@@ -29,20 +30,23 @@ namespace at3 {
         (settings::network::serverAddress.c_str(), static_cast<uint16_t>(settings::network::serverPort),
          nullptr, 0, // password char* and password length
          &publicKey, 0, // public key pointer and socket index (sock in constructor can be array pointer)
-         10, 1000, 0);  // num tries, ms between tries, timeout once connected (0 picks default)
+         12, 800, 0);  // num tries, ms between tries, timeout once connected (0 picks default)
     printf("Returned: %s.\n", getConnectionAttemptResultString(connectionResult).c_str());
   }
 
 # define CASE_REPORT_PACKET(e, s) case ID_ ##e: fprintf(s, "Received %s\n", #e); break
-  void Client::receive(std::vector<Packet*> & buffer) {
+  void Client::receive(std::vector<SLNet::Packet*> & requestBuffer, std::vector<SLNet::Packet*> & syncBuffer) {
     Packet *packet;
     for (packet=peer->Receive(); packet; packet=peer->Receive()) {
       switch (packet->data[0]) {
         CASE_REPORT_PACKET(CONNECTION_REQUEST_ACCEPTED, stdout);
         CASE_REPORT_PACKET(CONNECTION_ATTEMPT_FAILED, stderr);
         default: {
-          if ((MessageID)packet->data[0] >= ID_USER_PACKET_ENUM) {
-            buffer.emplace_back(packet);
+          if ((MessageID)packet->data[0] >= ID_USER_PACKET_SYNC_ENUM) {
+            syncBuffer.emplace_back(packet);
+            continue; // Do not deallocate - pointer to packet now in buffer
+          } else if ((MessageID)packet->data[0] >= ID_USER_PACKET_ECS_REQUEST_ENUM) {
+            requestBuffer.emplace_back(packet);
             continue; // Do not deallocate - pointer to packet now in buffer
           }
         }
@@ -66,12 +70,17 @@ namespace at3 {
   }
 # undef CASE_EMIT_RESULT
 
-  void Client::tick(std::vector<Packet*> & buffer) {
-    receive(buffer);
+  void Client::tick(std::vector<SLNet::Packet*> & requestBuffer, std::vector<SLNet::Packet*> & syncBuffer) {
+    receive(requestBuffer, syncBuffer);
   }
 
-  void Client::send(BitStream &stream, PacketPriority priority, PacketReliability reliability, char channel) {
+  void Client::send(const BitStream &stream, PacketPriority priority, PacketReliability reliability, char channel) {
     peer->Send(&stream, priority, reliability, channel, UNASSIGNED_SYSTEM_ADDRESS, true);
+  }
+
+  void Client::sendTo(const BitStream &stream, const AddressOrGUID &target, PacketPriority priority,
+                      PacketReliability reliability, char channel) {
+    peer->Send(&stream, priority, reliability, channel, target, false);
   }
 
   void Client::deallocatePacket(Packet *packet) {

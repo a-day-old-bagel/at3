@@ -49,9 +49,8 @@ namespace {
   EZECS_COMPONENT_DEPENDENCIES(TransformFunction, Placement)
 
   struct Perspective : public Component<Perspective> {
-    float fovy, prevFovy,
-        near, far;
-    Perspective(float fovy, float near, float far);
+    float fovY, prevFovY, nearPlane, farPlane;
+    Perspective(float fovY, float nearPlane, float farPlane);
   };
   EZECS_COMPONENT_DEPENDENCIES(Perspective, Placement)
 
@@ -189,8 +188,8 @@ namespace {
   TransformFunction::TransformFunction(transformFunc func)
       : func(func) { }
 
-  Perspective::Perspective(float fovy, float near, float far)
-      : fovy(fovy), prevFovy(fovy), near(near), far(far) { }
+  Perspective::Perspective(float fovY, float nearPlane, float farPlane)
+      : fovY(fovY), prevFovY(fovY), nearPlane(nearPlane), farPlane(farPlane) { }
 
   Physics::Physics(float mass, void* initData, Physics::UseCase useCase)
       : useCase(useCase), mass(mass), initData(initData) { }

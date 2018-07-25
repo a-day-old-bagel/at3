@@ -28,7 +28,7 @@ namespace at3 {
       ObjCameraPerspective(glm::mat4 &transform);
       virtual ~ObjCameraPerspective();
 
-      void setFar(float far);
+      void setFar(float farPlane);
 
       /**
        * Implements a perspective projection for this camera object.
@@ -73,8 +73,8 @@ namespace at3 {
   }
 
   template <typename EcsInterface>
-  void ObjCameraPerspective<EcsInterface>::setFar(float far) {
-    SCENE_ECS->setFar(SCENE_ID, far);
+  void ObjCameraPerspective<EcsInterface>::setFar(float farPlane) {
+    SCENE_ECS->setFar(SCENE_ID, farPlane);
   }
 
   template <typename EcsInterface>

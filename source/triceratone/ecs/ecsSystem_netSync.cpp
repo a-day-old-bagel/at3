@@ -23,16 +23,18 @@ namespace at3 {
   void NetSyncSystem::onTick(float dt) {
     switch(network->getRole()) {
       case settings::network::SERVER: {
+        receiveRequestPackets();
         writeControlSyncs();
-        send(HIGH_PRIORITY, RELIABLE_ORDERED, 0);  // TODO: Is immediate or high priority even helpful here? Or bad?
+        send(HIGH_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);  // TODO: Is immediate or high priority even helpful here? Or bad?
         if (writePhysicsSyncs(dt)) {
-          send(LOW_PRIORITY, UNRELIABLE_SEQUENCED, 1);
+          send(LOW_PRIORITY, UNRELIABLE_SEQUENCED, CH_PHYSICS_SYNC);
         }
         receiveSyncPackets();
       } break;
       case settings::network::CLIENT: {
+        receiveRequestPackets();
         writeControlSyncs();
-        send(IMMEDIATE_PRIORITY, RELIABLE_ORDERED, 0);
+        send(IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);
         receiveSyncPackets();
       } break;
       default: break;
@@ -41,6 +43,12 @@ namespace at3 {
 
   void NetSyncSystem::send(PacketPriority priority, PacketReliability reliability, char channel) {
     network->send(outStream, priority, reliability, channel);
+    outStream.Reset();
+  }
+
+  void NetSyncSystem::sendTo(const AddressOrGUID & target, PacketPriority priority,
+                             PacketReliability reliability, char channel) {
+    network->sendTo(outStream, target, priority, reliability, channel);
     outStream.Reset();
   }
 
@@ -58,6 +66,37 @@ namespace at3 {
     outStream.Write(keyControlMessageId);
     outStream.Write(mouseControlId);
     serializeControlSync(true, outStream, mouseControlId, keyControlId, keyControlMessageId);
+  }
+
+  void NetSyncSystem::receiveRequestPackets() {
+    for (auto pack : network->getRequestPackets()) {
+//      AddressOrGUID sender = AddressOrGUID(pack->guid);
+      BitStream stream(pack->data, pack->length, false);
+      MessageID reqType;
+      stream.Read(reqType);
+      switch (reqType) {
+        case ID_USER_PACKET_ECS_REQUEST_ENUM: {
+          uint8_t request;
+          stream.ReadBitsFromIntegerRange(request, (uint8_t)0, (uint8_t)REQ_END_ENUM, false);
+          switch (request) {
+            case REQ_ENTITY_OP: {
+              respondToEntityRequest(stream);
+            } break;
+            case REQ_COMPONENT_OP: {
+
+            } break;
+            default: break;
+          }
+        } break;
+        case ID_USER_PACKET_ECS_RESPONSE_ENUM: {
+
+        } break;
+        default: {
+          fprintf(stderr, "Received bad request/response packet!\n");
+        } break;
+      }
+    }
+    network->discardRequestPackets();
   }
 
   void NetSyncSystem::receiveSyncPackets() {
@@ -78,11 +117,29 @@ namespace at3 {
           serializeControlSync(false, stream, mouseId, 0, syncType);
         } break;
         default: {
-          fprintf(stderr, "Client received bad sync packet!\n");
+          fprintf(stderr, "Received bad sync packet!\n");
         } break;
       }
     }
     network->discardSyncPackets();
+  }
+
+  void NetSyncSystem::respondToEntityRequest(SLNet::BitStream & stream) {
+    uint8_t operation;
+    stream.ReadBitsFromIntegerRange(operation, (uint8_t)0, (uint8_t)OP_END_ENUM, false);
+    switch (operation) {
+      case OP_CREATE: {
+        serializeEntityCreationRequest(false, stream, *state);
+      } break;
+      case OP_DESTROY: {
+
+      } break;
+      default: break;
+    }
+  }
+
+  void NetSyncSystem::respondToComponentRequest(SLNet::BitStream & stream) {
+
   }
 
   void NetSyncSystem::serializePhysicsSync(bool rw, SLNet::BitStream &stream) {
@@ -140,7 +197,8 @@ namespace at3 {
     }
   }
 
-  void NetSyncSystem::serializeControlSync(bool rw, SLNet::BitStream &stream, entityId mId, entityId cId, MessageID syncType) {
+  void NetSyncSystem::serializeControlSync(bool rw, SLNet::BitStream &stream, entityId mId, entityId cId,
+                                           MessageID syncType) {
     MouseControls *mouseControls;
     state->get_MouseControls(mId, &mouseControls);
     stream.Serialize(rw, mouseControls->yaw);

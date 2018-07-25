@@ -26,6 +26,21 @@ namespace at3 {
     }
   }
 
+  void NetInterface::discardPacketCollection(std::vector<SLNet::Packet *> &packets) {
+    for (auto pack : packets) {
+      switch(role) {
+        case settings::network::Role::SERVER: {
+          server->deallocatePacket(pack);
+        } break;
+        case settings::network::Role::CLIENT: {
+          client->deallocatePacket(pack);
+        } break;
+        default: break;
+      }
+    }
+    packets.clear();
+  }
+
   uint32_t NetInterface::getRole() {
     return role;
   }
@@ -43,16 +58,17 @@ namespace at3 {
   void NetInterface::tick() {
     switch(role) {
       case settings::network::Role::SERVER: {
-        server->tick(syncPackets);
+        server->tick(requestPackets, syncPackets);
       } break;
       case settings::network::Role::CLIENT: {
-        client->tick(syncPackets);
+        client->tick(requestPackets, syncPackets);
       } break;
       default: break;
     }
   }
 
-  void NetInterface::send(BitStream &stream, PacketPriority priority, PacketReliability reliability, char channel) {
+  void NetInterface::send(const BitStream &stream, PacketPriority priority,
+                          PacketReliability reliability, char channel) {
     switch(role) {
       case settings::network::Role::SERVER: {
         server->send(stream, priority, reliability, channel);
@@ -64,23 +80,33 @@ namespace at3 {
     }
   }
 
+  void NetInterface::sendTo(const SLNet::BitStream &stream, const SLNet::AddressOrGUID &target, PacketPriority priority,
+                            PacketReliability reliability, char channel) {
+    switch(role) {
+      case settings::network::Role::SERVER: {
+        server->sendTo(stream, target, priority, reliability, channel);
+      } break;
+      case settings::network::Role::CLIENT: {
+        client->sendTo(stream, target, priority, reliability, channel);
+      } break;
+      default: break;
+    }
+  }
+
+  const std::vector<SLNet::Packet *> & NetInterface::getRequestPackets() {
+    return requestPackets;
+  }
+
+  void NetInterface::discardRequestPackets() {
+    discardPacketCollection(requestPackets);
+  }
+
   const std::vector<SLNet::Packet *> & NetInterface::getSyncPackets() {
     return syncPackets;
   }
 
   void NetInterface::discardSyncPackets() {
-    for (auto pack : syncPackets) {
-      switch(role) {
-        case settings::network::Role::SERVER: {
-          server->deallocatePacket(pack);
-        } break;
-        case settings::network::Role::CLIENT: {
-          client->deallocatePacket(pack);
-        } break;
-        default: break;
-      }
-    }
-    syncPackets.clear();
+    discardPacketCollection(syncPackets);
   }
 
 }

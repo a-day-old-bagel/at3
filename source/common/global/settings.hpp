@@ -1,12 +1,12 @@
 
 #pragma once
 
+#include "definitions.hpp"
+
 #include <fstream>
 #include <string>
 #include <map>
 #include <vector>
-
-#include "definitions.hpp"
 
 namespace at3 {
   namespace settings {

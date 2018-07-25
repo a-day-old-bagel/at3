@@ -1,6 +1,7 @@
 
 #include "server.hpp"
 #include "settings.hpp"
+#include "userPacketEnums.hpp"
 
 using namespace SLNet;
 
@@ -23,7 +24,7 @@ namespace at3 {
   }
 
 # define CASE_REPORT_PACKET(e, s) case ID_ ##e: fprintf(s, "Received %s\n", #e); break
-  void Server::receive(std::vector<Packet*> & buffer) {
+  void Server::receive(std::vector<SLNet::Packet*> & requestBuffer, std::vector<SLNet::Packet*> & syncBuffer) {
     Packet *packet;
     for (packet=peer->Receive(); packet; packet=peer->Receive()) {
       switch (packet->data[0]) {
@@ -31,8 +32,11 @@ namespace at3 {
           CASE_REPORT_PACKET(DISCONNECTION_NOTIFICATION, stdout);
           CASE_REPORT_PACKET(CONNECTION_LOST, stderr);
         default: {
-          if ((MessageID)packet->data[0] >= ID_USER_PACKET_ENUM) {
-            buffer.emplace_back(packet);
+          if ((MessageID)packet->data[0] >= ID_USER_PACKET_SYNC_ENUM) {
+            syncBuffer.emplace_back(packet);
+            continue; // Do not deallocate - pointer to packet now in buffer
+          } else if ((MessageID)packet->data[0] >= ID_USER_PACKET_ECS_REQUEST_ENUM) {
+            requestBuffer.emplace_back(packet);
             continue; // Do not deallocate - pointer to packet now in buffer
           }
         }
@@ -42,12 +46,17 @@ namespace at3 {
   }
 # undef CASE_REPORT_PACKET
 
-  void Server::tick(std::vector<Packet*> & buffer) {
-    receive(buffer);
+  void Server::tick(std::vector<SLNet::Packet*> & requestBuffer, std::vector<SLNet::Packet*> & syncBuffer) {
+    receive(requestBuffer, syncBuffer);
   }
 
-  void Server::send(BitStream &stream, PacketPriority priority, PacketReliability reliability, char channel) {
+  void Server::send(const BitStream &stream, PacketPriority priority, PacketReliability reliability, char channel) {
     peer->Send(&stream, priority, reliability, channel, UNASSIGNED_SYSTEM_ADDRESS, true);
+  }
+
+  void Server::sendTo(const BitStream &stream, const AddressOrGUID &target, PacketPriority priority,
+                      PacketReliability reliability, char channel) {
+    peer->Send(&stream, priority, reliability, channel, target, false);
   }
 
   void Server::deallocatePacket(Packet *packet) {

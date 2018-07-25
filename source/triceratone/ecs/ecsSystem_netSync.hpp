@@ -2,23 +2,13 @@
 #pragma once
 
 #include "ezecs.hpp"
-#include "netInterface.hpp"
 #include "topics.hpp"
+#include "netInterface.hpp"
+#include "ecsNetworking.hpp"
 
 using namespace ezecs;
 
 namespace at3 {
-
-  enum FurtherPacketEnums {
-      ID_SYNC_PHYSICS = ID_USER_PACKET_FURTHER_ENUM,
-      ID_SYNC_WALKCONTROLS,
-      ID_SYNC_PYRAMIDCONTROLS,
-      ID_SYNC_TRACKCONTROLS,
-      ID_SYNC_FREECONTROLS,
-
-      ID_USER_PACKET_END_ENUM
-  };
-
   class NetSyncSystem : public System<NetSyncSystem> {
       std::shared_ptr<NetInterface> network;
       entityId mouseControlId = 0;
@@ -45,8 +35,14 @@ namespace at3 {
       bool writePhysicsSyncs(float dt);
       void writeControlSyncs();
       void send(PacketPriority priority, PacketReliability reliability, char channel);
+      void sendTo(const SLNet::AddressOrGUID & target, PacketPriority priority,
+                  PacketReliability reliability, char channel);
 
+      void receiveRequestPackets();
       void receiveSyncPackets();
+
+      void respondToEntityRequest(SLNet::BitStream &);
+      void respondToComponentRequest(SLNet::BitStream &);
 
       void serializePhysicsSync(bool rw, SLNet::BitStream &);
       void serializeControlSync(bool rw, SLNet::BitStream &, entityId mId, entityId cId,
