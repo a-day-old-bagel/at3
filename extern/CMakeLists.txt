@@ -9,22 +9,22 @@ message( "To remove a submodule for real, see https://stackoverflow.com/a/365932
 # In Windows, this will require downloading the SDL2 Development Libraries and installing the Vulkan SDK,
 # and making sure your environment variables are set up to point to them correctly
 
-# OPENGL
-find_package( OpenGL REQUIRED )
-list( APPEND ${AT3_TARGET_PREFIX}external_includes
-  ${OPENGL_INCLUDE_DIR}
-  )
-
-# EPOXY
-add_subdirectory( libepoxy )
-list( APPEND ${AT3_TARGET_PREFIX}external_includes
-  ./libepoxy/include
-  ./libepoxy/registry
-  ${CMAKE_CURRENT_BINARY_DIR}/libepoxy/include
-  )
-list( APPEND ${AT3_TARGET_PREFIX}extra_definitions
-  ${epoxy_DEFINITIONS}
-  )
+## OPENGL
+#find_package( OpenGL REQUIRED )
+#list( APPEND ${AT3_TARGET_PREFIX}external_includes
+#  ${OPENGL_INCLUDE_DIR}
+#  )
+#
+## EPOXY
+#add_subdirectory( libepoxy )
+#list( APPEND ${AT3_TARGET_PREFIX}external_includes
+#  ./libepoxy/include
+#  ./libepoxy/registry
+#  ${CMAKE_CURRENT_BINARY_DIR}/libepoxy/include
+#  )
+#list( APPEND ${AT3_TARGET_PREFIX}extra_definitions
+#  ${epoxy_DEFINITIONS}
+#  )
 
 # SDL_VULKAN
 add_subdirectory( sdl_vulkan )
@@ -142,11 +142,11 @@ target_include_directories( ${AT3_TARGET_PREFIX}external INTERFACE SYSTEM
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}external INTERFACE
   ${SDL2_LIBRARY}
-  ${OPENGL_LIBRARIES}
+#  ${OPENGL_LIBRARIES}
   ${Vulkan_LIBRARY}
   ${XCB_LIBS}
   SDL_vulkan
-  epoxy_static
+#  epoxy_static
   assimp
   ${${AT3_TARGET_PREFIX}bullet_libs}
   spirv-cross-glsl

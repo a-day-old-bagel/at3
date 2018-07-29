@@ -11,7 +11,7 @@ namespace at3 {
     peer = RakPeerInterface::GetInstance();
     SocketDescriptor sock;
     // TODO: this priority won't work on Linux.
-    StartupResult startResult = peer->Startup(1, &sock, 1, THREAD_PRIORITY_NORMAL);
+    StartupResult startResult = peer->Startup(1, &sock, 1, AT3_NET_THREAD_PRIORITY);
     if (startResult != RAKNET_STARTED) {
       fprintf(stderr, "Peer interface failed to start!\n");
     }

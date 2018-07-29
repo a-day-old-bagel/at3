@@ -11,7 +11,7 @@ namespace at3 {
     peer->SetMaximumIncomingConnections(static_cast<uint16_t>(settings::network::maxServerConns));
     SocketDescriptor sock(static_cast<uint16_t >(settings::network::serverPort), nullptr);
     // TODO: this priority won't work on Linux.
-    StartupResult startResult = peer->Startup(settings::network::maxServerConns, &sock, 1, THREAD_PRIORITY_NORMAL);
+    StartupResult startResult = peer->Startup(settings::network::maxServerConns, &sock, 1, AT3_NET_THREAD_PRIORITY);
     if (startResult != RAKNET_STARTED) {
       printf("Server failed to start.\n");
     }

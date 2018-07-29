@@ -47,7 +47,7 @@ namespace at3 {
     Physics *physics;
     state.get_Physics(chassisId, &physics);
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
-    physics->rigidBody->setFriction(0.2f);
+//    physics->rigidBody->setFriction(0.2f);
 
     // The slow stuff (CCD)
     physics->rigidBody->setCcdMotionThreshold(1);

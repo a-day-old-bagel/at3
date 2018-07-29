@@ -61,6 +61,7 @@ namespace at3 {
     state.get_Physics(physicalId, &physics);
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
     state.add_PlayerControls(physicalId, camGimbalId);
+    physicsBody = std::make_shared<Object>(physicalId);
 
 
 

@@ -2,6 +2,14 @@
 
 #include "macros.hpp"
 
+// Platform stuff
+#ifdef WIN32
+# define AT3_NET_THREAD_PRIORITY THREAD_PRIORITY_NORMAL
+#else
+# include <sched.h>
+# define AT3_NET_THREAD_PRIORITY SCHED_OTHER
+#endif
+
 // Vulkan stuff
 #define USE_CUSTOM_SDL_VULKAN 1
 #define USE_VULKAN_COORDS 1
