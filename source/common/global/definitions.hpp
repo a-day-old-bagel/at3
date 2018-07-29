@@ -32,11 +32,11 @@
 #endif
 
 // micro$haft® winderp™  ---  for explanation, see https://tinyurl.com/qf9mkvu
-#undef near
-#undef far
+//#undef near
+//#undef far
 // and more windows stupidity
-#undef min
-#undef max
+//#undef min
+//#undef max
 // If you were going to suggest using their macros that disable these, they don't work, and near and far don't have one.
 
 // Physics and controls defines

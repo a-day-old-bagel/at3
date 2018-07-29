@@ -21,6 +21,7 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo <EcsInterface
   // Store the window and entity-component-system pointers.
   common.window = info.window;
   ecs = info.ecs;
+  AT3_ASSERT(common.window && info.ecs, "Null pointer problems");
 
   // Create the fundamental Vulkan backbone objects
   createInstance(info.appName.c_str());

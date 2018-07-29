@@ -180,6 +180,7 @@ void VulkanContext<EcsInterface>::storeWindowSize() {
   printf("Window size is %ux%u.\n", width, height);
   common.windowWidth = width;
   common.windowHeight = height;
+  AT3_ASSERT(common.windowWidth > 0 && common.windowHeight > 0, "Window size(s) zero or negative!");
 }
 
 template<typename EcsInterface>

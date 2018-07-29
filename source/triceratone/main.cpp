@@ -31,8 +31,16 @@ using namespace ezecs;
 using namespace rtu::topics;
 
 struct PlayerAvatarSet{
-    std::shared_ptr<Object> freeCam;
-    std::shared_ptr<ThirdPersonCamera> camera;
+//    std::shared_ptr<Object> freeCam;
+//    std::shared_ptr<ThirdPersonCamera> camera;
+
+    entityId ctrlId;
+    entityId camId;
+    entityId gimbalId;
+    std::shared_ptr<Object> ctrl;
+    std::shared_ptr<Object> cam;
+    std::shared_ptr<Object> camGimbal;
+
     std::unique_ptr<Pyramid> pyramid;
     std::unique_ptr<DuneBuggy> duneBuggy;
     std::unique_ptr<Walker> walker;
@@ -45,7 +53,9 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
     NetSyncSystem     netSyncSystem;
     PhysicsSystem     physicsSystem;
 
-    std::shared_ptr<Mesh> terrainArk;
+//    std::shared_ptr<Mesh> terrainArk;
+    std::shared_ptr<Object> terrainArk;
+
     std::vector<PlayerAvatarSet> players;
 
     std::unique_ptr<Subscription> lClickSub, rClickSub, key0Sub, key1Sub, key2Sub, key3Sub;
@@ -75,30 +85,73 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       glm::mat4 ident(1.f);
 
 
+
       // the ark (the cylinder)
       glm::mat4 arkMat = glm::scale(ident, glm::vec3(100.f, 100.f, 100.f));
-      terrainArk = std::make_shared<Mesh>(vulkan.get(), "terrainArk", "cliff1024_01", arkMat);
+
+
+//      terrainArk = std::make_shared<Mesh>(vulkan.get(), "terrainArk", "cliff1024_01", arkMat);
+      entityId arkId;
+      state.createEntity(&arkId);
+      state.add_Placement(arkId, arkMat);
+      vulkan->registerMeshInstance(arkId, "terrainArk", "cliff1024_01");
+      terrainArk = std::make_shared<Object>(arkId);
+
+
       TriangleMeshInfo info = {
           vulkan->getMeshStoredVertices("terrainArk"),
           vulkan->getMeshStoredIndices("terrainArk"),
           vulkan->getMeshStoredVertexStride(),
       };
-      state.add_Physics(terrainArk->getId(), 0, &info, Physics::STATIC_MESH);
+//      state.add_Physics(terrainArk->getId(), 0, &info, Physics::STATIC_MESH);
+      state.add_Physics(arkId, 0, &info, Physics::STATIC_MESH);
       scene.addObject(terrainArk);
+
 
 
       // the player avatars
       for (int i = 0; i < 2; ++i) {
         players.emplace_back();
 
+
+
         // the free cameras
+//        glm::mat4 start = glm::translate(ident, {0, -790, -120});
+//        players.back().freeCam = std::make_shared<Object>();
+//        state.add_Placement(players.back().freeCam->getId(), start);
+//        players.back().camera = std::make_shared<ThirdPersonCamera>(0.f, 0.f);
+//        state.add_FreeControls(players.back().freeCam->getId(), players.back().camera->gimbal->getId());
+//        players.back().camera->anchorTo(players.back().freeCam);
+//        scene.addObject(players.back().freeCam);
+
+        state.createEntity(&players.back().camId);
+        float back = 5.f;
+        float tilt = 0.35f;
+        glm::mat4 camMat = glm::rotate(glm::translate(ident, {0.f, 0.f, back}), tilt , glm::vec3(1.0f, 0.0f, 0.0f));
+        state.add_Placement(players.back().camId, camMat);
+        state.add_Perspective(players.back().camId, settings::graphics::fovy, 0.1f, 10000.f);
+        players.back().cam = std::make_shared<Object>(players.back().camId);
+
+        state.createEntity(&players.back().gimbalId);
+        state.add_Placement(players.back().gimbalId, ident);
+        Placement *placement;
+        state.get_Placement(players.back().gimbalId, &placement);
+        placement->forceLocalRotationAndScale = true;
+        state.add_MouseControls(players.back().gimbalId, settings::controls::mouseInvertX, settings::controls::mouseInvertY);
+        players.back().camGimbal = std::make_shared<Object>(players.back().gimbalId);
+
         glm::mat4 start = glm::translate(ident, {0, -790, -120});
-        players.back().freeCam = std::make_shared<Object>();
-        state.add_Placement(players.back().freeCam->getId(), start);
-        players.back().camera = std::make_shared<ThirdPersonCamera>(0.f, 0.f);
-        state.add_FreeControls(players.back().freeCam->getId(), players.back().camera->gimbal->getId());
-        players.back().camera->anchorTo(players.back().freeCam);
-        scene.addObject(players.back().freeCam);
+        state.createEntity(&players.back().ctrlId);
+        state.add_Placement(players.back().ctrlId, start);
+        state.add_FreeControls(players.back().ctrlId, players.back().gimbalId);
+        players.back().ctrl = std::make_shared<Object>(players.back().ctrlId);
+
+        players.back().camGimbal->addChild(players.back().cam);
+        players.back().ctrl->addChild(players.back().camGimbal);
+        scene.addObject(players.back().ctrl);
+
+
+
 
         // the human
         glm::vec3 walkerPos = glm::vec3(10, -790, -100 + i * 10);
@@ -151,9 +204,13 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
     }
 
     void makeFreeCamActiveControl() {
-      publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", player().camera->actual);
-      publish<entityId>("switch_to_free_controls", player().freeCam->getId());
-      publish<entityId>("switch_to_mouse_controls", player().camera->gimbal->getId());
+//      publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", player().camera->actual);
+//      publish<entityId>("switch_to_free_controls", player().freeCam->getId());
+//      publish<entityId>("switch_to_mouse_controls", player().camera->gimbal->getId());
+
+      publish<entityId>("switch_to_camera", player().camId);
+      publish<entityId>("switch_to_free_controls", player().ctrlId);
+      publish<entityId>("switch_to_mouse_controls", player().gimbalId);
     }
 };
 

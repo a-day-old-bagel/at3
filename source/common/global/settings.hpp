@@ -28,6 +28,8 @@ namespace at3 {
 
     namespace controls {
       extern float mouseSpeed;
+      extern bool mouseInvertX;
+      extern bool mouseInvertY;
     }
 
     namespace network {

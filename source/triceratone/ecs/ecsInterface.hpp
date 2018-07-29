@@ -2,13 +2,15 @@
 #pragma once
 
 #include "math.hpp"
+#include "topics.hpp"
 #include "ezecs.hpp"
 #include "netInterface.hpp"
 #include "sceneTree.hpp"
 #include "obj.hpp"
-#include "objCameraPerspective.hpp"
-#include "objCameraThirdPerson.hpp"
-#include "objMesh.hpp"
+
+//#include "objCameraPerspective.hpp"
+//#include "objCameraThirdPerson.hpp"
+//#include "objMesh.hpp"
 
 namespace at3 {
 
@@ -142,8 +144,8 @@ namespace at3 {
    */
   typedef SceneTree<EntityComponentSystemInterface> Scene;
   typedef Obj<EntityComponentSystemInterface> Object;
-  typedef ObjCameraPerspective<EntityComponentSystemInterface> PerspectiveCamera;
-  typedef ObjCameraThirdPerson<EntityComponentSystemInterface> ThirdPersonCamera;
-  typedef ObjMesh<EntityComponentSystemInterface> Mesh;
+//  typedef ObjCameraPerspective<EntityComponentSystemInterface> PerspectiveCamera;
+//  typedef ObjCameraThirdPerson<EntityComponentSystemInterface> ThirdPersonCamera;
+//  typedef ObjMesh<EntityComponentSystemInterface> Mesh;
 
 }

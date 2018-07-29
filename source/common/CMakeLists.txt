@@ -16,10 +16,10 @@ add_library( ${AT3_TARGET_PREFIX}common STATIC
   game.hpp
 
   obj.hpp
-  objCamera.hpp
-  objCameraPerspective.hpp
-  objCameraThirdPerson.hpp
-  objMesh.hpp
+#  objCamera.hpp
+#  objCameraPerspective.hpp
+#  objCameraThirdPerson.hpp
+#  objMesh.hpp
   sceneTree.hpp
 
   transform.cpp transform.hpp

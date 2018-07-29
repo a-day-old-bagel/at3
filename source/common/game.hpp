@@ -45,7 +45,8 @@ namespace at3 {
     private:
 
       std::unique_ptr<EcsInterface> ecsInterface;
-      std::shared_ptr<ObjCamera<EcsInterface>> currentCamera = nullptr;
+//      std::shared_ptr<ObjCamera<EcsInterface>> currentCamera = nullptr;
+      typename EcsInterface::EcsId currentCameraId = 0;
       rtu::topics::Subscription switchToCamSub;
       float lastTime = (float)SDL_GetTicks() * msToS;
       std::string settingsFileName;
@@ -58,7 +59,8 @@ namespace at3 {
   };
 
   template<typename EcsInterface, typename Derived>
-  Game<EcsInterface, Derived>::Game() : switchToCamSub("set_primary_camera", RTU_MTHD_DLGT(&Game::setCamera, this)) { }
+//  Game<EcsInterface, Derived>::Game() : switchToCamSub("set_primary_camera", RTU_MTHD_DLGT(&Game::setCamera, this)) { }
+  Game<EcsInterface, Derived>::Game() : switchToCamSub("switch_to_camera", RTU_MTHD_DLGT(&Game::setCamera, this)) { }
 
   template <typename EcsInterface, typename Derived>
   Derived & Game<EcsInterface, Derived>::topLevel() {
@@ -97,7 +99,7 @@ namespace at3 {
   template <typename EcsInterface, typename Derived>
   void Game<EcsInterface, Derived>::deInit() {
     isQuit = true;
-    currentCamera.reset();
+//    currentCamera.reset();
     settings::saveToIni(settingsFileName.c_str());
   }
 
@@ -268,16 +270,23 @@ namespace at3 {
     lastTime = currentTime;
     topLevel().onTick(dt);
 
-    if (currentCamera) {
+//    if (currentCamera) {
+//      scene.updateAbsoluteTransformCaches();
+//      rtu::topics::publish<glm::mat4>("primary_cam_wv", currentCamera->worldView());
+//      vulkan->step();
+//    }
+    if (currentCameraId) {
       scene.updateAbsoluteTransformCaches();
-      rtu::topics::publish<glm::mat4>("primary_cam_wv", currentCamera->worldView());
+      glm::mat4 viewMat = glm::inverse(ecsInterface->getAbsTransform(currentCameraId));
+      rtu::topics::publish<glm::mat4>("primary_cam_wv", viewMat);
       vulkan->step();
     }
   }
 
   template <typename EcsInterface, typename Derived>
   void Game<EcsInterface, Derived>::setCamera(void *camPtr) {
-    std::shared_ptr<ObjCamera<EcsInterface>> *camera = (std::shared_ptr<ObjCamera<EcsInterface>>*)camPtr;
-    currentCamera = *camera;
+//    std::shared_ptr<ObjCamera<EcsInterface>> *camera = (std::shared_ptr<ObjCamera<EcsInterface>>*)camPtr;
+//    currentCamera = *camera;
+    currentCameraId = * (typename EcsInterface::EcsId *) camPtr;
   }
 }

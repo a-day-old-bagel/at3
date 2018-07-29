@@ -31,7 +31,7 @@ namespace at3 {
       static EcsInterface *ecs;
       typename EcsInterface::EcsId id;
 
-      Obj();
+      Obj(const typename EcsInterface::EcsId & id);
       virtual ~Obj();
 
       /**
@@ -83,13 +83,13 @@ namespace at3 {
   EcsInterface *Obj<EcsInterface>::ecs = nullptr;
 
   template<typename EcsInterface>
-  Obj<EcsInterface>::Obj() {
-    id = ecs->createEntity();
+  Obj<EcsInterface>::Obj(const typename EcsInterface::EcsId & id) : id(id) {
+//    id = ecs->createEntity();
   }
 
   template<typename EcsInterface>
   Obj<EcsInterface>::~Obj() {
-    ecs->destroyEntity(id);
+//    ecs->destroyEntity(id);
   }
 
   template<typename EcsInterface>

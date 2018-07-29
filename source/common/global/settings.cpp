@@ -24,6 +24,8 @@ namespace at3 {
 
     namespace controls {
       float mouseSpeed = 0.005f;
+      bool mouseInvertX = false;
+      bool mouseInvertY = false;
     }
 
     namespace network {
@@ -83,6 +85,8 @@ namespace at3 {
       registry.insert(std::make_pair( "graphics_win_posy_i", &graphics::windowPosY));
       registry.insert(std::make_pair( "graphics_vk_forceFifo_b", &graphics::vulkan::forceFifo));
       registry.insert(std::make_pair( "controls_mouse_speed_f", &controls::mouseSpeed));
+      registry.insert(std::make_pair( "controls_mouse_invert_x_b", &controls::mouseInvertX));
+      registry.insert(std::make_pair( "controls_mouse_invert_y_b", &controls::mouseInvertY));
       registry.insert(std::make_pair( "network_role_u", &network::role));
       registry.insert(std::make_pair( "network_server_address_s", &network::serverAddress));
       registry.insert(std::make_pair( "network_server_port_u", &network::serverPort));

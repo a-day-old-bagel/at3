@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "settings.hpp"
-#include "objCamera.hpp"
+//#include "objCamera.hpp"
 #include "obj.hpp"
 #include "transformStack.hpp"
 

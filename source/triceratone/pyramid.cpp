@@ -27,16 +27,74 @@ namespace at3 {
     glm::mat4 pyrFirMat = glm::scale(glm::rotate(glm::translate(ident, {0.f, 0.f, -0.4f}),
                                                  (float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f)), {0.105f, 0.105f, 0.15f});
 
-    base = std::make_shared<Mesh> (context, "pyramid_bottom", "pyramid_bottom", transform);
-    top = std::make_shared<Mesh> (context, "pyramid_top", "pyramid_top", ident);
-    thrusters = std::make_shared<Mesh> (context, "pyramid_thrusters", "pyramid_thrusters", ident);
-    fire = std::make_shared<Mesh> (context, "pyramid_thruster_flames", "pyramid_flames", pyrFirMat,
-        Mesh::FULLBRIGHT);
 
-    camera = std::make_shared<ThirdPersonCamera> (5.f, .35f);
-    camGimbalId = camera->gimbal->getId();
 
-    entityId bottomId = base->getId();
+//    base = std::make_shared<Mesh> (context, "pyramid_bottom", "pyramid_bottom", transform);
+//    top = std::make_shared<Mesh> (context, "pyramid_top", "pyramid_top", ident);
+//    thrusters = std::make_shared<Mesh> (context, "pyramid_thrusters", "pyramid_thrusters", ident);
+//    fire = std::make_shared<Mesh> (context, "pyramid_thruster_flames", "pyramid_flames", pyrFirMat,
+//        Mesh::FULLBRIGHT);
+
+    state.createEntity(&bottomId);
+    state.add_Placement(bottomId, transform);
+    context->registerMeshInstance(bottomId, "pyramid_bottom", "pyramid_bottom");
+    base = std::make_shared<Object>(bottomId);
+
+    entityId topId;
+    state.createEntity(&topId);
+    state.add_Placement(topId, ident);
+    state.add_TransformFunction(topId, RTU_FUNC_DLGT(pyrTopRotate));
+    context->registerMeshInstance(topId, "pyramid_top", "pyramid_top");
+    top = std::make_shared<Object>(topId);
+
+    entityId thrusterId;
+    state.createEntity(&thrusterId);
+    state.add_Placement(thrusterId, ident);
+    context->registerMeshInstance(thrusterId, "pyramid_thrusters", "pyramid_thrusters");
+    thrusters = std::make_shared<Object>(thrusterId);
+
+    entityId fireId;
+    state.createEntity(&fireId);
+    state.add_Placement(fireId, pyrFirMat);
+    state.add_TransformFunction(fireId, RTU_FUNC_DLGT(pyrFireWiggle));
+    context->registerMeshInstance(fireId, "pyramid_thruster_flames", "pyramid_flames");
+    fire = std::make_shared<Object>(fireId);
+
+
+
+
+
+//    camera = std::make_shared<ThirdPersonCamera> (5.f, .35f);
+//    camGimbalId = camera->gimbal->getId();
+
+//    entityId bottomId = base->getId();
+
+
+
+
+
+    state.createEntity(&camId);
+    float back = 5.f;
+    float tilt = 0.35f;
+    glm::mat4 camMat = glm::rotate(glm::translate(ident, {0.f, 0.f, back}), tilt , glm::vec3(1.0f, 0.0f, 0.0f));
+    state.add_Placement(camId, camMat);
+    state.add_Perspective(camId, settings::graphics::fovy, 0.1f, 10000.f);
+    camera = std::make_shared<Object>(camId);
+
+    state.createEntity(&camGimbalId);
+    state.add_Placement(camGimbalId, ident);
+    Placement *placement;
+    state.get_Placement(camGimbalId, &placement);
+    placement->forceLocalRotationAndScale = true;
+    state.add_MouseControls(camGimbalId, settings::controls::mouseInvertX, settings::controls::mouseInvertY);
+    gimbal = std::make_shared<Object>(camGimbalId);
+
+
+
+
+
+
+
     std::vector<float> hullVerts = {
         1.0f,  1.0f, -0.4f,
         1.0f, -1.0f, -0.4f,
@@ -56,27 +114,29 @@ namespace at3 {
     state.get_Physics(bottomId, &physics);
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
     physics->rigidBody->setDamping(0.f, 0.8f);
-    ctrlId = bottomId;
+    bottomId = bottomId;
 
     // The slow stuff (CCD)
     physics->rigidBody->setCcdMotionThreshold(1);
     physics->rigidBody->setCcdSweptSphereRadius(0.2f);
 
-    entityId topId = top->getId();
-    state.add_TransformFunction(topId, RTU_FUNC_DLGT(pyrTopRotate));
-
-    entityId fireId = fire->getId();
-    state.add_TransformFunction(fireId, RTU_FUNC_DLGT(pyrFireWiggle));
-
-    camera->anchorTo(base);
+//    entityId topId = top->getId();
+//    state.add_TransformFunction(topId, RTU_FUNC_DLGT(pyrTopRotate));
+//
+//    entityId fireId = fire->getId();
+//    state.add_TransformFunction(fireId, RTU_FUNC_DLGT(pyrFireWiggle));
+//
+//    camera->anchorTo(base);
 
     addToScene();
   }
   void Pyramid::addToScene() {
-    scene->addObject(base);
+    gimbal->addChild(camera);
+    base->addChild(gimbal);
     base->addChild(top);
     base->addChild(thrusters);
     base->addChild(fire);
+    scene->addObject(base);
   }
   void Pyramid::resizeFire() {
     // make the fire look big if the pyramid is thrusting upwards
@@ -104,17 +164,31 @@ namespace at3 {
 
   entityId Pyramid::spawnSphere(bool shoot) {
     Placement *source;
-    state->get_Placement(ctrlId, &source);
+    state->get_Placement(bottomId, &source);
     Physics *sourcePhysics;
-    state->get_Physics(ctrlId, &sourcePhysics);
+    state->get_Physics(bottomId, &sourcePhysics);
 
     glm::mat4 sourceMat = glm::translate(source->absMat, {0.f, 0.f, 3.f});
-    spheres.push_back(std::make_shared<Mesh>(vkc, "sphere", sourceMat));
+
+
+//    spheres.push_back(std::make_shared<Mesh>(vkc, "sphere", sourceMat));
+//    float sphereRadius = 1.0f;
+//    state->add_Physics(spheres.back()->getId(), 5.f, &sphereRadius, Physics::SPHERE);
+//    Physics *physics;
+//    state->get_Physics(spheres.back()->getId(), &physics);
+//    physics->rigidBody->setLinearVelocity(sourcePhysics->rigidBody->getLinearVelocity() );
+
+    entityId sphereId;
+    state->createEntity(&sphereId);
+    state->add_Placement(sphereId, sourceMat);
+    vkc->registerMeshInstance(sphereId, "sphere");
+    spheres.emplace_back(std::make_shared<Object>(sphereId));
     float sphereRadius = 1.0f;
-    state->add_Physics(spheres.back()->getId(), 5.f, &sphereRadius, Physics::SPHERE);
+    state->add_Physics(sphereId, 5.f, &sphereRadius, Physics::SPHERE);
     Physics *physics;
-    state->get_Physics(spheres.back()->getId(), &physics);
+    state->get_Physics(sphereId, &physics);
     physics->rigidBody->setLinearVelocity(sourcePhysics->rigidBody->getLinearVelocity() );
+
 
     if (shoot) {
       MouseControls *mouseControls;
@@ -139,14 +213,15 @@ namespace at3 {
     spawnSphere(true);
   }
 
-  std::shared_ptr<PerspectiveCamera> Pyramid::getCamPtr() {
-    return camera->actual;
-  }
+//  std::shared_ptr<PerspectiveCamera> Pyramid::getCamPtr() {
+//    return camera->actual;
+//  }
 
   void Pyramid::makeActiveControl(void *nothing) {
-    publish<entityId>("switch_to_pyramid_controls", ctrlId);
+    publish<entityId>("switch_to_pyramid_controls", bottomId);
     publish<entityId>("switch_to_mouse_controls", camGimbalId);
-    publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", camera->actual);
+//    publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", camera->actual);
+    publish<entityId>("switch_to_camera", camId);
   }
 }
 #pragma clang diagnostic pop
