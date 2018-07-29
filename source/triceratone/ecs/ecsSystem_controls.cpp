@@ -44,7 +44,7 @@ namespace at3 {
       glm::vec3 pos = placement->getTranslation(true);
       mouseControls->lastHorizCtrlRot = getCylStandingRot(pos, 0, mouseControls->yaw);
       mouseControls->lastCtrlRot = glm::mat4(getCylStandingRot(pos, mouseControls->pitch, mouseControls->yaw));
-      glm::mat3 rot = mouseControls->lastCtrlRot;
+      glm::mat4 rot = mouseControls->lastCtrlRot;
 
       rot[3][0] = placement->mat[3][0];
       rot[3][1] = placement->mat[3][1];
