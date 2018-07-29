@@ -4,9 +4,6 @@
 [submodule "extern/bullet3"]
 	path = extern/bullet3
 	url = https://github.com/bulletphysics/bullet3
-[submodule "extern/libepoxy"]
-	path = extern/libepoxy
-	url = https://github.com/a-day-old-bagel/libepoxy
 [submodule "extern/xxd"]
 	path = extern/xxd
 	url = https://github.com/a-day-old-bagel/xxd

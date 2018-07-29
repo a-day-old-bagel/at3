@@ -1,7 +1,6 @@
 
 #pragma once
 
-#include <epoxy/gl.h>
 #include <btBulletDynamicsCommon.h>
 #include <LinearMath/btIDebugDraw.h>
 #include "ezecs.hpp"
