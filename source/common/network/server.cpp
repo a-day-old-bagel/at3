@@ -12,11 +12,12 @@ namespace at3 {
     SocketDescriptor sock(static_cast<uint16_t >(settings::network::serverPort), nullptr);
     // TODO: this priority won't work on Linux.
     StartupResult startResult = peer->Startup(settings::network::maxServerConns, &sock, 1, AT3_NET_THREAD_PRIORITY);
-    if (startResult != RAKNET_STARTED) {
+    if (startResult == RAKNET_STARTED) {
+      peer->SetOccasionalPing(true);
+      printf("Server is ready to receive connections.\n");
+    } else {
       printf("Server failed to start.\n");
     }
-    peer->SetOccasionalPing(true);
-    printf("Server is ready to receive connections.\n");
   }
   Server::~Server() {
     printf("Server is being destroyed.\n");

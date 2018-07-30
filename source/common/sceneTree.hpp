@@ -6,14 +6,12 @@
 #include <vector>
 
 #include "settings.hpp"
-//#include "objCamera.hpp"
 #include "obj.hpp"
 #include "transformStack.hpp"
 
 namespace at3 {
 
-  template <typename EcsInterface> class ObjCamera;
-  template <typename EcsInterface> class Obj;
+  template <typename EcsInterface> class SceneObject;
 
   /**
    * This class implements a scene graph.
@@ -22,7 +20,7 @@ namespace at3 {
   class SceneTree {
     private:
       // TODO: Use the ECS ID instead of the raw pointer as a key here? Will this make removal more convenient?
-      std::unordered_map<const Obj<EcsInterface> *, std::shared_ptr<Obj<EcsInterface>>> objects;
+      std::unordered_map<const SceneObject<EcsInterface> *, std::shared_ptr<SceneObject<EcsInterface>>> objects;
 
     public:
 
@@ -31,7 +29,7 @@ namespace at3 {
       /**
        * Adds a top level object to the scene graph
        */
-      void addObject(std::shared_ptr<Obj<EcsInterface>> object);
+      void addObject(std::shared_ptr<SceneObject<EcsInterface>> object);
 
       /**
        * Removes a top level object from the scene graph. This should
@@ -40,7 +38,7 @@ namespace at3 {
        *
        * \param address The memory address of the object.
        */
-      void removeObject(const Obj<EcsInterface> *address);
+      void removeObject(const SceneObject<EcsInterface> *address);
 
       /**
        * Clears the scene graph
@@ -58,12 +56,12 @@ namespace at3 {
   SceneTree<EcsInterface>::~SceneTree() = default;
 
   template <typename EcsInterface>
-  void SceneTree<EcsInterface>::addObject(std::shared_ptr<Obj<EcsInterface>> object) {
+  void SceneTree<EcsInterface>::addObject(std::shared_ptr<SceneObject<EcsInterface>> object) {
     this->objects.insert({object.get(), object});
   }
 
   template <typename EcsInterface>
-  void SceneTree<EcsInterface>::removeObject(const Obj<EcsInterface> *address) {
+  void SceneTree<EcsInterface>::removeObject(const SceneObject<EcsInterface> *address) {
     auto iterator = objects.find(address);
     if (iterator != objects.end()) {
       objects.erase(iterator);

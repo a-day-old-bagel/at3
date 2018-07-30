@@ -8,10 +8,6 @@
 #include "sceneTree.hpp"
 #include "obj.hpp"
 
-//#include "objCameraPerspective.hpp"
-//#include "objCameraThirdPerson.hpp"
-//#include "objMesh.hpp"
-
 namespace at3 {
 
   /**
@@ -138,14 +134,11 @@ namespace at3 {
   };
 
   /*
-   * None of this is required in your implementation, and is just a helper for me to shorten type names that would
+   * These are not required in your implementation, and are just helper typedefs for us to shorten type names that would
    * normally be long and ugly because of template arguments. They make high level code (the stuff in the class you
    * write that CRTP-inherits from Game) much cleaner looking.
    */
   typedef SceneTree<EntityComponentSystemInterface> Scene;
-  typedef Obj<EntityComponentSystemInterface> Object;
-//  typedef ObjCameraPerspective<EntityComponentSystemInterface> PerspectiveCamera;
-//  typedef ObjCameraThirdPerson<EntityComponentSystemInterface> ThirdPersonCamera;
-//  typedef ObjMesh<EntityComponentSystemInterface> Mesh;
+  typedef SceneObject<EntityComponentSystemInterface> Object;
 
 }

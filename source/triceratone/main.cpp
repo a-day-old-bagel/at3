@@ -31,9 +31,6 @@ using namespace ezecs;
 using namespace rtu::topics;
 
 struct PlayerAvatarSet{
-//    std::shared_ptr<Object> freeCam;
-//    std::shared_ptr<ThirdPersonCamera> camera;
-
     entityId ctrlId;
     entityId camId;
     entityId gimbalId;
@@ -53,7 +50,6 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
     NetSyncSystem     netSyncSystem;
     PhysicsSystem     physicsSystem;
 
-//    std::shared_ptr<Mesh> terrainArk;
     std::shared_ptr<Object> terrainArk;
 
     std::vector<PlayerAvatarSet> players;
@@ -84,49 +80,29 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       // an identity matrix
       glm::mat4 ident(1.f);
 
-
-
       // the ark (the cylinder)
       glm::mat4 arkMat = glm::scale(ident, glm::vec3(100.f, 100.f, 100.f));
-
-
-//      terrainArk = std::make_shared<Mesh>(vulkan.get(), "terrainArk", "cliff1024_01", arkMat);
       entityId arkId;
       state.createEntity(&arkId);
       state.add_Placement(arkId, arkMat);
       vulkan->registerMeshInstance(arkId, "terrainArk", "cliff1024_01");
       terrainArk = std::make_shared<Object>(arkId);
-
-
       TriangleMeshInfo info = {
           vulkan->getMeshStoredVertices("terrainArk"),
           vulkan->getMeshStoredIndices("terrainArk"),
           vulkan->getMeshStoredVertexStride(),
       };
-//      state.add_Physics(terrainArk->getId(), 0, &info, Physics::STATIC_MESH);
       state.add_Physics(arkId, 0, &info, Physics::STATIC_MESH);
       scene.addObject(terrainArk);
-
-
 
       // the player avatars
       for (int i = 0; i < 2; ++i) {
         players.emplace_back();
 
-
-
         // the free cameras
-//        glm::mat4 start = glm::translate(ident, {0, -790, -120});
-//        players.back().freeCam = std::make_shared<Object>();
-//        state.add_Placement(players.back().freeCam->getId(), start);
-//        players.back().camera = std::make_shared<ThirdPersonCamera>(0.f, 0.f);
-//        state.add_FreeControls(players.back().freeCam->getId(), players.back().camera->gimbal->getId());
-//        players.back().camera->anchorTo(players.back().freeCam);
-//        scene.addObject(players.back().freeCam);
-
         state.createEntity(&players.back().camId);
-        float back = 5.f;
-        float tilt = 0.35f;
+        float back = 0.f;
+        float tilt = 0.f;
         glm::mat4 camMat = glm::rotate(glm::translate(ident, {0.f, 0.f, back}), tilt , glm::vec3(1.0f, 0.0f, 0.0f));
         state.add_Placement(players.back().camId, camMat);
         state.add_Perspective(players.back().camId, settings::graphics::fovy, 0.1f, 10000.f);
@@ -150,9 +126,6 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
         players.back().ctrl->addChild(players.back().camGimbal);
         scene.addObject(players.back().ctrl);
 
-
-
-
         // the human
         glm::vec3 walkerPos = glm::vec3(10, -790, -100 + i * 10);
         glm::mat4 walkerMat = glm::translate(ident, walkerPos);
@@ -172,7 +145,6 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       }
       makeFreeCamActiveControl();
 
-
       // the event subscriptions
       key0Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_0", Triceratone::makeFreeCamActiveControl, this);
       key1Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_1", Walker::makeActiveControl, player().walker.get());
@@ -180,7 +152,6 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       key3Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_3", Pyramid::makeActiveControl, player().pyramid.get());
       lClickSub = RTU_MAKE_SUB_UNIQUEPTR("mouse_down_left", Pyramid::shootSphere, player().pyramid.get());
       rClickSub = RTU_MAKE_SUB_UNIQUEPTR("mouse_down_right", Pyramid::dropSphere, player().pyramid.get());
-
 
       return true;
     }
@@ -192,7 +163,7 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
 
     void onTick(float dt) {
 
-      // TODO: Not working IN WINDOWS DEBUG BUILD ONLY for some reason?
+      // TODO: Not working IN WINDOWS BUT ONLY SOMETIMES for some reason? Undefined behavior?
       for (int i = 0; i < 2; ++i) {
         players[i].pyramid->resizeFire();
       }
@@ -204,10 +175,6 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
     }
 
     void makeFreeCamActiveControl() {
-//      publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", player().camera->actual);
-//      publish<entityId>("switch_to_free_controls", player().freeCam->getId());
-//      publish<entityId>("switch_to_mouse_controls", player().camera->gimbal->getId());
-
       publish<entityId>("switch_to_camera", player().camId);
       publish<entityId>("switch_to_free_controls", player().ctrlId);
       publish<entityId>("switch_to_mouse_controls", player().gimbalId);

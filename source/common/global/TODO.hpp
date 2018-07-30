@@ -23,4 +23,4 @@
 // TODO: switch to using indirect draw to avoid per-instance draw calls, and possibly only need one call for all meshes.
 // TODO: move projection matrix into a global shared uniform thing to avoid duplicating data? (vulkan stuff)
 // TODO: make a debug line drawing interface for Vulkan stuff, and link it to bullet
-// TODO: replace raw pointers with smart pointers in places like VulkanContext and Obj (re-evaluate if this is a good idea) ???
+// TODO: replace raw pointers with smart pointers in places like VulkanContext and SceneObject (re-evaluate if this is a good idea) ???

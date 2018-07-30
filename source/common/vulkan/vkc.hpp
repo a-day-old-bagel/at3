@@ -27,6 +27,7 @@
 namespace at3::vkc {
 
   // TODO: get rid of templating ... ugh. The only reason they're here is for the getAbsTransform function...
+  // Or is it better this way? My opinion on templates changes from month to month.
 
   template<typename EcsInterface>
   struct VulkanContextCreateInfo {
@@ -45,8 +46,8 @@ namespace at3::vkc {
       explicit VulkanContext(VulkanContextCreateInfo<EcsInterface> info);
       virtual ~VulkanContext();
       void updateWvMat(void *data);
-      void step();
-      void reInitRendering();
+      void reInitRendering(void *nothing);
+      void tick();
       void registerMeshInstance(
           typename EcsInterface::EcsId id,
           const std::string &meshFileName,

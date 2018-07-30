@@ -12,10 +12,11 @@ namespace at3 {
     SocketDescriptor sock;
     // TODO: this priority won't work on Linux.
     StartupResult startResult = peer->Startup(1, &sock, 1, AT3_NET_THREAD_PRIORITY);
-    if (startResult != RAKNET_STARTED) {
+    if (startResult == RAKNET_STARTED) {
+      connect();
+    } else {
       fprintf(stderr, "Peer interface failed to start!\n");
     }
-    connect();
   }
 
   Client::~Client() {

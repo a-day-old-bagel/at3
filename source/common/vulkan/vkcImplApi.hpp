@@ -114,12 +114,7 @@ void VulkanContext<EcsInterface>::updateWvMat(void *data) {
 }
 
 template<typename EcsInterface>
-void VulkanContext<EcsInterface>::step() {
-  render(dataStore.get(), currentWvMat, meshRepo, ecs);
-}
-
-template<typename EcsInterface>
-void VulkanContext<EcsInterface>::reInitRendering() {
+void VulkanContext<EcsInterface>::reInitRendering(void *nothing) {
   printf("Re-initializing vulkan rendering pipeline\n");
   vkDeviceWaitIdle(common.device);
   destroyWindowSizeDependents();
@@ -127,6 +122,11 @@ void VulkanContext<EcsInterface>::reInitRendering() {
   createSwapchainForSurface();
   createWindowSizeDependents();
   pipelineRepo->reinit(common, textureRepo->getDescriptorImageInfoArrayCount());
+}
+
+template<typename EcsInterface>
+void VulkanContext<EcsInterface>::tick() {
+  render(dataStore.get(), currentWvMat, meshRepo, ecs);
 }
 
 template<typename EcsInterface>
