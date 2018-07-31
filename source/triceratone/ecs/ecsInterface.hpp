@@ -6,7 +6,7 @@
 #include "ezecs.hpp"
 #include "netInterface.hpp"
 #include "sceneTree.hpp"
-#include "obj.hpp"
+#include "sceneObject.hpp"
 
 namespace at3 {
 
@@ -118,7 +118,7 @@ namespace at3 {
        * These methods assume you keep some sort of state representing your cameras, which will include keeping
        * data like the field of view and the near ans far planes.
        */
-      void addPerspective(const EcsId &id, float fovy, float nearPlane, float farPlane);
+      void addCamera(const EcsId &id, float fovy, float nearPlane, float farPlane);
       float getFovy(const EcsId& id);
       float getFovyPrev(const EcsId& id);
       float getNear(const EcsId& id);
@@ -138,7 +138,6 @@ namespace at3 {
    * normally be long and ugly because of template arguments. They make high level code (the stuff in the class you
    * write that CRTP-inherits from Game) much cleaner looking.
    */
-  typedef SceneTree<EntityComponentSystemInterface> Scene;
   typedef SceneObject<EntityComponentSystemInterface> Object;
 
 }

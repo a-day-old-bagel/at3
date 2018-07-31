@@ -3,7 +3,7 @@
 // TODO: ninja build system instead of make
 // TODO: vulkan terrain
 // TODO: vulkan materials/textures/pbr-only
-// TODO: kerning-based terrain generation on vulkan compute
+// TODO: kernel-based terrain generation on vulkan compute
 // TODO: voxel stuff: OpenVDB (voxel engine): http://www.openvdb.org/ Subreddit: https://www.reddit.com/r/VoxelGameDev/
 // TODO: use steam audio c api for awsome 3d sound stuff
 // TODO: Investigate pooled main memory management: TLSF : https://github.com/mattconte/tlsf
@@ -12,7 +12,7 @@
 // TODO: Possibly use precompiled sdl and vulkan sdk's in extern instead of relying on system-installed sdk's
 // TODO: Stop using custom SDLvulkan.h, now that SDL supports Vulkan - but must find way to force XCB over X11 - search SDL2 repo for "VK_USE_PLATFORM_XCB_KHR"
 // TODO: Third-person camera smoothing (per-frame amount that cam moves towards target is proportional to distance from target, maybe have dead zone for anti-jiggle)
-// TODO: Use swapchain cacheing
+// TODO: Use swapchain cache-ing
 // TODO: Use SLikeNet for multiplayer, or GameNetworkingSockets from Valve
 // TODO: Consider a BOB-inspired (horror?) game
 // TODO: USE GLTF and PBR
@@ -24,3 +24,6 @@
 // TODO: move projection matrix into a global shared uniform thing to avoid duplicating data? (vulkan stuff)
 // TODO: make a debug line drawing interface for Vulkan stuff, and link it to bullet
 // TODO: replace raw pointers with smart pointers in places like VulkanContext and SceneObject (re-evaluate if this is a good idea) ???
+// TODO: have ezecs also generate a createEntity overload that takes an EntityCreateInfo or something so that you can create all components in one call (and network that one call with its info)
+// This EntityCreateInfo will include at least a componentMask and a list of constructor arguments to be used for each component present
+// TODO: the reversed-linear-z depth near/far plane switching trick (check discord history)

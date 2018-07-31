@@ -44,7 +44,7 @@ namespace at3 {
     if (components & (uint32_t)TRANSFORMFUNCTION) {
 //      state.add_TransformFunction()
     }
-    if (components & (uint32_t)PERSPECTIVE) {
+    if (components & (uint32_t)CAMERA) {
 //      state.add_Perspective()
     }
     if (components & (uint32_t)PHYSICS) {

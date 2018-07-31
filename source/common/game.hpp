@@ -14,8 +14,6 @@
 
 namespace at3 {
 
-  template <typename EcsInterface> class SceneTree;
-
   template <typename EcsInterface, typename Derived>
   class Game {
 
@@ -30,22 +28,21 @@ namespace at3 {
     protected:
 
       typename EcsInterface::State state;
-      SceneTree<EcsInterface> scene;
 
-      std::unique_ptr<SdlContext> sdlc;
       std::unique_ptr<vkc::VulkanContext<EcsInterface>> vulkan;
       std::shared_ptr<NetInterface> network;
 
     private:
 
-      std::unique_ptr<EcsInterface> ecsInterface;
+      std::unique_ptr<SdlContext> sdlc;
+      std::shared_ptr<EcsInterface> ecs;
       typename EcsInterface::EcsId currentCameraId = 0;
       rtu::topics::Subscription switchToCamSub;
       rtu::topics::Subscription quitSub;
       std::string settingsFileName;
       bool isQuit = false;
 
-      Derived &topLevel();
+      Derived &game();
       void setCamera(void *camPtr);
       void deInit(void* nothing);
 
@@ -58,32 +55,46 @@ namespace at3 {
         { }
 
   template <typename EcsInterface, typename Derived>
-  Derived & Game<EcsInterface, Derived>::topLevel() {
+  Derived & Game<EcsInterface, Derived>::game() {
     return *static_cast<Derived*>(this);
   }
 
+  /**
+   * The main game initialization process
+   * @tparam EcsInterface
+   * @tparam Derived
+   * @param appName
+   * @param settingsName
+   * @return true if successful, false otherwise
+   */
   template <typename EcsInterface, typename Derived>
   bool Game<EcsInterface, Derived>::init(const char *appName, const char *settingsName) {
 
-    ecsInterface = std::make_unique<EcsInterface>(&state);
-    Object::linkEcs(*ecsInterface);
-
+    // Read the settings from the ini file, including settings defined in the inheriting class (top level)
     settingsFileName = settingsName;
-    topLevel().registerCustomSettings();
+    game().registerCustomSettings();
     settings::loadFromIni(settingsFileName.c_str());
 
-    sdlc = std::make_unique<SdlContext>(appName);
+    // Initialize and publicize the ECS interface object
+    ecs = std::make_shared<EcsInterface>(&state);
+    rtu::topics::publish<std::shared_ptr<EcsInterface> &>("set_ecs_interface", ecs);
 
-    vkc::VulkanContextCreateInfo<EcsInterface> contextCreateInfo =
-        vkc::VulkanContextCreateInfo<EcsInterface>::defaults();
-    contextCreateInfo.window = sdlc->getWindow();
-    contextCreateInfo.ecs = ecsInterface.get();
-    vulkan = std::make_unique<vkc::VulkanContext<EcsInterface>>(contextCreateInfo);
-
+    // Initialize and publicize the network interface object
     network = std::make_shared<NetInterface>();
     rtu::topics::publish<std::shared_ptr<NetInterface> &>("set_network_interface", network);
 
-    return topLevel().onInit();
+    // Initialize SDL2, creating the window
+    sdlc = std::make_unique<SdlContext>(appName);
+
+    // Initialize Vulkan, giving it the SDL2 window and ECS interface to use
+    vkc::VulkanContextCreateInfo<EcsInterface> contextCreateInfo =
+        vkc::VulkanContextCreateInfo<EcsInterface>::defaults();
+    contextCreateInfo.window = sdlc->getWindow();
+    contextCreateInfo.ecs = ecs.get();
+    vulkan = std::make_unique<vkc::VulkanContext<EcsInterface>>(contextCreateInfo);
+
+    // Call any implementation-defined initialization routines that need to happen (all system initializations are here)
+    return game().onInit();
   }
 
   template <typename EcsInterface, typename Derived>
@@ -112,12 +123,12 @@ namespace at3 {
     network->tick();
 
     // Call any implementation-defined routines that need to happen each frame (all game logic is in here).
-    topLevel().onTick(sdlc->getDeltaTime());  // Give it a time delta to use in all systems for consistency
+    game().onTick(sdlc->getDeltaTime());  // Give it a time delta to use in all systems for consistency
 
-    // Cache the inheritance-aware world-space transforms of objects and have vulkan use those cached values to draw.
+    // Get the view matrix and use it to render with Vulkan.
     if (currentCameraId) {  // Don't bother if there's no camera - it will crash.
-      scene.updateAbsoluteTransformCaches();
-      glm::mat4 viewMat = glm::inverse(ecsInterface->getAbsTransform(currentCameraId));
+      glm::mat4 viewMat = glm::inverse(ecs->getAbsTransform(currentCameraId));
+      // TODO: make this a normal call to the VulkanContext instead of a topic - only VulkanContext subscribes anyway.
       rtu::topics::publish<glm::mat4>("primary_cam_wv", viewMat);
       vulkan->tick();
     }

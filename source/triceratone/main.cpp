@@ -12,7 +12,7 @@
 #include "ecsInterface.hpp"
 #include "game.hpp"
 
-#include "ecsSystem_animation.hpp"
+#include "ecsSystem_scene.hpp"
 #include "ecsSystem_controls.hpp"
 #include "ecsSystem_netSync.hpp"
 #include "ecsSystem_physics.hpp"
@@ -31,12 +31,9 @@ using namespace ezecs;
 using namespace rtu::topics;
 
 struct PlayerAvatarSet{
-    entityId ctrlId;
-    entityId camId;
-    entityId gimbalId;
-    std::shared_ptr<Object> ctrl;
-    std::shared_ptr<Object> cam;
-    std::shared_ptr<Object> camGimbal;
+    entityId ctrlId = 0;
+    entityId camId = 0;
+    entityId gimbalId = 0;
 
     std::unique_ptr<Pyramid> pyramid;
     std::unique_ptr<DuneBuggy> duneBuggy;
@@ -45,12 +42,10 @@ struct PlayerAvatarSet{
 
 class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
 
-    AnimationSystem   animationSystem;
-    ControlSystem     controlSystem;
-    NetSyncSystem     netSyncSystem;
-    PhysicsSystem     physicsSystem;
-
-    std::shared_ptr<Object> terrainArk;
+    ControlSystem controlSystem;
+    NetSyncSystem netSyncSystem;
+    PhysicsSystem physicsSystem;
+    SceneSystem   sceneSystem;
 
     std::vector<PlayerAvatarSet> players;
 
@@ -62,19 +57,16 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
 
   public:
 
-    Triceratone() : animationSystem(&state), controlSystem(&state), netSyncSystem(&state), physicsSystem(&state) { }
-    ~Triceratone() override {
-      scene.clear();
-    }
+    Triceratone() : controlSystem(&state), netSyncSystem(&state), physicsSystem(&state), sceneSystem(&state) { }
 
     bool onInit() {
 
       // Initialize the systems
       bool initSuccess = true;
-      initSuccess &= animationSystem.init();
       initSuccess &= controlSystem.init();
       initSuccess &= netSyncSystem.init();
       initSuccess &= physicsSystem.init();
+      initSuccess &= sceneSystem.init();
       assert(initSuccess);
 
       // an identity matrix
@@ -86,14 +78,13 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       state.createEntity(&arkId);
       state.add_Placement(arkId, arkMat);
       vulkan->registerMeshInstance(arkId, "terrainArk", "cliff1024_01");
-      terrainArk = std::make_shared<Object>(arkId);
       TriangleMeshInfo info = {
           vulkan->getMeshStoredVertices("terrainArk"),
           vulkan->getMeshStoredIndices("terrainArk"),
           vulkan->getMeshStoredVertexStride(),
       };
       state.add_Physics(arkId, 0, &info, Physics::STATIC_MESH);
-      scene.addObject(terrainArk);
+      state.add_SceneNode(arkId, 0);
 
       // the player avatars
       for (int i = 0; i < 2; ++i) {
@@ -105,8 +96,7 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
         float tilt = 0.f;
         glm::mat4 camMat = glm::rotate(glm::translate(ident, {0.f, 0.f, back}), tilt , glm::vec3(1.0f, 0.0f, 0.0f));
         state.add_Placement(players.back().camId, camMat);
-        state.add_Perspective(players.back().camId, settings::graphics::fovy, 0.1f, 10000.f);
-        players.back().cam = std::make_shared<Object>(players.back().camId);
+        state.add_Camera(players.back().camId, settings::graphics::fovy, 0.1f, 10000.f);
 
         state.createEntity(&players.back().gimbalId);
         state.add_Placement(players.back().gimbalId, ident);
@@ -114,34 +104,32 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
         state.get_Placement(players.back().gimbalId, &placement);
         placement->forceLocalRotationAndScale = true;
         state.add_MouseControls(players.back().gimbalId, settings::controls::mouseInvertX, settings::controls::mouseInvertY);
-        players.back().camGimbal = std::make_shared<Object>(players.back().gimbalId);
 
         glm::mat4 start = glm::translate(ident, {0, -790, -120});
         state.createEntity(&players.back().ctrlId);
         state.add_Placement(players.back().ctrlId, start);
         state.add_FreeControls(players.back().ctrlId, players.back().gimbalId);
-        players.back().ctrl = std::make_shared<Object>(players.back().ctrlId);
 
-        players.back().camGimbal->addChild(players.back().cam);
-        players.back().ctrl->addChild(players.back().camGimbal);
-        scene.addObject(players.back().ctrl);
+        state.add_SceneNode(players.back().ctrlId, 0);
+        state.add_SceneNode(players.back().gimbalId, players.back().ctrlId);
+        state.add_SceneNode(players.back().camId, players.back().gimbalId);
 
         // the human
         glm::vec3 walkerPos = glm::vec3(10, -790, -100 + i * 10);
         glm::mat4 walkerMat = glm::translate(ident, walkerPos);
-        players.back().walker = std::make_unique<Walker>(state, vulkan.get(), scene, walkerMat);
+        players.back().walker = std::make_unique<Walker>(state, vulkan.get(), walkerMat);
 
         // the car
         glm::vec3 buggyPos = glm::vec3(0, -790, -100 + i * 10);
         glm::mat4 buggyMat = glm::translate(ident, buggyPos);
         buggyMat *= glm::mat4(getCylStandingRot(buggyPos, (float) M_PI * -0.5f, 0));
-        players.back().duneBuggy = std::make_unique<DuneBuggy>(state, vulkan.get(), scene, buggyMat);
+        players.back().duneBuggy = std::make_unique<DuneBuggy>(state, vulkan.get(), buggyMat);
 
         // the flying illuminati pyramid
         glm::vec3 pyramidPos = glm::vec3(-10, -790, -100 + i * 10);
         glm::mat4 pyramidMat = glm::translate(ident, pyramidPos);
         pyramidMat *= glm::mat4(getCylStandingRot(pyramidPos, (float) M_PI * -0.5f, 0));
-        players.back().pyramid = std::make_unique<Pyramid>(state, vulkan.get(), scene, pyramidMat);
+        players.back().pyramid = std::make_unique<Pyramid>(state, vulkan.get(), pyramidMat);
       }
       makeFreeCamActiveControl();
 
@@ -168,10 +156,11 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
         players[i].pyramid->resizeFire();
       }
 
-      netSyncSystem.tick(dt);
-      controlSystem.tick(dt);
-      physicsSystem.tick(dt);
-      animationSystem.tick(dt);
+      // Order matters here
+      netSyncSystem.tick(dt); // First receive and/or send any network updates about controls or physics state
+      controlSystem.tick(dt); // Process all control signals, remote or otherwise
+      physicsSystem.tick(dt); // Given these inputs, step the physics simulation
+      sceneSystem.tick(dt); // Given the most recent physics and world states, traverse the scene to cache transforms
     }
 
     void makeFreeCamActiveControl() {

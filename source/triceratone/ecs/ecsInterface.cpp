@@ -114,50 +114,50 @@ namespace at3 {
     return transformFunction->transformed;
   }
 
-  void EntityComponentSystemInterface::addPerspective(const ezecs::entityId &id, const float fovy,
+  void EntityComponentSystemInterface::addCamera(const ezecs::entityId &id, const float fovy,
                                                       const float nearPlane, const float farPlane) {
-    ezecs::CompOpReturn status = this->state->add_Perspective(id, fovy, nearPlane, farPlane);
+    ezecs::CompOpReturn status = this->state->add_Camera(id, fovy, nearPlane, farPlane);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
   }
 
   float EntityComponentSystemInterface::getFovy(const ezecs::entityId &id) {
-    ezecs::Perspective *perspective;
-    ezecs::CompOpReturn status = state->get_Perspective(id, &perspective);
+    ezecs::Camera *Camera;
+    ezecs::CompOpReturn status = state->get_Camera(id, &Camera);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
-    return perspective->fovY;
+    return Camera->fovY;
   }
 
   float EntityComponentSystemInterface::getFovyPrev(const ezecs::entityId &id) {
-    ezecs::Perspective *perspective;
-    ezecs::CompOpReturn status = state->get_Perspective(id, &perspective);
+    ezecs::Camera *Camera;
+    ezecs::CompOpReturn status = state->get_Camera(id, &Camera);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
-    return perspective->prevFovY;
+    return Camera->prevFovY;
   }
 
   float EntityComponentSystemInterface::getNear(const ezecs::entityId &id) {
-    ezecs::Perspective *perspective;
-    ezecs::CompOpReturn status = state->get_Perspective(id, &perspective);
+    ezecs::Camera *Camera;
+    ezecs::CompOpReturn status = state->get_Camera(id, &Camera);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
-    return perspective->nearPlane;
+    return Camera->nearPlane;
   }
 
   float EntityComponentSystemInterface::getFar(const ezecs::entityId &id) {
-    ezecs::Perspective *perspective;
-    ezecs::CompOpReturn status = state->get_Perspective(id, &perspective);
+    ezecs::Camera *Camera;
+    ezecs::CompOpReturn status = state->get_Camera(id, &Camera);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
-    return perspective->farPlane;
+    return Camera->farPlane;
   }
 
   void EntityComponentSystemInterface::setFar(const ezecs::entityId &id, const float farPlane) {
-    ezecs::Perspective *perspective;
-    ezecs::CompOpReturn status = state->get_Perspective(id, &perspective);
+    ezecs::Camera *Camera;
+    ezecs::CompOpReturn status = state->get_Camera(id, &Camera);
     assert(status == ezecs::SUCCESS);
-    perspective->farPlane = farPlane;
+    Camera->farPlane = farPlane;
   }
 
   void EntityComponentSystemInterface::addMouseControl(const ezecs::entityId &id) {

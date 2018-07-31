@@ -4,7 +4,7 @@
 #include <btBulletDynamicsCommon.h>
 #include <LinearMath/btIDebugDraw.h>
 #include "ezecs.hpp"
-#include "obj.hpp"
+#include "sceneObject.hpp"
 #include "ecsInterface.hpp"
 #include "topics.hpp"
 

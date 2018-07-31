@@ -17,20 +17,11 @@ namespace at3 {
   }
 
   DuneBuggy::DuneBuggy(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context,
-                           Scene &scene, glm::mat4 &transform) : state(&state), scene(&scene){
-
-
-
-//    chassis = std::make_shared<Mesh>(context, "chassis", "cliff1024_00", transform);
-//    ezecs::entityId chassisId = chassis->getId();
+                       glm::mat4 &transform) : state(&state)/*, scene(&scene)*/ {
 
     state.createEntity(&chassisId);
     state.add_Placement(chassisId, transform);
     context->registerMeshInstance(chassisId, "chassis", "cliff1024_00");
-    chassis = std::make_shared<Object>(chassisId);
-
-
-
 
     glm::mat4 ident(1.f);
     std::vector<float> chassisVerts = {
@@ -47,7 +38,6 @@ namespace at3 {
     Physics *physics;
     state.get_Physics(chassisId, &physics);
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
-//    physics->rigidBody->setFriction(0.2f);
 
     // The slow stuff (CCD)
     physics->rigidBody->setCcdMotionThreshold(1);
@@ -69,22 +59,11 @@ namespace at3 {
         { 1.9f, -1.9f, 0.f}
     };
     for (int i = 0; i < 4; ++i) {
-
-
-
-//      wheels.push_back(std::make_shared<Mesh>(context, "wheel", "tire", ident));
-//      entityId wheelId = wheels.back()->getId();
-
       entityId wheelId;
       state.createEntity(&wheelId);
       state.add_Placement(wheelId, ident);
       context->registerMeshInstance(wheelId, "wheel", "tire");
-      wheels.emplace_back(std::make_shared<Object>(wheelId));
-
-
-
-
-
+      wheels.emplace_back(wheelId);
 
       WheelInitInfo wheelInitInfo{
           {                         // WheelInfo struct - this part of the wheelInitInfo will persist.
@@ -104,20 +83,12 @@ namespace at3 {
       state.add_TransformFunction(wheelId, RTU_FUNC_DLGT(wheelScaler));
     }
 
-
-
-
-//    camera = std::make_shared<ThirdPersonCamera>(10.f, 0.35f);
-//    camera->anchorTo(chassis);
-//    camGimbalId = camera->gimbal->getId();
-
     state.createEntity(&camId);
     float back = 10.f;
     float tilt = 0.35f;
     glm::mat4 camMat = glm::rotate(glm::translate(ident, {0.f, 0.f, back}), tilt , glm::vec3(1.0f, 0.0f, 0.0f));
     state.add_Placement(camId, camMat);
-    state.add_Perspective(camId, settings::graphics::fovy, 0.1f, 10000.f);
-    camera = std::make_shared<Object>(camId);
+    state.add_Camera(camId, settings::graphics::fovy, 0.1f, 10000.f);
 
     state.createEntity(&camGimbalId);
     state.add_Placement(camGimbalId, ident);
@@ -125,33 +96,21 @@ namespace at3 {
     state.get_Placement(camGimbalId, &placement);
     placement->forceLocalRotationAndScale = true;
     state.add_MouseControls(camGimbalId, settings::controls::mouseInvertX, settings::controls::mouseInvertY);
-    gimbal = std::make_shared<Object>(camGimbalId);
-
-
-
-
-
-
 
     addToScene();
   }
   void DuneBuggy::addToScene() {
-    gimbal->addChild(camera);
-    chassis->addChild(gimbal);
-    scene->addObject(chassis);
+    state->add_SceneNode(chassisId, 0);
+    state->add_SceneNode(camGimbalId, chassisId);
+    state->add_SceneNode(camId, camGimbalId);
     for (const auto & wheel : wheels) {
-      scene->addObject(wheel);
+      state->add_SceneNode(wheel, 0);
     }
   }
-
-//  std::shared_ptr<PerspectiveCamera> DuneBuggy::getCamPtr() {
-//    return camera->actual;
-//  }
 
   void DuneBuggy::makeActiveControl(void *nothing) {
     publish<entityId>("switch_to_track_controls", chassisId);
     publish<entityId>("switch_to_mouse_controls", camGimbalId);
-//    publish<std::shared_ptr<PerspectiveCamera>>("set_primary_camera", camera->actual);
     publish<entityId>("switch_to_camera", camId);
   }
 

@@ -21,6 +21,13 @@ namespace {
 
   // BEGIN DECLARATIONS
 
+  // NOTE: parsing C++ is always a terrible idea, but in this case it allows for components to have things like
+  // helper methods and avoids writing a new pseudo-language for component descriptions. Of course, since only a
+  // tiny subset of C++ can be used here anyway, it's basically a pseudo-language. Whatever.
+
+  // NOTE: constructors aren't currently able to accept any arguments qualified by const or any other keyword.
+  // Basically you must follow this simple syntax: Constructor(type0 name0, type1 name1, ... , typeN nameN).
+
   // NOTE: The parsing done on this file isn't currently able to understand template arguments unless they're
   // typedef'ed here as a single symbol. Sorry. This is on an absurdly long laundry list of things to fix.
   typedef rtu::Delegate<glm::mat4(const glm::mat4&, const glm::mat4&, uint32_t time)> transformFunc;
@@ -41,6 +48,11 @@ namespace {
     void setQuat(glm::quat &quat);
   };
 
+  struct SceneNode : public Component<SceneNode> {
+    entityId parentId;
+    SceneNode(entityId parentId);
+  };
+
   struct TransformFunction : public Component<TransformFunction> {
     glm::mat4 transformed = glm::mat4(1.f);
     transformFunc func;
@@ -48,11 +60,17 @@ namespace {
   };
   EZECS_COMPONENT_DEPENDENCIES(TransformFunction, Placement)
 
-  struct Perspective : public Component<Perspective> {
-    float fovY, prevFovY, nearPlane, farPlane;
-    Perspective(float fovY, float nearPlane, float farPlane);
+  struct Mesh : public Component<Mesh> {
+    std::string meshFileName, textureFileName;
+    Mesh(std::string meshFileName, std::string textureFileName);
   };
-  EZECS_COMPONENT_DEPENDENCIES(Perspective, Placement)
+  EZECS_COMPONENT_DEPENDENCIES(TransformFunction, Placement)
+
+  struct Camera : public Component<Camera> {
+    float fovY, prevFovY, nearPlane, farPlane;
+    Camera(float fovY, float nearPlane, float farPlane);
+  };
+  EZECS_COMPONENT_DEPENDENCIES(Camera, Placement)
 
   struct WheelInfo {
     entityId parentVehicle, myId;
@@ -85,6 +103,15 @@ namespace {
     void beStill();
   };
   EZECS_COMPONENT_DEPENDENCIES(Physics, Placement)
+
+  // I haven't worked out how to do this yet - if I only send a set of object updates, I don't want to have to include
+  // the id of each object that I send, but otherwise how will the client know which it's receiving, given that my
+  // frames aren't synced and clients can join at any time? GafferOnGames does not handle this...
+  struct NetworkedPhysics : public Component<NetworkedPhysics> {
+    uint32_t priorityAccumulator = 0;
+    NetworkedPhysics();
+  };
+  EZECS_COMPONENT_DEPENDENCIES(NetworkedPhysics, Physics)
 
   struct PyramidControls : public Component<PyramidControls> {
     glm::vec3 accel = glm::vec3(0, 0, 0);
@@ -185,10 +212,16 @@ namespace {
     setTranslation(pos);
   }
 
+  SceneNode::SceneNode(entityId parentId)
+      : parentId(parentId) { }
+
   TransformFunction::TransformFunction(transformFunc func)
       : func(func) { }
 
-  Perspective::Perspective(float fovY, float nearPlane, float farPlane)
+  Mesh::Mesh(std::string meshFileName, std::string textureFileName)
+      : meshFileName(meshFileName), textureFileName(textureFileName) { }
+
+  Camera::Camera(float fovY, float nearPlane, float farPlane)
       : fovY(fovY), prevFovY(fovY), nearPlane(nearPlane), farPlane(farPlane) { }
 
   Physics::Physics(float mass, void* initData, Physics::UseCase useCase)
@@ -212,6 +245,8 @@ namespace {
     rigidBody->setLinearVelocity( {0.f, 0.f, 0.f} );
     rigidBody->setAngularVelocity( {0.f, 0.f, 0.f} );
   }
+
+  NetworkedPhysics::NetworkedPhysics() { }
 
   PyramidControls::PyramidControls(entityId mouseCtrlId)
       : mouseCtrlId(mouseCtrlId) { }

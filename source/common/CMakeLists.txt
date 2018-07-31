@@ -14,7 +14,7 @@ add_subdirectory( vulkan )
 
 add_library( ${AT3_TARGET_PREFIX}common STATIC
   game.hpp
-  obj.hpp
+  sceneObject.hpp
   sceneTree.hpp
   transform.cpp transform.hpp
   transformRAII.cpp transformRAII.hpp
