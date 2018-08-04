@@ -17,6 +17,7 @@ VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo <EcsInterface
   // Subscribe to view matrix updates and window resize events
   sub_wvUpdate = SUBSCRIBE_TOPIC("primary_cam_wv", updateWvMat);
   sub_windowResize = SUBSCRIBE_TOPIC("window_resized", reInitRendering);
+  sub_meshRegistration = SUBSCRIBE_TOPIC("mesh_registration", handleMeshRegistration);
 
   // Store the window and entity-component-system pointers.
   common.window = info.window;
@@ -125,6 +126,16 @@ void VulkanContext<EcsInterface>::reInitRendering(void *nothing) {
 }
 
 template<typename EcsInterface>
+void VulkanContext<EcsInterface>::handleMeshRegistration(void *data) {
+  auto info = (MeshRegistrationInfo<EcsInterface> *) data;
+  if (info->deRegister) {
+    deRegisterMeshInstance(info->id);
+  } else {
+    registerMeshInstance(info->id, info->meshFileName, info->textureFileName);
+  }
+}
+
+template<typename EcsInterface>
 void VulkanContext<EcsInterface>::tick() {
   render(dataStore.get(), currentWvMat, meshRepo, ecs);
 }
@@ -148,6 +159,11 @@ void VulkanContext<EcsInterface>::registerMeshInstance(
     }
     mesh.instances.push_back(instance);
   }
+}
+
+template<typename EcsInterface>
+void VulkanContext<EcsInterface>::deRegisterMeshInstance(const typename EcsInterface::EcsId id) {
+  fprintf(stderr, "Vulkan: De-registration of a mesh is not yet implemented!\n");
 }
 
 template<typename EcsInterface>
@@ -176,3 +192,5 @@ template<typename EcsInterface>
 uint32_t VulkanContext<EcsInterface>::getMeshStoredVertexStride() {
   return pipelineRepo->getVertexAttributes().vertexSize;
 }
+
+

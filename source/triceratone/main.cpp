@@ -72,6 +72,8 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       // an identity matrix
       glm::mat4 ident(1.f);
 
+      printf("foo\n");
+
       // the ark (the cylinder)
       glm::mat4 arkMat = glm::scale(ident, glm::vec3(100.f, 100.f, 100.f));
       entityId arkId;
@@ -85,6 +87,8 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       };
       state.add_Physics(arkId, 0, &info, Physics::STATIC_MESH);
       state.add_SceneNode(arkId, 0);
+
+      printf("foo\n");
 
       // the player avatars
       for (int i = 0; i < 2; ++i) {
@@ -132,6 +136,8 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
         players.back().pyramid = std::make_unique<Pyramid>(state, vulkan.get(), pyramidMat);
       }
       makeFreeCamActiveControl();
+
+      printf("foo\n");
 
       // the event subscriptions
       key0Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_0", Triceratone::makeFreeCamActiveControl, this);

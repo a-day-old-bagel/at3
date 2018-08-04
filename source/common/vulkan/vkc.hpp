@@ -28,6 +28,15 @@ namespace at3::vkc {
 
   // TODO: get rid of templating ... ugh. The only reason they're here is for the getAbsTransform function...
   // Or is it better this way? My opinion on templates changes from month to month.
+  // Either way, VulkanContext is a mess right now.
+
+  template<typename EcsInterface>
+  struct MeshRegistrationInfo {
+    bool deRegister = false;
+    typename EcsInterface::EcsId id = 0;
+    std::string meshFileName = "";
+    std::string textureFileName = "";
+  };
 
   template<typename EcsInterface>
   struct VulkanContextCreateInfo {
@@ -45,13 +54,13 @@ namespace at3::vkc {
 
       explicit VulkanContext(VulkanContextCreateInfo<EcsInterface> info);
       virtual ~VulkanContext();
-      void updateWvMat(void *data);
-      void reInitRendering(void *nothing);
+
       void tick();
       void registerMeshInstance(
           typename EcsInterface::EcsId id,
           const std::string &meshFileName,
           const std::string &textureFileName = "");
+      void deRegisterMeshInstance(typename EcsInterface::EcsId id);
       std::vector<float> * getMeshStoredVertices(const std::string &meshName, uint32_t internalIndex = 0);
       uint32_t getMeshStoredVertexStride();
       std::vector<uint32_t> * getMeshStoredIndices(const std::string &meshName, uint32_t internalIndex = 0);
@@ -67,10 +76,14 @@ namespace at3::vkc {
       std::unique_ptr<PipelineRepository> pipelineRepo;
 
       glm::mat4 currentWvMat = glm::mat4(1.f);
-      std::unique_ptr<rtu::topics::Subscription> sub_wvUpdate, sub_windowResize;
+      std::unique_ptr<rtu::topics::Subscription> sub_wvUpdate, sub_windowResize, sub_meshRegistration;
       VkDebugReportCallbackEXT callback;
 //      GlobalShaderDataStore globalData;
       static const uint32_t INVALID_QUEUE_FAMILY_IDX = (uint32_t) -1;
+
+      void updateWvMat(void *data);
+      void reInitRendering(void *nothing);
+      void handleMeshRegistration(void *data);
 
       void createInstance(const char *appName);
       void createPhysicalDevice();

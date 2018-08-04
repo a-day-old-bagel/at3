@@ -24,6 +24,8 @@ namespace {
   // NOTE: parsing C++ is always a terrible idea, but in this case it allows for components to have things like
   // helper methods and avoids writing a new pseudo-language for component descriptions. Of course, since only a
   // tiny subset of C++ can be used here anyway, it's basically a pseudo-language. Whatever.
+  // Before you get mad that I'm using regex to parse C++ (which is provably impossible), understand that I'm not
+  // intending to parse it correctly. I just want to parse enough of it to achieve the ECS generation effect.
 
   // NOTE: constructors aren't currently able to accept any arguments qualified by const or any other keyword.
   // Basically you must follow this simple syntax: Constructor(type0 name0, type1 name1, ... , typeN nameN).

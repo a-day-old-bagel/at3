@@ -1,6 +1,8 @@
 
 #include <SDL_timer.h>
 #include "ecsSystem_scene.hpp"
+#include "vkc.hpp"
+#include "ecsInterface.hpp"
 
 namespace at3 {
 
@@ -16,6 +18,8 @@ namespace at3 {
   bool SceneSystem::onInit() {
     registries[0].discoverHandler = RTU_MTHD_DLGT(&SceneSystem::onDiscoverSceneNode, this);
     registries[0].forgetHandler = RTU_MTHD_DLGT(&SceneSystem::onForgetSceneNode, this);
+    registries[1].discoverHandler = RTU_MTHD_DLGT(&SceneSystem::onDiscoverMesh, this);
+    registries[1].forgetHandler = RTU_MTHD_DLGT(&SceneSystem::onForgetMesh, this);
     return true;
   }
   void SceneSystem::onTick(float dt) {
@@ -47,5 +51,25 @@ namespace at3 {
   }
   void SceneSystem::setEcsInterface(void *ecsInterface) {
     Object::linkEcs( *(std::shared_ptr<EntityComponentSystemInterface>*) ecsInterface );
+  }
+  bool SceneSystem::onDiscoverMesh(const entityId &id) {
+    Mesh *mesh;
+    state->get_Mesh(id, &mesh);
+
+    vkc::MeshRegistrationInfo<EntityComponentSystemInterface> info;
+    info.id = id;
+    info.meshFileName = mesh->meshFileName;
+    info.textureFileName = mesh->textureFileName;
+
+    rtu::topics::publish<vkc::MeshRegistrationInfo<EntityComponentSystemInterface>>("mesh_registration", info);
+
+    return true;
+  }
+  bool SceneSystem::onForgetMesh(const entityId &id) {
+    vkc::MeshRegistrationInfo<EntityComponentSystemInterface> info;
+    info.deRegister = true;
+    info.id = id;
+    rtu::topics::publish<vkc::MeshRegistrationInfo<EntityComponentSystemInterface>>("mesh_registration", info);
+    return true;
   }
 }

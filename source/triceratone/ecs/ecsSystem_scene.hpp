@@ -23,5 +23,7 @@ namespace at3 {
       void onTick(float dt);
       bool onDiscoverSceneNode(const entityId &id);
       bool onForgetSceneNode(const entityId &id);
+      bool onDiscoverMesh(const entityId &id);
+      bool onForgetMesh(const entityId &id);
   };
 }
