@@ -20,8 +20,7 @@ static glm::mat4 pyrTopRotate(const glm::mat4& transIn, const glm::mat4& absTran
 
 namespace at3 {
 
-  Pyramid::Pyramid(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context,
-                   glm::mat4 &transform) : state(&state), vkc(context) {
+  Pyramid::Pyramid(ezecs::State &state, glm::mat4 &transform) : state(&state) {
 
     glm::mat4 ident(1.f);
     glm::mat4 pyrFirMat = glm::scale(glm::rotate(glm::translate(ident, {0.f, 0.f, -0.4f}),
@@ -29,21 +28,21 @@ namespace at3 {
 
     state.createEntity(&bottomId);
     state.add_Placement(bottomId, transform);
-    context->registerMeshInstance(bottomId, "pyramid_bottom", "pyramid_bottom");
+    state.add_Mesh(bottomId, "pyramid_bottom", "pyramid_bottom");
 
     state.createEntity(&topId);
     state.add_Placement(topId, ident);
     state.add_TransformFunction(topId, RTU_FUNC_DLGT(pyrTopRotate));
-    context->registerMeshInstance(topId, "pyramid_top", "pyramid_top");
+    state.add_Mesh(topId, "pyramid_top", "pyramid_top");
 
     state.createEntity(&thrustersId);
     state.add_Placement(thrustersId, ident);
-    context->registerMeshInstance(thrustersId, "pyramid_thrusters", "pyramid_thrusters");
+    state.add_Mesh(thrustersId, "pyramid_thrusters", "pyramid_thrusters");
 
     state.createEntity(&fireId);
     state.add_Placement(fireId, pyrFirMat);
     state.add_TransformFunction(fireId, RTU_FUNC_DLGT(pyrFireWiggle));
-    context->registerMeshInstance(fireId, "pyramid_thruster_flames", "pyramid_flames");
+    state.add_Mesh(fireId, "pyramid_thruster_flames", "pyramid_flames");
 
     state.createEntity(&camId);
     float back = 5.f;
@@ -130,7 +129,7 @@ namespace at3 {
 
     state->createEntity(&sphereId);
     state->add_Placement(sphereId, sourceMat);
-    vkc->registerMeshInstance(sphereId, "sphere");
+    state->add_Mesh(sphereId, "sphere", "");
     float sphereRadius = 1.0f;
     state->add_Physics(sphereId, 5.f, &sphereRadius, Physics::SPHERE);
     Physics *physics;

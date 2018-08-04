@@ -7,6 +7,7 @@
 #include "sceneObject.hpp"
 #include "ecsInterface.hpp"
 #include "topics.hpp"
+#include "vkc.hpp"
 
 using namespace ezecs;
 
@@ -14,8 +15,6 @@ using namespace ezecs;
 namespace at3 {
 
   typedef std::function<btCollisionWorld::ClosestRayResultCallback(btVector3 &, btVector3 &)> rayFuncType;
-
-//  glm::mat3
 
   class PhysicsSystem : public System<PhysicsSystem> {
       /* Global physics data structures */
@@ -26,6 +25,10 @@ namespace at3 {
       btDynamicsWorld *dynamicsWorld;
       btVehicleRaycaster * vehicleRaycaster;
       bool debugDrawMode = false;
+
+      std::shared_ptr<vkc::VulkanContext<EntityComponentSystemInterface>> vulkan;
+      rtu::topics::Subscription setVulkanContextSub;
+      void setVulkanContext(void *vkc);
 
       rtu::topics::Subscription debugDrawToggleSub;
 

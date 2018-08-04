@@ -31,14 +31,6 @@ namespace at3::vkc {
   // Either way, VulkanContext is a mess right now.
 
   template<typename EcsInterface>
-  struct MeshRegistrationInfo {
-    bool deRegister = false;
-    typename EcsInterface::EcsId id = 0;
-    std::string meshFileName = "";
-    std::string textureFileName = "";
-  };
-
-  template<typename EcsInterface>
   struct VulkanContextCreateInfo {
       std::string appName;
       SDL_Window *window = nullptr;
@@ -55,7 +47,7 @@ namespace at3::vkc {
       explicit VulkanContext(VulkanContextCreateInfo<EcsInterface> info);
       virtual ~VulkanContext();
 
-      void tick();
+      void tick(const glm::mat4 &viewMatrix);
       void registerMeshInstance(
           typename EcsInterface::EcsId id,
           const std::string &meshFileName,
@@ -75,15 +67,13 @@ namespace at3::vkc {
       std::unique_ptr<TextureRepository> textureRepo;
       std::unique_ptr<PipelineRepository> pipelineRepo;
 
-      glm::mat4 currentWvMat = glm::mat4(1.f);
-      std::unique_ptr<rtu::topics::Subscription> sub_wvUpdate, sub_windowResize, sub_meshRegistration;
+      std::unique_ptr<rtu::topics::Subscription> sub_windowResize;
       VkDebugReportCallbackEXT callback;
 //      GlobalShaderDataStore globalData;
       static const uint32_t INVALID_QUEUE_FAMILY_IDX = (uint32_t) -1;
 
-      void updateWvMat(void *data);
+      // used as subscription callback
       void reInitRendering(void *nothing);
-      void handleMeshRegistration(void *data);
 
       void createInstance(const char *appName);
       void createPhysicalDevice();

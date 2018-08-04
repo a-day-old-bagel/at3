@@ -12,7 +12,6 @@ namespace at3 {
     private:
 
       ezecs::State* state;
-      vkc::VulkanContext<EntityComponentSystemInterface>* vkc;
       ezecs::entityId topId, thrustersId, fireId;
       std::vector<ezecs::entityId> spheres;
 
@@ -24,7 +23,7 @@ namespace at3 {
       ezecs::entityId camId;
       ezecs::entityId camGimbalId;
 
-      Pyramid(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context, glm::mat4 &transform);
+      Pyramid(ezecs::State &state, glm::mat4 &transform);
       void resizeFire();
       ezecs::entityId spawnSphere(bool shoot = false);
       void dropSphere();

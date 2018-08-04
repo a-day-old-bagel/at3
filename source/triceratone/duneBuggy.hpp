@@ -21,7 +21,7 @@ namespace at3 {
       ezecs::entityId camId;
       ezecs::entityId camGimbalId;
 
-      DuneBuggy(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context, glm::mat4 &transform);
+      DuneBuggy(ezecs::State &state, glm::mat4 &transform);
 
       void makeActiveControl(void* nothing);
 

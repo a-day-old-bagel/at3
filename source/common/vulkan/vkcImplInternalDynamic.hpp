@@ -765,7 +765,7 @@ void VulkanContext<EcsInterface>::render(
                               common.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
   if (res == VK_ERROR_OUT_OF_DATE_KHR) {
-    rtu::topics::publish("window_resized"); // TODO: only VulkanContext subscribes, so don't make a topic - just call.
+    rtu::topics::publish("window_resized");
     return;
   } else {
     AT3_ASSERT(res == VK_SUCCESS || res == VK_SUBOPTIMAL_KHR, "Failed to acquire swap chain image!");
@@ -958,7 +958,7 @@ void VulkanContext<EcsInterface>::render(
 #endif
 
   if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR) {
-    rtu::topics::publish("window_resized"); // TODO: only VulkanContext subscribes, so don't make a topic - just call.
+    rtu::topics::publish("window_resized");
   } else {
     AT3_ASSERT(res == VK_SUCCESS, "failed to present swap chain image!");
   }

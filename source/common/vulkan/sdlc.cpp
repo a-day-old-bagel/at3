@@ -152,7 +152,10 @@ namespace at3 {
             case SDL_WINDOWEVENT_SIZE_CHANGED: {
               settings::graphics::windowDimX = (uint32_t) event.window.data1;
               settings::graphics::windowDimY = (uint32_t) event.window.data2;
-              // VulkanContext should catch the surface's invalidation itself and handle it, but if not, publish here.
+              // For some reason, this publication is not necessary on Windows, but is necessary on my Linux wm (bspwm).
+              // Normally, Vulkan would catch the window resize by setting surface flags, but that is apparently not
+              // as universal as it should be. In any case, this redundant call to window resize routines is fine.
+              rtu::topics::publish("window_resized");
             } break;
 #           if AT3_DEBUG_WINDOW_EVENTS
 #             define REPORT_WINDOW_EVENT(e) printf("Window Event: %s\n", #e)

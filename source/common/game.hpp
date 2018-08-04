@@ -28,17 +28,18 @@ namespace at3 {
     protected:
 
       typename EcsInterface::State state;
-
-      std::unique_ptr<vkc::VulkanContext<EcsInterface>> vulkan;
       std::shared_ptr<NetInterface> network;
 
     private:
 
       std::unique_ptr<SdlContext> sdlc;
+      std::shared_ptr<vkc::VulkanContext<EcsInterface>> vulkan;
       std::shared_ptr<EcsInterface> ecs;
-      typename EcsInterface::EcsId currentCameraId = 0;
+
       rtu::topics::Subscription switchToCamSub;
       rtu::topics::Subscription quitSub;
+
+      typename EcsInterface::EcsId currentCameraId = 0;
       std::string settingsFileName;
       bool isQuit = false;
 
@@ -75,6 +76,9 @@ namespace at3 {
     game().registerCustomSettings();
     settings::loadFromIni(settingsFileName.c_str());
 
+    // Initialize SDL2, creating the window
+    sdlc = std::make_unique<SdlContext>(appName);
+
     // Initialize and publicize the ECS interface object
     ecs = std::make_shared<EcsInterface>(&state);
     rtu::topics::publish<std::shared_ptr<EcsInterface> &>("set_ecs_interface", ecs);
@@ -83,15 +87,13 @@ namespace at3 {
     network = std::make_shared<NetInterface>();
     rtu::topics::publish<std::shared_ptr<NetInterface> &>("set_network_interface", network);
 
-    // Initialize SDL2, creating the window
-    sdlc = std::make_unique<SdlContext>(appName);
-
-    // Initialize Vulkan, giving it the SDL2 window and ECS interface to use
+    // Initialize and publicize the Vulkan context object, giving it the SDL2 window and ECS interface to use
     vkc::VulkanContextCreateInfo<EcsInterface> contextCreateInfo =
         vkc::VulkanContextCreateInfo<EcsInterface>::defaults();
     contextCreateInfo.window = sdlc->getWindow();
     contextCreateInfo.ecs = ecs.get();
-    vulkan = std::make_unique<vkc::VulkanContext<EcsInterface>>(contextCreateInfo);
+    vulkan = std::make_shared<vkc::VulkanContext<EcsInterface>>(contextCreateInfo);
+    rtu::topics::publish<std::shared_ptr<vkc::VulkanContext<EcsInterface>>>("set_vulkan_context", vulkan);
 
     // Call any implementation-defined initialization routines that need to happen (all system initializations are here)
     return game().onInit();
@@ -127,10 +129,7 @@ namespace at3 {
 
     // Get the view matrix and use it to render with Vulkan.
     if (currentCameraId) {  // Don't bother if there's no camera - it will crash.
-      glm::mat4 viewMat = glm::inverse(ecs->getAbsTransform(currentCameraId));
-      // TODO: make this a normal call to the VulkanContext instead of a topic - only VulkanContext subscribes anyway.
-      rtu::topics::publish<glm::mat4>("primary_cam_wv", viewMat);
-      vulkan->tick();
+      vulkan->tick(glm::inverse(ecs->getAbsTransform(currentCameraId)));
     }
   }
 

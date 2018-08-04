@@ -46,12 +46,17 @@ namespace at3 {
   }
 
   PhysicsSystem::PhysicsSystem(State *state) : System(state),
-      debugDrawToggleSub("key_down_f3", RTU_MTHD_DLGT(&PhysicsSystem::toggleDebugDraw, this))
+      debugDrawToggleSub("key_down_f3", RTU_MTHD_DLGT(&PhysicsSystem::toggleDebugDraw, this)),
+      setVulkanContextSub("set_vulkan_context", RTU_MTHD_DLGT(&PhysicsSystem::setVulkanContext, this))
   {
     name = "Physics System";
   }
   PhysicsSystem::~PhysicsSystem() {
     deInit();
+  }
+
+  void PhysicsSystem::setVulkanContext(void *vkc) {
+    vulkan = *(std::shared_ptr<vkc::VulkanContext<EntityComponentSystemInterface>>*) vkc;
   }
 
   bool PhysicsSystem::onInit() {
@@ -406,15 +411,17 @@ namespace at3 {
         physics->customData = new btTriangleMesh();
         auto *mesh = reinterpret_cast<btTriangleMesh*>(physics->customData);
 
-        std::vector<float> &verts = *(static_cast<TriangleMeshInfo*>(physics->initData)->vertices);
-        std::vector<uint32_t> &indices = *(static_cast<TriangleMeshInfo*>(physics->initData)->indices);
-        uint32_t vertexStride = static_cast<TriangleMeshInfo*>(physics->initData)->vertexStride;
-        for (uint32_t i = 0; i < verts.size(); i += vertexStride / sizeof(float)) {
-          glm::vec4 pos = placement->mat * glm::vec4(verts[i], verts[i + 1], verts[i + 2], 1.f);
+        std::string terrainMeshName = *static_cast<std::string*>(physics->initData);
+        std::vector<float> *verts = vulkan->getMeshStoredVertices(terrainMeshName);
+        std::vector<uint32_t> *indices = vulkan->getMeshStoredIndices(terrainMeshName);
+        uint32_t vertexStride = vulkan->getMeshStoredVertexStride();
+
+        for (uint32_t i = 0; i < verts->size(); i += vertexStride / sizeof(float)) {
+          glm::vec4 pos = placement->mat * glm::vec4((*verts)[i], (*verts)[i + 1], (*verts)[i + 2], 1.f);
           mesh->findOrAddVertex({pos.x, pos.y, pos.z}, false);
         }
-        for (uint32_t i = 0; i < indices.size(); i += 3) {
-          mesh->addTriangleIndices(indices[i], indices[i + 1], indices[i + 2]);
+        for (uint32_t i = 0; i < indices->size(); i += 3) {
+          mesh->addTriangleIndices((*indices)[i], (*indices)[i + 1], (*indices)[i + 2]);
         }
         shape = new btBvhTriangleMeshShape(mesh, true);
 

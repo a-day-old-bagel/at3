@@ -12,8 +12,7 @@ using namespace rtu::topics;
 
 namespace at3 {
 
-  Walker::Walker(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context, glm::mat4 &transform)
-      : state(&state){
+  Walker::Walker(ezecs::State &state, glm::mat4 &transform) : state(&state){
 
     glm::mat4 ident(1.f);
 
@@ -42,7 +41,7 @@ namespace at3 {
     state.createEntity(&visualId);
     state.add_Placement(visualId, ident);
     state.add_TransformFunction(visualId, RTU_MTHD_DLGT(&Walker::bodyVisualTransform, this));
-    context->registerMeshInstance(visualId, "humanBean", "grass1024_00");
+    state.add_Mesh(visualId, "humanBean", "grass1024_00");
 
     addToScene();
   }

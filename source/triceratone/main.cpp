@@ -72,23 +72,15 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       // an identity matrix
       glm::mat4 ident(1.f);
 
-      printf("foo\n");
-
       // the ark (the cylinder)
       glm::mat4 arkMat = glm::scale(ident, glm::vec3(100.f, 100.f, 100.f));
       entityId arkId;
       state.createEntity(&arkId);
       state.add_Placement(arkId, arkMat);
-      vulkan->registerMeshInstance(arkId, "terrainArk", "cliff1024_01");
-      TriangleMeshInfo info = {
-          vulkan->getMeshStoredVertices("terrainArk"),
-          vulkan->getMeshStoredIndices("terrainArk"),
-          vulkan->getMeshStoredVertexStride(),
-      };
-      state.add_Physics(arkId, 0, &info, Physics::STATIC_MESH);
+      state.add_Mesh(arkId, "terrainArk", "cliff1024_01");
+      std::string terrainMeshName = "terrainArk"; // Must start with word "terrain" - see assets/models/README.txt
+      state.add_Physics(arkId, 0, &terrainMeshName, Physics::STATIC_MESH);
       state.add_SceneNode(arkId, 0);
-
-      printf("foo\n");
 
       // the player avatars
       for (int i = 0; i < 2; ++i) {
@@ -107,7 +99,8 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
         Placement *placement;
         state.get_Placement(players.back().gimbalId, &placement);
         placement->forceLocalRotationAndScale = true;
-        state.add_MouseControls(players.back().gimbalId, settings::controls::mouseInvertX, settings::controls::mouseInvertY);
+        state.add_MouseControls(
+            players.back().gimbalId, settings::controls::mouseInvertX, settings::controls::mouseInvertY);
 
         glm::mat4 start = glm::translate(ident, {0, -790, -120});
         state.createEntity(&players.back().ctrlId);
@@ -121,23 +114,21 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
         // the human
         glm::vec3 walkerPos = glm::vec3(10, -790, -100 + i * 10);
         glm::mat4 walkerMat = glm::translate(ident, walkerPos);
-        players.back().walker = std::make_unique<Walker>(state, vulkan.get(), walkerMat);
+        players.back().walker = std::make_unique<Walker>(state, walkerMat);
 
         // the car
         glm::vec3 buggyPos = glm::vec3(0, -790, -100 + i * 10);
         glm::mat4 buggyMat = glm::translate(ident, buggyPos);
         buggyMat *= glm::mat4(getCylStandingRot(buggyPos, (float) M_PI * -0.5f, 0));
-        players.back().duneBuggy = std::make_unique<DuneBuggy>(state, vulkan.get(), buggyMat);
+        players.back().duneBuggy = std::make_unique<DuneBuggy>(state, buggyMat);
 
         // the flying illuminati pyramid
         glm::vec3 pyramidPos = glm::vec3(-10, -790, -100 + i * 10);
         glm::mat4 pyramidMat = glm::translate(ident, pyramidPos);
         pyramidMat *= glm::mat4(getCylStandingRot(pyramidPos, (float) M_PI * -0.5f, 0));
-        players.back().pyramid = std::make_unique<Pyramid>(state, vulkan.get(), pyramidMat);
+        players.back().pyramid = std::make_unique<Pyramid>(state, pyramidMat);
       }
       makeFreeCamActiveControl();
-
-      printf("foo\n");
 
       // the event subscriptions
       key0Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_0", Triceratone::makeFreeCamActiveControl, this);

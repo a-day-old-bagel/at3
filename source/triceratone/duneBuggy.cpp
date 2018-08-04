@@ -16,12 +16,11 @@ namespace at3 {
     return glm::scale(transIn, glm::vec3(WHEEL_RADIUS * 2.f));
   }
 
-  DuneBuggy::DuneBuggy(ezecs::State &state, vkc::VulkanContext<EntityComponentSystemInterface> *context,
-                       glm::mat4 &transform) : state(&state)/*, scene(&scene)*/ {
+  DuneBuggy::DuneBuggy(ezecs::State &state, glm::mat4 &transform) : state(&state) {
 
     state.createEntity(&chassisId);
     state.add_Placement(chassisId, transform);
-    context->registerMeshInstance(chassisId, "chassis", "cliff1024_00");
+    state.add_Mesh(chassisId, "chassis", "cliff1024_00");
 
     glm::mat4 ident(1.f);
     std::vector<float> chassisVerts = {
@@ -62,7 +61,7 @@ namespace at3 {
       entityId wheelId;
       state.createEntity(&wheelId);
       state.add_Placement(wheelId, ident);
-      context->registerMeshInstance(wheelId, "wheel", "tire");
+      state.add_Mesh(wheelId, "wheel", "tire");
       wheels.emplace_back(wheelId);
 
       WheelInitInfo wheelInitInfo{

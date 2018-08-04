@@ -2,6 +2,7 @@
 #pragma once
 
 #include "ezecs.hpp"
+#include "vkc.hpp"
 #include "ecsInterface.hpp"
 
 using namespace ezecs;
@@ -9,8 +10,11 @@ using namespace ezecs;
 namespace at3 {
   class SceneSystem : public System<SceneSystem> {
       SceneTree<EntityComponentSystemInterface> scene;
+      std::shared_ptr<vkc::VulkanContext<EntityComponentSystemInterface>> vulkan;
       rtu::topics::Subscription setEcsInterfaceSub;
+      rtu::topics::Subscription setVulkanContextSub;
       void setEcsInterface(void *ecsInterface);
+      void setVulkanContext(void *vkc);
     public:
       std::vector<compMask> requiredComponents = {
           SCENENODE,
