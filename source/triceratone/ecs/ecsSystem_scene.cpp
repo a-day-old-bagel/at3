@@ -7,7 +7,8 @@ namespace at3 {
   SceneSystem::SceneSystem(State *state)
       : System(state),
         setEcsInterfaceSub("set_ecs_interface", RTU_MTHD_DLGT(&SceneSystem::setEcsInterface, this)),
-        setVulkanContextSub("set_vulkan_context", RTU_MTHD_DLGT(&SceneSystem::setVulkanContext, this))
+        setVulkanContextSub("set_vulkan_context", RTU_MTHD_DLGT(&SceneSystem::setVulkanContext, this)),
+        registerTransformFuncSub("register_transform_function", RTU_MTHD_DLGT(&SceneSystem::registerTransFunc, this))
   {
     name = "Animation System";
   }
@@ -19,6 +20,11 @@ namespace at3 {
   }
   void SceneSystem::setVulkanContext(void *vkc) {
     vulkan = *(std::shared_ptr<vkc::VulkanContext<EntityComponentSystemInterface>>*) vkc;
+  }
+  void SceneSystem::registerTransFunc(void *TransFuncDesc) {
+    auto desc = (TransformFunctionDescriptor*)TransFuncDesc;
+    transformFuncs.push_back(desc->func);
+    desc->registrationId = transformFuncs.size() - 1;
   }
   bool SceneSystem::onInit() {
     registries[0].discoverHandler = RTU_MTHD_DLGT(&SceneSystem::onDiscoverSceneNode, this);
@@ -33,7 +39,9 @@ namespace at3 {
       state->get_Placement(id, &placement);
       TransformFunction* transformFunction;
       state->get_TransformFunction(id, &transformFunction);
-      transformFunction->transformed = transformFunction->func(placement->mat, placement->absMat, SDL_GetTicks());
+
+      transformFunction->transformed = transformFuncs[transformFunction->transFuncId]
+          (placement->mat, placement->absMat, SDL_GetTicks());
     }
     scene.updateAbsoluteTransformCaches();
   }

@@ -57,6 +57,12 @@ namespace at3 {
         {-1.9f, -1.9f, 0.f},
         { 1.9f, -1.9f, 0.f}
     };
+
+
+    wheelTransFuncDesc.func = RTU_FUNC_DLGT(wheelScaler);
+    rtu::topics::publish<TransformFunctionDescriptor>("register_transform_function", wheelTransFuncDesc);
+
+
     for (int i = 0; i < 4; ++i) {
       entityId wheelId;
       state.createEntity(&wheelId);
@@ -79,7 +85,11 @@ namespace at3 {
           false                     // is front wheel
       };
       state.add_Physics(wheelId, 10.f, &wheelInitInfo, Physics::WHEEL);
-      state.add_TransformFunction(wheelId, RTU_FUNC_DLGT(wheelScaler));
+
+
+
+//      state.add_TransformFunction(wheelId, RTU_FUNC_DLGT(wheelScaler));
+      state.add_TransformFunction(wheelId, wheelTransFuncDesc.registrationId);
     }
 
     state.createEntity(&camId);

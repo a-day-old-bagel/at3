@@ -38,9 +38,13 @@ namespace at3 {
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
     state.add_PlayerControls(physicalId, camGimbalId);
 
+    bodyTransFuncDesc.func = RTU_MTHD_DLGT(&Walker::bodyVisualTransform, this);
+    rtu::topics::publish<TransformFunctionDescriptor>("register_transform_function", bodyTransFuncDesc);
+
     state.createEntity(&visualId);
     state.add_Placement(visualId, ident);
-    state.add_TransformFunction(visualId, RTU_MTHD_DLGT(&Walker::bodyVisualTransform, this));
+//    state.add_TransformFunction(visualId, RTU_MTHD_DLGT(&Walker::bodyVisualTransform, this));
+    state.add_TransformFunction(visualId, bodyTransFuncDesc.registrationId);
     state.add_Mesh(visualId, "humanBean", "grass1024_00");
 
     addToScene();

@@ -13,7 +13,10 @@ namespace at3 {
         setNetInterfaceSub("set_network_interface",
                            RTU_MTHD_DLGT(&EntityComponentSystemInterface::setNetInterface, this))
   {
-
+    compStreams.resize(numCompTypes);
+    for (auto & stream : compStreams) {
+      stream = std::make_unique<BitStream>();
+    }
   }
 
   void EntityComponentSystemInterface::setNetInterface(void *netInterface) {
@@ -29,8 +32,8 @@ namespace at3 {
       case settings::network::CLIENT: {
         BitStream stream;
         stream.Write((MessageID)ID_USER_PACKET_ECS_REQUEST_ENUM);
-        stream.WriteBitsFromIntegerRange((uint8_t)REQ_ENTITY_OP, (uint8_t)0, (uint8_t)REQ_END_ENUM, false);
-        stream.WriteBitsFromIntegerRange((uint8_t)OP_CREATE, (uint8_t)0, (uint8_t)OP_END_ENUM, false);
+        stream.WriteBitsFromIntegerRange((uint8_t)REQ_ENTITY_OP, (uint8_t)0, (uint8_t)(REQ_END_ENUM - 1), false);
+        stream.WriteBitsFromIntegerRange((uint8_t)OP_CREATE, (uint8_t)0, (uint8_t)(OP_END_ENUM - 1), false);
         serializeEntityCreationRequest(true, stream, *state, 0); // 0 ID indicates a request rather than a command
         network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
       } break;
@@ -48,6 +51,37 @@ namespace at3 {
     CompOpReturn status = state->deleteEntity(id);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
+  }
+
+  void EntityComponentSystemInterface::openEntityRequest() {
+    if (entityRequestOpen) {
+      fprintf(stderr, "Entity request is already open. Cannot open again until finalized!\n");
+    } else {
+      entityRequestOpen = true;
+      requestStream.Reset();
+      for (auto & stream : compStreams) {
+        stream->Reset();
+      }
+    }
+  }
+
+  EntityComponentSystemInterface::EcsId EntityComponentSystemInterface::closeEntityRequest(BitStream &stream) {
+    EcsId id = 0;
+    if (entityRequestOpen) {
+      entityRequestOpen = false;
+      switch (network->getRole()) {
+        case settings::network::SERVER: {
+
+        } break;
+        case settings::network::CLIENT: {
+
+        } break;
+        default: break;
+      }
+    } else {
+      fprintf(stderr, "Entity request is not open. Cannot finalize until opened!\n");
+    }
+    return id;
   }
 
   void EntityComponentSystemInterface::addTransform(const entityId &id, const glm::mat4 &transform) {
@@ -119,45 +153,6 @@ namespace at3 {
     ezecs::CompOpReturn status = this->state->add_Camera(id, fovy, nearPlane, farPlane);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
-  }
-
-  float EntityComponentSystemInterface::getFovy(const ezecs::entityId &id) {
-    ezecs::Camera *Camera;
-    ezecs::CompOpReturn status = state->get_Camera(id, &Camera);
-    EZECS_CHECK_PRINT(EZECS_ERR(status));
-    assert(status == ezecs::SUCCESS);
-    return Camera->fovY;
-  }
-
-  float EntityComponentSystemInterface::getFovyPrev(const ezecs::entityId &id) {
-    ezecs::Camera *Camera;
-    ezecs::CompOpReturn status = state->get_Camera(id, &Camera);
-    EZECS_CHECK_PRINT(EZECS_ERR(status));
-    assert(status == ezecs::SUCCESS);
-    return Camera->prevFovY;
-  }
-
-  float EntityComponentSystemInterface::getNear(const ezecs::entityId &id) {
-    ezecs::Camera *Camera;
-    ezecs::CompOpReturn status = state->get_Camera(id, &Camera);
-    EZECS_CHECK_PRINT(EZECS_ERR(status));
-    assert(status == ezecs::SUCCESS);
-    return Camera->nearPlane;
-  }
-
-  float EntityComponentSystemInterface::getFar(const ezecs::entityId &id) {
-    ezecs::Camera *Camera;
-    ezecs::CompOpReturn status = state->get_Camera(id, &Camera);
-    EZECS_CHECK_PRINT(EZECS_ERR(status));
-    assert(status == ezecs::SUCCESS);
-    return Camera->farPlane;
-  }
-
-  void EntityComponentSystemInterface::setFar(const ezecs::entityId &id, const float farPlane) {
-    ezecs::Camera *Camera;
-    ezecs::CompOpReturn status = state->get_Camera(id, &Camera);
-    assert(status == ezecs::SUCCESS);
-    Camera->farPlane = farPlane;
   }
 
   void EntityComponentSystemInterface::addMouseControl(const ezecs::entityId &id) {

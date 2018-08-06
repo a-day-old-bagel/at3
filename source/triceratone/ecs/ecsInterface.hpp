@@ -75,6 +75,14 @@ namespace at3 {
       EcsId createEntity();
       void destroyEntity(const EcsId& id);
 
+      SLNet::BitStream requestStream;
+      std::vector<std::unique_ptr<SLNet::BitStream>> compStreams;
+
+      EcsId newEntityId = 0;
+      bool entityRequestOpen = false;
+      void openEntityRequest();
+      EcsId closeEntityRequest(SLNet::BitStream &stream);
+
       /*
        * A transform is the transformation matrix from model space to world space encoding both world position and
        * world orientation. An absolute transform is the same, except that it is the cached transformation matrix that
@@ -119,11 +127,6 @@ namespace at3 {
        * data like the field of view and the near ans far planes.
        */
       void addCamera(const EcsId &id, float fovy, float nearPlane, float farPlane);
-      float getFovy(const EcsId& id);
-      float getFovyPrev(const EcsId& id);
-      float getNear(const EcsId& id);
-      float getFar(const EcsId& id);
-      void setFar(const EcsId &id, float farPlane);
 
       /*
        * This is used when creating mouse-controlled cameras, but it's not a very clean or portable way to manage this,

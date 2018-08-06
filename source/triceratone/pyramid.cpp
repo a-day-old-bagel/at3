@@ -30,18 +30,26 @@ namespace at3 {
     state.add_Placement(bottomId, transform);
     state.add_Mesh(bottomId, "pyramid_bottom", "pyramid_bottom");
 
+    topTransFuncDesc.func = RTU_FUNC_DLGT(pyrTopRotate);
+    rtu::topics::publish<TransformFunctionDescriptor>("register_transform_function", topTransFuncDesc);
+
     state.createEntity(&topId);
     state.add_Placement(topId, ident);
-    state.add_TransformFunction(topId, RTU_FUNC_DLGT(pyrTopRotate));
+//    state.add_TransformFunction(topId, RTU_FUNC_DLGT(pyrTopRotate));
+    state.add_TransformFunction(topId, topTransFuncDesc.registrationId);
     state.add_Mesh(topId, "pyramid_top", "pyramid_top");
 
     state.createEntity(&thrustersId);
     state.add_Placement(thrustersId, ident);
     state.add_Mesh(thrustersId, "pyramid_thrusters", "pyramid_thrusters");
 
+    fireTransFuncDesc.func = RTU_FUNC_DLGT(pyrFireWiggle);
+    rtu::topics::publish<TransformFunctionDescriptor>("register_transform_function", fireTransFuncDesc);
+
     state.createEntity(&fireId);
     state.add_Placement(fireId, pyrFirMat);
-    state.add_TransformFunction(fireId, RTU_FUNC_DLGT(pyrFireWiggle));
+//    state.add_TransformFunction(fireId, RTU_FUNC_DLGT(pyrFireWiggle));
+    state.add_TransformFunction(fireId, fireTransFuncDesc.registrationId);
     state.add_Mesh(fireId, "pyramid_thruster_flames", "pyramid_flames");
 
     state.createEntity(&camId);

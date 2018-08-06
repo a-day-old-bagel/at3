@@ -57,8 +57,8 @@ namespace {
 
   struct TransformFunction : public Component<TransformFunction> {
     glm::mat4 transformed = glm::mat4(1.f);
-    transformFunc func;
-    TransformFunction(transformFunc func);
+    uint8_t transFuncId;
+    TransformFunction(uint8_t transFuncId);
   };
   EZECS_COMPONENT_DEPENDENCIES(TransformFunction, Placement)
 
@@ -217,8 +217,8 @@ namespace {
   SceneNode::SceneNode(entityId parentId)
       : parentId(parentId) { }
 
-  TransformFunction::TransformFunction(transformFunc func)
-      : func(func) { }
+  TransformFunction::TransformFunction(uint8_t transFuncId)
+      : transFuncId(transFuncId) { }
 
   Mesh::Mesh(std::string meshFileName, std::string textureFileName)
       : meshFileName(meshFileName), textureFileName(textureFileName) { }

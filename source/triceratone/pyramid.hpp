@@ -6,6 +6,7 @@
 #include "ezecs.hpp"
 #include "sceneTree.hpp"
 #include "vkc.hpp"
+#include "ecsSystem_scene.hpp"
 
 namespace at3 {
   class Pyramid {
@@ -14,6 +15,7 @@ namespace at3 {
       ezecs::State* state;
       ezecs::entityId topId, thrustersId, fireId;
       std::vector<ezecs::entityId> spheres;
+      TransformFunctionDescriptor topTransFuncDesc, fireTransFuncDesc;
 
       void addToScene();
 

@@ -28,13 +28,13 @@ namespace at3 {
     protected:
 
       typename EcsInterface::State state;
+      std::shared_ptr<EcsInterface> ecs;
       std::shared_ptr<NetInterface> network;
 
     private:
 
       std::unique_ptr<SdlContext> sdlc;
       std::shared_ptr<vkc::VulkanContext<EcsInterface>> vulkan;
-      std::shared_ptr<EcsInterface> ecs;
 
       rtu::topics::Subscription switchToCamSub;
       rtu::topics::Subscription quitSub;

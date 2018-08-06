@@ -231,6 +231,9 @@ namespace at3 {
         trackControls->hasDriver = true; // FIXME: this permanently sets it to true - find way to set to false
       } break;
       case ID_SYNC_FREECONTROLS: {
+        // TODO: FIXME: This diverges since there's no physics sync on the free cams. Maybe instead of sending
+        // control signals for this type, just send placement directly since it doesn't matter if it's smooth.
+        // And that's only if you're going to attach a visual to it. Otherwise don't bother syncing this at all.
         FreeControls *freeControls;
         state->get_FreeControls(cId, &freeControls);
         stream.Serialize(rw, freeControls->control);

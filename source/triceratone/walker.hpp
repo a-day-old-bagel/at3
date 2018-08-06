@@ -5,6 +5,7 @@
 #include "ezecs.hpp"
 #include "sceneTree.hpp"
 #include "vkc.hpp"
+#include "ecsSystem_scene.hpp"
 
 namespace at3 {
   class Walker {
@@ -12,6 +13,7 @@ namespace at3 {
 
       ezecs::State* state;
       ezecs::entityId visualId;
+      TransformFunctionDescriptor bodyTransFuncDesc;
 
       void addToScene();
       glm::mat4 bodyVisualTransform(const glm::mat4 &transIn, const glm::mat4& absTransIn, uint32_t time);

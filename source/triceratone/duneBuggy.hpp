@@ -5,6 +5,7 @@
 #include "ezecs.hpp"
 #include "sceneTree.hpp"
 #include "vkc.hpp"
+#include "ecsSystem_scene.hpp"
 
 namespace at3 {
   class DuneBuggy {
@@ -12,6 +13,7 @@ namespace at3 {
 
       ezecs::State* state;
       std::vector<ezecs::entityId> wheels;
+      TransformFunctionDescriptor wheelTransFuncDesc;
 
       void addToScene();
 
