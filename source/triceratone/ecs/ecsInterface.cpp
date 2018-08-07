@@ -13,7 +13,7 @@ namespace at3 {
         setNetInterfaceSub("set_network_interface",
                            RTU_MTHD_DLGT(&EntityComponentSystemInterface::setNetInterface, this))
   {
-    compStreams.resize(numCompTypes);
+    compStreams.resize(numCompTypes - 1);
     for (auto & stream : compStreams) {
       stream = std::make_unique<BitStream>();
     }

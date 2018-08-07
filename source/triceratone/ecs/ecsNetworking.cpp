@@ -62,9 +62,7 @@ namespace at3 {
         }
       } else {  // This is a request made without actually adding anything to your own ECS (a client does this)
         if (compStreams) {
-          printf("bew\n");
           serializeComponentCreationRequest(false, stream, state, 0, compStreams);
-          printf("yty\n");
         } else {
           stream.Reset();
           fprintf(stderr, "Passed a nullptr as compStreams when creating an unfulfilled ECS request!\n");
@@ -100,7 +98,7 @@ namespace at3 {
 
   void serializePlacement(bool rw, BitStream &stream, State &state, entityId id,
                           std::vector<std::unique_ptr<BitStream>> *compStreams, const glm::mat4 *mat) {
-    BitStream *inStream = compStreams ? (*compStreams)[PLACEMENT].get() : nullptr;
+    BitStream *inStream = compStreams ? (*compStreams)[0].get() : nullptr;
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
         inStream->Write(*mat);
@@ -125,7 +123,7 @@ namespace at3 {
 
   void serializeSceneNode(bool rw, BitStream &stream, State &state, entityId id,
                           std::vector<std::unique_ptr<BitStream>> *compStreams, const entityId *parentId) {
-    BitStream *inStream = compStreams ? (*compStreams)[SCENENODE].get() : nullptr;
+    BitStream *inStream = compStreams ? (*compStreams)[1].get() : nullptr;
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
         inStream->Write(*parentId);
@@ -150,7 +148,7 @@ namespace at3 {
 
   void serializeTransformFunction(bool rw, BitStream &stream, State &state, entityId id,
                                   std::vector<std::unique_ptr<BitStream>> *compStreams, const uint8_t *transFuncId) {
-    BitStream *inStream = compStreams ? (*compStreams)[TRANSFORMFUNCTION].get() : nullptr;
+    BitStream *inStream = compStreams ? (*compStreams)[2].get() : nullptr;
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
         inStream->Write(*transFuncId);
@@ -176,12 +174,11 @@ namespace at3 {
   void serializeMesh(bool rw, BitStream &stream, State &state, entityId id,
                      std::vector<std::unique_ptr<BitStream>> *compStreams, const std::string *meshFileName,
                      const std::string *textureFileName) {
-    BitStream *inStream = compStreams ? (*compStreams)[MESH].get() : nullptr;
-
+    BitStream *inStream = compStreams ? (*compStreams)[3].get() : nullptr;
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
-        inStream->Write(*meshFileName);
-        inStream->Write(*textureFileName);
+        StringCompressor::Instance()->EncodeString(meshFileName->c_str(), 256, inStream);
+        StringCompressor::Instance()->EncodeString(textureFileName->c_str(), 256, inStream);
       } else if (inStream->GetNumberOfBitsUsed()) { // Read mode in this case means copying from inStream to stream.
         stream.WriteCompressed((bool) true);
         stream.Write(*inStream);
@@ -192,13 +189,13 @@ namespace at3 {
       if (rw) {
         Mesh *mesh;
         state.get_Mesh(id, &mesh);
-        stream.Write(mesh->meshFileName);
-        stream.Write(mesh->textureFileName);
+        StringCompressor::Instance()->EncodeString(mesh->meshFileName.c_str(), 256, &stream);
+        StringCompressor::Instance()->EncodeString(mesh->textureFileName.c_str(), 256, &stream);
       } else {
-        std::string meshFileNameIn, textureFileNameIn;
-        stream.Read(meshFileNameIn);
-        stream.Read(textureFileNameIn);
-        state.add_Mesh(id, meshFileNameIn, textureFileNameIn);
+        char meshFileNameIn[256], textureFileNameIn[256];
+        StringCompressor::Instance()->DecodeString(meshFileNameIn, 256, &stream);
+        StringCompressor::Instance()->DecodeString(textureFileNameIn, 256, &stream);
+        state.add_Mesh(id, std::string(meshFileNameIn), std::string(textureFileNameIn));
       }
     }
   }
@@ -206,7 +203,7 @@ namespace at3 {
   void serializeCamera(bool rw, BitStream &stream, State &state, entityId id,
                        std::vector<std::unique_ptr<BitStream>> *compStreams, const float *fovY,
                        const float *nearPlane, const float *farPlane) {
-    BitStream *inStream = compStreams ? (*compStreams)[CAMERA].get() : nullptr;
+    BitStream *inStream = compStreams ? (*compStreams)[4].get() : nullptr;
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
         inStream->Write(*fovY);
@@ -238,7 +235,7 @@ namespace at3 {
   void serializePhysics(bool rw, BitStream &stream, State &state, entityId id,
                         std::vector<std::unique_ptr<BitStream>> *compStreams, float *mass,
                         std::shared_ptr<void> *initData, int *useCase) {
-    BitStream *inStream = compStreams ? (*compStreams)[PHYSICS].get() : nullptr;
+    BitStream *inStream = compStreams ? (*compStreams)[5].get() : nullptr;
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
         Physics::serialize<BitStream>(true, *inStream, *mass, *initData, *useCase);
@@ -263,7 +260,7 @@ namespace at3 {
 
   void serializeNetworkedPhysics(bool rw, BitStream &stream, State &state, entityId id,
                                  std::vector<std::unique_ptr<BitStream>> *compStreams) {
-    BitStream *inStream = compStreams ? (*compStreams)[NETWORKEDPHYSICS].get() : nullptr;
+    BitStream *inStream = compStreams ? (*compStreams)[6].get() : nullptr;
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
         inStream->WriteCompressed((bool) false); // placeholder - takes no constructor arguments
@@ -283,7 +280,7 @@ namespace at3 {
 
   void serializePyramidControls(bool rw, BitStream &stream, State &state, entityId id,
                                 std::vector<std::unique_ptr<BitStream>> *compStreams, const entityId *mouseCtrlId) {
-    BitStream *inStream = compStreams ? (*compStreams)[PYRAMIDCONTROLS].get() : nullptr;
+    BitStream *inStream = compStreams ? (*compStreams)[7].get() : nullptr;
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
         inStream->Write(*mouseCtrlId);
@@ -308,7 +305,7 @@ namespace at3 {
 
   void serializeTrackControls(bool rw, BitStream &stream, State &state, entityId id,
                               std::vector<std::unique_ptr<BitStream>> *compStreams) {
-    BitStream *inStream = compStreams ? (*compStreams)[TRACKCONTROLS].get() : nullptr;
+    BitStream *inStream = compStreams ? (*compStreams)[8].get() : nullptr;
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
         inStream->WriteCompressed((bool) false); // placeholder - takes no constructor arguments
@@ -328,7 +325,7 @@ namespace at3 {
 
   void serializePlayerControls(bool rw, BitStream &stream, State &state, entityId id,
                                std::vector<std::unique_ptr<BitStream>> *compStreams, const entityId *mouseCtrlId) {
-    BitStream *inStream = compStreams ? (*compStreams)[PLAYERCONTROLS].get() : nullptr;
+    BitStream *inStream = compStreams ? (*compStreams)[9].get() : nullptr;
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
         inStream->Write(*mouseCtrlId);
@@ -353,7 +350,7 @@ namespace at3 {
 
   void serializeFreeControls(bool rw, BitStream &stream, State &state, entityId id,
                              std::vector<std::unique_ptr<BitStream>> *compStreams, const entityId *mouseCtrlId) {
-    BitStream *inStream = compStreams ? (*compStreams)[FREECONTROLS].get() : nullptr;
+    BitStream *inStream = compStreams ? (*compStreams)[10].get() : nullptr;
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
         inStream->Write(*mouseCtrlId);
@@ -379,7 +376,7 @@ namespace at3 {
   void serializeMouseControls(bool rw, BitStream &stream, State &state, entityId id,
                               std::vector<std::unique_ptr<BitStream>> *compStreams, const bool *invertedX,
                               const bool *invertedY) {
-    BitStream *inStream = compStreams ? (*compStreams)[MOUSECONTROLS].get() : nullptr;
+    BitStream *inStream = compStreams ? (*compStreams)[11].get() : nullptr;
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
         inStream->WriteCompressed(*invertedX);

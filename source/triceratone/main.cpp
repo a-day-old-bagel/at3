@@ -87,13 +87,26 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       state.add_Physics(arkId, 0, std::make_shared<std::string>("terrainArk"), Physics::STATIC_MESH);
       state.add_SceneNode(arkId, 0);
 
-
-
 //      ecs->openEntityRequest();
-//      ecs->requestPlacement(glm::translate(ident, {0, -790, -120}));
-//      ecs->requestMesh("humanBean", "");
+//      ecs->requestPlacement(glm::scale(ident, glm::vec3(100.f, 100.f, 100.f)));
+//      ecs->requestMesh("terrainArk", "cliff1024_01");
+//      std::shared_ptr<void> meshName = std::make_shared<std::string>("terrainArk");
+//      ecs->requestPhysics(0, meshName, Physics::STATIC_MESH);
 //      ecs->requestSceneNode(0);
 //      ecs->closeEntityRequest();
+
+
+//      if (network->getRole() == settings::network::CLIENT) {
+//        ecs->openEntityRequest();
+//        ecs->requestPlacement(glm::translate(ident, {0, -790, -120}));
+//        ecs->requestMesh("humanBean", "");
+//        std::shared_ptr<void> radius = std::make_shared<float>(1.f);
+//        ecs->requestPhysics(1.f, radius, Physics::SPHERE);
+//        ecs->requestSceneNode(0);
+//        ecs->closeEntityRequest();
+//      }
+
+
 
       // the player avatars
       for (int i = 0; i < 2; ++i) {

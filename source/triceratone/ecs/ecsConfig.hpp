@@ -5,6 +5,7 @@
 // BEGIN INCLUDES
 
 #include <vector>
+#include <memory>
 
 #include <btBulletDynamicsCommon.h>
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
@@ -130,12 +131,6 @@ namespace {
           stream.Serialize(rw, radius);
         } break;
         case Physics::DYNAMIC_CONVEX_MESH: {
-          // TODO: use RakNet's better string
-          if ( ! rw) { initData = std::make_shared<std::string>(); }
-          std::string & meshFileName = *((std::string*)initData.get());
-          stream.Serialize(rw, meshFileName);
-        } break;
-        case Physics::STATIC_MESH: {
           if ( ! rw) { initData = std::make_shared<std::vector<float>>(); }
           std::vector<float> & floats = *((std::vector<float>*)initData.get());
           size_t numFloats = floats.size();
@@ -146,6 +141,13 @@ namespace {
           for (auto & flt : floats) {
             stream.Serialize(rw, flt);
           }
+        } break;
+        case Physics::STATIC_MESH: {
+          AT3_ASSERT(false, "DO THIS");
+//           TODO: use RakNet's better string
+//          if ( ! rw) { initData = std::make_shared<std::string>(); }
+//          std::string & meshFileName = *((std::string*)initData.get());
+//          stream.Serialize(rw, meshFileName);
         } break;
         case Physics::WHEEL: {
           if ( ! rw) { initData = std::make_shared<WheelInitInfo>(); }
