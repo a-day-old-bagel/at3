@@ -13,10 +13,8 @@ namespace at3 {
 
       ezecs::State* state;
       ezecs::entityId visualId;
-      TransformFunctionDescriptor bodyTransFuncDesc;
 
       void addToScene();
-      glm::mat4 bodyVisualTransform(const glm::mat4 &transIn, const glm::mat4& absTransIn, uint32_t time);
 
     public:
 
@@ -27,5 +25,6 @@ namespace at3 {
       Walker(ezecs::State &state, glm::mat4 &transform);
 
       void makeActiveControl(void* nothing);
+      const static TransformFunctionDescriptor & getBodyTransFuncDesc();
   };
 }

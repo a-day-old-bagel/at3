@@ -15,7 +15,6 @@ namespace at3 {
       ezecs::State* state;
       ezecs::entityId topId, thrustersId, fireId;
       std::vector<ezecs::entityId> spheres;
-      TransformFunctionDescriptor topTransFuncDesc, fireTransFuncDesc;
 
       void addToScene();
 
@@ -26,11 +25,12 @@ namespace at3 {
       ezecs::entityId camGimbalId;
 
       Pyramid(ezecs::State &state, glm::mat4 &transform);
-      void resizeFire();
       ezecs::entityId spawnSphere(bool shoot = false);
       void dropSphere();
       void shootSphere();
       void makeActiveControl(void* nothing);
+      const static TransformFunctionDescriptor & getTopTransFuncDesc();
+      const static TransformFunctionDescriptor & getFireTransFuncDesc();
 
   };
 }

@@ -147,6 +147,9 @@ namespace at3 {
           if (SDL_GetRelativeMouseMode()) {
             publish<SDL_Event>("mouse_moved", event);
           } break;
+        case SDL_MOUSEWHEEL: {
+          publish<int32_t>("mouse_wheel", event.wheel.y);
+        } break;
         case SDL_WINDOWEVENT:
           switch (event.window.event) {
             case SDL_WINDOWEVENT_SIZE_CHANGED: {

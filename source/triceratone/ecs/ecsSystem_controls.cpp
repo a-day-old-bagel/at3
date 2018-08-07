@@ -65,10 +65,18 @@ namespace at3 {
       // zero control forces
       pyramidControls->force = glm::vec3(0, 0, 0);
 
+      // keep track of how much the engine is being "used" (just for looks right now, but
+      // maybe later use to calculate fuel consumption)
+      uint8_t level = 0;
+
       if (length(pyramidControls->accel) > 0.0f) {
+        // if thrusting upwards at all (boost or not) add to level
+        if (pyramidControls->accel.y > 0) { ++level; }
         // handle turbo
         float turbo = 1.f;
         if (pyramidControls->turbo) {
+          // if boosting anywhere except down, add to level
+          if (pyramidControls->accel.y >= 0) { ++level; }
           turbo = 2.f;
           pyramidControls->turbo = false;
         }
@@ -78,8 +86,12 @@ namespace at3 {
             0, PYR_SIDE_ACCEL, 0,
             0, 0, PYR_UP_ACCEL
         } * glm::normalize(mouseControls->lastHorizCtrlRot * pyramidControls->accel) * turbo;
+        // zero the inputs
         pyramidControls->accel = glm::vec3(0, 0, 0);
       }
+
+      // assign the engine utilization level
+      pyramidControls->engineActivationLevel = level;
     }
     for (auto id : (registries[2].ids)) { // Track/buggy
       TrackControls* trackControls;

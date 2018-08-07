@@ -30,11 +30,18 @@ namespace {
   // NOTE: constructors aren't currently able to accept any arguments qualified by const or any other keyword.
   // Basically you must follow this simple syntax: Constructor(type0 name0, type1 name1, ... , typeN nameN).
 
+  // An object to pass to transform functions when ECS state is needed to perform computations
+  struct TransFuncEcsContext {
+    void *ecs; // Type cannot be known at this juncture
+    entityId id;
+  };
+
   // NOTE: The parsing done on this file isn't currently able to understand template arguments unless they're
   // typedef'ed here as a single symbol. Sorry. This is on an absurdly long laundry list of things to fix.
-  typedef rtu::Delegate<glm::mat4(const glm::mat4&, const glm::mat4&, uint32_t time)> transformFunc;
+  typedef rtu::Delegate<glm::mat4(const glm::mat4&, const glm::mat4&, uint32_t, TransFuncEcsContext*)> transformFunc;
   typedef std::vector<float>* floatVecPtr;
   typedef std::vector<uint32_t>* uintVecPtr;
+  typedef std::shared_ptr<void> sharedVoidPtr;
 
   struct Placement : public Component<Placement> {
     glm::mat4 mat = glm::mat4(1.f);
@@ -92,17 +99,65 @@ namespace {
   };
   struct Physics : public Component<Physics> {
     enum UseCase {
-      INVALID, PLANE, SPHERE, BOX, DYNAMIC_CONVEX_MESH, STATIC_MESH, WHEEL, CHARA
+      INVALID = 0, PLANE, SPHERE, BOX, DYNAMIC_CONVEX_MESH, STATIC_MESH, WHEEL, CHARA, MAX_USE_CASE
     };
     int useCase;
+
     float mass;
-    btRigidBody* rigidBody;
-    void* initData;
+    sharedVoidPtr initData;
     void* customData = nullptr;
-    Physics(float mass, void* initData, UseCase useCase);
+    btRigidBody* rigidBody;
+
+    Physics(float mass, sharedVoidPtr initData, UseCase useCase);
     ~Physics();
     void setTransform(glm::mat4 &newTrans);
     void beStill();
+
+    // TODO: if writing to the component, it will have to be re-created in Bullet for changes to happen.
+    template <typename Stream>
+    void serialize(bool rw, Stream & stream) {
+      serialize<Stream>(rw, stream, mass, initData, useCase);
+    }
+
+    template <typename Stream>
+    static void serialize(bool rw, Stream & stream, float & mass, sharedVoidPtr & initData, int & useCase) {
+      stream.Serialize(rw, mass);
+      stream.SerializeBitsFromIntegerRange(rw, useCase, INVALID + 1, MAX_USE_CASE - 1);
+      switch(useCase) {
+        case Physics::SPHERE: {
+          if ( ! rw) { initData = std::make_shared<float>(); }
+          float & radius = *((float*)initData.get());
+          stream.Serialize(rw, radius);
+        } break;
+        case Physics::DYNAMIC_CONVEX_MESH: {
+          // TODO: use RakNet's better string
+          if ( ! rw) { initData = std::make_shared<std::string>(); }
+          std::string & meshFileName = *((std::string*)initData.get());
+          stream.Serialize(rw, meshFileName);
+        } break;
+        case Physics::STATIC_MESH: {
+          if ( ! rw) { initData = std::make_shared<std::vector<float>>(); }
+          std::vector<float> & floats = *((std::vector<float>*)initData.get());
+          size_t numFloats = floats.size();
+          stream.Serialize(rw, numFloats);
+          if ( ! rw) {
+            floats.resize(numFloats);
+          }
+          for (auto & flt : floats) {
+            stream.Serialize(rw, flt);
+          }
+        } break;
+        case Physics::WHEEL: {
+          if ( ! rw) { initData = std::make_shared<WheelInitInfo>(); }
+          WheelInitInfo & info = *((WheelInitInfo*)initData.get());
+          stream.Serialize(rw, info);
+        } break;
+        case Physics::CHARA:
+        case Physics::BOX:
+        case Physics::PLANE:
+        default: break;
+      }
+    }
   };
   EZECS_COMPONENT_DEPENDENCIES(Physics, Placement)
 
@@ -121,6 +176,7 @@ namespace {
     glm::vec3 up = glm::vec3(0, 0, 1);
     entityId mouseCtrlId = 0;
     bool turbo = false;
+    uint8_t engineActivationLevel = 0;
     PyramidControls(entityId mouseCtrlId);
   };
   EZECS_COMPONENT_DEPENDENCIES(PyramidControls, Physics)
@@ -226,7 +282,7 @@ namespace {
   Camera::Camera(float fovY, float nearPlane, float farPlane)
       : fovY(fovY), prevFovY(fovY), nearPlane(nearPlane), farPlane(farPlane) { }
 
-  Physics::Physics(float mass, void* initData, Physics::UseCase useCase)
+  Physics::Physics(float mass, sharedVoidPtr initData, Physics::UseCase useCase)
       : useCase(useCase), mass(mass), initData(initData) { }
   Physics::~Physics() {
     if (customData && useCase == WHEEL) {

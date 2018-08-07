@@ -16,6 +16,7 @@ add_library( ${AT3_TARGET_PREFIX}common STATIC
   game.hpp
   sceneObject.hpp
   sceneTree.hpp
+  sdlc.hpp sdlc.cpp
   transform.cpp transform.hpp
   transformRAII.cpp transformRAII.hpp
   transformStack.cpp transformStack.hpp

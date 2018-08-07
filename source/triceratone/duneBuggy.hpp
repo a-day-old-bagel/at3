@@ -13,7 +13,6 @@ namespace at3 {
 
       ezecs::State* state;
       std::vector<ezecs::entityId> wheels;
-      TransformFunctionDescriptor wheelTransFuncDesc;
 
       void addToScene();
 
@@ -26,6 +25,6 @@ namespace at3 {
       DuneBuggy(ezecs::State &state, glm::mat4 &transform);
 
       void makeActiveControl(void* nothing);
-
+      const static TransformFunctionDescriptor & getWheelTransFuncDesc();
   };
 }

@@ -12,8 +12,21 @@ using namespace rtu::topics;
 
 namespace at3 {
 
-  static glm::mat4 wheelScaler(const glm::mat4& transIn, const glm::mat4& absTransIn, uint32_t time) {
+  static glm::mat4 wheelScaler(
+      const glm::mat4& transIn,
+      const glm::mat4& absTransIn,
+      uint32_t time,
+      TransFuncEcsContext *ctxt = nullptr) {
     return glm::scale(transIn, glm::vec3(WHEEL_RADIUS * 2.f));
+  }
+
+  const TransformFunctionDescriptor & DuneBuggy::getWheelTransFuncDesc() {
+    static TransformFunctionDescriptor wheelTransFuncDesc;
+    if ( ! wheelTransFuncDesc.registrationId) {
+      wheelTransFuncDesc.func = RTU_FUNC_DLGT(wheelScaler);
+      rtu::topics::publish<TransformFunctionDescriptor>("register_transform_function", wheelTransFuncDesc);
+    }
+    return wheelTransFuncDesc;
   }
 
   DuneBuggy::DuneBuggy(ezecs::State &state, glm::mat4 &transform) : state(&state) {
@@ -23,17 +36,17 @@ namespace at3 {
     state.add_Mesh(chassisId, "chassis", "cliff1024_00");
 
     glm::mat4 ident(1.f);
-    std::vector<float> chassisVerts = {
-        1.7f,  1.7f, -0.4f,
-        1.7f, -1.7f, -0.4f,
+    std::shared_ptr<std::vector<float>> chassisVerts = std::make_shared<std::vector<float>>(std::vector<float> {
+         1.7f,  1.7f, -0.4f,
+         1.7f, -1.7f, -0.4f,
         -1.7f, -1.7f, -0.4f,
         -1.7f,  1.7f, -0.4f,
-        2.1f,  2.1f,  0.4f,
-        2.1f, -2.1f,  0.4f,
+         2.1f,  2.1f,  0.4f,
+         2.1f, -2.1f,  0.4f,
         -2.1f, -2.1f,  0.4f,
-        -2.1f,  2.1f,  0.4f,
-    };
-    state.add_Physics(chassisId, 50.f, &chassisVerts, Physics::DYNAMIC_CONVEX_MESH);
+        -2.1f,  2.1f,  0.4f
+    });
+    state.add_Physics(chassisId, 50.f, chassisVerts, Physics::DYNAMIC_CONVEX_MESH);
     Physics *physics;
     state.get_Physics(chassisId, &physics);
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
@@ -58,11 +71,6 @@ namespace at3 {
         { 1.9f, -1.9f, 0.f}
     };
 
-
-    wheelTransFuncDesc.func = RTU_FUNC_DLGT(wheelScaler);
-    rtu::topics::publish<TransformFunctionDescriptor>("register_transform_function", wheelTransFuncDesc);
-
-
     for (int i = 0; i < 4; ++i) {
       entityId wheelId;
       state.createEntity(&wheelId);
@@ -70,7 +78,7 @@ namespace at3 {
       state.add_Mesh(wheelId, "wheel", "tire");
       wheels.emplace_back(wheelId);
 
-      WheelInitInfo wheelInitInfo{
+      std::shared_ptr<WheelInitInfo> wheelInitInfo = std::make_shared<WheelInitInfo>( WheelInitInfo {
           {                         // WheelInfo struct - this part of the wheelInitInfo will persist.
               chassisId,                    // id of wheel's parent entity (chassis)
               wheelId,                      // wheel's own id (used for removal upon chassis deletion)
@@ -83,13 +91,10 @@ namespace at3 {
           0.4f,                     // suspension rest length
           WHEEL_RADIUS,             // wheel radius
           false                     // is front wheel
-      };
-      state.add_Physics(wheelId, 10.f, &wheelInitInfo, Physics::WHEEL);
+      });
+      state.add_Physics(wheelId, 10.f, wheelInitInfo, Physics::WHEEL);
 
-
-
-//      state.add_TransformFunction(wheelId, RTU_FUNC_DLGT(wheelScaler));
-      state.add_TransformFunction(wheelId, wheelTransFuncDesc.registrationId);
+      state.add_TransformFunction(wheelId, getWheelTransFuncDesc().registrationId);
     }
 
     state.createEntity(&camId);

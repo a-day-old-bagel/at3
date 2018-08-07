@@ -46,7 +46,8 @@ namespace at3 {
                           std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
                           const ezecs::entityId *parentId = nullptr);
   void serializeTransformFunction(bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id,
-                                  std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr);
+                                  std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
+                                  const uint8_t *transFuncId = nullptr);
   void serializeMesh(bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id,
                      std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
                      const std::string *meshFileName = nullptr,
@@ -57,7 +58,10 @@ namespace at3 {
                        const float *nearPlane = nullptr,
                        const float *farPlane = nullptr);
   void serializePhysics(bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id,
-                        std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr);
+                        std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
+                        float *mass = nullptr,
+                        std::shared_ptr<void> *data = nullptr,
+                        int *useCase = nullptr);
   void serializeNetworkedPhysics(bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id,
                                  std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr);
   void serializePyramidControls(bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id,

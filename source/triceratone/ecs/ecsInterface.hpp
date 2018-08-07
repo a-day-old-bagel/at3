@@ -72,16 +72,25 @@ namespace at3 {
       typedef ezecs::entityId EcsId;
       typedef ezecs::State State;
 
-      EcsId createEntity();
-      void destroyEntity(const EcsId& id);
 
-      SLNet::BitStream requestStream;
+      SLNet::BitStream stream;
       std::vector<std::unique_ptr<SLNet::BitStream>> compStreams;
-
-      EcsId newEntityId = 0;
       bool entityRequestOpen = false;
       void openEntityRequest();
-      EcsId closeEntityRequest(SLNet::BitStream &stream);
+      EcsId closeEntityRequest();
+
+      void requestPlacement(const glm::mat4 & mat);
+      void requestSceneNode(EcsId parentId);
+      void requestTransformFunction(uint8_t transFuncId);
+      void requestMesh(std::string meshFileName, std::string textureFileName);
+      void requestCamera(float fovY, float nearPlane, float farPlane);
+      void requestPhysics(float mass, std::shared_ptr<void> & initData, int useCase);
+      void requestNetworkedPhysics();
+      void requestPyramidControls(EcsId mouseCtrlId);
+      void requestTrackControls();
+      void requestPlayerControls(EcsId mouseCtrlId);
+      void requestFreeControls(EcsId mouseCtrlId);
+      void requestMouseControls(bool invertedX, bool invertedY);
 
       /*
        * A transform is the transformation matrix from model space to world space encoding both world position and

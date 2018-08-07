@@ -67,7 +67,13 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       initSuccess &= netSyncSystem.init();
       initSuccess &= physicsSystem.init();
       initSuccess &= sceneSystem.init();
-      assert(initSuccess);
+      AT3_ASSERT(initSuccess, "System initialization failed!\n");
+
+      // Make sure the transform functions are always registered in the same order, regardless of access order.
+      Pyramid::getTopTransFuncDesc();
+      Pyramid::getFireTransFuncDesc();
+      DuneBuggy::getWheelTransFuncDesc();
+      Walker::getBodyTransFuncDesc();
 
       // an identity matrix
       glm::mat4 ident(1.f);
@@ -78,9 +84,16 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       state.createEntity(&arkId);
       state.add_Placement(arkId, arkMat);
       state.add_Mesh(arkId, "terrainArk", "cliff1024_01");
-      std::string terrainMeshName = "terrainArk"; // Must start with word "terrain" - see assets/models/README.txt
-      state.add_Physics(arkId, 0, &terrainMeshName, Physics::STATIC_MESH);
+      state.add_Physics(arkId, 0, std::make_shared<std::string>("terrainArk"), Physics::STATIC_MESH);
       state.add_SceneNode(arkId, 0);
+
+
+
+//      ecs->openEntityRequest();
+//      ecs->requestPlacement(glm::translate(ident, {0, -790, -120}));
+//      ecs->requestMesh("humanBean", "");
+//      ecs->requestSceneNode(0);
+//      ecs->closeEntityRequest();
 
       // the player avatars
       for (int i = 0; i < 2; ++i) {
@@ -147,12 +160,6 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
     }
 
     void onTick(float dt) {
-
-      // TODO: Not working IN WINDOWS BUT ONLY SOMETIMES for some reason? Undefined behavior?
-      for (int i = 0; i < 2; ++i) {
-        players[i].pyramid->resizeFire();
-      }
-
       // Order matters here
       netSyncSystem.tick(dt); // First receive and/or send any network updates about controls or physics state
       controlSystem.tick(dt); // Process all control signals, remote or otherwise

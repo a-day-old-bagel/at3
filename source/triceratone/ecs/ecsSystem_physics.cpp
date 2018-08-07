@@ -390,16 +390,16 @@ namespace at3 {
     btCollisionShape* shape = nullptr;
     switch (physics->useCase) {
       case Physics::SPHERE: {
-        shape = new btSphereShape(*((float *) physics->initData));
+        shape = new btSphereShape(*((float *) physics->initData.get()));
       } break;
       case Physics::PLANE: {
         AT3_ASSERT(false, "missing plane collision implementation");
       } break;
       case Physics::BOX: {
-        shape = new btBoxShape(*((btVector3*) physics->initData));
+        shape = new btBoxShape(*((btVector3*) physics->initData.get()));
       } break;
       case Physics::DYNAMIC_CONVEX_MESH: {
-        auto *points = (std::vector<float> *) physics->initData;
+        auto *points = (std::vector<float> *) physics->initData.get();
         shape = new btConvexHullShape(points->data(), (int) points->size() / 3, 3 * sizeof(float));
       } break;
       case Physics::CHARA: {
@@ -411,7 +411,7 @@ namespace at3 {
         physics->customData = new btTriangleMesh();
         auto *mesh = reinterpret_cast<btTriangleMesh*>(physics->customData);
 
-        std::string terrainMeshName = *static_cast<std::string*>(physics->initData);
+        std::string terrainMeshName = *static_cast<std::string*>(physics->initData.get());
         std::vector<float> *verts = vulkan->getMeshStoredVertices(terrainMeshName);
         std::vector<uint32_t> *indices = vulkan->getMeshStoredIndices(terrainMeshName);
         uint32_t vertexStride = vulkan->getMeshStoredVertexStride();
@@ -438,7 +438,7 @@ namespace at3 {
 
       } return true; // Too different from dynamic objects to use the code below, but do track.
       case Physics::WHEEL: {
-        WheelInitInfo initInfo = *((WheelInitInfo*)physics->initData);
+        WheelInitInfo initInfo = *((WheelInitInfo*)physics->initData.get());
         TrackControls *trackControls;
         CompOpReturn status = state->get_TrackControls(initInfo.wi.parentVehicle, &trackControls);
         if (status != SUCCESS) {
@@ -456,7 +456,6 @@ namespace at3 {
       }
       default: break;
     }
-    physics->initData = nullptr;
     btTransform transform;
     transform.setFromOpenGLMatrix((btScalar *) &placement->mat);
     auto *motionState = new btDefaultMotionState(transform);

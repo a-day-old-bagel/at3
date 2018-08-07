@@ -183,7 +183,7 @@ namespace at3::vkc {
         }
 
 #       if !DEVICE_LOCAL || PERSISTENT_STAGING_BUFFER
-        vkFlushMappedMemoryRanges(ctxt.device, rangesToUpdate.size(), rangesToUpdate.data());
+        vkFlushMappedMemoryRanges(ctxt.device, (uint32_t)rangesToUpdate.size(), rangesToUpdate.data());
 #       endif
 
 #       if DEVICE_LOCAL

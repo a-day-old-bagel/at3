@@ -130,6 +130,9 @@ namespace at3 {
     switch (operation) {
       case OP_CREATE: {
         serializeEntityCreationRequest(false, stream, *state);
+        if (network->getRole() == settings::network::SERVER) {
+          network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
+        }
       } break;
       case OP_DESTROY: {
 

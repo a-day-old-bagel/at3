@@ -23,65 +23,94 @@ namespace at3 {
     network = *(std::shared_ptr<NetInterface>*) netInterface;
   }
 
-  entityId EntityComponentSystemInterface::createEntity() {
-
-    switch (network->getRole()) {
-      case settings::network::SERVER: {
-
-      } break;
-      case settings::network::CLIENT: {
-        BitStream stream;
-        stream.Write((MessageID)ID_USER_PACKET_ECS_REQUEST_ENUM);
-        stream.WriteBitsFromIntegerRange((uint8_t)REQ_ENTITY_OP, (uint8_t)0, (uint8_t)(REQ_END_ENUM - 1), false);
-        stream.WriteBitsFromIntegerRange((uint8_t)OP_CREATE, (uint8_t)0, (uint8_t)(OP_END_ENUM - 1), false);
-        serializeEntityCreationRequest(true, stream, *state, 0); // 0 ID indicates a request rather than a command
-        network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
-      } break;
-      default: break;
-    }
-
-    entityId id;
-    CompOpReturn status = this->state->createEntity(&id);
-    EZECS_CHECK_PRINT(EZECS_ERR(status));
-    assert(status == ezecs::SUCCESS);
-    return id;
-  }
-
-  void EntityComponentSystemInterface::destroyEntity(const entityId &id) {
-    CompOpReturn status = state->deleteEntity(id);
-    EZECS_CHECK_PRINT(EZECS_ERR(status));
-    assert(status == ezecs::SUCCESS);
-  }
-
   void EntityComponentSystemInterface::openEntityRequest() {
     if (entityRequestOpen) {
       fprintf(stderr, "Entity request is already open. Cannot open again until finalized!\n");
     } else {
       entityRequestOpen = true;
-      requestStream.Reset();
+      stream.Reset();
       for (auto & stream : compStreams) {
         stream->Reset();
       }
     }
   }
 
-  EntityComponentSystemInterface::EcsId EntityComponentSystemInterface::closeEntityRequest(BitStream &stream) {
+  void writeEntityRequestHeader(BitStream &stream) {
+    stream.Write((MessageID)ID_USER_PACKET_ECS_REQUEST_ENUM);
+    stream.WriteBitsFromIntegerRange((uint8_t)REQ_ENTITY_OP, (uint8_t)0, (uint8_t)(REQ_END_ENUM - 1), false);
+    stream.WriteBitsFromIntegerRange((uint8_t)OP_CREATE, (uint8_t)0, (uint8_t)(OP_END_ENUM - 1), false);
+  }
+
+  EntityComponentSystemInterface::EcsId EntityComponentSystemInterface::closeEntityRequest() {
     EcsId id = 0;
     if (entityRequestOpen) {
       entityRequestOpen = false;
+      writeEntityRequestHeader(stream);
       switch (network->getRole()) {
         case settings::network::SERVER: {
-
+          BitStream headerless;
+          serializeEntityCreationRequest(true, headerless, *state, 0, &compStreams); // ID 0 = request without action
+          serializeEntityCreationRequest(false, headerless, *state); // treat it as if it came from a client
+          stream.Write(headerless);
         } break;
         case settings::network::CLIENT: {
-
+          serializeEntityCreationRequest(true, stream, *state, 0, &compStreams); // ID 0 = request without action
         } break;
         default: break;
       }
+      network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
     } else {
       fprintf(stderr, "Entity request is not open. Cannot finalize until opened!\n");
     }
     return id;
+  }
+
+  void EntityComponentSystemInterface::requestPlacement(const glm::mat4 &mat) {
+    serializePlacement(true, stream /*IGNORED*/ , *state, 0, &compStreams, &mat);
+  }
+
+  void EntityComponentSystemInterface::requestSceneNode(EntityComponentSystemInterface::EcsId parentId) {
+    serializeSceneNode(true, stream /*IGNORED*/ , *state, 0, &compStreams, &parentId);
+  }
+
+  void EntityComponentSystemInterface::requestTransformFunction(uint8_t transFuncId) {
+    serializeTransformFunction(true, stream /*IGNORED*/ , *state, 0, &compStreams, &transFuncId);
+  }
+
+  void EntityComponentSystemInterface::requestMesh(std::string meshFileName, std::string textureFileName){
+    serializeMesh(true, stream /*IGNORED*/ , *state, 0, &compStreams, &meshFileName, &textureFileName);
+  }
+
+  void EntityComponentSystemInterface::requestCamera(float fovY, float nearPlane, float farPlane) {
+    serializeCamera(true, stream /*IGNORED*/ , *state, 0, &compStreams, &fovY, &nearPlane, &farPlane);
+  }
+
+  void EntityComponentSystemInterface::requestPhysics(float mass, std::shared_ptr<void> &initData, int useCase) {
+    serializePhysics(true, stream /*IGNORED*/ , *state, 0, &compStreams, &mass, &initData, &useCase);
+  }
+
+  void EntityComponentSystemInterface::requestNetworkedPhysics() {
+    serializeNetworkedPhysics(true, stream /*IGNORED*/ , *state, 0, &compStreams);
+  }
+
+  void EntityComponentSystemInterface::requestPyramidControls(EntityComponentSystemInterface::EcsId mouseCtrlId){
+    serializePyramidControls(true, stream /*IGNORED*/ , *state, 0, &compStreams, &mouseCtrlId);
+  }
+
+  void EntityComponentSystemInterface::requestTrackControls() {
+    serializeTrackControls(true, stream /*IGNORED*/ , *state, 0, &compStreams);
+  }
+
+  void EntityComponentSystemInterface::requestPlayerControls(EntityComponentSystemInterface::EcsId mouseCtrlId) {
+    serializePlayerControls(true, stream /*IGNORED*/ , *state, 0, &compStreams, &mouseCtrlId);
+  }
+
+  void EntityComponentSystemInterface::requestFreeControls(EntityComponentSystemInterface::EcsId mouseCtrlId) {
+    serializeFreeControls(true, stream /*IGNORED*/ , *state, 0, &compStreams, &mouseCtrlId);
+  }
+
+  void EntityComponentSystemInterface::requestMouseControls(bool invertedX, bool invertedY) {
+    serializeMouseControls(true, stream /*IGNORED*/ , *state, 0, &compStreams, &invertedX, &invertedY);
   }
 
   void EntityComponentSystemInterface::addTransform(const entityId &id, const glm::mat4 &transform) {

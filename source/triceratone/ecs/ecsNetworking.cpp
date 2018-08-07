@@ -62,7 +62,9 @@ namespace at3 {
         }
       } else {  // This is a request made without actually adding anything to your own ECS (a client does this)
         if (compStreams) {
-          serializeComponentCreationRequest(true, stream, state, 0, compStreams);
+          printf("bew\n");
+          serializeComponentCreationRequest(false, stream, state, 0, compStreams);
+          printf("yty\n");
         } else {
           stream.Reset();
           fprintf(stderr, "Passed a nullptr as compStreams when creating an unfulfilled ECS request!\n");
@@ -109,7 +111,15 @@ namespace at3 {
         stream.WriteCompressed((bool) false);
       }
     } else if (hasComponent(rw, stream, state, id, PLACEMENT)) {
-
+      if (rw) {
+        Placement *placement;
+        state.get_Placement(id, &placement);
+        stream.Write(placement->mat);
+      } else {
+        glm::mat4 inMat;
+        stream.Read(inMat);
+        state.add_Placement(id, inMat);
+      }
     }
   }
 
@@ -126,16 +136,24 @@ namespace at3 {
         stream.WriteCompressed((bool) false);
       }
     } else if (hasComponent(rw, stream, state, id, SCENENODE)) {
-
+      if (rw) {
+        SceneNode *sceneNode;
+        state.get_SceneNode(id, &sceneNode);
+        stream.Write(sceneNode->parentId);
+      } else {
+        entityId parentIdIn;
+        stream.Read(parentIdIn);
+        state.add_SceneNode(id, parentIdIn);
+      }
     }
   }
 
   void serializeTransformFunction(bool rw, BitStream &stream, State &state, entityId id,
-                                  std::vector<std::unique_ptr<BitStream>> *compStreams) {
+                                  std::vector<std::unique_ptr<BitStream>> *compStreams, const uint8_t *transFuncId) {
     BitStream *inStream = compStreams ? (*compStreams)[TRANSFORMFUNCTION].get() : nullptr;
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
-//        inStream->  // FIXME: use numbers or strings to identify transform functions (probably numbers)
+        inStream->Write(*transFuncId);
       } else if (inStream->GetNumberOfBitsUsed()) { // Read mode in this case means copying from inStream to stream.
         stream.WriteCompressed((bool) true);
         stream.Write(*inStream);
@@ -143,7 +161,15 @@ namespace at3 {
         stream.WriteCompressed((bool) false);
       }
     } else if (hasComponent(rw, stream, state, id, TRANSFORMFUNCTION)) {
-
+      if (rw) {
+        TransformFunction *transformFunction;
+        state.get_TransformFunction(id, &transformFunction);
+        stream.Write(transformFunction->transFuncId);
+      } else {
+        uint8_t transFuncIdIn;
+        stream.Read(transFuncIdIn);
+        state.add_TransformFunction(id, transFuncIdIn);
+      }
     }
   }
 
@@ -151,6 +177,7 @@ namespace at3 {
                      std::vector<std::unique_ptr<BitStream>> *compStreams, const std::string *meshFileName,
                      const std::string *textureFileName) {
     BitStream *inStream = compStreams ? (*compStreams)[MESH].get() : nullptr;
+
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
         inStream->Write(*meshFileName);
@@ -162,7 +189,17 @@ namespace at3 {
         stream.WriteCompressed((bool) false);
       }
     } else if (hasComponent(rw, stream, state, id, MESH)) {
-
+      if (rw) {
+        Mesh *mesh;
+        state.get_Mesh(id, &mesh);
+        stream.Write(mesh->meshFileName);
+        stream.Write(mesh->textureFileName);
+      } else {
+        std::string meshFileNameIn, textureFileNameIn;
+        stream.Read(meshFileNameIn);
+        stream.Read(textureFileNameIn);
+        state.add_Mesh(id, meshFileNameIn, textureFileNameIn);
+      }
     }
   }
 
@@ -182,16 +219,29 @@ namespace at3 {
         stream.WriteCompressed((bool) false);
       }
     } else if (hasComponent(rw, stream, state, id, CAMERA)) {
-
+      if (rw) {
+        Camera *camera;
+        state.get_Camera(id, &camera);
+        stream.Write(camera->fovY);
+        stream.Write(camera->nearPlane);
+        stream.Write(camera->farPlane);
+      } else {
+        float fovYIn, nearPlaneIn, farPlaneIn;
+        stream.Read(fovYIn);
+        stream.Read(nearPlaneIn);
+        stream.Read(farPlaneIn);
+        state.add_Camera(id, fovYIn, nearPlaneIn, farPlaneIn);
+      }
     }
   }
 
   void serializePhysics(bool rw, BitStream &stream, State &state, entityId id,
-                        std::vector<std::unique_ptr<BitStream>> *compStreams) {
+                        std::vector<std::unique_ptr<BitStream>> *compStreams, float *mass,
+                        std::shared_ptr<void> *initData, int *useCase) {
     BitStream *inStream = compStreams ? (*compStreams)[PHYSICS].get() : nullptr;
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
-//        inStream->  // FIXME
+        Physics::serialize<BitStream>(true, *inStream, *mass, *initData, *useCase);
       } else if (inStream->GetNumberOfBitsUsed()) { // Read mode in this case means copying from inStream to stream.
         stream.WriteCompressed((bool) true);
         stream.Write(*inStream);
@@ -199,7 +249,15 @@ namespace at3 {
         stream.WriteCompressed((bool) false);
       }
     } else if (hasComponent(rw, stream, state, id, PHYSICS)) {
-
+      if (rw) {
+        Physics *physics;
+        state.get_Physics(id, &physics);
+        physics->serialize<BitStream>(true, stream);
+      } else {
+        Physics physics(0, nullptr, Physics::INVALID);
+        physics.serialize(false, stream);
+        state.add_Physics(id, physics.mass, physics.initData, (Physics::UseCase)physics.useCase);
+      }
     }
   }
 
@@ -216,7 +274,10 @@ namespace at3 {
         stream.WriteCompressed((bool) false);
       }
     } else if (hasComponent(rw, stream, state, id, NETWORKEDPHYSICS)) {
-
+      if (rw) {
+      } else {
+        state.add_NetworkedPhysics(id);
+      }
     }
   }
 
@@ -233,7 +294,15 @@ namespace at3 {
         stream.WriteCompressed((bool) false);
       }
     } else if (hasComponent(rw, stream, state, id, PYRAMIDCONTROLS)) {
-
+      if (rw) {
+        PyramidControls *pyramidControls;
+        state.get_PyramidControls(id, &pyramidControls);
+        stream.Write(pyramidControls->mouseCtrlId);
+      } else {
+        entityId mouseControlIdIn;
+        stream.Read(mouseControlIdIn);
+        state.add_PyramidControls(id, mouseControlIdIn);
+      }
     }
   }
 
@@ -250,7 +319,10 @@ namespace at3 {
         stream.WriteCompressed((bool) false);
       }
     } else if (hasComponent(rw, stream, state, id, TRACKCONTROLS)) {
-
+      if (rw) {
+      } else {
+        state.add_TrackControls(id);
+      }
     }
   }
 
@@ -267,7 +339,15 @@ namespace at3 {
         stream.WriteCompressed((bool) false);
       }
     } else if (hasComponent(rw, stream, state, id, PLAYERCONTROLS)) {
-
+      if (rw) {
+        PlayerControls *playerControls;
+        state.get_PlayerControls(id, &playerControls);
+        stream.Write(playerControls->mouseCtrlId);
+      } else {
+        entityId mouseControlIdIn;
+        stream.Read(mouseControlIdIn);
+        state.add_PlayerControls(id, mouseControlIdIn);
+      }
     }
   }
 
@@ -284,7 +364,15 @@ namespace at3 {
         stream.WriteCompressed((bool) false);
       }
     } else if (hasComponent(rw, stream, state, id, FREECONTROLS)) {
-
+      if (rw) {
+        FreeControls *freeControls;
+        state.get_FreeControls(id, &freeControls);
+        stream.Write(freeControls->mouseCtrlId);
+      } else {
+        entityId mouseControlIdIn;
+        stream.Read(mouseControlIdIn);
+        state.add_FreeControls(id, mouseControlIdIn);
+      }
     }
   }
 
@@ -303,7 +391,17 @@ namespace at3 {
         stream.WriteCompressed((bool) false);
       }
     } else if (hasComponent(rw, stream, state, id, MOUSECONTROLS)) {
-
+      if (rw) {
+        MouseControls *mouseControls;
+        state.get_MouseControls(id, &mouseControls);
+        stream.WriteCompressed(mouseControls->invertedX);
+        stream.WriteCompressed(mouseControls->invertedY);
+      } else {
+        bool invertedXIn, invertedYIn;
+        stream.ReadCompressed(invertedXIn);
+        stream.ReadCompressed(invertedYIn);
+        state.add_MouseControls(id, invertedXIn, invertedYIn);
+      }
     }
   }
 }

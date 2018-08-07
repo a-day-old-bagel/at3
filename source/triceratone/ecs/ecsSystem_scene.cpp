@@ -24,7 +24,7 @@ namespace at3 {
   void SceneSystem::registerTransFunc(void *TransFuncDesc) {
     auto desc = (TransformFunctionDescriptor*)TransFuncDesc;
     transformFuncs.push_back(desc->func);
-    desc->registrationId = transformFuncs.size() - 1;
+    desc->registrationId = transformFuncs.size(); // starts at 1 so that 0 can be used to indicate non-initialization.
   }
   bool SceneSystem::onInit() {
     registries[0].discoverHandler = RTU_MTHD_DLGT(&SceneSystem::onDiscoverSceneNode, this);
@@ -34,14 +34,17 @@ namespace at3 {
     return true;
   }
   void SceneSystem::onTick(float dt) {
+    uint32_t currentTime = SDL_GetTicks();
+    TransFuncEcsContext ctxt = {};
+    ctxt.ecs = (void*)state;
     for (auto id : registries[1].ids) {
       Placement* placement;
       state->get_Placement(id, &placement);
       TransformFunction* transformFunction;
       state->get_TransformFunction(id, &transformFunction);
-
-      transformFunction->transformed = transformFuncs[transformFunction->transFuncId]
-          (placement->mat, placement->absMat, SDL_GetTicks());
+      ctxt.id = id;
+      transformFunction->transformed = transformFuncs[transformFunction->transFuncId - 1] // indexed from 1 - shift to 0
+          (placement->mat, placement->absMat, currentTime, &ctxt);
     }
     scene.updateAbsoluteTransformCaches();
   }
