@@ -238,7 +238,8 @@ namespace at3 {
     BitStream *inStream = compStreams ? (*compStreams)[5].get() : nullptr;
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
-        Physics::serialize<BitStream>(true, *inStream, *mass, *initData, *useCase);
+//        Physics::serialize<BitStream>(true, *inStream, *mass, *initData, *useCase);
+        Physics::serialize(true, *inStream, *mass, *initData, *useCase);
       } else if (inStream->GetNumberOfBitsUsed()) { // Read mode in this case means copying from inStream to stream.
         stream.WriteCompressed((bool) true);
         stream.Write(*inStream);
@@ -249,7 +250,8 @@ namespace at3 {
       if (rw) {
         Physics *physics;
         state.get_Physics(id, &physics);
-        physics->serialize<BitStream>(true, stream);
+//        physics->serialize<BitStream>(true, stream);
+        physics->serialize(true, stream);
       } else {
         Physics physics(0, nullptr, Physics::INVALID);
         physics.serialize(false, stream);

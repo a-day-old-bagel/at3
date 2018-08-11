@@ -11,6 +11,9 @@
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
 
+#include <BitStream.h>
+#include <StringCompressor.h>
+
 #include "math.hpp"
 #include "delegate.hpp"
 
@@ -115,13 +118,57 @@ namespace {
     void beStill();
 
     // TODO: if writing to the component, it will have to be re-created in Bullet for changes to happen.
-    template <typename Stream>
-    void serialize(bool rw, Stream & stream) {
-      serialize<Stream>(rw, stream, mass, initData, useCase);
+//    template <typename Stream>
+//    void serialize(bool rw, Stream & stream) {
+//      serialize<Stream>(rw, stream, mass, initData, useCase);
+//    }
+
+    void serialize(bool rw, SLNet::BitStream & stream) {
+      serialize(rw, stream, mass, initData, useCase);
     }
 
-    template <typename Stream>
-    static void serialize(bool rw, Stream & stream, float & mass, sharedVoidPtr & initData, int & useCase) {
+//    template <typename Stream>
+//    static void serialize(bool rw, Stream & stream, float & mass, sharedVoidPtr & initData, int & useCase) {
+//      stream.Serialize(rw, mass);
+//      stream.SerializeBitsFromIntegerRange(rw, useCase, INVALID + 1, MAX_USE_CASE - 1);
+//      switch(useCase) {
+//        case Physics::SPHERE: {
+//          if ( ! rw) { initData = std::make_shared<float>(); }
+//          float & radius = *((float*)initData.get());
+//          stream.Serialize(rw, radius);
+//        } break;
+//        case Physics::DYNAMIC_CONVEX_MESH: {
+//          if ( ! rw) { initData = std::make_shared<std::vector<float>>(); }
+//          std::vector<float> & floats = *((std::vector<float>*)initData.get());
+//          size_t numFloats = floats.size();
+//          stream.Serialize(rw, numFloats);
+//          if ( ! rw) {
+//            floats.resize(numFloats);
+//          }
+//          for (auto & flt : floats) {
+//            stream.Serialize(rw, flt);
+//          }
+//        } break;
+//        case Physics::STATIC_MESH: {
+//          AT3_ASSERT(false, "DO THIS");
+////           TODO: use RakNet's better string
+////          if ( ! rw) { initData = std::make_shared<std::string>(); }
+////          std::string & meshFileName = *((std::string*)initData.get());
+////          stream.Serialize(rw, meshFileName);
+//        } break;
+//        case Physics::WHEEL: {
+//          if ( ! rw) { initData = std::make_shared<WheelInitInfo>(); }
+//          WheelInitInfo & info = *((WheelInitInfo*)initData.get());
+//          stream.Serialize(rw, info);
+//        } break;
+//        case Physics::CHARA:
+//        case Physics::BOX:
+//        case Physics::PLANE:
+//        default: break;
+//      }
+//    }
+
+    static void serialize(bool rw, SLNet::BitStream & stream, float & mass, sharedVoidPtr & initData, int & useCase) {
       stream.Serialize(rw, mass);
       stream.SerializeBitsFromIntegerRange(rw, useCase, INVALID + 1, MAX_USE_CASE - 1);
       switch(useCase) {
@@ -143,11 +190,19 @@ namespace {
           }
         } break;
         case Physics::STATIC_MESH: {
-          AT3_ASSERT(false, "DO THIS");
+//          AT3_ASSERT(false, "DO THIS");
 //           TODO: use RakNet's better string
 //          if ( ! rw) { initData = std::make_shared<std::string>(); }
 //          std::string & meshFileName = *((std::string*)initData.get());
 //          stream.Serialize(rw, meshFileName);
+          if (rw) {
+            std::string & meshFileName = *((std::string*)initData.get());
+            SLNet::StringCompressor::Instance()->EncodeString(meshFileName->c_str(), 256, stream);
+          } else {
+            char meshFileNameIn[256];
+            SLNet::StringCompressor::Instance()->DecodeString(meshFileNameIn, 256, &stream);
+            initData = std::make_shared<std::string>(meshFileNameIn);
+          }
         } break;
         case Physics::WHEEL: {
           if ( ! rw) { initData = std::make_shared<WheelInitInfo>(); }
