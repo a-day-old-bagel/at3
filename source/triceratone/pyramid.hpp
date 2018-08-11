@@ -13,6 +13,8 @@ namespace at3 {
     private:
 
       ezecs::State* state;
+      std::shared_ptr<EntityComponentSystemInterface> ecs;
+
       ezecs::entityId topId, thrustersId, fireId;
       std::vector<ezecs::entityId> spheres;
 
@@ -24,7 +26,7 @@ namespace at3 {
       ezecs::entityId camId;
       ezecs::entityId camGimbalId;
 
-      Pyramid(ezecs::State &state, glm::mat4 &transform);
+      Pyramid(ezecs::State &state, std::shared_ptr<EntityComponentSystemInterface> ecs, glm::mat4 &transform);
       ezecs::entityId spawnSphere(bool shoot = false);
       void dropSphere();
       void shootSphere();

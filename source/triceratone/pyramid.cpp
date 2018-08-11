@@ -71,7 +71,8 @@ namespace at3 {
     return fireTransFuncDesc;
   }
 
-  Pyramid::Pyramid(ezecs::State &state, glm::mat4 &transform) : state(&state) {
+  Pyramid::Pyramid(ezecs::State &state, std::shared_ptr<EntityComponentSystemInterface> ecs, glm::mat4 &transform)
+          : state(&state), ecs(ecs) {
 
     glm::mat4 ident(1.f);
     glm::mat4 pyrFirMat = glm::scale(glm::rotate(glm::translate(ident, {0.f, 0.f, -0.4f}),
@@ -145,6 +146,39 @@ namespace at3 {
   }
 
   entityId Pyramid::spawnSphere(bool shoot) {
+//    Placement *source;
+//    state->get_Placement(bottomId, &source);
+//    Physics *sourcePhysics;
+//    state->get_Physics(bottomId, &sourcePhysics);
+//
+//    glm::mat4 sourceMat = glm::translate(source->absMat, {0.f, 0.f, 3.f});
+//
+//    spheres.emplace_back(0);
+//    entityId & sphereId = spheres.back();
+//
+//    state->createEntity(&sphereId);
+//    state->add_Placement(sphereId, sourceMat);
+//    state->add_Mesh(sphereId, "sphere", "");
+//    state->add_Physics(sphereId, 5.f, std::make_shared<float>(1.f), Physics::SPHERE);
+//    Physics *physics;
+//    state->get_Physics(sphereId, &physics);
+//    physics->rigidBody->setLinearVelocity(sourcePhysics->rigidBody->getLinearVelocity() );
+//
+//    if (shoot) {
+//      MouseControls *mouseControls;
+//      state->get_MouseControls(camGimbalId, &mouseControls);
+//      glm::mat3 tiltRot = glm::rotate(.35f , glm::vec3(1.0f, 0.0f, 0.0f));
+//      glm::mat3 rot = getCylStandingRot(source->getTranslation(true), mouseControls->pitch, mouseControls->yaw);
+//      glm::vec3 shootDir = rot * tiltRot * glm::vec3(0, 0, -1);
+//      btVector3 shot = btVector3(shootDir.x, shootDir.y, shootDir.z) * 1000.f;
+//      physics->rigidBody->applyCentralImpulse(shot);
+//    }
+//
+//    state->add_SceneNode(spheres.back(), 0);
+//
+//    return spheres.back();
+
+
     Placement *source;
     state->get_Placement(bottomId, &source);
     Physics *sourcePhysics;
@@ -152,30 +186,40 @@ namespace at3 {
 
     glm::mat4 sourceMat = glm::translate(source->absMat, {0.f, 0.f, 3.f});
 
-    spheres.emplace_back(0);
-    entityId & sphereId = spheres.back();
+//    spheres.emplace_back(0);
+//    entityId & sphereId = spheres.back();
+//
+//    state->createEntity(&sphereId);
+//    state->add_Placement(sphereId, sourceMat);
+//    state->add_Mesh(sphereId, "sphere", "");
+//    state->add_Physics(sphereId, 5.f, std::make_shared<float>(1.f), Physics::SPHERE);
+//    Physics *physics;
+//    state->get_Physics(sphereId, &physics);
+//    physics->rigidBody->setLinearVelocity(sourcePhysics->rigidBody->getLinearVelocity() );
+//
+//    if (shoot) {
+//      MouseControls *mouseControls;
+//      state->get_MouseControls(camGimbalId, &mouseControls);
+//      glm::mat3 tiltRot = glm::rotate(.35f , glm::vec3(1.0f, 0.0f, 0.0f));
+//      glm::mat3 rot = getCylStandingRot(source->getTranslation(true), mouseControls->pitch, mouseControls->yaw);
+//      glm::vec3 shootDir = rot * tiltRot * glm::vec3(0, 0, -1);
+//      btVector3 shot = btVector3(shootDir.x, shootDir.y, shootDir.z) * 1000.f;
+//      physics->rigidBody->applyCentralImpulse(shot);
+//    }
+//
+//    state->add_SceneNode(spheres.back(), 0);
+//
+//    return spheres.back();
 
-    state->createEntity(&sphereId);
-    state->add_Placement(sphereId, sourceMat);
-    state->add_Mesh(sphereId, "sphere", "");
-    state->add_Physics(sphereId, 5.f, std::make_shared<float>(1.f), Physics::SPHERE);
-    Physics *physics;
-    state->get_Physics(sphereId, &physics);
-    physics->rigidBody->setLinearVelocity(sourcePhysics->rigidBody->getLinearVelocity() );
+    ecs->openEntityRequest();
+    ecs->requestPlacement(sourceMat);
+    ecs->requestMesh("sphere", "");
+    std::shared_ptr<void> radius = std::make_shared<float>(1.f);
+    ecs->requestPhysics(5.f, radius, Physics::SPHERE);
+    ecs->requestSceneNode(0);
+    ecs->closeEntityRequest();
 
-    if (shoot) {
-      MouseControls *mouseControls;
-      state->get_MouseControls(camGimbalId, &mouseControls);
-      glm::mat3 tiltRot = glm::rotate(.35f , glm::vec3(1.0f, 0.0f, 0.0f));
-      glm::mat3 rot = getCylStandingRot(source->getTranslation(true), mouseControls->pitch, mouseControls->yaw);
-      glm::vec3 shootDir = rot * tiltRot * glm::vec3(0, 0, -1);
-      btVector3 shot = btVector3(shootDir.x, shootDir.y, shootDir.z) * 1000.f;
-      physics->rigidBody->applyCentralImpulse(shot);
-    }
-
-    state->add_SceneNode(spheres.back(), 0);
-
-    return spheres.back();
+    return 0;
   }
 
   void Pyramid::dropSphere() {

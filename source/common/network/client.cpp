@@ -9,8 +9,7 @@ using namespace SLNet;
 namespace at3 {
   Client::Client() {
     peer = RakPeerInterface::GetInstance();
-    SocketDescriptor sock;
-    // TODO: this priority won't work on Linux.
+    SocketDescriptor sock(static_cast<uint16_t>(settings::network::clientPort), nullptr);
     StartupResult startResult = peer->Startup(1, &sock, 1, AT3_NET_THREAD_PRIORITY);
     if (startResult == RAKNET_STARTED) {
       connect();

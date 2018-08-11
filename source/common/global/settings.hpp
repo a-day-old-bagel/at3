@@ -41,6 +41,7 @@ namespace at3 {
       extern uint32_t role;
       extern std::string serverAddress;
       extern uint32_t serverPort;
+      extern uint32_t clientPort;
       extern uint32_t maxServerConns;
     }
 

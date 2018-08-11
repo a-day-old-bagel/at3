@@ -31,7 +31,8 @@ namespace at3 {
     namespace network {
       uint32_t role = Role::NONE;
       std::string serverAddress = "127.0.0.1";
-      uint32_t serverPort = 22022; // 22122 is also available and everything in between.
+      uint32_t serverPort = 22022; // the entire range 22022-22122 is available
+      uint32_t clientPort = 22122;
       uint32_t maxServerConns = 150;
     }
 
@@ -87,6 +88,7 @@ namespace at3 {
       registry.insert(std::make_pair( "controls_mouse_speed_f", &controls::mouseSpeed));
       registry.insert(std::make_pair( "controls_mouse_invert_x_b", &controls::mouseInvertX));
       registry.insert(std::make_pair( "controls_mouse_invert_y_b", &controls::mouseInvertY));
+      registry.insert(std::make_pair( "network_client_port_u", &network::clientPort));
       registry.insert(std::make_pair( "network_role_u", &network::role));
       registry.insert(std::make_pair( "network_server_address_s", &network::serverAddress));
       registry.insert(std::make_pair( "network_server_port_u", &network::serverPort));

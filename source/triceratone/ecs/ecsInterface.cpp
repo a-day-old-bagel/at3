@@ -35,12 +35,6 @@ namespace at3 {
     }
   }
 
-  void writeEntityRequestHeader(BitStream &stream) {
-    stream.Write((MessageID)ID_USER_PACKET_ECS_REQUEST_ENUM);
-    stream.WriteBitsFromIntegerRange((uint8_t)REQ_ENTITY_OP, (uint8_t)0, (uint8_t)(REQ_END_ENUM - 1), false);
-    stream.WriteBitsFromIntegerRange((uint8_t)OP_CREATE, (uint8_t)0, (uint8_t)(OP_END_ENUM - 1), false);
-  }
-
   EntityComponentSystemInterface::EcsId EntityComponentSystemInterface::closeEntityRequest() {
     EcsId id = 0;
     if (entityRequestOpen) {

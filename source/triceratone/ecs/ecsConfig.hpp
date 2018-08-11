@@ -197,7 +197,7 @@ namespace {
 //          stream.Serialize(rw, meshFileName);
           if (rw) {
             std::string & meshFileName = *((std::string*)initData.get());
-            SLNet::StringCompressor::Instance()->EncodeString(meshFileName->c_str(), 256, stream);
+            SLNet::StringCompressor::Instance()->EncodeString(meshFileName.c_str(), 256, &stream);
           } else {
             char meshFileNameIn[256];
             SLNet::StringCompressor::Instance()->DecodeString(meshFileNameIn, 256, &stream);

@@ -30,6 +30,11 @@ namespace at3 {
   // so that ezecs can remain network-library-agnostic.
 
 
+  void writeEntityRequestHeader(BitStream &stream) {
+    stream.Write((MessageID)ID_USER_PACKET_ECS_REQUEST_ENUM);
+    stream.WriteBitsFromIntegerRange((uint8_t)REQ_ENTITY_OP, (uint8_t)0, (uint8_t)(REQ_END_ENUM - 1), false);
+    stream.WriteBitsFromIntegerRange((uint8_t)OP_CREATE, (uint8_t)0, (uint8_t)(OP_END_ENUM - 1), false);
+  }
 
   entityId serializeEntityCreationRequest(bool rw, BitStream &stream, State &state, entityId id,
                                           std::vector<std::unique_ptr<BitStream>> *compStreams) {
@@ -47,6 +52,7 @@ namespace at3 {
         }
         serializeComponentCreationRequest(false, stream, state, id);
       } else { // Receive a client's request to update all networked ECS's. The server fulfills it and rebroadcasts.
+        AT3_ASSERT(settings::network::role == settings::network::SERVER, "POOP\n");
         state.createEntity(&id);
         serializeComponentCreationRequest(false, stream, state, id);
         stream.Reset(); // Rewrite the passed-in stream to be the rebroadcasted command that includes the new ID.

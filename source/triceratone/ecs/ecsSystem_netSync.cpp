@@ -65,7 +65,9 @@ namespace at3 {
   void NetSyncSystem::writeControlSyncs() {
     outStream.Write(keyControlMessageId);
     outStream.Write(mouseControlId);
-    serializeControlSync(true, outStream, mouseControlId, keyControlId, keyControlMessageId);
+    if (mouseControlId) { // In case no controls are currently assigned (no type of control *doesn't* use the mouse ATM)
+      serializeControlSync(true, outStream, mouseControlId, keyControlId, keyControlMessageId);
+    }
   }
 
   void NetSyncSystem::receiveRequestPackets() {
@@ -77,7 +79,7 @@ namespace at3 {
       switch (reqType) {
         case ID_USER_PACKET_ECS_REQUEST_ENUM: {
           uint8_t request;
-          stream.ReadBitsFromIntegerRange(request, (uint8_t)0, (uint8_t)REQ_END_ENUM, false);
+          stream.ReadBitsFromIntegerRange(request, (uint8_t)0, (uint8_t)(REQ_END_ENUM - 1), false);
           switch (request) {
             case REQ_ENTITY_OP: {
               respondToEntityRequest(stream);
@@ -126,12 +128,16 @@ namespace at3 {
 
   void NetSyncSystem::respondToEntityRequest(SLNet::BitStream & stream) {
     uint8_t operation;
-    stream.ReadBitsFromIntegerRange(operation, (uint8_t)0, (uint8_t)OP_END_ENUM, false);
+    stream.ReadBitsFromIntegerRange(operation, (uint8_t)0, (uint8_t)(OP_END_ENUM - 1), false);
     switch (operation) {
       case OP_CREATE: {
         serializeEntityCreationRequest(false, stream, *state);
         if (network->getRole() == settings::network::SERVER) {
-          network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
+          // Recreate the correct header on a new copy of the bitstream, since resetting the read head doesn't work FSR.
+          BitStream fullStream;
+          writeEntityRequestHeader(fullStream);
+          fullStream.Write(stream);
+          network->send(fullStream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
         }
       } break;
       case OP_DESTROY: {

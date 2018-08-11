@@ -32,6 +32,7 @@ namespace at3 {
     CH_ECS_REQUEST
   };
 
+  void writeEntityRequestHeader(SLNet::BitStream &stream);
   ezecs::entityId serializeEntityCreationRequest(
       bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id = 0,
       std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr);

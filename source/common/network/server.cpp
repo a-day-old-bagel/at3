@@ -9,8 +9,7 @@ namespace at3 {
   Server::Server() {
     peer = RakPeerInterface::GetInstance();
     peer->SetMaximumIncomingConnections(static_cast<uint16_t>(settings::network::maxServerConns));
-    SocketDescriptor sock(static_cast<uint16_t >(settings::network::serverPort), nullptr);
-    // TODO: this priority won't work on Linux.
+    SocketDescriptor sock(static_cast<uint16_t>(settings::network::serverPort), nullptr);
     StartupResult startResult = peer->Startup(settings::network::maxServerConns, &sock, 1, AT3_NET_THREAD_PRIORITY);
     if (startResult == RAKNET_STARTED) {
       peer->SetOccasionalPing(true);
