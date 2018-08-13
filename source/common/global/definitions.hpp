@@ -47,6 +47,11 @@
 //#undef max
 // If you were going to suggest using their macros that disable these, they don't work, and near and far don't have one.
 
+// TODO: check if these are even doing anything - are micro$haft® headers being included before this file somehow?
+#define VC_EXTRALEAN
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+
 // Physics and controls defines
 #define HUMAN_HEIGHT 1.83f
 #define HUMAN_WIDTH 0.5f

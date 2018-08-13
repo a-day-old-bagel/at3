@@ -44,7 +44,7 @@ namespace at3 {
         case settings::network::SERVER: {
           BitStream headerless;
           serializeEntityCreationRequest(true, headerless, *state, 0, &compStreams); // ID 0 = request without action
-          serializeEntityCreationRequest(false, headerless, *state); // treat it as if it came from a client
+          id = serializeEntityCreationRequest(false, headerless, *state); // treat it as if it came from a client
           stream.Write(headerless);
         } break;
         case settings::network::CLIENT: {

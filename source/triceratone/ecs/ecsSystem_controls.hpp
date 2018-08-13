@@ -6,6 +6,7 @@
 #include "ezecs.hpp"
 #include "topics.hpp"
 #include "eventResponseMap.hpp"
+#include "ecsInterface.hpp"
 
 using namespace ezecs;
 
@@ -13,15 +14,19 @@ namespace at3 {
   class EntityAssociatedERM;
   class ControlSystem : public System<ControlSystem> {
 
+      std::shared_ptr<EntityComponentSystemInterface> ecs;
+      rtu::topics::Subscription setEcsInterfaceSub;
+
+      rtu::topics::Subscription switchToMouseCtrlSub;
+      std::unique_ptr<EntityAssociatedERM> currentCtrlMouse;
+
       rtu::topics::Subscription switchToWalkCtrlSub;
       rtu::topics::Subscription switchToPyramidCtrlSub;
       rtu::topics::Subscription switchToTrackCtrlSub;
       rtu::topics::Subscription switchToFreeCtrlSub;
       std::unique_ptr<EntityAssociatedERM> currentCtrlKeys;
 
-      rtu::topics::Subscription switchToMouseCtrlSub;
-      std::unique_ptr<EntityAssociatedERM> currentCtrlMouse;
-
+      void setEcsInterface(void *ecs);
       void switchToMouseCtrl(void *id);
       void switchToWalkCtrl(void* id);
       void switchToPyramidCtrl(void *id);

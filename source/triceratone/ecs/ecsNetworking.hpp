@@ -26,6 +26,12 @@ namespace at3 {
 
     OP_END_ENUM
   };
+  enum CommandSpecifierEnums {
+    CMD_ASSIGN_CONTROL_IDS,
+    CMD_BEGIN_SIMULATION,
+
+    CMD_END_ENUM
+  };
   enum ChannelEnums {
     CH_CONTROL_SYNC = 0,
     CH_PHYSICS_SYNC,

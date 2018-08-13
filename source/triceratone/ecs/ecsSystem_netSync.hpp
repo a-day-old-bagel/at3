@@ -38,7 +38,7 @@ namespace at3 {
       void sendTo(const SLNet::AddressOrGUID & target, PacketPriority priority,
                   PacketReliability reliability, char channel);
 
-      void receiveRequestPackets();
+      void receiveAdministrativePackets();
       void receiveSyncPackets();
 
       void respondToEntityRequest(SLNet::BitStream &);
@@ -48,10 +48,13 @@ namespace at3 {
       void serializeControlSync(bool rw, SLNet::BitStream &, entityId mId, entityId cId,
                                 SLNet::MessageID syncType = ID_USER_PACKET_END_ENUM);
 
+      void serializeControlAssignment(bool rw, SLNet::BitStream &,
+                                      entityId = 0, entityId = 0, entityId = 0, entityId = 0, entityId = 0);
+
     public:
       std::vector<compMask> requiredComponents = {
-        PLACEMENT,
         PHYSICS,
+        NETWORKEDPHYSICS
       };
       NetSyncSystem(State * state);
       bool onInit();

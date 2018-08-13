@@ -23,7 +23,7 @@ namespace at3 {
   void NetSyncSystem::onTick(float dt) {
     switch(network->getRole()) {
       case settings::network::SERVER: {
-        receiveRequestPackets();
+        receiveAdministrativePackets();
         writeControlSyncs();
         send(HIGH_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);  // TODO: Is immediate or high priority even helpful here? Or bad?
         if (writePhysicsSyncs(dt)) {
@@ -32,7 +32,7 @@ namespace at3 {
         receiveSyncPackets();
       } break;
       case settings::network::CLIENT: {
-        receiveRequestPackets();
+        receiveAdministrativePackets();
         writeControlSyncs();
         send(IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);
         receiveSyncPackets();
@@ -70,7 +70,7 @@ namespace at3 {
     }
   }
 
-  void NetSyncSystem::receiveRequestPackets() {
+  void NetSyncSystem::receiveAdministrativePackets() {
     for (auto pack : network->getRequestPackets()) {
 //      AddressOrGUID sender = AddressOrGUID(pack->guid);
       BitStream stream(pack->data, pack->length, false);
@@ -92,6 +92,16 @@ namespace at3 {
         } break;
         case ID_USER_PACKET_ECS_RESPONSE_ENUM: {
 
+        } break;
+        case ID_USER_PACKET_ADMIN_COMMAND: {
+          uint8_t command;
+          stream.ReadBitsFromIntegerRange(command, (uint8_t)0, (uint8_t)(CMD_END_ENUM - 1), false);
+          switch (command) {
+            case CMD_ASSIGN_CONTROL_IDS: {
+
+            } break;
+            default: break;
+          }
         } break;
         default: {
           fprintf(stderr, "Received bad request/response packet!\n");
@@ -152,7 +162,7 @@ namespace at3 {
   }
 
   void NetSyncSystem::serializePhysicsSync(bool rw, SLNet::BitStream &stream) {
-    for (auto id : registries[1].ids) {
+    for (auto id : registries[0].ids) {
       Physics *physics;
       state->get_Physics(id, &physics);
 
@@ -230,6 +240,8 @@ namespace at3 {
         state->get_PyramidControls(cId, &pyramidControls);
         stream.Serialize(rw, pyramidControls->accel);
         stream.SerializeCompressed(rw, pyramidControls->turbo);
+        stream.SerializeCompressed(rw, pyramidControls->shoot);
+        stream.SerializeCompressed(rw, pyramidControls->drop);
       } break;
       case ID_SYNC_TRACKCONTROLS: {
         TrackControls *trackControls;
@@ -249,6 +261,22 @@ namespace at3 {
         stream.SerializeBitsFromIntegerRange(rw, freeControls->x10, 0, 3);
       } break;
       default: break;
+    }
+  }
+
+  void NetSyncSystem::serializeControlAssignment(bool rw, SLNet::BitStream & stream,
+      entityId mouseId, entityId walkingId, entityId pyramidId, entityId trackId, entityId freeId) {
+    stream.Serialize(rw, mouseId);
+    stream.Serialize(rw, walkingId);
+    stream.Serialize(rw, pyramidId);
+    stream.Serialize(rw, trackId);
+    stream.Serialize(rw, freeId);
+    if ( ! rw ) {
+      rtu::topics::publish<entityId>("switch_to_mouse_controls", mouseId);
+      rtu::topics::publish<entityId>("switch_to_walking_controls", walkingId);
+      rtu::topics::publish<entityId>("switch_to_pyramid_controls", pyramidId);
+      rtu::topics::publish<entityId>("switch_to_track_controls", trackId);
+      rtu::topics::publish<entityId>("switch_to_free_controls", freeId);
     }
   }
 

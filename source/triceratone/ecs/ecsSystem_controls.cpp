@@ -14,10 +14,11 @@ namespace at3 {
 
   ControlSystem::ControlSystem(State *state)
       : System(state),
+        setEcsInterfaceSub("set_ecs_interface", RTU_MTHD_DLGT(&ControlSystem::setEcsInterface, this)),
+        switchToMouseCtrlSub("switch_to_mouse_controls", RTU_MTHD_DLGT(&ControlSystem::switchToMouseCtrl, this)),
         switchToWalkCtrlSub("switch_to_walking_controls", RTU_MTHD_DLGT(&ControlSystem::switchToWalkCtrl, this)),
         switchToPyramidCtrlSub("switch_to_pyramid_controls", RTU_MTHD_DLGT(&ControlSystem::switchToPyramidCtrl, this)),
         switchToTrackCtrlSub("switch_to_track_controls", RTU_MTHD_DLGT(&ControlSystem::switchToTrackCtrl, this)),
-        switchToMouseCtrlSub("switch_to_mouse_controls", RTU_MTHD_DLGT(&ControlSystem::switchToMouseCtrl, this)),
         switchToFreeCtrlSub("switch_to_free_controls", RTU_MTHD_DLGT(&ControlSystem::switchToFreeCtrl, this))
   {
     name = "Control System";
@@ -86,12 +87,50 @@ namespace at3 {
             0, PYR_SIDE_ACCEL, 0,
             0, 0, PYR_UP_ACCEL
         } * glm::normalize(mouseControls->lastHorizCtrlRot * pyramidControls->accel) * turbo;
-        // zero the inputs
-        pyramidControls->accel = glm::vec3(0, 0, 0);
+        // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
+        if (id = currentCtrlKeys->getId()) {
+          pyramidControls->accel = glm::vec3(0, 0, 0);
+        }
       }
 
       // assign the engine utilization level
       pyramidControls->engineActivationLevel = level;
+
+      // deal with ball spawning
+      if (pyramidControls->drop || pyramidControls->shoot) {
+        if (settings::network::role != settings::network::CLIENT) {
+          Placement *source;
+          state->get_Placement(id, &source);
+          Physics *sourcePhysics;
+          state->get_Physics(id, &sourcePhysics);
+          glm::mat4 sourceMat = glm::translate(source->absMat, {0.f, 0.f, 3.f});
+
+          entityId ballId = 0;
+          uint32_t count = pyramidControls->shoot ? 1 : 4;
+          for (uint32_t i = 0; i < count; ++i) {
+            ecs->openEntityRequest();
+            ecs->requestPlacement(sourceMat);
+            ecs->requestMesh("sphere", "");
+            std::shared_ptr<void> radius = std::make_shared<float>(1.f);
+            ecs->requestPhysics(5.f, radius, Physics::SPHERE);
+            ecs->requestSceneNode(0);
+            ballId = ecs->closeEntityRequest();
+          }
+          if (pyramidControls->shoot) {
+            if (ballId) { // This just won't work on an unfulfilled request (which is another reason to get rid of them)
+              glm::mat3 tiltRot = glm::rotate(.35f, glm::vec3(1.0f, 0.0f, 0.0f));
+              glm::mat3 rot = getCylStandingRot(source->getTranslation(true), mouseControls->pitch, mouseControls->yaw);
+              glm::vec3 shootDir = rot * tiltRot * glm::vec3(0, 0, -1);
+              btVector3 shot = btVector3(shootDir.x, shootDir.y, shootDir.z) * 1000.f;
+              Physics* physics;
+              state->get_Physics(ballId, &physics);
+              physics->rigidBody->applyCentralImpulse(shot);
+            }
+          }
+        }
+        pyramidControls->shoot = false;
+        pyramidControls->drop = false;
+      }
     }
     for (auto id : (registries[2].ids)) { // Track/buggy
       TrackControls* trackControls;
@@ -100,8 +139,10 @@ namespace at3 {
       if (length(trackControls->control) > 0.f) {
         // Calculate torque to apply
         trackControls->torque += TRACK_TORQUE * trackControls->control;
-        // Zero the controls for next time
-        trackControls->control = glm::vec2(0, 0);
+        // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
+        if (id = currentCtrlKeys->getId()) {
+          trackControls->control = glm::vec2(0, 0);
+        }
       }
     }
     for (auto id : (registries[3].ids)) { // Player/Walking
@@ -126,7 +167,10 @@ namespace at3 {
             0, speed, 0,
             0, 0, speed
         } * glm::normalize(mouseControls->lastHorizCtrlRot * playerControls->accel);
-        playerControls->accel = glm::vec3(0, 0, 0);
+        // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
+        if (id = currentCtrlKeys->getId()) {
+          playerControls->accel = glm::vec3(0, 0, 0);
+        }
       }
     }
     for (auto id: (registries[4].ids)) { // Free Control
@@ -146,12 +190,19 @@ namespace at3 {
         placement->mat[3][1] += movement.y;
         placement->mat[3][2] += movement.z;
 
-        freeControls->control = glm::vec3(0, 0, 0);
+        // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
+        if (id = currentCtrlKeys->getId()) {
+          freeControls->control = glm::vec3(0, 0, 0);
+        }
       }
       if (freeControls->x10) {
         freeControls->x10 = 0;
       }
     }
+  }
+
+  void ControlSystem::setEcsInterface(void *ecs) {
+    this->ecs = *(std::shared_ptr<EntityComponentSystemInterface>*) ecs;
   }
 
   /*
@@ -262,6 +313,8 @@ namespace at3 {
       void key_up() { upOrDown(1.f); }
       void key_down() { upOrDown(-1.f); }
       void turbo() { getComponent()->turbo = true; }
+      void shoot() { getComponent()->shoot = true; }
+      void drop() { getComponent()->drop = true; }
     public:
       ActivePyramidControl(State *state, const entityId id) : EntityAssociatedERM(state, id) {
         setAction("key_held_w", RTU_MTHD_DLGT(&ActivePyramidControl::key_forward, this));
@@ -271,6 +324,8 @@ namespace at3 {
         setAction("key_held_lshift", RTU_MTHD_DLGT(&ActivePyramidControl::key_down, this));
         setAction("key_held_space", RTU_MTHD_DLGT(&ActivePyramidControl::key_up, this));
         setAction("key_held_f", RTU_MTHD_DLGT(&ActivePyramidControl::turbo, this));
+        setAction("mouse_down_left", RTU_MTHD_DLGT(&ActivePyramidControl::shoot, this));
+        setAction("mouse_down_right", RTU_MTHD_DLGT(&ActivePyramidControl::drop, this));
       }
   };
   void ControlSystem::switchToPyramidCtrl(void *id) {

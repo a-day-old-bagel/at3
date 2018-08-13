@@ -49,7 +49,7 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
 
     std::vector<PlayerAvatarSet> players;
 
-    std::unique_ptr<Subscription> lClickSub, rClickSub, key0Sub, key1Sub, key2Sub, key3Sub;
+    std::unique_ptr<Subscription> key0Sub, key1Sub, key2Sub, key3Sub;
 
     PlayerAvatarSet & player() {
       return network->getRole() == settings::network::SERVER ? players.at(0) : players.at(1);
@@ -161,8 +161,6 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       key1Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_1", Walker::makeActiveControl, player().walker.get());
       key2Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_2", DuneBuggy::makeActiveControl, player().duneBuggy.get());
       key3Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_3", Pyramid::makeActiveControl, player().pyramid.get());
-      lClickSub = RTU_MAKE_SUB_UNIQUEPTR("mouse_down_left", Pyramid::shootSphere, player().pyramid.get());
-      rClickSub = RTU_MAKE_SUB_UNIQUEPTR("mouse_down_right", Pyramid::dropSphere, player().pyramid.get());
 
       return true;
     }
@@ -184,6 +182,17 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       publish<entityId>("switch_to_camera", player().camId);
       publish<entityId>("switch_to_free_controls", player().ctrlId);
       publish<entityId>("switch_to_mouse_controls", player().gimbalId);
+
+//      if (network->getRole() == settings::network::CLIENT) {
+////        printf("\nIDS: %u %u %u\n", player().camId, player().ctrlId, player().gimbalId);
+//        publish<entityId>("switch_to_camera", 22);
+//        publish<entityId>("switch_to_free_controls", 24);
+//        publish<entityId>("switch_to_mouse_controls", 23);
+//      } else {
+//        publish<entityId>("switch_to_camera", player().camId);
+//        publish<entityId>("switch_to_free_controls", player().ctrlId);
+//        publish<entityId>("switch_to_mouse_controls", player().gimbalId);
+//      }
     }
 };
 

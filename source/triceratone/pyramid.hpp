@@ -27,9 +27,6 @@ namespace at3 {
       ezecs::entityId camGimbalId;
 
       Pyramid(ezecs::State &state, std::shared_ptr<EntityComponentSystemInterface> ecs, glm::mat4 &transform);
-      ezecs::entityId spawnSphere(bool shoot = false);
-      void dropSphere();
-      void shootSphere();
       void makeActiveControl(void* nothing);
       const static TransformFunctionDescriptor & getTopTransFuncDesc();
       const static TransformFunctionDescriptor & getFireTransFuncDesc();
