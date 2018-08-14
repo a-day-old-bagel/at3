@@ -162,7 +162,7 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       key2Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_2", DuneBuggy::makeActiveControl, player().duneBuggy.get());
       key3Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_3", Pyramid::makeActiveControl, player().pyramid.get());
 
-      return true;
+      return initSuccess;
     }
 
     std::string exampleSetting = "1337_H4XX0R5";

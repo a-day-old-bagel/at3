@@ -9,16 +9,15 @@ set (EZECS_SET_PATH_ONLY OFF CACHE BOOL "Only set the variable 'EZECS_SOURCE_DIR
 target_link_libraries( ${AT3_TARGET_PREFIX}external INTERFACE realtimeutils )
 
 add_subdirectory( global )
-add_subdirectory( input )
 add_subdirectory( network )
 add_subdirectory( scene )
 add_subdirectory( vulkan )
 
 add_library( ${AT3_TARGET_PREFIX}common STATIC
   game.hpp
+  sdlc.hpp sdlc.cpp
   )
 target_link_libraries( ${AT3_TARGET_PREFIX}common
-  ${AT3_TARGET_PREFIX}input
   ${AT3_TARGET_PREFIX}network
   ${AT3_TARGET_PREFIX}scene
   ${AT3_TARGET_PREFIX}vulkan
