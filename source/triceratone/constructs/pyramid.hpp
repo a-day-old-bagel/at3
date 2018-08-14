@@ -2,11 +2,10 @@
 #pragma once
 
 #include <vector>
-#include "ecsInterface.hpp"
+#include "interface.hpp"
 #include "ezecs.hpp"
 #include "sceneTree.hpp"
 #include "vkc.hpp"
-#include "ecsSystem_scene.hpp"
 
 namespace at3 {
   class Pyramid {
@@ -28,8 +27,8 @@ namespace at3 {
 
       Pyramid(ezecs::State &state, std::shared_ptr<EntityComponentSystemInterface> ecs, glm::mat4 &transform);
       void makeActiveControl(void* nothing);
-      const static TransformFunctionDescriptor & getTopTransFuncDesc();
-      const static TransformFunctionDescriptor & getFireTransFuncDesc();
+      const static ezecs::TransformFunctionDescriptor & getTopTransFuncDesc();
+      const static ezecs::TransformFunctionDescriptor & getFireTransFuncDesc();
 
   };
 }

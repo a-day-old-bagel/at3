@@ -58,7 +58,7 @@ namespace at3 {
   void NetInterface::tick() {
     switch(role) {
       case settings::network::Role::SERVER: {
-        server->tick(requestPackets, syncPackets);
+        server->tick(requestPackets, syncPackets, freshConnections);
       } break;
       case settings::network::Role::CLIENT: {
         client->tick(requestPackets, syncPackets);
@@ -107,6 +107,14 @@ namespace at3 {
 
   void NetInterface::discardSyncPackets() {
     discardPacketCollection(syncPackets);
+  }
+
+  const std::vector<SLNet::AddressOrGUID> &NetInterface::getFreshConnections() {
+    return freshConnections;
+  }
+
+  void NetInterface::discardFreshConnections() {
+    freshConnections.clear();
   }
 
 }

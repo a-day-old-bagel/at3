@@ -47,6 +47,12 @@ namespace {
   typedef std::vector<uint32_t>* uintVecPtr;
   typedef std::shared_ptr<void> sharedVoidPtr;
 
+  // An object to hold a reference to a transformFunc by an ID that can be shared amongst networked instances
+  struct TransformFunctionDescriptor {
+    uint8_t registrationId = 0;
+    transformFunc func;
+  };
+
   struct Placement : public Component<Placement> {
     glm::mat4 mat = glm::mat4(1.f);
     glm::mat4 absMat = glm::mat4(1.f);
@@ -158,7 +164,7 @@ namespace {
   };
   EZECS_COMPONENT_DEPENDENCIES(TrackControls, Physics)
 
-  struct PlayerControls : public Component<PlayerControls> {
+  struct WalkControls : public Component<WalkControls> {
     glm::vec3 accel = glm::vec3(0, 0, 0);
     glm::vec3 force = glm::vec3(0, 0, 0);
     glm::vec3 up = glm::vec3(0, 0, 0);
@@ -168,9 +174,9 @@ namespace {
     bool jumpInProgress = false;
     bool isGrounded = false;
     bool isRunning = false;
-    PlayerControls(entityId mouseCtrlId);
+    WalkControls(entityId mouseCtrlId);
   };
-  EZECS_COMPONENT_DEPENDENCIES(PlayerControls, Physics)
+  EZECS_COMPONENT_DEPENDENCIES(WalkControls, Physics)
 
   struct FreeControls : public Component<FreeControls> {
     glm::vec3 control = glm::vec3(0, 0, 0);
@@ -188,6 +194,11 @@ namespace {
     MouseControls(bool invertedX, bool invertedY);
   };
   EZECS_COMPONENT_DEPENDENCIES(MouseControls, Placement)
+
+  struct Player : public Component<Player> { // TODO: Use a persistent ID like a username or salted hash or something
+    entityId walk, pyramid, track, free;
+    Player(entityId walk, entityId pyramid, entityId track, entityId free);
+  };
 
   // END DECLARATIONS
 
@@ -322,7 +333,7 @@ namespace {
 
   TrackControls::TrackControls() { }
 
-  PlayerControls::PlayerControls(entityId mouseCtrlId)
+  WalkControls::WalkControls(entityId mouseCtrlId)
       : mouseCtrlId(mouseCtrlId) { }
 
   FreeControls::FreeControls(entityId mouseCtrlId)
@@ -330,6 +341,9 @@ namespace {
 
   MouseControls::MouseControls(bool invertedX, bool invertedY)
       : invertedX(invertedX), invertedY(invertedY) { }
+
+  Player::Player(entityId walk, entityId pyramid, entityId track, entityId free)
+      : walk(walk), pyramid(pyramid), track(track), free(free) { }
 
   // END DEFINITIONS
 

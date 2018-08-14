@@ -4,13 +4,15 @@
 #include "ezecs.hpp"
 #include "topics.hpp"
 #include "netInterface.hpp"
-#include "ecsNetworking.hpp"
+#include "networking.hpp"
+#include "interface.hpp"
 
 using namespace ezecs;
 
 namespace at3 {
-  class NetSyncSystem : public System<NetSyncSystem> {
+  class NetworkSystem : public System<NetworkSystem> {
       std::shared_ptr<NetInterface> network;
+      std::shared_ptr<EntityComponentSystemInterface> ecs;
       entityId mouseControlId = 0;
       entityId keyControlId = 0;
       SLNet::MessageID keyControlMessageId = ID_USER_PACKET_END_ENUM;
@@ -19,6 +21,7 @@ namespace at3 {
       SLNet::BitStream outStream;
 
       rtu::topics::Subscription setNetInterfaceSub;
+      rtu::topics::Subscription setEcsInterfaceSub;
       rtu::topics::Subscription switchToMouseCtrlSub;
       rtu::topics::Subscription switchToWalkCtrlSub;
       rtu::topics::Subscription switchToPyramidCtrlSub;
@@ -26,6 +29,7 @@ namespace at3 {
       rtu::topics::Subscription switchToFreeCtrlSub;
 
       void setNetInterface(void *netInterface);
+      void setEcsInterface(void *ecs);
       void switchToMouseCtrl(void *id);
       void switchToWalkCtrl(void* id);
       void switchToPyramidCtrl(void *id);
@@ -40,6 +44,7 @@ namespace at3 {
 
       void receiveAdministrativePackets();
       void receiveSyncPackets();
+      void handleNewClients();
 
       void respondToEntityRequest(SLNet::BitStream &);
       void respondToComponentRequest(SLNet::BitStream &);
@@ -56,7 +61,7 @@ namespace at3 {
         PHYSICS,
         NETWORKEDPHYSICS
       };
-      NetSyncSystem(State * state);
+      NetworkSystem(State * state);
       bool onInit();
       void onTick(float dt);
   };

@@ -1,11 +1,10 @@
 
 #pragma once
 
-#include "ecsInterface.hpp"
+#include "interface.hpp"
 #include "ezecs.hpp"
 #include "sceneTree.hpp"
 #include "vkc.hpp"
-#include "ecsSystem_scene.hpp"
 
 namespace at3 {
   class Walker {
@@ -25,6 +24,6 @@ namespace at3 {
       Walker(ezecs::State &state, glm::mat4 &transform);
 
       void makeActiveControl(void* nothing);
-      const static TransformFunctionDescriptor & getBodyTransFuncDesc();
+      const static ezecs::TransformFunctionDescriptor & getBodyTransFuncDesc();
   };
 }

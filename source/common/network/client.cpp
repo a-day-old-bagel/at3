@@ -19,6 +19,9 @@ namespace at3 {
   }
 
   Client::~Client() {
+    if (peer->IsActive()) {
+      peer->Shutdown(100);
+    }
     printf("Client is being destroyed.\n");
     RakPeerInterface::DestroyInstance(peer);
   }

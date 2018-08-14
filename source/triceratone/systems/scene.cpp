@@ -1,6 +1,6 @@
 
 #include <SDL_timer.h>
-#include "ecsSystem_scene.hpp"
+#include "scene.hpp"
 
 namespace at3 {
 

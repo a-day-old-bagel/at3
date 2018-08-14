@@ -3,17 +3,11 @@
 
 #include "ezecs.hpp"
 #include "vkc.hpp"
-#include "ecsInterface.hpp"
+#include "interface.hpp"
 
 using namespace ezecs;
 
 namespace at3 {
-
-  struct TransformFunctionDescriptor {
-    uint8_t registrationId = 0;
-    transformFunc func;
-  };
-
   class SceneSystem : public System<SceneSystem> {
       SceneTree<EntityComponentSystemInterface> scene;
       std::shared_ptr<vkc::VulkanContext<EntityComponentSystemInterface>> vulkan;

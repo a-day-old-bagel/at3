@@ -1,7 +1,7 @@
 
 
-#include "ecsInterface.hpp"
-#include "ecsNetworking.hpp"
+#include "interface.hpp"
+#include "networking.hpp"
 
 using namespace ezecs;
 using namespace SLNet;
@@ -28,9 +28,13 @@ namespace at3 {
       fprintf(stderr, "Entity request is already open. Cannot open again until finalized!\n");
     } else {
       entityRequestOpen = true;
-      stream.Reset();
-      for (auto & stream : compStreams) {
-        stream->Reset();
+      if (network->getRole() == settings::network::NONE) {
+        state->createEntity(&openRequestId);
+      } else {
+        stream.Reset();
+        for (auto &stream : compStreams) {
+          stream->Reset();
+        }
       }
     }
   }
@@ -39,6 +43,9 @@ namespace at3 {
     EcsId id = 0;
     if (entityRequestOpen) {
       entityRequestOpen = false;
+      if (network->getRole() == settings::network::NONE) {
+        return openRequestId;
+      }
       writeEntityRequestHeader(stream);
       switch (network->getRole()) {
         case settings::network::SERVER: {
@@ -60,51 +67,99 @@ namespace at3 {
   }
 
   void EntityComponentSystemInterface::requestPlacement(const glm::mat4 &mat) {
-    serializePlacement(true, stream /*IGNORED*/ , *state, 0, &compStreams, &mat);
+    if (network->getRole() == settings::network::NONE) {
+      state->add_Placement(openRequestId, mat);
+    } else {
+      serializePlacement(true, nullptr, *state, 0, &compStreams, &mat);
+    }
   }
 
   void EntityComponentSystemInterface::requestSceneNode(EntityComponentSystemInterface::EcsId parentId) {
-    serializeSceneNode(true, stream /*IGNORED*/ , *state, 0, &compStreams, &parentId);
+    if (network->getRole() == settings::network::NONE) {
+      state->add_SceneNode(openRequestId, parentId);
+    } else {
+      serializeSceneNode(true, nullptr, *state, 0, &compStreams, &parentId);
+    }
   }
 
   void EntityComponentSystemInterface::requestTransformFunction(uint8_t transFuncId) {
-    serializeTransformFunction(true, stream /*IGNORED*/ , *state, 0, &compStreams, &transFuncId);
+    if (network->getRole() == settings::network::NONE) {
+      state->add_TransformFunction(openRequestId, transFuncId);
+    } else {
+      serializeTransformFunction(true, nullptr, *state, 0, &compStreams, &transFuncId);
+    }
   }
 
   void EntityComponentSystemInterface::requestMesh(std::string meshFileName, std::string textureFileName){
-    serializeMesh(true, stream /*IGNORED*/ , *state, 0, &compStreams, &meshFileName, &textureFileName);
+    if (network->getRole() == settings::network::NONE) {
+      state->add_Mesh(openRequestId, meshFileName, textureFileName);
+    } else {
+      serializeMesh(true, nullptr, *state, 0, &compStreams, &meshFileName, &textureFileName);
+    }
   }
 
   void EntityComponentSystemInterface::requestCamera(float fovY, float nearPlane, float farPlane) {
-    serializeCamera(true, stream /*IGNORED*/ , *state, 0, &compStreams, &fovY, &nearPlane, &farPlane);
+    if (network->getRole() == settings::network::NONE) {
+      state->add_Camera(openRequestId, fovY, nearPlane, farPlane);
+    } else {
+      serializeCamera(true, nullptr, *state, 0, &compStreams, &fovY, &nearPlane, &farPlane);
+    }
   }
 
   void EntityComponentSystemInterface::requestPhysics(float mass, std::shared_ptr<void> &initData, int useCase) {
-    serializePhysics(true, stream /*IGNORED*/ , *state, 0, &compStreams, &mass, &initData, &useCase);
+    if (network->getRole() == settings::network::NONE) {
+      state->add_Physics(openRequestId, mass, initData, (Physics::UseCase)useCase);
+    } else {
+      serializePhysics(true, nullptr, *state, 0, &compStreams, &mass, &initData, &useCase);
+    }
   }
 
   void EntityComponentSystemInterface::requestNetworkedPhysics() {
-    serializeNetworkedPhysics(true, stream /*IGNORED*/ , *state, 0, &compStreams);
+    if (network->getRole() == settings::network::NONE) {
+      state->add_NetworkedPhysics(openRequestId);
+    } else {
+      serializeNetworkedPhysics(true, nullptr, *state, 0, &compStreams);
+    }
   }
 
   void EntityComponentSystemInterface::requestPyramidControls(EntityComponentSystemInterface::EcsId mouseCtrlId){
-    serializePyramidControls(true, stream /*IGNORED*/ , *state, 0, &compStreams, &mouseCtrlId);
+    if (network->getRole() == settings::network::NONE) {
+      state->add_PyramidControls(openRequestId, mouseCtrlId);
+    } else {
+      serializePyramidControls(true, nullptr, *state, 0, &compStreams, &mouseCtrlId);
+    }
   }
 
   void EntityComponentSystemInterface::requestTrackControls() {
-    serializeTrackControls(true, stream /*IGNORED*/ , *state, 0, &compStreams);
+    if (network->getRole() == settings::network::NONE) {
+      state->add_TrackControls(openRequestId);
+    } else {
+      serializeTrackControls(true, nullptr, *state, 0, &compStreams);
+    }
   }
 
-  void EntityComponentSystemInterface::requestPlayerControls(EntityComponentSystemInterface::EcsId mouseCtrlId) {
-    serializePlayerControls(true, stream /*IGNORED*/ , *state, 0, &compStreams, &mouseCtrlId);
+  void EntityComponentSystemInterface::requestWalkControls(EntityComponentSystemInterface::EcsId mouseCtrlId) {
+    if (network->getRole() == settings::network::NONE) {
+      state->add_WalkControls(openRequestId, mouseCtrlId);
+    } else {
+      serializeWalkControls(true, nullptr, *state, 0, &compStreams, &mouseCtrlId);
+    }
   }
 
   void EntityComponentSystemInterface::requestFreeControls(EntityComponentSystemInterface::EcsId mouseCtrlId) {
-    serializeFreeControls(true, stream /*IGNORED*/ , *state, 0, &compStreams, &mouseCtrlId);
+    if (network->getRole() == settings::network::NONE) {
+      state->add_FreeControls(openRequestId, mouseCtrlId);
+    } else {
+      serializeFreeControls(true, nullptr, *state, 0, &compStreams, &mouseCtrlId);
+    }
   }
 
   void EntityComponentSystemInterface::requestMouseControls(bool invertedX, bool invertedY) {
-    serializeMouseControls(true, stream /*IGNORED*/ , *state, 0, &compStreams, &invertedX, &invertedY);
+    if (network->getRole() == settings::network::NONE) {
+      state->add_MouseControls(openRequestId, invertedX, invertedY);
+    } else {
+      serializeMouseControls(true, nullptr, *state, 0, &compStreams, &invertedX, &invertedY);
+    }
   }
 
   void EntityComponentSystemInterface::addTransform(const entityId &id, const glm::mat4 &transform) {

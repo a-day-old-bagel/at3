@@ -1,26 +1,27 @@
 
 #include <algorithm>
-#include "ecsSystem_netSync.hpp"
+#include "network.hpp"
 
 using namespace SLNet;
 
 namespace at3 {
 
-  NetSyncSystem::NetSyncSystem(State * state)
+  NetworkSystem::NetworkSystem(State * state)
       : System(state),
-        setNetInterfaceSub("set_network_interface", RTU_MTHD_DLGT(&NetSyncSystem::setNetInterface, this)),
-        switchToMouseCtrlSub("switch_to_mouse_controls", RTU_MTHD_DLGT(&NetSyncSystem::switchToMouseCtrl, this)),
-        switchToWalkCtrlSub("switch_to_walking_controls", RTU_MTHD_DLGT(&NetSyncSystem::switchToWalkCtrl, this)),
-        switchToPyramidCtrlSub("switch_to_pyramid_controls", RTU_MTHD_DLGT(&NetSyncSystem::switchToPyramidCtrl, this)),
-        switchToTrackCtrlSub("switch_to_track_controls", RTU_MTHD_DLGT(&NetSyncSystem::switchToTrackCtrl, this)),
-        switchToFreeCtrlSub("switch_to_free_controls", RTU_MTHD_DLGT(&NetSyncSystem::switchToFreeCtrl, this))
+        setNetInterfaceSub("set_network_interface", RTU_MTHD_DLGT(&NetworkSystem::setNetInterface, this)),
+        setEcsInterfaceSub("set_ecs_interface", RTU_MTHD_DLGT(&NetworkSystem::setEcsInterface, this)),
+        switchToMouseCtrlSub("switch_to_mouse_controls", RTU_MTHD_DLGT(&NetworkSystem::switchToMouseCtrl, this)),
+        switchToWalkCtrlSub("switch_to_walking_controls", RTU_MTHD_DLGT(&NetworkSystem::switchToWalkCtrl, this)),
+        switchToPyramidCtrlSub("switch_to_pyramid_controls", RTU_MTHD_DLGT(&NetworkSystem::switchToPyramidCtrl, this)),
+        switchToTrackCtrlSub("switch_to_track_controls", RTU_MTHD_DLGT(&NetworkSystem::switchToTrackCtrl, this)),
+        switchToFreeCtrlSub("switch_to_free_controls", RTU_MTHD_DLGT(&NetworkSystem::switchToFreeCtrl, this))
   {
     name = "Net Sync System";
   }
-  bool NetSyncSystem::onInit() {
+  bool NetworkSystem::onInit() {
     return true;
   }
-  void NetSyncSystem::onTick(float dt) {
+  void NetworkSystem::onTick(float dt) {
     switch(network->getRole()) {
       case settings::network::SERVER: {
         receiveAdministrativePackets();
@@ -30,6 +31,8 @@ namespace at3 {
           send(LOW_PRIORITY, UNRELIABLE_SEQUENCED, CH_PHYSICS_SYNC);
         }
         receiveSyncPackets();
+        // TODO: somehow send clients' controls to other clients
+
       } break;
       case settings::network::CLIENT: {
         receiveAdministrativePackets();
@@ -41,18 +44,18 @@ namespace at3 {
     }
   }
 
-  void NetSyncSystem::send(PacketPriority priority, PacketReliability reliability, char channel) {
+  void NetworkSystem::send(PacketPriority priority, PacketReliability reliability, char channel) {
     network->send(outStream, priority, reliability, channel);
     outStream.Reset();
   }
 
-  void NetSyncSystem::sendTo(const AddressOrGUID & target, PacketPriority priority,
+  void NetworkSystem::sendTo(const AddressOrGUID & target, PacketPriority priority,
                              PacketReliability reliability, char channel) {
     network->sendTo(outStream, target, priority, reliability, channel);
     outStream.Reset();
   }
 
-  bool NetSyncSystem::writePhysicsSyncs(float dt) {
+  bool NetworkSystem::writePhysicsSyncs(float dt) {
     timeAccumulator += dt;
     if (timeAccumulator < 0.1f) { return false; }
     timeAccumulator = 0;
@@ -62,7 +65,7 @@ namespace at3 {
     return true;
   }
 
-  void NetSyncSystem::writeControlSyncs() {
+  void NetworkSystem::writeControlSyncs() {
     outStream.Write(keyControlMessageId);
     outStream.Write(mouseControlId);
     if (mouseControlId) { // In case no controls are currently assigned (no type of control *doesn't* use the mouse ATM)
@@ -70,9 +73,9 @@ namespace at3 {
     }
   }
 
-  void NetSyncSystem::receiveAdministrativePackets() {
+  void NetworkSystem::receiveAdministrativePackets() {
     for (auto pack : network->getRequestPackets()) {
-//      AddressOrGUID sender = AddressOrGUID(pack->guid);
+//      AddressOrGUID sender = AddressOrGUID(pack);
       BitStream stream(pack->data, pack->length, false);
       MessageID reqType;
       stream.Read(reqType);
@@ -111,7 +114,7 @@ namespace at3 {
     network->discardRequestPackets();
   }
 
-  void NetSyncSystem::receiveSyncPackets() {
+  void NetworkSystem::receiveSyncPackets() {
     for (auto pack : network->getSyncPackets()) {
       BitStream stream(pack->data, pack->length, false);
       MessageID syncType;
@@ -136,7 +139,13 @@ namespace at3 {
     network->discardSyncPackets();
   }
 
-  void NetSyncSystem::respondToEntityRequest(SLNet::BitStream & stream) {
+  void NetworkSystem::handleNewClients() {
+    for (auto client : network->getFreshConnections()) {
+
+    }
+  }
+
+  void NetworkSystem::respondToEntityRequest(SLNet::BitStream & stream) {
     uint8_t operation;
     stream.ReadBitsFromIntegerRange(operation, (uint8_t)0, (uint8_t)(OP_END_ENUM - 1), false);
     switch (operation) {
@@ -157,11 +166,11 @@ namespace at3 {
     }
   }
 
-  void NetSyncSystem::respondToComponentRequest(SLNet::BitStream & stream) {
+  void NetworkSystem::respondToComponentRequest(SLNet::BitStream & stream) {
 
   }
 
-  void NetSyncSystem::serializePhysicsSync(bool rw, SLNet::BitStream &stream) {
+  void NetworkSystem::serializePhysicsSync(bool rw, SLNet::BitStream &stream) {
     for (auto id : registries[0].ids) {
       Physics *physics;
       state->get_Physics(id, &physics);
@@ -216,7 +225,7 @@ namespace at3 {
     }
   }
 
-  void NetSyncSystem::serializeControlSync(bool rw, SLNet::BitStream &stream, entityId mId, entityId cId,
+  void NetworkSystem::serializeControlSync(bool rw, SLNet::BitStream &stream, entityId mId, entityId cId,
                                            MessageID syncType) {
     MouseControls *mouseControls;
     state->get_MouseControls(mId, &mouseControls);
@@ -227,13 +236,13 @@ namespace at3 {
     stream.Serialize(rw, cId);
     switch (syncType) {
       case ID_SYNC_WALKCONTROLS: {
-        PlayerControls *playerControls;
-        state->get_PlayerControls(cId, &playerControls);
-        stream.Serialize(rw, playerControls->accel);
-        stream.SerializeCompressed(rw, playerControls->jumpRequested);
-        stream.SerializeCompressed(rw, playerControls->jumpInProgress);
-        stream.SerializeCompressed(rw, playerControls->isGrounded);
-        stream.SerializeCompressed(rw, playerControls->isRunning);
+        WalkControls *walkControls;
+        state->get_WalkControls(cId, &walkControls);
+        stream.Serialize(rw, walkControls->accel);
+        stream.SerializeCompressed(rw, walkControls->jumpRequested);
+        stream.SerializeCompressed(rw, walkControls->jumpInProgress);
+        stream.SerializeCompressed(rw, walkControls->isGrounded);
+        stream.SerializeCompressed(rw, walkControls->isRunning);
       } break;
       case ID_SYNC_PYRAMIDCONTROLS: {
         PyramidControls *pyramidControls;
@@ -264,7 +273,7 @@ namespace at3 {
     }
   }
 
-  void NetSyncSystem::serializeControlAssignment(bool rw, SLNet::BitStream & stream,
+  void NetworkSystem::serializeControlAssignment(bool rw, SLNet::BitStream & stream,
       entityId mouseId, entityId walkingId, entityId pyramidId, entityId trackId, entityId freeId) {
     stream.Serialize(rw, mouseId);
     stream.Serialize(rw, walkingId);
@@ -280,30 +289,34 @@ namespace at3 {
     }
   }
 
-  void NetSyncSystem::setNetInterface(void *netInterface) {
+  void NetworkSystem::setNetInterface(void *netInterface) {
     network = *(std::shared_ptr<NetInterface>*) netInterface;
   }
 
-  void NetSyncSystem::switchToMouseCtrl(void *id) {
+  void NetworkSystem::setEcsInterface(void *ecs) {
+    this->ecs = *(std::shared_ptr<EntityComponentSystemInterface>*) ecs;
+  }
+
+  void NetworkSystem::switchToMouseCtrl(void *id) {
     mouseControlId = *(entityId*)id;
   }
 
-  void NetSyncSystem::switchToWalkCtrl(void *id) {
+  void NetworkSystem::switchToWalkCtrl(void *id) {
     keyControlId = *(entityId*)id;
     keyControlMessageId = ID_SYNC_WALKCONTROLS;
   }
 
-  void NetSyncSystem::switchToPyramidCtrl(void *id) {
+  void NetworkSystem::switchToPyramidCtrl(void *id) {
     keyControlId = *(entityId*)id;
     keyControlMessageId = ID_SYNC_PYRAMIDCONTROLS;
   }
 
-  void NetSyncSystem::switchToTrackCtrl(void *id) {
+  void NetworkSystem::switchToTrackCtrl(void *id) {
     keyControlId = *(entityId*)id;
     keyControlMessageId = ID_SYNC_TRACKCONTROLS;
   }
 
-  void NetSyncSystem::switchToFreeCtrl(void *id) {
+  void NetworkSystem::switchToFreeCtrl(void *id) {
     keyControlId = *(entityId*)id;
     keyControlMessageId = ID_SYNC_FREECONTROLS;
   }

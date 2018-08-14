@@ -19,18 +19,25 @@ namespace at3 {
     }
   }
   Server::~Server() {
+    if (peer->IsActive()) {
+      peer->Shutdown(100);
+    }
     printf("Server is being destroyed.\n");
     RakPeerInterface::DestroyInstance(peer);
   }
 
 # define CASE_REPORT_PACKET(e, s) case ID_ ##e: fprintf(s, "Received %s\n", #e); break
-  void Server::receive(std::vector<SLNet::Packet*> & requestBuffer, std::vector<SLNet::Packet*> & syncBuffer) {
+  void Server::receive(std::vector<SLNet::Packet*> & requestBuffer, std::vector<SLNet::Packet*> & syncBuffer,
+                       std::vector<SLNet::AddressOrGUID> & connectionBuffer) {
     Packet *packet;
     for (packet=peer->Receive(); packet; packet=peer->Receive()) {
       switch (packet->data[0]) {
-          CASE_REPORT_PACKET(NEW_INCOMING_CONNECTION, stdout);
           CASE_REPORT_PACKET(DISCONNECTION_NOTIFICATION, stdout);
           CASE_REPORT_PACKET(CONNECTION_LOST, stderr);
+        case ID_NEW_INCOMING_CONNECTION: {
+          connectionBuffer.emplace_back(AddressOrGUID(packet));
+          printf("Client Connected: %s\n", connectionBuffer.back().systemAddress.ToString());
+        } break;
         default: {
           if ((MessageID)packet->data[0] >= ID_USER_PACKET_SYNC_ENUM) {
             syncBuffer.emplace_back(packet);
@@ -46,8 +53,9 @@ namespace at3 {
   }
 # undef CASE_REPORT_PACKET
 
-  void Server::tick(std::vector<SLNet::Packet*> & requestBuffer, std::vector<SLNet::Packet*> & syncBuffer) {
-    receive(requestBuffer, syncBuffer);
+  void Server::tick(std::vector<SLNet::Packet*> & requestBuffer, std::vector<SLNet::Packet*> & syncBuffer,
+                    std::vector<SLNet::AddressOrGUID> & connectionBuffer) {
+    receive(requestBuffer, syncBuffer, connectionBuffer);
   }
 
   void Server::send(const BitStream &stream, PacketPriority priority, PacketReliability reliability, char channel) {

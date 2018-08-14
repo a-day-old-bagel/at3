@@ -33,9 +33,11 @@ namespace at3 {
     CMD_END_ENUM
   };
   enum ChannelEnums {
-    CH_CONTROL_SYNC = 0,
+    CH_ZERO_UNUSED = 0,
+    CH_ADMIN_MESSAGE,
+    CH_ECS_REQUEST,
+    CH_CONTROL_SYNC,
     CH_PHYSICS_SYNC,
-    CH_ECS_REQUEST
   };
 
   void writeEntityRequestHeader(SLNet::BitStream &stream);
@@ -46,43 +48,43 @@ namespace at3 {
       bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id = 0,
       std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr);
 
-  void serializePlacement(bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id,
+  void serializePlacement(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
                           std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
                           const glm::mat4 *mat = nullptr);
-  void serializeSceneNode(bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id,
+  void serializeSceneNode(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
                           std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
                           const ezecs::entityId *parentId = nullptr);
-  void serializeTransformFunction(bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id,
+  void serializeTransformFunction(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
                                   std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
                                   const uint8_t *transFuncId = nullptr);
-  void serializeMesh(bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id,
+  void serializeMesh(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
                      std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
                      const std::string *meshFileName = nullptr,
                      const std::string *textureFileName = nullptr);
-  void serializeCamera(bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id,
+  void serializeCamera(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
                        std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
                        const float *fovY = nullptr,
                        const float *nearPlane = nullptr,
                        const float *farPlane = nullptr);
-  void serializePhysics(bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id,
+  void serializePhysics(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
                         std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
                         float *mass = nullptr,
                         std::shared_ptr<void> *data = nullptr,
                         int *useCase = nullptr);
-  void serializeNetworkedPhysics(bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id,
+  void serializeNetworkedPhysics(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
                                  std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr);
-  void serializePyramidControls(bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id,
+  void serializePyramidControls(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
                                 std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
                                 const ezecs::entityId *mouseCtrlId = nullptr);
-  void serializeTrackControls(bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id,
+  void serializeTrackControls(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
                               std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr);
-  void serializePlayerControls(bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id,
-                               std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
-                               const ezecs::entityId *mouseCtrlId = nullptr);
-  void serializeFreeControls(bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id,
+  void serializeWalkControls(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
                              std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
                              const ezecs::entityId *mouseCtrlId = nullptr);
-  void serializeMouseControls(bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id,
+  void serializeFreeControls(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
+                             std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
+                             const ezecs::entityId *mouseCtrlId = nullptr);
+  void serializeMouseControls(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
                               std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
                               const bool *invertedX = nullptr,
                               const bool *invertedY = nullptr);

@@ -72,7 +72,7 @@ namespace at3 {
       typedef ezecs::entityId EcsId;
       typedef ezecs::State State;
 
-
+      EcsId openRequestId = 0;
       SLNet::BitStream stream;
       std::vector<std::unique_ptr<SLNet::BitStream>> compStreams;
       bool entityRequestOpen = false;
@@ -88,7 +88,7 @@ namespace at3 {
       void requestNetworkedPhysics();
       void requestPyramidControls(EcsId mouseCtrlId);
       void requestTrackControls();
-      void requestPlayerControls(EcsId mouseCtrlId);
+      void requestWalkControls(EcsId mouseCtrlId);
       void requestFreeControls(EcsId mouseCtrlId);
       void requestMouseControls(bool invertedX, bool invertedY);
 

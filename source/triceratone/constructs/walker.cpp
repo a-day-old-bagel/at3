@@ -21,10 +21,10 @@ namespace at3 {
       auto state = (State*)ctxt->ecs;
       SceneNode *sceneNode;
       state->get_SceneNode(ctxt->id, &sceneNode);
-      PlayerControls *playerControls;
-      state->get_PlayerControls(sceneNode->parentId, &playerControls);
+      WalkControls *walkControls;
+      state->get_WalkControls(sceneNode->parentId, &walkControls);
       MouseControls *mouseControls;
-      state->get_MouseControls(playerControls->mouseCtrlId, &mouseControls);
+      state->get_MouseControls(walkControls->mouseCtrlId, &mouseControls);
       glm::vec3 pos = {absTransIn[3][0], absTransIn[3][1], absTransIn[3][2]};
       glm::mat4 rot = glm::mat4(getCylStandingRot(pos, -halfPi, mouseControls->yaw));
       return transIn * rot;
@@ -36,8 +36,8 @@ namespace at3 {
     // This wasn't updated when I made the shift to cylidrical gravity, and by now lots of things besides are outdated.
     ////    Placement *camPlacement;
     ////    state->get_Placement(camera->gimbal->getId(), &camPlacement);
-    ////    PlayerControls *controls;
-    ////    state->get_PlayerControls(physicsBody->getId(), &controls);
+    ////    WalkControls *controls;
+    ////    state->get_WalkControls(physicsBody->getId(), &controls);
     ////    float correction = 0.f;
     ////    if (controls->isGrounded) {
     ////      correction = controls->equilibriumOffset;
@@ -90,7 +90,7 @@ namespace at3 {
     Physics* physics;
     state.get_Physics(physicalId, &physics);
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
-    state.add_PlayerControls(physicalId, camGimbalId);
+    state.add_WalkControls(physicalId, camGimbalId);
 
     state.createEntity(&visualId);
     state.add_Placement(visualId, ident);

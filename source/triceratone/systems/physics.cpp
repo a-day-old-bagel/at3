@@ -1,5 +1,5 @@
 
-#include "ecsSystem_physics.hpp"
+#include "physics.hpp"
 #include "BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
@@ -110,14 +110,14 @@ namespace at3 {
       );
     }
 
-    // PlayerControls
+    // WalkControls
     // TODO: create a kinematic body (0 mass, recalc inertia) to which to anchor
     //       the body when it lands from a height (point to point constraint, AKA ball joint, maybe)?
     for (auto id : registries[3].ids) {
       Placement *placement;
       state->get_Placement(id, &placement);
-      PlayerControls *ctrls;
-      state->get_PlayerControls(id, &ctrls);
+      WalkControls *ctrls;
+      state->get_WalkControls(id, &ctrls);
       Physics *physics;
       state->get_Physics(id, &physics);
 
@@ -366,7 +366,7 @@ namespace at3 {
     }
     ids = registries[3].ids;
     for (auto id : ids) {
-      state->rem_PlayerControls((entityId) id);
+      state->rem_WalkControls((entityId) id);
     }
     ids = registries[0].ids;
     for (auto id : ids) {

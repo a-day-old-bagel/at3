@@ -6,7 +6,7 @@
 #include "ezecs.hpp"
 #include "topics.hpp"
 #include "eventResponseMap.hpp"
-#include "ecsInterface.hpp"
+#include "interface.hpp"
 
 using namespace ezecs;
 
@@ -38,7 +38,7 @@ namespace at3 {
               MOUSECONTROLS,
               PYRAMIDCONTROLS,
               TRACKCONTROLS,
-              PLAYERCONTROLS,
+              WALKCONTROLS,
               FREECONTROLS
       };
       ControlSystem(State* state);

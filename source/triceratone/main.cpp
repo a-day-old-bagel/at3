@@ -9,13 +9,13 @@
 #include "settings.hpp"
 #include "topics.hpp"
 #include "ezecs.hpp"
-#include "ecsInterface.hpp"
+#include "interface.hpp"
 #include "game.hpp"
 
-#include "ecsSystem_scene.hpp"
-#include "ecsSystem_controls.hpp"
-#include "ecsSystem_netSync.hpp"
-#include "ecsSystem_physics.hpp"
+#include "scene.hpp"
+#include "controls.hpp"
+#include "network.hpp"
+#include "physics.hpp"
 
 #include "cylinderMath.hpp"
 
@@ -43,7 +43,7 @@ struct PlayerAvatarSet{
 class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
 
     ControlSystem controlSystem;
-    NetSyncSystem netSyncSystem;
+    NetworkSystem netSyncSystem;
     PhysicsSystem physicsSystem;
     SceneSystem   sceneSystem;
 
@@ -87,23 +87,23 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       state.add_Physics(arkId, 0, std::make_shared<std::string>("terrainArk"), Physics::STATIC_MESH);
       state.add_SceneNode(arkId, 0);
 
-//      ecs->openEntityRequest();
-//      ecs->requestPlacement(glm::scale(ident, glm::vec3(100.f, 100.f, 100.f)));
-//      ecs->requestMesh("terrainArk", "cliff1024_01");
+//      components->openEntityRequest();
+//      components->requestPlacement(glm::scale(ident, glm::vec3(100.f, 100.f, 100.f)));
+//      components->requestMesh("terrainArk", "cliff1024_01");
 //      std::shared_ptr<void> meshName = std::make_shared<std::string>("terrainArk");
-//      ecs->requestPhysics(0, meshName, Physics::STATIC_MESH);
-//      ecs->requestSceneNode(0);
-//      ecs->closeEntityRequest();
+//      components->requestPhysics(0, meshName, Physics::STATIC_MESH);
+//      components->requestSceneNode(0);
+//      components->closeEntityRequest();
 
 
 //      if (network->getRole() == settings::network::CLIENT) {
-//        ecs->openEntityRequest();
-//        ecs->requestPlacement(glm::translate(ident, {0, -790, -120}));
-//        ecs->requestMesh("humanBean", "");
+//        components->openEntityRequest();
+//        components->requestPlacement(glm::translate(ident, {0, -790, -120}));
+//        components->requestMesh("humanBean", "");
 //        std::shared_ptr<void> radius = std::make_shared<float>(1.f);
-//        ecs->requestPhysics(100.f, radius, Physics::SPHERE);
-//        ecs->requestSceneNode(0);
-//        ecs->closeEntityRequest();
+//        components->requestPhysics(100.f, radius, Physics::SPHERE);
+//        components->requestSceneNode(0);
+//        components->closeEntityRequest();
 //      }
 
 

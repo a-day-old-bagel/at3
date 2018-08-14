@@ -5,7 +5,7 @@
 #include <LinearMath/btIDebugDraw.h>
 #include "ezecs.hpp"
 #include "sceneObject.hpp"
-#include "ecsInterface.hpp"
+#include "interface.hpp"
 #include "topics.hpp"
 #include "vkc.hpp"
 
@@ -37,7 +37,7 @@ namespace at3 {
               PHYSICS,
               PHYSICS | PYRAMIDCONTROLS,
               PHYSICS | TRACKCONTROLS,
-              PHYSICS | PLAYERCONTROLS,
+              PHYSICS | WALKCONTROLS,
       };
       PhysicsSystem(State* state);
       ~PhysicsSystem() override;

@@ -27,3 +27,4 @@
 // TODO: have ezecs also generate a createEntity overload that takes an EntityCreateInfo or something so that you can create all components in one call (and network that one call with its info)
 // This EntityCreateInfo will include at least a componentMask and a list of constructor arguments to be used for each component present
 // TODO: the reversed-linear-z depth near/far plane switching trick (check discord history)
+// TODO: use the RakNet LobbyServer to manage logins, lobbies, matchmaking, accounts, etc.

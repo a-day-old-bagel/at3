@@ -1,14 +1,13 @@
 set( TARGET_NAME ${AT3_TARGET_PREFIX}triceratone )
 set( TARGET_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR} )
 
+add_subdirectory( components )
+add_subdirectory( constructs )
 add_subdirectory( mechanics )
-add_subdirectory( ecs )
+add_subdirectory( systems )
 
 add_executable( ${TARGET_NAME}
   main.cpp
-  duneBuggy.cpp duneBuggy.hpp
-  pyramid.cpp pyramid.hpp
-  walker.cpp walker.hpp
   )
 target_link_libraries( ${TARGET_NAME}
   ${TARGET_NAME}_systems

@@ -1,6 +1,6 @@
 
 #include <global/settings.hpp>
-#include "ecsSystem_controls.hpp"
+#include "controls.hpp"
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"
@@ -88,7 +88,7 @@ namespace at3 {
             0, 0, PYR_UP_ACCEL
         } * glm::normalize(mouseControls->lastHorizCtrlRot * pyramidControls->accel) * turbo;
         // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
-        if (id = currentCtrlKeys->getId()) {
+        if (id == currentCtrlKeys->getId()) {
           pyramidControls->accel = glm::vec3(0, 0, 0);
         }
       }
@@ -104,9 +104,11 @@ namespace at3 {
           Physics *sourcePhysics;
           state->get_Physics(id, &sourcePhysics);
           glm::mat4 sourceMat = glm::translate(source->absMat, {0.f, 0.f, 3.f});
+          btVector3 sourceVel = sourcePhysics->rigidBody->getLinearVelocity();
+          Physics *ballPhysics = nullptr;
 
           entityId ballId = 0;
-          uint32_t count = pyramidControls->shoot ? 1 : 4;
+          uint32_t count = pyramidControls->shoot ? 1 : 4;  // 0 for shoot will crash
           for (uint32_t i = 0; i < count; ++i) {
             ecs->openEntityRequest();
             ecs->requestPlacement(sourceMat);
@@ -115,6 +117,8 @@ namespace at3 {
             ecs->requestPhysics(5.f, radius, Physics::SPHERE);
             ecs->requestSceneNode(0);
             ballId = ecs->closeEntityRequest();
+            state->get_Physics(ballId, &ballPhysics);
+            ballPhysics->rigidBody->setLinearVelocity(sourceVel);
           }
           if (pyramidControls->shoot) {
             if (ballId) { // This just won't work on an unfulfilled request (which is another reason to get rid of them)
@@ -122,9 +126,7 @@ namespace at3 {
               glm::mat3 rot = getCylStandingRot(source->getTranslation(true), mouseControls->pitch, mouseControls->yaw);
               glm::vec3 shootDir = rot * tiltRot * glm::vec3(0, 0, -1);
               btVector3 shot = btVector3(shootDir.x, shootDir.y, shootDir.z) * 1000.f;
-              Physics* physics;
-              state->get_Physics(ballId, &physics);
-              physics->rigidBody->applyCentralImpulse(shot);
+              ballPhysics->rigidBody->applyCentralImpulse(shot);
             }
           }
         }
@@ -140,36 +142,36 @@ namespace at3 {
         // Calculate torque to apply
         trackControls->torque += TRACK_TORQUE * trackControls->control;
         // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
-        if (id = currentCtrlKeys->getId()) {
+        if (id == currentCtrlKeys->getId()) {
           trackControls->control = glm::vec2(0, 0);
         }
       }
     }
     for (auto id : (registries[3].ids)) { // Player/Walking
-      PlayerControls* playerControls;
-      state->get_PlayerControls(id, &playerControls);
+      WalkControls* walkControls;
+      state->get_WalkControls(id, &walkControls);
       Placement* placement;
       state->get_Placement(id, &placement);
       MouseControls *mouseControls;
-      state->get_MouseControls(playerControls->mouseCtrlId, &mouseControls);
+      state->get_MouseControls(walkControls->mouseCtrlId, &mouseControls);
 
       // provide the up vector
-      playerControls->up = glm::mat3(placement->absMat) * glm::vec3(0.f, 0.f, 1.f);
+      walkControls->up = glm::mat3(placement->absMat) * glm::vec3(0.f, 0.f, 1.f);
 
       // zero control forces
-      playerControls->force = glm::vec3(0, 0, 0);
+      walkControls->force = glm::vec3(0, 0, 0);
 
-      if (length(playerControls->accel) > 0.0f) {
+      if (length(walkControls->accel) > 0.0f) {
         // Rotate the movement axis to the correct orientation
-        float speed = playerControls->isRunning ? CHARA_RUN : CHARA_WALK;
-        playerControls->force = glm::mat3 {
+        float speed = walkControls->isRunning ? CHARA_RUN : CHARA_WALK;
+        walkControls->force = glm::mat3 {
             speed, 0, 0,
             0, speed, 0,
             0, 0, speed
-        } * glm::normalize(mouseControls->lastHorizCtrlRot * playerControls->accel);
+        } * glm::normalize(mouseControls->lastHorizCtrlRot * walkControls->accel);
         // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
-        if (id = currentCtrlKeys->getId()) {
-          playerControls->accel = glm::vec3(0, 0, 0);
+        if (id == currentCtrlKeys->getId()) {
+          walkControls->accel = glm::vec3(0, 0, 0);
         }
       }
     }
@@ -191,7 +193,7 @@ namespace at3 {
         placement->mat[3][2] += movement.z;
 
         // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
-        if (id = currentCtrlKeys->getId()) {
+        if (id == currentCtrlKeys->getId()) {
           freeControls->control = glm::vec3(0, 0, 0);
         }
       }
@@ -261,11 +263,11 @@ namespace at3 {
   }
 
   class ActiveWalkControl : public EntityAssociatedERM {
-      PlayerControls *getComponent() {
-        PlayerControls *playerControls = nullptr;
-        state->get_PlayerControls(id, &playerControls);
-        assert(playerControls);
-        return playerControls;
+      WalkControls *getComponent() {
+        WalkControls *walkControls = nullptr;
+        state->get_WalkControls(id, &walkControls);
+        assert(walkControls);
+        return walkControls;
       }
       void forwardOrBackward(float amount) { getComponent()->accel.z -= amount; }
       void rightOrLeft(float amount) { getComponent()->accel.x += amount; }

@@ -12,6 +12,7 @@ namespace at3 {
       std::unique_ptr<Client> client;
       std::vector<SLNet::Packet*> requestPackets;
       std::vector<SLNet::Packet*> syncPackets;
+      std::vector<SLNet::AddressOrGUID> freshConnections;
       uint32_t role = settings::network::role;
       void assumeRole();
       void discardPacketCollection(std::vector<SLNet::Packet*> & packets);
@@ -29,5 +30,7 @@ namespace at3 {
       void discardRequestPackets();
       const std::vector<SLNet::Packet*> & getSyncPackets();
       void discardSyncPackets();
+      const std::vector<SLNet::AddressOrGUID> & getFreshConnections();
+      void discardFreshConnections();
   };
 }
