@@ -26,8 +26,11 @@ namespace at3 {
       case settings::network::SERVER: {
         handleNewClients();
         receiveAdministrativePackets();
-        writeControlSyncs();
-        send(HIGH_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);  // TODO: Is immediate or high priority even helpful here? Or bad?
+        if (mouseControlId) { // In case no controls are currently assigned (no type of control *doesn't* use the mouse)
+          writeControlSyncs();
+          // TODO: Is immediate or high priority even helpful here? Or bad?
+          send(HIGH_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);
+        }
         if (writePhysicsSyncs(dt)) {
           send(LOW_PRIORITY, UNRELIABLE_SEQUENCED, CH_PHYSICS_SYNC);
         }
@@ -36,8 +39,10 @@ namespace at3 {
       } break;
       case settings::network::CLIENT: {
         receiveAdministrativePackets();
-        writeControlSyncs();
-        send(IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);
+        if (mouseControlId) { // In case no controls are currently assigned (no type of control *doesn't* use the mouse)
+          writeControlSyncs();
+          send(IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);
+        }
         receiveSyncPackets();
       } break;
       default: break;
@@ -68,9 +73,7 @@ namespace at3 {
   void NetworkSystem::writeControlSyncs() {
     outStream.Write(keyControlMessageId);
     outStream.Write(mouseControlId);
-    if (mouseControlId) { // In case no controls are currently assigned (no type of control *doesn't* use the mouse ATM)
-      serializeControlSync(true, outStream, mouseControlId, keyControlId, keyControlMessageId);
-    }
+    serializeControlSync(true, outStream, mouseControlId, keyControlId, keyControlMessageId);
   }
 
   void NetworkSystem::receiveAdministrativePackets() {
@@ -140,28 +143,9 @@ namespace at3 {
 
   void NetworkSystem::handleNewClients() {
     if ( ! network->getFreshConnections().empty()) {
-//      std::vector<entityId> newPlayerIds;
-//      for (uint32_t i = 0; i < network->getFreshConnections().size(); ++i) {
-//        newPlayerIds.emplace_back(createNewPlayer());
-//      }
-//      // Any new player components and their constituent avatar entities should now be included in this loop.
-//      for (const auto &id : registries[0].ids) {
-//        serializeEntityCreationRequest(true, outStream, *state, id);
-//        send(LOW_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
-//      }
-//      for (uint32_t i = 0; i < network->getFreshConnections().size(); ++i) {
-//        outStream.Write((MessageID) ID_USER_PACKET_ADMIN_COMMAND);
-//        outStream.WriteBitsFromIntegerRange((uint8_t) CMD_ASSIGN_PLAYER_ID, (uint8_t) 0,
-//                                            (uint8_t) (CMD_END_ENUM - 1));
-//        serializePlayerAssignment(true, outStream, newPlayerIds[i]);
-//        sendTo(network->getFreshConnections()[i], IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
-//      }
-//      network->discardFreshConnections();
-
-
-
       // All existing entities sent here
       for (const auto &id : registries[0].ids) {
+        writeEntityRequestHeader(outStream);
         serializeEntityCreationRequest(true, outStream, *state, id);
         send(LOW_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
       }
@@ -261,6 +245,7 @@ namespace at3 {
                                            MessageID syncType) {
     MouseControls *mouseControls;
     state->getMouseControls(mId, &mouseControls);
+    if ( ! mouseControls) { return; } // a client may not yet have the component being referred to.
     stream.Serialize(rw, mouseControls->yaw);
     stream.Serialize(rw, mouseControls->pitch);
     stream.SerializeCompressed(rw, mouseControls->invertedX);
@@ -270,6 +255,7 @@ namespace at3 {
       case ID_SYNC_WALKCONTROLS: {
         WalkControls *walkControls;
         state->getWalkControls(cId, &walkControls);
+        if ( ! walkControls) { return; } // a client may not yet have the component being referred to.
         stream.Serialize(rw, walkControls->accel);
         stream.SerializeCompressed(rw, walkControls->jumpRequested);
         stream.SerializeCompressed(rw, walkControls->jumpInProgress);
@@ -279,6 +265,7 @@ namespace at3 {
       case ID_SYNC_PYRAMIDCONTROLS: {
         PyramidControls *pyramidControls;
         state->getPyramidControls(cId, &pyramidControls);
+        if ( ! pyramidControls) { return; } // a client may not yet have the component being referred to.
         stream.Serialize(rw, pyramidControls->accel);
         stream.SerializeCompressed(rw, pyramidControls->turbo);
         stream.SerializeCompressed(rw, pyramidControls->shoot);
@@ -287,6 +274,7 @@ namespace at3 {
       case ID_SYNC_TRACKCONTROLS: {
         TrackControls *trackControls;
         state->getTrackControls(cId, &trackControls);
+        if ( ! trackControls) { return; } // a client may not yet have the component being referred to.
         stream.Serialize(rw, trackControls->control);
         stream.Serialize(rw, trackControls->brakes);
         stream.SerializeCompressed(rw, trackControls->flipRequested);
@@ -298,6 +286,7 @@ namespace at3 {
         // And that's only if you're going to attach a visual to it. Otherwise don't bother syncing this at all.
         FreeControls *freeControls;
         state->getFreeControls(cId, &freeControls);
+        if ( ! freeControls) { return; } // a client may not yet have the component being referred to.
         stream.Serialize(rw, freeControls->control);
         stream.SerializeBitsFromIntegerRange(rw, freeControls->x10, 0, 3);
       } break;

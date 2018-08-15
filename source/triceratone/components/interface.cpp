@@ -71,6 +71,7 @@ namespace at3 {
     // Solo's don't need to do this, and clients should not do this. This might be a redundant check, though.
     if (network->getRole() == settings::network::SERVER) {
       stream.Reset();
+      writeEntityRequestHeader(stream);
       serializeEntityCreationRequest(true, stream, *state, id);
       network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
     }
@@ -83,7 +84,27 @@ namespace at3 {
       // This is done instead of using the ecs functions because onDiscoverPlayer creates the avatars and stores their
       // ids inside the player component before the player component is sent out.
       state->createEntity(&playerId);
-      state->addPlayer(playerId);
+      state->addNetworking(playerId);
+      state->addPlayer(playerId, 0, 0, 0, 0); // These will be filled in SceneSystem::onDiscoverPlayer.
+      if (network->getRole() == settings::network::SERVER) {
+
+        // TODO: write a player construct, include a broadcast method to do what's in onDiscoverPlayer right now.
+        // TODO: write a freeCam construct and match the other constructs to its format:
+        // static id create, static switchTo(id), static destroy(id)
+        // TODO: also make the player component just sit in the freeCam
+        broadcastManualEntity(playerId);
+        Player * player;
+        state->getPlayer(playerId, &player);
+        entityId camId = player->free;
+        SceneNode *sceneNode;
+        state->getSceneNode(camId, &sceneNode);
+        entityId gimbalId = sceneNode->parentId;
+        state->getSceneNode(gimbalId, &sceneNode);
+        entityId ctrlId = sceneNode->parentId;
+        broadcastManualEntity(ctrlId);
+        broadcastManualEntity(gimbalId);
+        broadcastManualEntity(camId);
+      }
     }
     return playerId;
   }
@@ -140,11 +161,11 @@ namespace at3 {
     requestPhysics(0, meshFileNamePtr, Physics::STATIC_MESH);
   }
 
-  void EntityComponentSystemInterface::requestNetworkedPhysics() {
+  void EntityComponentSystemInterface::requestNetworking() {
     if (network->getRole() == settings::network::NONE) {
-      state->addNetworkedPhysics(openRequestId);
+      state->addNetworking(openRequestId);
     } else {
-      serializeNetworkedPhysics(true, nullptr, *state, 0, &compStreams);
+      serializeNetworking(true, nullptr, *state, 0, &compStreams);
     }
   }
 
@@ -188,11 +209,11 @@ namespace at3 {
     }
   }
 
-  void EntityComponentSystemInterface::requestPlayer() {
+  void EntityComponentSystemInterface::requestPlayer(EcsId free, EcsId walk, EcsId pyramid, EcsId track) {
     if (network->getRole() == settings::network::NONE) {
-      state->addPlayer(openRequestId);
+      state->addPlayer(openRequestId, free, walk, pyramid, track);
     } else {
-      serializePlayer(true, nullptr, *state, 0, &compStreams);
+      serializePlayer(true, nullptr, *state, 0, &compStreams, &free, &walk, &pyramid, &track);
     }
   }
 

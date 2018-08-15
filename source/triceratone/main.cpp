@@ -81,6 +81,7 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
         ecs->requestPlacement(glm::mat4(1.f));
         ecs->requestMesh("terrainArk", "cliff1024_01");
         ecs->requestStaticMeshPhysics("terrainArk");
+        ecs->requestNetworking();
         ecs->requestSceneNode(0);
         ecs->closeEntityRequest();
         // Create a player
@@ -98,7 +99,7 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       }
 
       // Start the player off in the freeCam avatar
-      switchToFreeControl();
+//      switchToFreeControl();
 
       // Set up the controls for switching between player avatars
       key1Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_1", Triceratone::switchToFreeControl, this);

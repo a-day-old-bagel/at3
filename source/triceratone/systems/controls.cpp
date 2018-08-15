@@ -88,7 +88,7 @@ namespace at3 {
             0, 0, PYR_UP_ACCEL
         } * glm::normalize(mouseControls->lastHorizCtrlRot * pyramidControls->accel) * turbo;
         // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
-        if (id == currentCtrlKeys->getId()) {
+        if (currentCtrlKeys && id == currentCtrlKeys->getId()) {
           pyramidControls->accel = glm::vec3(0, 0, 0);
         }
       }
@@ -142,7 +142,7 @@ namespace at3 {
         // Calculate torque to apply
         trackControls->torque += TRACK_TORQUE * trackControls->control;
         // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
-        if (id == currentCtrlKeys->getId()) {
+        if (currentCtrlKeys && id == currentCtrlKeys->getId()) {
           trackControls->control = glm::vec2(0, 0);
         }
       }
@@ -170,7 +170,7 @@ namespace at3 {
             0, 0, speed
         } * glm::normalize(mouseControls->lastHorizCtrlRot * walkControls->accel);
         // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
-        if (id == currentCtrlKeys->getId()) {
+        if (currentCtrlKeys && id == currentCtrlKeys->getId()) {
           walkControls->accel = glm::vec3(0, 0, 0);
         }
       }
@@ -193,7 +193,7 @@ namespace at3 {
         placement->mat[3][2] += movement.z;
 
         // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
-        if (id == currentCtrlKeys->getId()) {
+        if (currentCtrlKeys && id == currentCtrlKeys->getId()) {
           freeControls->control = glm::vec3(0, 0, 0);
         }
       }

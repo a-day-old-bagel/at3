@@ -48,7 +48,7 @@ namespace at3 {
           state.createEntity();
         }
         if (i != 1) { // TODO: make this an assert?
-          fprintf(stderr, "Anomaly found while processing entity creation request! Check logic!\n");
+          fprintf(stderr, "Anomaly found while processing entity creation request! Check logic (i was %i)!\n", i);
         }
         serializeComponentCreationRequest(false, stream, state, id);
       } else { // Receive a client's request to update all networked ECS's. The server fulfills it and rebroadcasts.
@@ -86,7 +86,7 @@ namespace at3 {
     serializeMesh(rw, &stream, state, id, compStreams);
     serializeCamera(rw, &stream, state, id, compStreams);
     serializePhysics(rw, &stream, state, id, compStreams);
-    serializeNetworkedPhysics(rw, &stream, state, id, compStreams);
+    serializeNetworking(rw, &stream, state, id, compStreams);
     serializePyramidControls(rw, &stream, state, id, compStreams);
     serializeTrackControls(rw, &stream, state, id, compStreams);
     serializeWalkControls(rw, &stream, state, id, compStreams);
@@ -267,7 +267,7 @@ namespace at3 {
     }
   }
 
-  void serializeNetworkedPhysics(bool rw, BitStream *stream, State &state, entityId id,
+  void serializeNetworking(bool rw, BitStream *stream, State &state, entityId id,
                                  std::vector<std::unique_ptr<BitStream>> *compStreams) {
     BitStream *inStream = compStreams ? (*compStreams)[6].get() : nullptr;
     if (inStream) { // If component constructor data is present
@@ -279,10 +279,10 @@ namespace at3 {
       } else { // This happens when instream has no entry for a given component's constructor arguments.
         stream->WriteCompressed((bool) false);
       }
-    } else if (hasComponent(rw, stream, state, id, NETWORKEDPHYSICS)) {
+    } else if (hasComponent(rw, stream, state, id, NETWORKING)) {
       if (rw) {
       } else {
-        state.addNetworkedPhysics(id);
+        state.addNetworking(id);
       }
     }
   }
@@ -411,8 +411,9 @@ namespace at3 {
     }
   }
 
-  void serializePlayer(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
-                       std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams) {
+  void serializePlayer(bool rw, SLNet::BitStream *stream, State &state, entityId id,
+                       std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams, entityId *free, entityId *walk,
+                       entityId *pyramid, entityId *track) {
     BitStream *inStream = compStreams ? (*compStreams)[12].get() : nullptr;
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
@@ -425,8 +426,19 @@ namespace at3 {
       }
     } else if (hasComponent(rw, stream, state, id, PLAYER)) {
       if (rw) {
+        Player *player;
+        state.getPlayer(id, &player);
+        stream->Write(player->free);
+        stream->Write(player->walk);
+        stream->Write(player->pyramid);
+        stream->Write(player->track);
       } else {
-        state.addPlayer(id);
+        entityId freeIn, walkIn, pyramidIn, trackIn;
+        stream->Read(freeIn);
+        stream->Read(walkIn);
+        stream->Read(pyramidIn);
+        stream->Read(trackIn);
+        state.addPlayer(id, freeIn, walkIn, pyramidIn, trackIn);
       }
     }
   }

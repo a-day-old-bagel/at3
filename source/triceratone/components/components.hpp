@@ -128,14 +128,19 @@ namespace {
   };
   EZECS_COMPONENT_DEPENDENCIES(Physics, Placement)
 
-  // I haven't worked out how to do this yet - if I only send a set of object updates, I don't want to have to include
+  // A possible nonpersistent data type to be held by the Networking component
+  struct NetworkedPhysicsData {
+    uint32_t priorityAccumulator = 0;
+  };
+  // So far this will be to indicate networked-ness of an entity and to hold data used for networked physics.
+  // This networked physics data will not need to be persistent, thus the pointer.
+  // I haven't worked out net physics yet - if I only send a subset of object updates, I don't want to have to include
   // the id of each object that I send, but otherwise how will the client know which it's receiving, given that my
   // frames aren't synced and clients can join at any time? GafferOnGames does not handle this...
-  struct NetworkedPhysics : public Component<NetworkedPhysics> {
-    uint32_t priorityAccumulator = 0;
-    NetworkedPhysics();
+  struct Networking : public Component<Networking> {
+    void * nonpersistentCustomData;
+    Networking();
   };
-  EZECS_COMPONENT_DEPENDENCIES(NetworkedPhysics, Physics)
 
   struct PyramidControls : public Component<PyramidControls> {
     glm::vec3 accel = glm::vec3(0, 0, 0);
@@ -211,8 +216,8 @@ namespace {
    * time. This assumes that a system will keep a 1-to-1 map from [user id] to [Player component id] in it somewhere.
    */
   struct Player : public Component<Player> { // TODO: Use a persistent ID like a username or salted hash or something
-    entityId walk = 0, pyramid = 0, track = 0, free = 0;
-    Player();
+    entityId free = 0, walk = 0, pyramid = 0, track = 0;
+    Player(entityId free, entityId walk, entityId pyramid, entityId track);
   };
 
   // END DECLARATIONS
@@ -331,7 +336,7 @@ namespace {
     }
   }
 
-  NetworkedPhysics::NetworkedPhysics() { }
+  Networking::Networking() { }
 
   PyramidControls::PyramidControls(entityId mouseCtrlId)
       : mouseCtrlId(mouseCtrlId) { }
@@ -347,7 +352,8 @@ namespace {
   MouseControls::MouseControls(bool invertedX, bool invertedY)
       : invertedX(invertedX), invertedY(invertedY) { }
 
-  Player::Player() { }
+  Player::Player(entityId free, entityId walk, entityId pyramid, entityId track)
+      : free(free), walk(walk), pyramid(pyramid), track(track) { }
 
   // END DEFINITIONS
 

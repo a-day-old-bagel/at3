@@ -59,9 +59,8 @@ namespace at3 {
 
     public:
       std::vector<compMask> requiredComponents = {
-        EXISTENCE,
-        PHYSICS,
-        NETWORKEDPHYSICS
+        NETWORKING,
+        NETWORKING | PHYSICS,
       };
       explicit NetworkSystem(State * state);
       bool onInit();

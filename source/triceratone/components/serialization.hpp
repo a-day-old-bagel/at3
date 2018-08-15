@@ -71,8 +71,8 @@ namespace at3 {
                         float *mass = nullptr,
                         std::shared_ptr<void> *data = nullptr,
                         int *useCase = nullptr);
-  void serializeNetworkedPhysics(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
-                                 std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr);
+  void serializeNetworking(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
+                           std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr);
   void serializePyramidControls(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
                                 std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
                                 const ezecs::entityId *mouseCtrlId = nullptr);
@@ -89,5 +89,9 @@ namespace at3 {
                               const bool *invertedX = nullptr,
                               const bool *invertedY = nullptr);
   void serializePlayer(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
-                       std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr);
+                       std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
+                       ezecs::entityId *free = nullptr,
+                       ezecs::entityId *walk = nullptr,
+                       ezecs::entityId *pyramid = nullptr,
+                       ezecs::entityId *track = nullptr);
 }
