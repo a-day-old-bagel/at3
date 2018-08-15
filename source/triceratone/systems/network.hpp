@@ -55,8 +55,6 @@ namespace at3 {
 
       void serializePlayerAssignment(bool rw, SLNet::BitStream &, entityId);
 
-//      entityId createNewPlayer();
-
     public:
       std::vector<compMask> requiredComponents = {
         NETWORKING,

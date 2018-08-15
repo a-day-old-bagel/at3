@@ -1,6 +1,7 @@
 
 #include <algorithm>
 #include "network.hpp"
+#include "playerSet.hpp"
 
 using namespace SLNet;
 
@@ -154,7 +155,7 @@ namespace at3 {
         outStream.Write((MessageID) ID_USER_PACKET_ADMIN_COMMAND);
         outStream.WriteBitsFromIntegerRange((uint8_t) CMD_ASSIGN_PLAYER_ID, (uint8_t) 0,
                                             (uint8_t) (CMD_END_ENUM - 1));
-        serializePlayerAssignment(true, outStream, ecs->createManualPlayer());
+        serializePlayerAssignment(true, outStream, PlayerSet::create(*state, *ecs, network->getRole()));
         sendTo(client, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
       }
       network->discardFreshConnections();
@@ -300,20 +301,6 @@ namespace at3 {
       rtu::topics::publish<entityId>("set_player_id", playerId);
     }
   }
-
-//  entityId NetworkSystem::createNewPlayer() {
-////    ecs->openEntityRequest();
-////    ecs->requestPlayer();
-////    return ecs->closeEntityRequest();
-//
-//    // This component will be sent to the network once the Scene System picks it up in SceneSystem::onDiscoverPlayer.
-//    // This is done instead of using the ecs functions because onDiscoverPlayer creates the avatars and stores their
-//    // ids inside the player component before the player component is sent out.
-//    entityId playerId;
-//    state->createEntity(&playerId);
-//    state->addPlayer(playerId);
-//    return playerId;
-//  }
 
   void NetworkSystem::setNetInterface(void *netInterface) {
     network = *(std::shared_ptr<NetInterface>*) netInterface;

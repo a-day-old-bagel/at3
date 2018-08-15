@@ -1,6 +1,8 @@
 
 add_library( ${TARGET_NAME}_constructs STATIC
   duneBuggy.cpp duneBuggy.hpp
+  freeCam.cpp freeCam.hpp
+  playerSet.cpp playerSet.hpp
   pyramid.cpp pyramid.hpp
   walker.cpp walker.hpp
   )

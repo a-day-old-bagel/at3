@@ -371,6 +371,9 @@ namespace at3 {
   }
 
   bool PhysicsSystem::onDiscover(const entityId &id) {
+
+    fprintf(stderr, "DISCOVERED PHYSICS: %u\n", id);
+
     Placement *placement;
     state->getPlacement(id, &placement);
     Physics *physics;

@@ -77,38 +77,6 @@ namespace at3 {
     }
   }
 
-  EntityComponentSystemInterface::EcsId EntityComponentSystemInterface::createManualPlayer() {
-    entityId playerId = 0;
-    if (network->getRole() != settings::network::CLIENT) {
-      // This component will be sent to the network once the Scene System picks it up in SceneSystem::onDiscoverPlayer.
-      // This is done instead of using the ecs functions because onDiscoverPlayer creates the avatars and stores their
-      // ids inside the player component before the player component is sent out.
-      state->createEntity(&playerId);
-      state->addNetworking(playerId);
-      state->addPlayer(playerId, 0, 0, 0, 0); // These will be filled in SceneSystem::onDiscoverPlayer.
-      if (network->getRole() == settings::network::SERVER) {
-
-        // TODO: write a player construct, include a broadcast method to do what's in onDiscoverPlayer right now.
-        // TODO: write a freeCam construct and match the other constructs to its format:
-        // static id create, static switchTo(id), static destroy(id)
-        // TODO: also make the player component just sit in the freeCam
-        broadcastManualEntity(playerId);
-        Player * player;
-        state->getPlayer(playerId, &player);
-        entityId camId = player->free;
-        SceneNode *sceneNode;
-        state->getSceneNode(camId, &sceneNode);
-        entityId gimbalId = sceneNode->parentId;
-        state->getSceneNode(gimbalId, &sceneNode);
-        entityId ctrlId = sceneNode->parentId;
-        broadcastManualEntity(ctrlId);
-        broadcastManualEntity(gimbalId);
-        broadcastManualEntity(camId);
-      }
-    }
-    return playerId;
-  }
-
   void EntityComponentSystemInterface::requestPlacement(const glm::mat4 &mat) {
     if (network->getRole() == settings::network::NONE) {
       state->addPlacement(openRequestId, mat);

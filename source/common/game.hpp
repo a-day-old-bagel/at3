@@ -21,7 +21,7 @@ namespace at3 {
 
       Game();
       virtual ~Game() = default;
-      bool init(const char *appName, const char *settingsName);
+      void init(const char *appName, const char *settingsName);
       void tick();
       bool getIsQuit();
 
@@ -66,10 +66,9 @@ namespace at3 {
    * @tparam Derived
    * @param appName
    * @param settingsName
-   * @return true if successful, false otherwise
    */
   template <typename EcsInterface, typename Derived>
-  bool Game<EcsInterface, Derived>::init(const char *appName, const char *settingsName) {
+  void Game<EcsInterface, Derived>::init(const char *appName, const char *settingsName) {
 
     // Read the settings from the ini file, including settings defined in the inheriting class (top level)
     settingsFileName = settingsName;
@@ -96,7 +95,7 @@ namespace at3 {
     rtu::topics::publish<std::shared_ptr<vkc::VulkanContext<EcsInterface>>>("set_vulkan_context", vulkan);
 
     // Call any implementation-defined initialization routines that need to happen (all system initializations are here)
-    return game().onInit();
+    game().onInit();
   }
 
   template <typename EcsInterface, typename Derived>

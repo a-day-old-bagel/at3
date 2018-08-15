@@ -3,6 +3,7 @@
 #include "client.hpp"
 #include "settings.hpp"
 #include "userPacketEnums.hpp"
+#include "topics.hpp"
 
 using namespace SLNet;
 
@@ -43,7 +44,10 @@ namespace at3 {
     for (packet=peer->Receive(); packet; packet=peer->Receive()) {
       switch (packet->data[0]) {
         CASE_REPORT_PACKET(CONNECTION_REQUEST_ACCEPTED, stdout);
-        CASE_REPORT_PACKET(CONNECTION_ATTEMPT_FAILED, stderr);
+        case ID_CONNECTION_ATTEMPT_FAILED: {
+          fprintf(stderr, "Client connection attempt failed!\n");
+          rtu::topics::publish("client_could_not_connect");
+        } break;
         default: {
           if ((MessageID)packet->data[0] >= ID_USER_PACKET_SYNC_ENUM) {
             syncBuffer.emplace_back(packet);

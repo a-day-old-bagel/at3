@@ -79,7 +79,6 @@ namespace at3 {
       void openEntityRequest();
       EcsId closeEntityRequest();
       void broadcastManualEntity(const ezecs::entityId &id);
-      EcsId createManualPlayer();
 
       void requestPlacement(const glm::mat4 & mat);
       void requestSceneNode(EcsId parentId);
