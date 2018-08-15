@@ -39,7 +39,7 @@ namespace at3 {
               PHYSICS | TRACKCONTROLS,
               PHYSICS | WALKCONTROLS,
       };
-      PhysicsSystem(State* state);
+      explicit PhysicsSystem(State* state);
       ~PhysicsSystem() override;
       bool onInit();
       void onTick(float dt);

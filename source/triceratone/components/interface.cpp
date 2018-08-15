@@ -1,7 +1,7 @@
 
 
 #include "interface.hpp"
-#include "networking.hpp"
+#include "serialization.hpp"
 
 using namespace ezecs;
 using namespace SLNet;
@@ -63,12 +63,34 @@ namespace at3 {
     } else {
       fprintf(stderr, "Entity request is not open. Cannot finalize until opened!\n");
     }
+    // TODO: for a client request, instead of returning 0, return a local-end ID that can later be replaced.
     return id;
+  }
+
+  void EntityComponentSystemInterface::broadcastManualEntity(const entityId &id) {
+    // Solo's don't need to do this, and clients should not do this. This might be a redundant check, though.
+    if (network->getRole() == settings::network::SERVER) {
+      stream.Reset();
+      serializeEntityCreationRequest(true, stream, *state, id);
+      network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
+    }
+  }
+
+  EntityComponentSystemInterface::EcsId EntityComponentSystemInterface::createManualPlayer() {
+    entityId playerId = 0;
+    if (network->getRole() != settings::network::CLIENT) {
+      // This component will be sent to the network once the Scene System picks it up in SceneSystem::onDiscoverPlayer.
+      // This is done instead of using the ecs functions because onDiscoverPlayer creates the avatars and stores their
+      // ids inside the player component before the player component is sent out.
+      state->createEntity(&playerId);
+      state->addPlayer(playerId);
+    }
+    return playerId;
   }
 
   void EntityComponentSystemInterface::requestPlacement(const glm::mat4 &mat) {
     if (network->getRole() == settings::network::NONE) {
-      state->add_Placement(openRequestId, mat);
+      state->addPlacement(openRequestId, mat);
     } else {
       serializePlacement(true, nullptr, *state, 0, &compStreams, &mat);
     }
@@ -76,7 +98,7 @@ namespace at3 {
 
   void EntityComponentSystemInterface::requestSceneNode(EntityComponentSystemInterface::EcsId parentId) {
     if (network->getRole() == settings::network::NONE) {
-      state->add_SceneNode(openRequestId, parentId);
+      state->addSceneNode(openRequestId, parentId);
     } else {
       serializeSceneNode(true, nullptr, *state, 0, &compStreams, &parentId);
     }
@@ -84,7 +106,7 @@ namespace at3 {
 
   void EntityComponentSystemInterface::requestTransformFunction(uint8_t transFuncId) {
     if (network->getRole() == settings::network::NONE) {
-      state->add_TransformFunction(openRequestId, transFuncId);
+      state->addTransformFunction(openRequestId, transFuncId);
     } else {
       serializeTransformFunction(true, nullptr, *state, 0, &compStreams, &transFuncId);
     }
@@ -92,7 +114,7 @@ namespace at3 {
 
   void EntityComponentSystemInterface::requestMesh(std::string meshFileName, std::string textureFileName){
     if (network->getRole() == settings::network::NONE) {
-      state->add_Mesh(openRequestId, meshFileName, textureFileName);
+      state->addMesh(openRequestId, meshFileName, textureFileName);
     } else {
       serializeMesh(true, nullptr, *state, 0, &compStreams, &meshFileName, &textureFileName);
     }
@@ -100,7 +122,7 @@ namespace at3 {
 
   void EntityComponentSystemInterface::requestCamera(float fovY, float nearPlane, float farPlane) {
     if (network->getRole() == settings::network::NONE) {
-      state->add_Camera(openRequestId, fovY, nearPlane, farPlane);
+      state->addCamera(openRequestId, fovY, nearPlane, farPlane);
     } else {
       serializeCamera(true, nullptr, *state, 0, &compStreams, &fovY, &nearPlane, &farPlane);
     }
@@ -108,15 +130,19 @@ namespace at3 {
 
   void EntityComponentSystemInterface::requestPhysics(float mass, std::shared_ptr<void> &initData, int useCase) {
     if (network->getRole() == settings::network::NONE) {
-      state->add_Physics(openRequestId, mass, initData, (Physics::UseCase)useCase);
+      state->addPhysics(openRequestId, mass, initData, (Physics::UseCase)useCase);
     } else {
       serializePhysics(true, nullptr, *state, 0, &compStreams, &mass, &initData, &useCase);
     }
   }
+  void EntityComponentSystemInterface::requestStaticMeshPhysics(const std::string &meshFileName) {
+    std::shared_ptr<void> meshFileNamePtr = std::make_shared<std::string>(meshFileName);
+    requestPhysics(0, meshFileNamePtr, Physics::STATIC_MESH);
+  }
 
   void EntityComponentSystemInterface::requestNetworkedPhysics() {
     if (network->getRole() == settings::network::NONE) {
-      state->add_NetworkedPhysics(openRequestId);
+      state->addNetworkedPhysics(openRequestId);
     } else {
       serializeNetworkedPhysics(true, nullptr, *state, 0, &compStreams);
     }
@@ -124,7 +150,7 @@ namespace at3 {
 
   void EntityComponentSystemInterface::requestPyramidControls(EntityComponentSystemInterface::EcsId mouseCtrlId){
     if (network->getRole() == settings::network::NONE) {
-      state->add_PyramidControls(openRequestId, mouseCtrlId);
+      state->addPyramidControls(openRequestId, mouseCtrlId);
     } else {
       serializePyramidControls(true, nullptr, *state, 0, &compStreams, &mouseCtrlId);
     }
@@ -132,7 +158,7 @@ namespace at3 {
 
   void EntityComponentSystemInterface::requestTrackControls() {
     if (network->getRole() == settings::network::NONE) {
-      state->add_TrackControls(openRequestId);
+      state->addTrackControls(openRequestId);
     } else {
       serializeTrackControls(true, nullptr, *state, 0, &compStreams);
     }
@@ -140,7 +166,7 @@ namespace at3 {
 
   void EntityComponentSystemInterface::requestWalkControls(EntityComponentSystemInterface::EcsId mouseCtrlId) {
     if (network->getRole() == settings::network::NONE) {
-      state->add_WalkControls(openRequestId, mouseCtrlId);
+      state->addWalkControls(openRequestId, mouseCtrlId);
     } else {
       serializeWalkControls(true, nullptr, *state, 0, &compStreams, &mouseCtrlId);
     }
@@ -148,7 +174,7 @@ namespace at3 {
 
   void EntityComponentSystemInterface::requestFreeControls(EntityComponentSystemInterface::EcsId mouseCtrlId) {
     if (network->getRole() == settings::network::NONE) {
-      state->add_FreeControls(openRequestId, mouseCtrlId);
+      state->addFreeControls(openRequestId, mouseCtrlId);
     } else {
       serializeFreeControls(true, nullptr, *state, 0, &compStreams, &mouseCtrlId);
     }
@@ -156,14 +182,22 @@ namespace at3 {
 
   void EntityComponentSystemInterface::requestMouseControls(bool invertedX, bool invertedY) {
     if (network->getRole() == settings::network::NONE) {
-      state->add_MouseControls(openRequestId, invertedX, invertedY);
+      state->addMouseControls(openRequestId, invertedX, invertedY);
     } else {
       serializeMouseControls(true, nullptr, *state, 0, &compStreams, &invertedX, &invertedY);
     }
   }
 
+  void EntityComponentSystemInterface::requestPlayer() {
+    if (network->getRole() == settings::network::NONE) {
+      state->addPlayer(openRequestId);
+    } else {
+      serializePlayer(true, nullptr, *state, 0, &compStreams);
+    }
+  }
+
   void EntityComponentSystemInterface::addTransform(const entityId &id, const glm::mat4 &transform) {
-    CompOpReturn status = state->add_Placement(id, transform);
+    CompOpReturn status = state->addPlacement(id, transform);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == SUCCESS);
   }
@@ -176,7 +210,7 @@ namespace at3 {
 
   glm::mat4 EntityComponentSystemInterface::getTransform(const entityId &id) {
     Placement *placement;
-    ezecs::CompOpReturn status = state->get_Placement(id, &placement);
+    ezecs::CompOpReturn status = state->getPlacement(id, &placement);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
     return placement->mat;
@@ -184,7 +218,7 @@ namespace at3 {
 
   glm::mat4 EntityComponentSystemInterface::getAbsTransform(const entityId &id) {
     Placement *placement;
-    ezecs::CompOpReturn status = state->get_Placement(id, &placement);
+    ezecs::CompOpReturn status = state->getPlacement(id, &placement);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
     return placement->absMat;
@@ -192,21 +226,21 @@ namespace at3 {
 
   void EntityComponentSystemInterface::setAbsTransform(const ezecs::entityId &id, const glm::mat4 &transform) {
     Placement *placement;
-    ezecs::CompOpReturn status = state->get_Placement(id, &placement);
+    ezecs::CompOpReturn status = state->getPlacement(id, &placement);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
     placement->absMat = transform;
   }
   bool EntityComponentSystemInterface::hasLocalMat3Override(const ezecs::entityId &id) {
     Placement *placement;
-    ezecs::CompOpReturn status = state->get_Placement(id, &placement);
+    ezecs::CompOpReturn status = state->getPlacement(id, &placement);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
     return placement->forceLocalRotationAndScale;
   }
   void EntityComponentSystemInterface::setLocalMat3Override(const ezecs::entityId &id, bool value) {
     Placement *placement;
-    ezecs::CompOpReturn status = state->get_Placement(id, &placement);
+    ezecs::CompOpReturn status = state->getPlacement(id, &placement);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
     placement->forceLocalRotationAndScale = value;
@@ -220,7 +254,7 @@ namespace at3 {
 
   glm::mat4 EntityComponentSystemInterface::getCustomModelTransform(const entityId &id) {
     TransformFunction *transformFunction;
-    ezecs::CompOpReturn status = state->get_TransformFunction(id, &transformFunction);
+    ezecs::CompOpReturn status = state->getTransformFunction(id, &transformFunction);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
     return transformFunction->transformed;
@@ -228,13 +262,13 @@ namespace at3 {
 
   void EntityComponentSystemInterface::addCamera(const ezecs::entityId &id, const float fovy,
                                                       const float nearPlane, const float farPlane) {
-    ezecs::CompOpReturn status = this->state->add_Camera(id, fovy, nearPlane, farPlane);
+    ezecs::CompOpReturn status = this->state->addCamera(id, fovy, nearPlane, farPlane);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
   }
 
   void EntityComponentSystemInterface::addMouseControl(const ezecs::entityId &id) {
-    CompOpReturn status = state->add_MouseControls(id, false, false);
+    CompOpReturn status = state->addMouseControls(id, false, false);
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == SUCCESS);
   }

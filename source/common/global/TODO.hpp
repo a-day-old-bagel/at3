@@ -28,3 +28,5 @@
 // This EntityCreateInfo will include at least a componentMask and a list of constructor arguments to be used for each component present
 // TODO: the reversed-linear-z depth near/far plane switching trick (check discord history)
 // TODO: use the RakNet LobbyServer to manage logins, lobbies, matchmaking, accounts, etc.
+// TODO: write the component hash maps on top of a normal contiguous array/vector for iteration's sake
+// TODO: make entityId's grow from both ends of the integer range, one end for networked entities and the other end for purely local entities. This can also be used for client ECS requests, in that the client can make the temporary entity on the local end of the collection and replace it with network-end entity when a response comes back.

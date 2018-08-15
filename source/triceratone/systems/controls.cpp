@@ -38,9 +38,9 @@ namespace at3 {
 
     for (auto id : (registries[0].ids)) { // Mouse controls
       MouseControls *mouseControls;
-      state->get_MouseControls(id, &mouseControls);
+      state->getMouseControls(id, &mouseControls);
       Placement *placement;
-      state->get_Placement(id, &placement);
+      state->getPlacement(id, &placement);
 
       glm::vec3 pos = placement->getTranslation(true);
       mouseControls->lastHorizCtrlRot = getCylStandingRot(pos, 0, mouseControls->yaw);
@@ -54,11 +54,11 @@ namespace at3 {
     }
     for (auto id : (registries[1].ids)) { // Pyramid
       PyramidControls* pyramidControls;
-      state->get_PyramidControls(id, &pyramidControls);
+      state->getPyramidControls(id, &pyramidControls);
       Placement* placement;
-      state->get_Placement(id, &placement);
+      state->getPlacement(id, &placement);
       MouseControls *mouseControls;
-      state->get_MouseControls(pyramidControls->mouseCtrlId, &mouseControls);
+      state->getMouseControls(pyramidControls->mouseCtrlId, &mouseControls);
 
       // provide the up vector
       pyramidControls->up = glm::mat3(placement->absMat) * glm::vec3(0.f, 0.f, 1.f);
@@ -100,9 +100,9 @@ namespace at3 {
       if (pyramidControls->drop || pyramidControls->shoot) {
         if (settings::network::role != settings::network::CLIENT) {
           Placement *source;
-          state->get_Placement(id, &source);
+          state->getPlacement(id, &source);
           Physics *sourcePhysics;
-          state->get_Physics(id, &sourcePhysics);
+          state->getPhysics(id, &sourcePhysics);
           glm::mat4 sourceMat = glm::translate(source->absMat, {0.f, 0.f, 3.f});
           btVector3 sourceVel = sourcePhysics->rigidBody->getLinearVelocity();
           Physics *ballPhysics = nullptr;
@@ -117,7 +117,7 @@ namespace at3 {
             ecs->requestPhysics(5.f, radius, Physics::SPHERE);
             ecs->requestSceneNode(0);
             ballId = ecs->closeEntityRequest();
-            state->get_Physics(ballId, &ballPhysics);
+            state->getPhysics(ballId, &ballPhysics);
             ballPhysics->rigidBody->setLinearVelocity(sourceVel);
           }
           if (pyramidControls->shoot) {
@@ -136,7 +136,7 @@ namespace at3 {
     }
     for (auto id : (registries[2].ids)) { // Track/buggy
       TrackControls* trackControls;
-      state->get_TrackControls(id, &trackControls);
+      state->getTrackControls(id, &trackControls);
 
       if (length(trackControls->control) > 0.f) {
         // Calculate torque to apply
@@ -149,11 +149,11 @@ namespace at3 {
     }
     for (auto id : (registries[3].ids)) { // Player/Walking
       WalkControls* walkControls;
-      state->get_WalkControls(id, &walkControls);
+      state->getWalkControls(id, &walkControls);
       Placement* placement;
-      state->get_Placement(id, &placement);
+      state->getPlacement(id, &placement);
       MouseControls *mouseControls;
-      state->get_MouseControls(walkControls->mouseCtrlId, &mouseControls);
+      state->getMouseControls(walkControls->mouseCtrlId, &mouseControls);
 
       // provide the up vector
       walkControls->up = glm::mat3(placement->absMat) * glm::vec3(0.f, 0.f, 1.f);
@@ -177,13 +177,13 @@ namespace at3 {
     }
     for (auto id: (registries[4].ids)) { // Free Control
       FreeControls *freeControls;
-      state->get_FreeControls(id, &freeControls);
+      state->getFreeControls(id, &freeControls);
       MouseControls *mouseControls;
-      state->get_MouseControls(freeControls->mouseCtrlId, &mouseControls);
+      state->getMouseControls(freeControls->mouseCtrlId, &mouseControls);
 
       if (length(freeControls->control) > 0.0f) {
         Placement *placement;
-        state->get_Placement(id, &placement);
+        state->getPlacement(id, &placement);
 
         glm::vec3 movement = (FREE_SPEED * powf(10.f, freeControls->x10) * dt) * glm::normalize(
             mouseControls->lastCtrlRot * freeControls->control);
@@ -220,13 +220,13 @@ namespace at3 {
   class ActiveMouseControl : public EntityAssociatedERM {
       MouseControls *getComponent() {
         MouseControls *mouseControls = nullptr;
-        state->get_MouseControls(id, &mouseControls);
+        state->getMouseControls(id, &mouseControls);
         assert(mouseControls);
         return mouseControls;
       }
       Placement *getPlacement() {
         Placement *placement = nullptr;
-        state->get_Placement(id, &placement);
+        state->getPlacement(id, &placement);
         assert(placement);
         return placement;
       }
@@ -265,7 +265,7 @@ namespace at3 {
   class ActiveWalkControl : public EntityAssociatedERM {
       WalkControls *getComponent() {
         WalkControls *walkControls = nullptr;
-        state->get_WalkControls(id, &walkControls);
+        state->getWalkControls(id, &walkControls);
         assert(walkControls);
         return walkControls;
       }
@@ -299,7 +299,7 @@ namespace at3 {
   class ActivePyramidControl : public EntityAssociatedERM {
       PyramidControls *getComponent() {
         PyramidControls *pyramidControls = nullptr;
-        state->get_PyramidControls(id, &pyramidControls);
+        state->getPyramidControls(id, &pyramidControls);
         assert(pyramidControls);
         return pyramidControls;
       }
@@ -337,18 +337,18 @@ namespace at3 {
   class ActiveTrackControl : public EntityAssociatedERM {
       TrackControls *getComponent() {
         TrackControls *trackControls = nullptr;
-        state->get_TrackControls(id, &trackControls);
+        state->getTrackControls(id, &trackControls);
         return trackControls; // may return nullptr
       }
       Physics *getPhysics() {
         Physics *physics = nullptr;
-        state->get_Physics(id, &physics);
+        state->getPhysics(id, &physics);
         assert(physics);
         return physics;
       }
       Placement *getPlacement() {
         Placement *placement = nullptr;
-        state->get_Placement(id, &placement);
+        state->getPlacement(id, &placement);
         assert(placement);
         return placement;
       }
@@ -395,7 +395,7 @@ namespace at3 {
   class ActiveFreeControl : public EntityAssociatedERM {
       FreeControls *getComponent() {
         FreeControls *freeControls = nullptr;
-        state->get_FreeControls(id, &freeControls);
+        state->getFreeControls(id, &freeControls);
         assert(freeControls);
         return freeControls;
       }

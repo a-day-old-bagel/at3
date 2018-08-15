@@ -4,7 +4,7 @@
 #include "ezecs.hpp"
 #include "topics.hpp"
 #include "netInterface.hpp"
-#include "networking.hpp"
+#include "serialization.hpp"
 #include "interface.hpp"
 
 using namespace ezecs;
@@ -53,15 +53,17 @@ namespace at3 {
       void serializeControlSync(bool rw, SLNet::BitStream &, entityId mId, entityId cId,
                                 SLNet::MessageID syncType = ID_USER_PACKET_END_ENUM);
 
-      void serializeControlAssignment(bool rw, SLNet::BitStream &,
-                                      entityId = 0, entityId = 0, entityId = 0, entityId = 0, entityId = 0);
+      void serializePlayerAssignment(bool rw, SLNet::BitStream &, entityId);
+
+//      entityId createNewPlayer();
 
     public:
       std::vector<compMask> requiredComponents = {
+        EXISTENCE,
         PHYSICS,
         NETWORKEDPHYSICS
       };
-      NetworkSystem(State * state);
+      explicit NetworkSystem(State * state);
       bool onInit();
       void onTick(float dt);
   };

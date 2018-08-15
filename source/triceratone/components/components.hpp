@@ -119,7 +119,6 @@ namespace {
     btRigidBody* rigidBody;
 
     Physics(float mass, sharedVoidPtr initData, UseCase useCase);
-    ~Physics();
     void setTransform(glm::mat4 &newTrans);
     void beStill();
 
@@ -195,9 +194,25 @@ namespace {
   };
   EZECS_COMPONENT_DEPENDENCIES(MouseControls, Placement)
 
+  /**
+   * This is pretty weird - a Player component doesn't impart any functionality to an entity at all, it's just a
+   * place to store player information, and so doesn't really "belong" in a component. But since we want all persistent
+   * data to be stored in the ECS, this was the first way I thought of to achieve that. Maybe we'll change it once a
+   * better way comes up, or once this causes weird problems.
+   * For example, what happens if the entity this belongs to gets deleted? That player is just lost from the world?
+   * Any attempts from the corresponding user to play the game would just break?
+   * Right now the only persistent data being stored are id's of the different avatars each player can embody under
+   * normal circumstances, and each player is just identified by the ID of the Player component itself.
+   * So if you were to re-log into a simulation, you'd have to be given the correct ID by the server.
+   *
+   * Maybe a better way to do this would be to not store id's of entities that *actually* represent a player's avatar in
+   * here, but to rather give each avatar entity one of these components with information like health, status, and user
+   * identification of some kind, so that a user can only correspond to one entity with "his/her" Player component at a
+   * time. This assumes that a system will keep a 1-to-1 map from [user id] to [Player component id] in it somewhere.
+   */
   struct Player : public Component<Player> { // TODO: Use a persistent ID like a username or salted hash or something
-    entityId walk, pyramid, track, free;
-    Player(entityId walk, entityId pyramid, entityId track, entityId free);
+    entityId walk = 0, pyramid = 0, track = 0, free = 0;
+    Player();
   };
 
   // END DECLARATIONS
@@ -259,16 +274,6 @@ namespace {
 
   Physics::Physics(float mass, sharedVoidPtr initData, Physics::UseCase useCase)
       : useCase(useCase), mass(mass), initData(initData) { }
-  Physics::~Physics() {
-    if (customData && useCase == WHEEL) {
-      switch (useCase) {
-        case WHEEL: {
-          delete ((WheelInfo*)customData);
-        } break;
-        default: break; // TODO: Make this deconstructor safer, or do deallocation elsewhere
-      }
-    }
-  }
   void Physics::setTransform(glm::mat4 &newTrans) {
     btTransform transform = rigidBody->getCenterOfMassTransform();
     transform.setFromOpenGLMatrix((btScalar *)&newTrans);
@@ -342,8 +347,7 @@ namespace {
   MouseControls::MouseControls(bool invertedX, bool invertedY)
       : invertedX(invertedX), invertedY(invertedY) { }
 
-  Player::Player(entityId walk, entityId pyramid, entityId track, entityId free)
-      : walk(walk), pyramid(pyramid), track(track), free(free) { }
+  Player::Player() { }
 
   // END DEFINITIONS
 

@@ -20,11 +20,11 @@ namespace at3 {
     if (ctxt) {
       auto state = (State*)ctxt->ecs;
       SceneNode *sceneNode;
-      state->get_SceneNode(ctxt->id, &sceneNode);
+      state->getSceneNode(ctxt->id, &sceneNode);
       WalkControls *walkControls;
-      state->get_WalkControls(sceneNode->parentId, &walkControls);
+      state->getWalkControls(sceneNode->parentId, &walkControls);
       MouseControls *mouseControls;
-      state->get_MouseControls(walkControls->mouseCtrlId, &mouseControls);
+      state->getMouseControls(walkControls->mouseCtrlId, &mouseControls);
       glm::vec3 pos = {absTransIn[3][0], absTransIn[3][1], absTransIn[3][2]};
       glm::mat4 rot = glm::mat4(getCylStandingRot(pos, -halfPi, mouseControls->yaw));
       return transIn * rot;
@@ -35,9 +35,9 @@ namespace at3 {
     // OLD stuff used to make the visible body snap to correct height (make spring motion invisible)
     // This wasn't updated when I made the shift to cylidrical gravity, and by now lots of things besides are outdated.
     ////    Placement *camPlacement;
-    ////    state->get_Placement(camera->gimbal->getId(), &camPlacement);
+    ////    state->getPlacement(camera->gimbal->getId(), &camPlacement);
     ////    WalkControls *controls;
-    ////    state->get_WalkControls(physicsBody->getId(), &controls);
+    ////    state->getWalkControls(physicsBody->getId(), &controls);
     ////    float correction = 0.f;
     ////    if (controls->isGrounded) {
     ////      correction = controls->equilibriumOffset;
@@ -74,37 +74,37 @@ namespace at3 {
     float back = 5.f;
     float tilt = 0.35f;
     glm::mat4 camMat = glm::rotate(glm::translate(ident, {0.f, 0.f, back}), tilt , glm::vec3(1.0f, 0.0f, 0.0f));
-    state.add_Placement(camId, camMat);
-    state.add_Camera(camId, settings::graphics::fovy, 0.1f, 10000.f);
+    state.addPlacement(camId, camMat);
+    state.addCamera(camId, settings::graphics::fovy, 0.1f, 10000.f);
 
     state.createEntity(&camGimbalId);
-    state.add_Placement(camGimbalId, ident);
+    state.addPlacement(camGimbalId, ident);
     Placement *placement;
-    state.get_Placement(camGimbalId, &placement);
+    state.getPlacement(camGimbalId, &placement);
     placement->forceLocalRotationAndScale = true;
-    state.add_MouseControls(camGimbalId, settings::controls::mouseInvertX, settings::controls::mouseInvertY);
+    state.addMouseControls(camGimbalId, settings::controls::mouseInvertX, settings::controls::mouseInvertY);
 
     state.createEntity(&physicalId);
-    state.add_Placement(physicalId, transform);
-    state.add_Physics(physicalId, 1.f, nullptr, Physics::CHARA);
+    state.addPlacement(physicalId, transform);
+    state.addPhysics(physicalId, 1.f, nullptr, Physics::CHARA);
     Physics* physics;
-    state.get_Physics(physicalId, &physics);
+    state.getPhysics(physicalId, &physics);
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
-    state.add_WalkControls(physicalId, camGimbalId);
+    state.addWalkControls(physicalId, camGimbalId);
 
     state.createEntity(&visualId);
-    state.add_Placement(visualId, ident);
-    state.add_TransformFunction(visualId, getBodyTransFuncDesc().registrationId);
-    state.add_Mesh(visualId, "humanBean", "grass1024_00");
+    state.addPlacement(visualId, ident);
+    state.addTransformFunction(visualId, getBodyTransFuncDesc().registrationId);
+    state.addMesh(visualId, "humanBean", "grass1024_00");
 
     addToScene();
   }
 
   void Walker::addToScene() {
-    state->add_SceneNode(physicalId, 0);
-    state->add_SceneNode(visualId, physicalId);
-    state->add_SceneNode(camGimbalId, visualId);
-    state->add_SceneNode(camId, camGimbalId);
+    state->addSceneNode(physicalId, 0);
+    state->addSceneNode(visualId, physicalId);
+    state->addSceneNode(camGimbalId, visualId);
+    state->addSceneNode(camId, camGimbalId);
   }
 
   void Walker::makeActiveControl(void *nothing) {

@@ -78,6 +78,8 @@ namespace at3 {
       bool entityRequestOpen = false;
       void openEntityRequest();
       EcsId closeEntityRequest();
+      void broadcastManualEntity(const ezecs::entityId &id);
+      EcsId createManualPlayer();
 
       void requestPlacement(const glm::mat4 & mat);
       void requestSceneNode(EcsId parentId);
@@ -85,12 +87,14 @@ namespace at3 {
       void requestMesh(std::string meshFileName, std::string textureFileName);
       void requestCamera(float fovY, float nearPlane, float farPlane);
       void requestPhysics(float mass, std::shared_ptr<void> & initData, int useCase);
+      void requestStaticMeshPhysics(const std::string &meshFileName);
       void requestNetworkedPhysics();
       void requestPyramidControls(EcsId mouseCtrlId);
       void requestTrackControls();
       void requestWalkControls(EcsId mouseCtrlId);
       void requestFreeControls(EcsId mouseCtrlId);
       void requestMouseControls(bool invertedX, bool invertedY);
+      void requestPlayer();
 
       /*
        * A transform is the transformation matrix from model space to world space encoding both world position and

@@ -41,7 +41,7 @@ namespace at3 {
               WALKCONTROLS,
               FREECONTROLS
       };
-      ControlSystem(State* state);
+      explicit ControlSystem(State* state);
       ~ControlSystem() override;
       bool onInit();
       void onTick(float dt);

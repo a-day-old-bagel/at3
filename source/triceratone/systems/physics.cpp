@@ -90,11 +90,11 @@ namespace at3 {
     // PyramidControls
     for (auto id : registries[1].ids) {
       Placement *placement;
-      state->get_Placement(id, &placement);
+      state->getPlacement(id, &placement);
       PyramidControls *ctrls;
-      state->get_PyramidControls(id, &ctrls);
+      state->getPyramidControls(id, &ctrls);
       Physics *physics;
-      state->get_Physics(id, &physics);
+      state->getPhysics(id, &physics);
       physics->rigidBody->applyForce({ctrls->force.x, ctrls->force.y, ctrls->force.z},
                                      btVector3(ctrls->up.x, ctrls->up.y, ctrls->up.z) * 0.05f);
 
@@ -115,11 +115,11 @@ namespace at3 {
     //       the body when it lands from a height (point to point constraint, AKA ball joint, maybe)?
     for (auto id : registries[3].ids) {
       Placement *placement;
-      state->get_Placement(id, &placement);
+      state->getPlacement(id, &placement);
       WalkControls *ctrls;
-      state->get_WalkControls(id, &ctrls);
+      state->getWalkControls(id, &ctrls);
       Physics *physics;
-      state->get_Physics(id, &physics);
+      state->getPhysics(id, &physics);
 
       // Fire some rays straight "down"
 
@@ -258,7 +258,7 @@ namespace at3 {
     // TrackControls
     for (auto id : registries[2].ids) {
       TrackControls *trackControls;
-      state->get_TrackControls(id, &trackControls);
+      state->getTrackControls(id, &trackControls);
       //Todo: put engine force application *before* the sim update, with wheel update after?
 
 //      for (size_t i = 0; i < trackControls->wheels.size(); ++i) {
@@ -291,9 +291,9 @@ namespace at3 {
 
       if (trackControls->flipRequested) {
         Physics *physics;
-        state->get_Physics(id, &physics);
+        state->getPhysics(id, &physics);
         Placement *placement;
-        state->get_Placement(id, &placement);
+        state->getPlacement(id, &placement);
         glm::vec3 cen = glm::vec3(0, 0, 1);
         glm::vec3 dir = -getNaiveCylGrav(placement->getTranslation(true)) * 25.f;
         physics->rigidBody->applyImpulse({dir.x, dir.y, dir.z}, {cen.x, cen.y, cen.z});
@@ -311,15 +311,15 @@ namespace at3 {
     // All Physics
     for (auto id : registries[0].ids) {
       Physics *physics;
-      state->get_Physics(id, &physics);
+      state->getPhysics(id, &physics);
       Placement *placement;
-      state->get_Placement(id, &placement);
+      state->getPlacement(id, &placement);
       btTransform transform;
       switch (physics->useCase) {
         case Physics::WHEEL: {
           WheelInfo wi = *((WheelInfo*)physics->customData);
           TrackControls *trackControls;
-          if (SUCCESS == state->get_TrackControls(wi.parentVehicle, &trackControls)) {
+          if (SUCCESS == state->getTrackControls(wi.parentVehicle, &trackControls)) {
             transform = trackControls->vehicle->getWheelTransformWS(((WheelInfo*)physics->customData)->bulletWheelId);
           } else {
             // TODO: handle an orphan wheel
@@ -357,22 +357,11 @@ namespace at3 {
     }
   }
 
-  void PhysicsSystem::deInit() {
-	  // onForget will be called for each remaining id
-    // TODO: does this need to be updated?
-    std::vector<entityId> ids = registries[1].ids;
+  void PhysicsSystem::deInit() {  // TODO: re-evaluate if everything is being deleted correctly
+    std::vector<entityId> ids = registries[0].ids;
     for (auto id : ids) {
-      state->rem_PyramidControls((entityId) id);
+      state->remPhysics((entityId) id);
     }
-    ids = registries[3].ids;
-    for (auto id : ids) {
-      state->rem_WalkControls((entityId) id);
-    }
-    ids = registries[0].ids;
-    for (auto id : ids) {
-      state->rem_Physics((entityId) id);
-    }
-
     delete vehicleRaycaster;
     delete dynamicsWorld;
     delete solver;
@@ -383,10 +372,10 @@ namespace at3 {
 
   bool PhysicsSystem::onDiscover(const entityId &id) {
     Placement *placement;
-    state->get_Placement(id, &placement);
+    state->getPlacement(id, &placement);
     Physics *physics;
-    state->get_Physics(id, &physics);
-    // TODO: Re-use shapes instead of making a new one for each instance
+    state->getPhysics(id, &physics);
+    // TODO: Re-use shapes instead of making a new one for each instance (like spheres with the same radius)
     btCollisionShape* shape = nullptr;
     switch (physics->useCase) {
       case Physics::SPHERE: {
@@ -440,7 +429,7 @@ namespace at3 {
       case Physics::WHEEL: {
         WheelInitInfo initInfo = *((WheelInitInfo*)physics->initData.get());
         TrackControls *trackControls;
-        CompOpReturn status = state->get_TrackControls(initInfo.wi.parentVehicle, &trackControls);
+        CompOpReturn status = state->getTrackControls(initInfo.wi.parentVehicle, &trackControls);
         if (status != SUCCESS) {
           EZECS_CHECK_PRINT(EZECS_ERR_MSG(status, "Attempted to add wheel to nonexistent vehicle!\n"));
           return false;
@@ -485,26 +474,16 @@ namespace at3 {
 
   bool PhysicsSystem::onForget(const entityId &id) {
     Physics *physics;
-    state->get_Physics(id, &physics);
-    switch (physics->useCase) {
-      case Physics::WHEEL: {
-        // TODO: delete wheel from vehicle somehow? also remove from trackControl's vector?
-        /*WheelInfo *wheelInfo = ((WheelInfo*)physics->customData);
-        TrackControls *trackControls;
-        CompOpReturn status = state->get_TrackControls(wheelInfo->parentVehicle, &trackControls);
-        if (status != SUCCESS) {
-          EZECS_CHECK_PRINT(EZECS_ERR_MSG(status, "Attempted to access wheel of nonexistent vehicle!\n"));
-          return false;
-        }
-        btWheelInfo& wheelInfoBt = trackControls->vehicle->getWheelInfo(wheelInfo->bulletWheelId);*/
-      } return true;
-      case Physics::STATIC_MESH: {
-        dynamicsWorld->removeRigidBody(physics->rigidBody);
-        delete (reinterpret_cast<btTriangleMeshShape*>(physics->rigidBody->getCollisionShape()))->getMeshInterface();
-      } break;
-      default: {
-        dynamicsWorld->removeRigidBody(physics->rigidBody);
-      } break;
+    state->getPhysics(id, &physics);
+    if (physics->useCase == Physics::WHEEL) {
+      // TODO: delete wheel from vehicle somehow? also remove from trackControl's vector?
+      delete ((WheelInfo*)physics->customData);
+      return true;
+    }
+    dynamicsWorld->removeRigidBody(physics->rigidBody);
+    if (physics->useCase == Physics::STATIC_MESH) {
+//      delete ((btTriangleMeshShape*)physics->rigidBody->getCollisionShape())->getMeshInterface();
+      delete (btTriangleMesh*)physics->customData;
     }
     delete physics->rigidBody->getMotionState();
     delete physics->rigidBody->getCollisionShape();
@@ -515,9 +494,9 @@ namespace at3 {
   bool PhysicsSystem::onDiscoverTrackControls(const entityId &id) {
     // onDiscover is guaranteed to have been called already, since TrackControls requires Physics.
     Physics *physics;
-    state->get_Physics(id, &physics);
+    state->getPhysics(id, &physics);
     TrackControls *trackControls;
-    state->get_TrackControls(id, &trackControls);
+    state->getTrackControls(id, &trackControls);
     trackControls->vehicle = new btRaycastVehicle(trackControls->tuning, physics->rigidBody, vehicleRaycaster);
     dynamicsWorld->addVehicle(trackControls->vehicle);
     trackControls->vehicle->setCoordinateSystem(0, 2, 1);
@@ -526,9 +505,9 @@ namespace at3 {
   bool PhysicsSystem::onForgetTrackControls(const entityId &id) {
     // fixme: investigate the order of deletion if both this and the normal onForget are called on a chassis
     TrackControls *trackControls;
-    state->get_TrackControls(id, &trackControls);
+    state->getTrackControls(id, &trackControls);
     for (auto wheel : trackControls->wheels) {
-      state->rem_Physics(wheel.myId);
+      state->remPhysics(wheel.myId);
     }
     dynamicsWorld->removeVehicle(trackControls->vehicle);
     delete trackControls->vehicle;

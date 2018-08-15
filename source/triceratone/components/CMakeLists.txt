@@ -6,7 +6,7 @@ add_subdirectory( "${EZECS_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/ezecs" )
 
 add_library( ${TARGET_NAME}_components STATIC
   interface.cpp interface.hpp
-  networking.cpp networking.hpp
+  serialization.cpp serialization.hpp
   )
 target_link_libraries( ${TARGET_NAME}_components
   ${AT3_TARGET_PREFIX}common

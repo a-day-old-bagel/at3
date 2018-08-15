@@ -24,6 +24,7 @@ namespace at3 {
   void NetworkSystem::onTick(float dt) {
     switch(network->getRole()) {
       case settings::network::SERVER: {
+        handleNewClients();
         receiveAdministrativePackets();
         writeControlSyncs();
         send(HIGH_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);  // TODO: Is immediate or high priority even helpful here? Or bad?
@@ -32,7 +33,6 @@ namespace at3 {
         }
         receiveSyncPackets();
         // TODO: somehow send clients' controls to other clients
-
       } break;
       case settings::network::CLIENT: {
         receiveAdministrativePackets();
@@ -75,7 +75,6 @@ namespace at3 {
 
   void NetworkSystem::receiveAdministrativePackets() {
     for (auto pack : network->getRequestPackets()) {
-//      AddressOrGUID sender = AddressOrGUID(pack);
       BitStream stream(pack->data, pack->length, false);
       MessageID reqType;
       stream.Read(reqType);
@@ -100,8 +99,8 @@ namespace at3 {
           uint8_t command;
           stream.ReadBitsFromIntegerRange(command, (uint8_t)0, (uint8_t)(CMD_END_ENUM - 1), false);
           switch (command) {
-            case CMD_ASSIGN_CONTROL_IDS: {
-
+            case CMD_ASSIGN_PLAYER_ID: {
+              serializePlayerAssignment(false, stream, 0);
             } break;
             default: break;
           }
@@ -140,8 +139,41 @@ namespace at3 {
   }
 
   void NetworkSystem::handleNewClients() {
-    for (auto client : network->getFreshConnections()) {
+    if ( ! network->getFreshConnections().empty()) {
+//      std::vector<entityId> newPlayerIds;
+//      for (uint32_t i = 0; i < network->getFreshConnections().size(); ++i) {
+//        newPlayerIds.emplace_back(createNewPlayer());
+//      }
+//      // Any new player components and their constituent avatar entities should now be included in this loop.
+//      for (const auto &id : registries[0].ids) {
+//        serializeEntityCreationRequest(true, outStream, *state, id);
+//        send(LOW_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
+//      }
+//      for (uint32_t i = 0; i < network->getFreshConnections().size(); ++i) {
+//        outStream.Write((MessageID) ID_USER_PACKET_ADMIN_COMMAND);
+//        outStream.WriteBitsFromIntegerRange((uint8_t) CMD_ASSIGN_PLAYER_ID, (uint8_t) 0,
+//                                            (uint8_t) (CMD_END_ENUM - 1));
+//        serializePlayerAssignment(true, outStream, newPlayerIds[i]);
+//        sendTo(network->getFreshConnections()[i], IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
+//      }
+//      network->discardFreshConnections();
 
+
+
+      // All existing entities sent here
+      for (const auto &id : registries[0].ids) {
+        serializeEntityCreationRequest(true, outStream, *state, id);
+        send(LOW_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
+      }
+      // Any new player and avatar components sent here, along with the player ID assignments
+      for (const auto &client : network->getFreshConnections()) {
+        outStream.Write((MessageID) ID_USER_PACKET_ADMIN_COMMAND);
+        outStream.WriteBitsFromIntegerRange((uint8_t) CMD_ASSIGN_PLAYER_ID, (uint8_t) 0,
+                                            (uint8_t) (CMD_END_ENUM - 1));
+        serializePlayerAssignment(true, outStream, ecs->createManualPlayer());
+        sendTo(client, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
+      }
+      network->discardFreshConnections();
     }
   }
 
@@ -171,9 +203,9 @@ namespace at3 {
   }
 
   void NetworkSystem::serializePhysicsSync(bool rw, SLNet::BitStream &stream) {
-    for (auto id : registries[0].ids) {
+    for (auto id : registries[1].ids) {
       Physics *physics;
-      state->get_Physics(id, &physics);
+      state->getPhysics(id, &physics);
 
       bool include;
       if (rw) {
@@ -228,7 +260,7 @@ namespace at3 {
   void NetworkSystem::serializeControlSync(bool rw, SLNet::BitStream &stream, entityId mId, entityId cId,
                                            MessageID syncType) {
     MouseControls *mouseControls;
-    state->get_MouseControls(mId, &mouseControls);
+    state->getMouseControls(mId, &mouseControls);
     stream.Serialize(rw, mouseControls->yaw);
     stream.Serialize(rw, mouseControls->pitch);
     stream.SerializeCompressed(rw, mouseControls->invertedX);
@@ -237,7 +269,7 @@ namespace at3 {
     switch (syncType) {
       case ID_SYNC_WALKCONTROLS: {
         WalkControls *walkControls;
-        state->get_WalkControls(cId, &walkControls);
+        state->getWalkControls(cId, &walkControls);
         stream.Serialize(rw, walkControls->accel);
         stream.SerializeCompressed(rw, walkControls->jumpRequested);
         stream.SerializeCompressed(rw, walkControls->jumpInProgress);
@@ -246,7 +278,7 @@ namespace at3 {
       } break;
       case ID_SYNC_PYRAMIDCONTROLS: {
         PyramidControls *pyramidControls;
-        state->get_PyramidControls(cId, &pyramidControls);
+        state->getPyramidControls(cId, &pyramidControls);
         stream.Serialize(rw, pyramidControls->accel);
         stream.SerializeCompressed(rw, pyramidControls->turbo);
         stream.SerializeCompressed(rw, pyramidControls->shoot);
@@ -254,7 +286,7 @@ namespace at3 {
       } break;
       case ID_SYNC_TRACKCONTROLS: {
         TrackControls *trackControls;
-        state->get_TrackControls(cId, &trackControls);
+        state->getTrackControls(cId, &trackControls);
         stream.Serialize(rw, trackControls->control);
         stream.Serialize(rw, trackControls->brakes);
         stream.SerializeCompressed(rw, trackControls->flipRequested);
@@ -265,7 +297,7 @@ namespace at3 {
         // control signals for this type, just send placement directly since it doesn't matter if it's smooth.
         // And that's only if you're going to attach a visual to it. Otherwise don't bother syncing this at all.
         FreeControls *freeControls;
-        state->get_FreeControls(cId, &freeControls);
+        state->getFreeControls(cId, &freeControls);
         stream.Serialize(rw, freeControls->control);
         stream.SerializeBitsFromIntegerRange(rw, freeControls->x10, 0, 3);
       } break;
@@ -273,21 +305,26 @@ namespace at3 {
     }
   }
 
-  void NetworkSystem::serializeControlAssignment(bool rw, SLNet::BitStream & stream,
-      entityId mouseId, entityId walkingId, entityId pyramidId, entityId trackId, entityId freeId) {
-    stream.Serialize(rw, mouseId);
-    stream.Serialize(rw, walkingId);
-    stream.Serialize(rw, pyramidId);
-    stream.Serialize(rw, trackId);
-    stream.Serialize(rw, freeId);
+  void NetworkSystem::serializePlayerAssignment(bool rw, SLNet::BitStream &stream, entityId playerId) {
+    stream.Serialize(rw, playerId);
     if ( ! rw ) {
-      rtu::topics::publish<entityId>("switch_to_mouse_controls", mouseId);
-      rtu::topics::publish<entityId>("switch_to_walking_controls", walkingId);
-      rtu::topics::publish<entityId>("switch_to_pyramid_controls", pyramidId);
-      rtu::topics::publish<entityId>("switch_to_track_controls", trackId);
-      rtu::topics::publish<entityId>("switch_to_free_controls", freeId);
+      rtu::topics::publish<entityId>("set_player_id", playerId);
     }
   }
+
+//  entityId NetworkSystem::createNewPlayer() {
+////    ecs->openEntityRequest();
+////    ecs->requestPlayer();
+////    return ecs->closeEntityRequest();
+//
+//    // This component will be sent to the network once the Scene System picks it up in SceneSystem::onDiscoverPlayer.
+//    // This is done instead of using the ecs functions because onDiscoverPlayer creates the avatars and stores their
+//    // ids inside the player component before the player component is sent out.
+//    entityId playerId;
+//    state->createEntity(&playerId);
+//    state->addPlayer(playerId);
+//    return playerId;
+//  }
 
   void NetworkSystem::setNetInterface(void *netInterface) {
     network = *(std::shared_ptr<NetInterface>*) netInterface;

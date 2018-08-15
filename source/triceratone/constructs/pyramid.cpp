@@ -28,9 +28,9 @@ namespace at3 {
       auto state = (State *) ctxt->ecs;
       // make the fire look bigger depending on how much the pyramid's thruster is being used
       SceneNode *sceneNode;
-      state->get_SceneNode(ctxt->id, &sceneNode);
+      state->getSceneNode(ctxt->id, &sceneNode);
       PyramidControls *controls;
-      state->get_PyramidControls(sceneNode->parentId, &controls);
+      state->getPyramidControls(sceneNode->parentId, &controls);
       float pyrFireSize, pyrFireFlicker;
       switch (controls->engineActivationLevel) {
         case 2: {
@@ -79,36 +79,36 @@ namespace at3 {
                                                  (float) M_PI, glm::vec3(1.0f, 0.0f, 0.0f)), {0.105f, 0.105f, 0.15f});
 
     state.createEntity(&bottomId);
-    state.add_Placement(bottomId, transform);
-    state.add_Mesh(bottomId, "pyramid_bottom", "pyramid_bottom");
+    state.addPlacement(bottomId, transform);
+    state.addMesh(bottomId, "pyramid_bottom", "pyramid_bottom");
 
     state.createEntity(&topId);
-    state.add_Placement(topId, ident);
-    state.add_TransformFunction(topId, getTopTransFuncDesc().registrationId);
-    state.add_Mesh(topId, "pyramid_top", "pyramid_top");
+    state.addPlacement(topId, ident);
+    state.addTransformFunction(topId, getTopTransFuncDesc().registrationId);
+    state.addMesh(topId, "pyramid_top", "pyramid_top");
 
     state.createEntity(&thrustersId);
-    state.add_Placement(thrustersId, ident);
-    state.add_Mesh(thrustersId, "pyramid_thrusters", "pyramid_thrusters");
+    state.addPlacement(thrustersId, ident);
+    state.addMesh(thrustersId, "pyramid_thrusters", "pyramid_thrusters");
 
     state.createEntity(&fireId);
-    state.add_Placement(fireId, pyrFirMat);
-    state.add_TransformFunction(fireId, getFireTransFuncDesc().registrationId);
-    state.add_Mesh(fireId, "pyramid_thruster_flames", "pyramid_flames");
+    state.addPlacement(fireId, pyrFirMat);
+    state.addTransformFunction(fireId, getFireTransFuncDesc().registrationId);
+    state.addMesh(fireId, "pyramid_thruster_flames", "pyramid_flames");
 
     state.createEntity(&camId);
     float back = 5.f;
     float tilt = 0.35f;
     glm::mat4 camMat = glm::rotate(glm::translate(ident, {0.f, 0.f, back}), tilt , glm::vec3(1.0f, 0.0f, 0.0f));
-    state.add_Placement(camId, camMat);
-    state.add_Camera(camId, settings::graphics::fovy, 0.1f, 10000.f);
+    state.addPlacement(camId, camMat);
+    state.addCamera(camId, settings::graphics::fovy, 0.1f, 10000.f);
 
     state.createEntity(&camGimbalId);
-    state.add_Placement(camGimbalId, ident);
+    state.addPlacement(camGimbalId, ident);
     Placement *placement;
-    state.get_Placement(camGimbalId, &placement);
+    state.getPlacement(camGimbalId, &placement);
     placement->forceLocalRotationAndScale = true;
-    state.add_MouseControls(camGimbalId, settings::controls::mouseInvertX, settings::controls::mouseInvertY);
+    state.addMouseControls(camGimbalId, settings::controls::mouseInvertX, settings::controls::mouseInvertY);
 
     std::shared_ptr<std::vector<float>> hullVerts = std::make_shared<std::vector<float>>( std::vector<float> {
          1.0f,  1.0f, -0.4f,
@@ -122,11 +122,11 @@ namespace at3 {
          1.0f, -1.0f, -0.4f,
         -1.0f, -1.0f, -0.4f,
     });
-    state.add_Physics(bottomId, 100.f, hullVerts, Physics::DYNAMIC_CONVEX_MESH);
-    state.add_PyramidControls(bottomId, camGimbalId);
+    state.addPhysics(bottomId, 100.f, hullVerts, Physics::DYNAMIC_CONVEX_MESH);
+    state.addPyramidControls(bottomId, camGimbalId);
 
     Physics* physics;
-    state.get_Physics(bottomId, &physics);
+    state.getPhysics(bottomId, &physics);
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
     physics->rigidBody->setDamping(0.f, 0.8f);
 
@@ -137,12 +137,12 @@ namespace at3 {
     addToScene();
   }
   void Pyramid::addToScene() {
-    state->add_SceneNode(bottomId, 0);
-    state->add_SceneNode(fireId, bottomId);
-    state->add_SceneNode(thrustersId, bottomId);
-    state->add_SceneNode(topId, bottomId);
-    state->add_SceneNode(camGimbalId, bottomId);
-    state->add_SceneNode(camId, camGimbalId);
+    state->addSceneNode(bottomId, 0);
+    state->addSceneNode(fireId, bottomId);
+    state->addSceneNode(thrustersId, bottomId);
+    state->addSceneNode(topId, bottomId);
+    state->addSceneNode(camGimbalId, bottomId);
+    state->addSceneNode(camId, camGimbalId);
   }
   void Pyramid::makeActiveControl(void *nothing) {
     publish<entityId>("switch_to_pyramid_controls", bottomId);

@@ -32,8 +32,8 @@ namespace at3 {
   DuneBuggy::DuneBuggy(ezecs::State &state, glm::mat4 &transform) : state(&state) {
 
     state.createEntity(&chassisId);
-    state.add_Placement(chassisId, transform);
-    state.add_Mesh(chassisId, "chassis", "cliff1024_00");
+    state.addPlacement(chassisId, transform);
+    state.addMesh(chassisId, "chassis", "cliff1024_00");
 
     glm::mat4 ident(1.f);
     std::shared_ptr<std::vector<float>> chassisVerts = std::make_shared<std::vector<float>>(std::vector<float> {
@@ -46,18 +46,18 @@ namespace at3 {
         -2.1f, -2.1f,  0.4f,
         -2.1f,  2.1f,  0.4f
     });
-    state.add_Physics(chassisId, 50.f, chassisVerts, Physics::DYNAMIC_CONVEX_MESH);
+    state.addPhysics(chassisId, 50.f, chassisVerts, Physics::DYNAMIC_CONVEX_MESH);
     Physics *physics;
-    state.get_Physics(chassisId, &physics);
+    state.getPhysics(chassisId, &physics);
     physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
 
     // The slow stuff (CCD)
     physics->rigidBody->setCcdMotionThreshold(1);
     physics->rigidBody->setCcdSweptSphereRadius(0.2f);
 
-    state.add_TrackControls(chassisId);
+    state.addTrackControls(chassisId);
     TrackControls *trackControls;
-    state.get_TrackControls(chassisId, &trackControls);
+    state.getTrackControls(chassisId, &trackControls);
     trackControls->tuning.m_suspensionStiffness = 16.f;     // 5.88f
     trackControls->tuning.m_suspensionCompression = 0.8f;   // 0.83f
     trackControls->tuning.m_suspensionDamping = 1.0f;       // 0.88f
@@ -74,8 +74,8 @@ namespace at3 {
     for (int i = 0; i < 4; ++i) {
       entityId wheelId;
       state.createEntity(&wheelId);
-      state.add_Placement(wheelId, ident);
-      state.add_Mesh(wheelId, "wheel", "tire");
+      state.addPlacement(wheelId, ident);
+      state.addMesh(wheelId, "wheel", "tire");
       wheels.emplace_back(wheelId);
 
       std::shared_ptr<WheelInitInfo> wheelInitInfo = std::make_shared<WheelInitInfo>( WheelInitInfo {
@@ -92,33 +92,33 @@ namespace at3 {
           WHEEL_RADIUS,             // wheel radius
           false                     // is front wheel
       });
-      state.add_Physics(wheelId, 10.f, wheelInitInfo, Physics::WHEEL);
+      state.addPhysics(wheelId, 10.f, wheelInitInfo, Physics::WHEEL);
 
-      state.add_TransformFunction(wheelId, getWheelTransFuncDesc().registrationId);
+      state.addTransformFunction(wheelId, getWheelTransFuncDesc().registrationId);
     }
 
     state.createEntity(&camId);
     float back = 10.f;
     float tilt = 0.35f;
     glm::mat4 camMat = glm::rotate(glm::translate(ident, {0.f, 0.f, back}), tilt , glm::vec3(1.0f, 0.0f, 0.0f));
-    state.add_Placement(camId, camMat);
-    state.add_Camera(camId, settings::graphics::fovy, 0.1f, 10000.f);
+    state.addPlacement(camId, camMat);
+    state.addCamera(camId, settings::graphics::fovy, 0.1f, 10000.f);
 
     state.createEntity(&camGimbalId);
-    state.add_Placement(camGimbalId, ident);
+    state.addPlacement(camGimbalId, ident);
     Placement *placement;
-    state.get_Placement(camGimbalId, &placement);
+    state.getPlacement(camGimbalId, &placement);
     placement->forceLocalRotationAndScale = true;
-    state.add_MouseControls(camGimbalId, settings::controls::mouseInvertX, settings::controls::mouseInvertY);
+    state.addMouseControls(camGimbalId, settings::controls::mouseInvertX, settings::controls::mouseInvertY);
 
     addToScene();
   }
   void DuneBuggy::addToScene() {
-    state->add_SceneNode(chassisId, 0);
-    state->add_SceneNode(camGimbalId, chassisId);
-    state->add_SceneNode(camId, camGimbalId);
+    state->addSceneNode(chassisId, 0);
+    state->addSceneNode(camGimbalId, chassisId);
+    state->addSceneNode(camId, camGimbalId);
     for (const auto & wheel : wheels) {
-      state->add_SceneNode(wheel, 0);
+      state->addSceneNode(wheel, 0);
     }
   }
 

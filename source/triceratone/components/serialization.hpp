@@ -27,8 +27,8 @@ namespace at3 {
     OP_END_ENUM
   };
   enum CommandSpecifierEnums {
-    CMD_ASSIGN_CONTROL_IDS,
-    CMD_BEGIN_SIMULATION,
+    CMD_KICK = 0,
+    CMD_ASSIGN_PLAYER_ID,
 
     CMD_END_ENUM
   };
@@ -88,4 +88,6 @@ namespace at3 {
                               std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
                               const bool *invertedX = nullptr,
                               const bool *invertedY = nullptr);
+  void serializePlayer(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
+                       std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr);
 }
