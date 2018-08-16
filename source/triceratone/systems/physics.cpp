@@ -372,8 +372,6 @@ namespace at3 {
 
   bool PhysicsSystem::onDiscover(const entityId &id) {
 
-    fprintf(stderr, "DISCOVERED PHYSICS: %u\n", id);
-
     Placement *placement;
     state->getPlacement(id, &placement);
     Physics *physics;
@@ -399,7 +397,6 @@ namespace at3 {
         shape = new btSphereShape(HUMAN_WIDTH * 0.5f);
       } break;
       case Physics::STATIC_MESH: {
-
         physics->customData = new btTriangleMesh();
         auto *mesh = reinterpret_cast<btTriangleMesh*>(physics->customData);
 
@@ -503,6 +500,12 @@ namespace at3 {
     trackControls->vehicle = new btRaycastVehicle(trackControls->tuning, physics->rigidBody, vehicleRaycaster);
     dynamicsWorld->addVehicle(trackControls->vehicle);
     trackControls->vehicle->setCoordinateSystem(0, 2, 1);
+
+    // Keep the vehicle from freezing in place
+    physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
+    // The slow stuff (CCD) to keep it from passing through things at high speed (doesn't help below threshold)
+    physics->rigidBody->setCcdMotionThreshold(1);
+    physics->rigidBody->setCcdSweptSphereRadius(0.2f);
     return true;
   }
   bool PhysicsSystem::onForgetTrackControls(const entityId &id) {

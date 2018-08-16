@@ -31,3 +31,4 @@
 // TODO: write the component hash maps on top of a normal contiguous array/vector for iteration's sake
 // TODO: make entityId's grow from both ends of the integer range, one end for networked entities and the other end for purely local entities. This can also be used for client ECS requests, in that the client can make the temporary entity on the local end of the collection and replace it with network-end entity when a response comes back.
 // TODO: make ezecs state getters const methods
+// TODO: make vehicle wheels a local-only entity that is created on each host when the appropriate controls appear

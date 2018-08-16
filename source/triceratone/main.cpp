@@ -90,7 +90,7 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
         network->tick();
         networkSystem.tick(0);
         SDL_Delay(50);
-        if (clientKeepTryingToConnect < 6) {
+        if (clientKeepTryingToConnect < 6) {  // Countdown to exit
           fprintf(stderr, "\n%u ...", clientKeepTryingToConnect--);
           SDL_Delay(1000);
           if ( ! clientKeepTryingToConnect) {

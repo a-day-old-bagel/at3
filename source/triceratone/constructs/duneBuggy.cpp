@@ -48,30 +48,24 @@ namespace at3 {
       });
       // Chassis physics object
       state.addPhysics(chassisId, 50.f, chassisVerts, Physics::DYNAMIC_CONVEX_MESH);
-      Physics *physics;
-      state.getPhysics(chassisId, &physics);
-      physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
-      // The slow stuff (CCD)
-      physics->rigidBody->setCcdMotionThreshold(1);
-      physics->rigidBody->setCcdSweptSphereRadius(0.2f);
       // Tank-like movement controls
       state.addTrackControls(chassisId);
       TrackControls *trackControls;
       state.getTrackControls(chassisId, &trackControls);
-      trackControls->tuning.m_suspensionStiffness = 16.f;     // 5.88f
-      trackControls->tuning.m_suspensionCompression = 0.8f;   // 0.83f
-      trackControls->tuning.m_suspensionDamping = 1.0f;       // 0.88f
-      trackControls->tuning.m_maxSuspensionTravelCm = 80.f;   // 500.f
-      trackControls->tuning.m_frictionSlip  = 40.f;           // 10.5f
-      trackControls->tuning.m_maxSuspensionForce  = 20000.f;  // 6000.f
+      trackControls->tuning.m_suspensionStiffness = 7.5f; // lower for more off-road
+      trackControls->tuning.m_suspensionCompression = 0.63f; // 0-1, 1 for most damping while compressing
+      trackControls->tuning.m_suspensionDamping = 0.68f; // 0-1, 1 for most damping while decompressing
+      trackControls->tuning.m_maxSuspensionTravelCm = 80.f; // How much it can move, but in reference to which point?
+      trackControls->tuning.m_frictionSlip  = 2.f; // lower for more drift.
+      trackControls->tuning.m_maxSuspensionForce  = 50000.f; // some upper limit of spring force
       state.addNetworking(chassisId);
       state.addSceneNode(chassisId, 0);
 
       btVector3 wheelConnectionPoints[4] {
           {-1.9f,  1.9f, 0.f},
           { 1.9f,  1.9f, 0.f},
-          {-1.9f, -1.9f, 0.f},
-          { 1.9f, -1.9f, 0.f}
+          {-1.9f, -2.1f, 0.f},
+          { 1.9f, -2.1f, 0.f}
       };
       for (const auto & wheelConnectionPoint : wheelConnectionPoints) {
         entityId wheelId;
@@ -101,9 +95,6 @@ namespace at3 {
       entityId camGimbalId;
       state.createEntity(&camGimbalId);
       state.addPlacement(camGimbalId, ident);
-      Placement *placement;
-      state.getPlacement(camGimbalId, &placement);
-      placement->forceLocalRotationAndScale = true;
       state.addMouseControls(camGimbalId, settings::controls::mouseInvertX, settings::controls::mouseInvertY);
       state.addNetworking(camGimbalId);
       state.addSceneNode(camGimbalId, chassisId);
@@ -140,6 +131,12 @@ namespace at3 {
       SceneNode * sceneNode;
       state.getSceneNode(id, &sceneNode);
       publish<entityId>("switch_to_mouse_controls", sceneNode->parentId);
+
+      // Turn on "force local rotation and scale" mode for the camera gimbal. TODO: find a better place to do this
+      Placement *placement;
+      state.getPlacement(sceneNode->parentId, &placement);
+      placement->forceLocalRotationAndScale = true;
+
       state.getSceneNode(sceneNode->parentId, &sceneNode);
       publish<entityId>("switch_to_track_controls", sceneNode->parentId);
     }

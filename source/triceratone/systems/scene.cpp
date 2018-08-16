@@ -84,7 +84,7 @@ namespace at3 {
   bool SceneSystem::onDiscoverPlayer(const entityId &id) {
     // TODO: Don't have this position hard-coded here.
     glm::mat4 ident(1.f);
-    glm::mat4 start = glm::translate(ident, {0, -790, -120});// - 2 * id});
+    glm::mat4 start = glm::translate(ident, {0, -790, -120});
     PlayerSet::fill(*state, id, *ecs, start);
     return true;
   }
