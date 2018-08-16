@@ -15,11 +15,11 @@ namespace at3 {
     name = "Animation System";
   }
   SceneSystem::~SceneSystem() {
-    Object::resetEcs();
+    SceneObject<EntityComponentSystemInterface>::resetEcs();
   }
   void SceneSystem::setEcsInterface(void *ecsInterface) {
     ecs = *(std::shared_ptr<EntityComponentSystemInterface>*) ecsInterface;
-    Object::linkEcs(ecs);
+    SceneObject<EntityComponentSystemInterface>::linkEcs(ecs);
   }
   void SceneSystem::setVulkanContext(void *vkc) {
     vulkan = *(std::shared_ptr<vkc::VulkanContext<EntityComponentSystemInterface>>*) vkc;

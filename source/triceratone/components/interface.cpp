@@ -169,11 +169,11 @@ namespace at3 {
     }
   }
 
-  void EntityComponentSystemInterface::requestMouseControls(bool invertedX, bool invertedY) {
+  void EntityComponentSystemInterface::requestMouseControls(bool invertedX, bool invertedY, bool independent) {
     if (network->getRole() == settings::network::NONE) {
-      state->addMouseControls(openRequestId, invertedX, invertedY);
+      state->addMouseControls(openRequestId, invertedX, invertedY, independent);
     } else {
-      serializeMouseControls(true, nullptr, *state, 0, &compStreams, &invertedX, &invertedY);
+      serializeMouseControls(true, nullptr, *state, 0, &compStreams, &invertedX, &invertedY, &independent);
     }
   }
 
@@ -183,12 +183,6 @@ namespace at3 {
     } else {
       serializePlayer(true, nullptr, *state, 0, &compStreams, &free, &walk, &pyramid, &track);
     }
-  }
-
-  void EntityComponentSystemInterface::addTransform(const entityId &id, const glm::mat4 &transform) {
-    CompOpReturn status = state->addPlacement(id, transform);
-    EZECS_CHECK_PRINT(EZECS_ERR(status));
-    assert(status == SUCCESS);
   }
 
   bool EntityComponentSystemInterface::hasTransform(const entityId &id) {
@@ -227,13 +221,6 @@ namespace at3 {
     assert(status == ezecs::SUCCESS);
     return placement->forceLocalRotationAndScale;
   }
-  void EntityComponentSystemInterface::setLocalMat3Override(const ezecs::entityId &id, bool value) {
-    Placement *placement;
-    ezecs::CompOpReturn status = state->getPlacement(id, &placement);
-    EZECS_CHECK_PRINT(EZECS_ERR(status));
-    assert(status == ezecs::SUCCESS);
-    placement->forceLocalRotationAndScale = value;
-  }
 
   bool EntityComponentSystemInterface::hasCustomModelTransform(const entityId &id) {
     compMask compsPresent = state->getComponents(id);
@@ -247,18 +234,5 @@ namespace at3 {
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
     return transformFunction->transformed;
-  }
-
-  void EntityComponentSystemInterface::addCamera(const ezecs::entityId &id, const float fovy,
-                                                      const float nearPlane, const float farPlane) {
-    ezecs::CompOpReturn status = this->state->addCamera(id, fovy, nearPlane, farPlane);
-    EZECS_CHECK_PRINT(EZECS_ERR(status));
-    assert(status == ezecs::SUCCESS);
-  }
-
-  void EntityComponentSystemInterface::addMouseControl(const ezecs::entityId &id) {
-    CompOpReturn status = state->addMouseControls(id, false, false);
-    EZECS_CHECK_PRINT(EZECS_ERR(status));
-    assert(status == SUCCESS);
   }
 };

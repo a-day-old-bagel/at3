@@ -45,6 +45,7 @@ namespace at3 {
       ~ControlSystem() override;
       bool onInit();
       void onTick(float dt);
+      bool onDiscoverMouseControls(const entityId &id);
   };
 
   /*

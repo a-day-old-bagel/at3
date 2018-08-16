@@ -194,8 +194,8 @@ namespace {
     float yaw = 0, pitch = 0;
     glm::mat3 lastCtrlRot = glm::mat4(1.f);
     glm::mat3 lastHorizCtrlRot = glm::mat4(1.f);
-    bool invertedX, invertedY;
-    MouseControls(bool invertedX, bool invertedY);
+    bool invertedX, invertedY, independent;
+    MouseControls(bool invertedX, bool invertedY, bool independent);
   };
   EZECS_COMPONENT_DEPENDENCIES(MouseControls, Placement)
 
@@ -349,8 +349,8 @@ namespace {
   FreeControls::FreeControls(entityId mouseCtrlId)
       : mouseCtrlId(mouseCtrlId) { }
 
-  MouseControls::MouseControls(bool invertedX, bool invertedY)
-      : invertedX(invertedX), invertedY(invertedY) { }
+  MouseControls::MouseControls(bool invertedX, bool invertedY, bool independent)
+      : invertedX(invertedX), invertedY(invertedY), independent(independent) { }
 
   Player::Player(entityId free, entityId walk, entityId pyramid, entityId track)
       : free(free), walk(walk), pyramid(pyramid), track(track) { }

@@ -27,9 +27,10 @@ namespace at3 {
           ecs.broadcastManualEntity(playerId);
           Player * player;
           state.getPlayer(playerId, &player);
-          FreeCam::broadcast(state, ecs, player->free);
-
-          DuneBuggy::broadcast(state, ecs, player->track);
+          FreeCam::broadcastLatest(state, ecs);
+          Walker::broadcastLatest(state, ecs);
+          Pyramid::broadcastLatest(state, ecs);
+          DuneBuggy::broadcastLatest(state, ecs);
         }
       }
       return playerId;
@@ -50,10 +51,12 @@ namespace at3 {
         hasCreatedEntity = true;
       }
       if ( ! player->walk) {
-
+        player->walk = Walker::create(state, mat);
+        hasCreatedEntity = true;
       }
       if ( ! player->pyramid) {
-
+        player->pyramid = Pyramid::create(state, mat);
+        hasCreatedEntity = true;
       }
       if ( ! player->track) {
         player->track = DuneBuggy::create(state, mat);
@@ -62,9 +65,6 @@ namespace at3 {
       if (hasCreatedEntity && settings::network::role == settings::network::CLIENT) {
         fprintf(stderr, "Client accidentally made some stuff. Your game is now horribly broken.\n");
       }
-    }
-    void destroy(State &state, const entityId & id) {
-
     }
   }
 }

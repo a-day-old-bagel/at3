@@ -2,28 +2,12 @@
 #pragma once
 
 #include "interface.hpp"
-#include "ezecs.hpp"
-#include "sceneTree.hpp"
-#include "vkc.hpp"
 
 namespace at3 {
-  class Walker {
-    private:
-
-      ezecs::State* state;
-      ezecs::entityId visualId;
-
-      void addToScene();
-
-    public:
-
-      ezecs::entityId physicalId;
-      ezecs::entityId camId;
-      ezecs::entityId camGimbalId;
-
-      Walker(ezecs::State &state, glm::mat4 &transform);
-
-      void makeActiveControl(void* nothing);
-      const static ezecs::TransformFunctionDescriptor & getBodyTransFuncDesc();
-  };
+  namespace Walker {
+    ezecs::entityId create(ezecs::State &state, const glm::mat4 &transform, const ezecs::entityId &id = 0);
+    void broadcastLatest(ezecs::State &state, EntityComponentSystemInterface &ecs);
+    void switchTo(ezecs::State &state, const ezecs::entityId & id);
+    const ezecs::TransformFunctionDescriptor & getBodyTransFuncDesc();
+  }
 }

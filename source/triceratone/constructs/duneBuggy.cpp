@@ -16,14 +16,16 @@ namespace at3 {
         TransFuncEcsContext *ctxt = nullptr) {
       return glm::scale(transIn, glm::vec3(WHEEL_RADIUS * 2.f));
     }
-    TransformFunctionDescriptor & getWheelTransFuncDesc() {
+    const TransformFunctionDescriptor & getWheelTransFuncDesc() {
       static TransformFunctionDescriptor wheelTransFuncDesc;
       if ( ! wheelTransFuncDesc.registrationId) {
         wheelTransFuncDesc.func = RTU_FUNC_DLGT(wheelScaler);
-        rtu::topics::publish<TransformFunctionDescriptor>("register_transform_function", wheelTransFuncDesc);
+        publish<TransformFunctionDescriptor>("register_transform_function", wheelTransFuncDesc);
       }
       return wheelTransFuncDesc;
     }
+
+    static entityId mostRecentlyCreated = 0;
 
     entityId create(State &state, const glm::mat4 &transform) {
       // The order of entity creation matters here, unfortunately, because it determines the order of the id's in
@@ -52,8 +54,8 @@ namespace at3 {
       state.addTrackControls(chassisId);
       TrackControls *trackControls;
       state.getTrackControls(chassisId, &trackControls);
-      trackControls->tuning.m_suspensionStiffness = 7.5f; // lower for more off-road
-      trackControls->tuning.m_suspensionCompression = 0.63f; // 0-1, 1 for most damping while compressing
+      trackControls->tuning.m_suspensionStiffness = 7.6f; // lower for more off-road
+      trackControls->tuning.m_suspensionCompression = 0.65f; // 0-1, 1 for most damping while compressing
       trackControls->tuning.m_suspensionDamping = 0.68f; // 0-1, 1 for most damping while decompressing
       trackControls->tuning.m_maxSuspensionTravelCm = 80.f; // How much it can move, but in reference to which point?
       trackControls->tuning.m_frictionSlip  = 2.f; // lower for more drift.
@@ -74,9 +76,9 @@ namespace at3 {
         state.addMesh(wheelId, "wheel", "tire");
         std::shared_ptr<WheelInitInfo> wheelInitInfo = std::make_shared<WheelInitInfo>( WheelInitInfo {
             {                         // WheelInfo struct - this part of the wheelInitInfo will persist.
-                chassisId,                    // id of wheel's parent entity (chassis)
-                wheelId,                      // wheel's own id (used for removal upon chassis deletion)
-                -1,                           // bullet's index for this wheel (will be set correctly when wheel is added)
+                chassisId,                // id of wheel's parent entity (chassis)
+                wheelId,                  // wheel's own id (used for removal upon chassis deletion)
+                -1,                       // bullet's index for this wheel (will be set correctly when wheel is added)
                 wheelConnectionPoint.x()  // x component of wheel's chassis-space connection point
             },
             wheelConnectionPoint, // connection point
@@ -95,25 +97,24 @@ namespace at3 {
       entityId camGimbalId;
       state.createEntity(&camGimbalId);
       state.addPlacement(camGimbalId, ident);
-      state.addMouseControls(camGimbalId, settings::controls::mouseInvertX, settings::controls::mouseInvertY);
+      state.addMouseControls(camGimbalId, settings::controls::mouseInvertX, settings::controls::mouseInvertY, true);
       state.addNetworking(camGimbalId);
       state.addSceneNode(camGimbalId, chassisId);
 
-      entityId camId;
-      state.createEntity(&camId);
+      state.createEntity(&mostRecentlyCreated);
       float back = 10.f;
       float tilt = 0.35f;
       glm::mat4 camMat = glm::rotate(glm::translate(ident, {0.f, 0.f, back}), tilt , glm::vec3(1.0f, 0.0f, 0.0f));
-      state.addPlacement(camId, camMat);
-      state.addCamera(camId, settings::graphics::fovy, 0.1f, 10000.f);
-      state.addNetworking(camId);
-      state.addSceneNode(camId, camGimbalId);
+      state.addPlacement(mostRecentlyCreated, camMat);
+      state.addCamera(mostRecentlyCreated, settings::graphics::fovy, 0.1f, 10000.f);
+      state.addNetworking(mostRecentlyCreated);
+      state.addSceneNode(mostRecentlyCreated, camGimbalId);
 
-      return camId; // All these id's can be derived from camId through the SceneNode component's parentId.
+      return mostRecentlyCreated; // All these id's can be derived from camId through the SceneNode component's parentId.
     }
-    void broadcast(State &state, EntityComponentSystemInterface &ecs, const entityId & id) {
+    void broadcastLatest(State &state, EntityComponentSystemInterface &ecs) {
       SceneNode *sceneNode;
-      state.getSceneNode(id, &sceneNode);
+      state.getSceneNode(mostRecentlyCreated, &sceneNode);
       entityId gimbalId = sceneNode->parentId;
       state.getSceneNode(gimbalId, &sceneNode);
       entityId ctrlId = sceneNode->parentId;
@@ -124,24 +125,15 @@ namespace at3 {
         ecs.broadcastManualEntity(wheel.myId);
       }
       ecs.broadcastManualEntity(gimbalId);
-      ecs.broadcastManualEntity(id);
+      ecs.broadcastManualEntity(mostRecentlyCreated);
     }
     void switchTo(State &state, const entityId & id) {
       publish<entityId>("switch_to_camera", id);
       SceneNode * sceneNode;
       state.getSceneNode(id, &sceneNode);
       publish<entityId>("switch_to_mouse_controls", sceneNode->parentId);
-
-      // Turn on "force local rotation and scale" mode for the camera gimbal. TODO: find a better place to do this
-      Placement *placement;
-      state.getPlacement(sceneNode->parentId, &placement);
-      placement->forceLocalRotationAndScale = true;
-
       state.getSceneNode(sceneNode->parentId, &sceneNode);
       publish<entityId>("switch_to_track_controls", sceneNode->parentId);
-    }
-    void destroy(State &state, const entityId & id) {
-
     }
   }
 }

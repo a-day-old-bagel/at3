@@ -2,10 +2,6 @@
 #include <global/settings.hpp>
 #include "controls.hpp"
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "TemplateArgumentsIssues"
-#pragma ide diagnostic ignored "IncompatibleTypes"
-
 #include "cylinderMath.hpp"
 
 using namespace rtu::topics;
@@ -29,6 +25,7 @@ namespace at3 {
   }
 
   bool ControlSystem::onInit() {
+    registries[0].discoverHandler = RTU_MTHD_DLGT(&ControlSystem::onDiscoverMouseControls, this);
     return true;
   }
 
@@ -115,6 +112,7 @@ namespace at3 {
             ecs->requestMesh("sphere", "");
             std::shared_ptr<void> radius = std::make_shared<float>(1.f);
             ecs->requestPhysics(5.f, radius, Physics::SPHERE);
+            ecs->requestNetworking();
             ecs->requestSceneNode(0);
             ballId = ecs->closeEntityRequest();
             state->getPhysics(ballId, &ballPhysics);
@@ -201,6 +199,17 @@ namespace at3 {
         freeControls->x10 = 0;
       }
     }
+  }
+
+  bool ControlSystem::onDiscoverMouseControls(const entityId &id) {
+    MouseControls *mouseControls;
+    state->getMouseControls(id, &mouseControls);
+    if (mouseControls->independent) {
+      Placement *placement;
+      state->getPlacement(id, &placement);
+      placement->forceLocalRotationAndScale = true;
+    }
+    return true;
   }
 
   void ControlSystem::setEcsInterface(void *ecs) {
@@ -429,5 +438,3 @@ namespace at3 {
     currentCtrlKeys = std::make_unique<ActiveFreeControl>(state, *(entityId*)id);
   }
 }
-
-#pragma clang diagnostic pop

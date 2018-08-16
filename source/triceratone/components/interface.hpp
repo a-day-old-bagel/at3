@@ -33,11 +33,11 @@ namespace at3 {
    * you want a new entity to be made, it's better to write that functionality into an abstraction layer like this one
    * than to mash network code into your actual ECS or into the scene tree code (this is a high-cohesion argument).
    *
-   * This interface is passed to the Game class as a template argument, and it is assumed to (and must) contain several
+   * This interface is passed to Game and other classes as a template argument, and it must contain several specific
    * things in order to compile. You may notice that it would have been more natural in an OO language to make this a
    * derived class instead with the required members being overrides of virtual base members, but one of the tenets of
    * AT3 is to use templates instead wherever possible to aid in compile-time optimization. If you disagree with this
-   * practice because of your "30+ years of programming experience," I'm sorry, but I don't really care.
+   * practice because of your "30+ years of [whatever] experience," I'm sorry, but I don't really care.
    *
    * Those things which are required for any implementation are marked below in this particular implementation.
    */
@@ -51,27 +51,22 @@ namespace at3 {
 
     public:
 
+      /*
+       * These three members of EntityComponentSystemInterface are required by any such interface.
+       */
       explicit EntityComponentSystemInterface(ezecs::State* state);
+      typedef ezecs::entityId EcsId;
+      typedef ezecs::State State;
 
       /*
-       * These members are NOT required in order to use this as a template argument to Game. These are just wrapper
-       * functions that include networking awareness for use in my specific case. If your game is networked, similar
+       * These next members are NOT required in order to use this as a template argument. These are just wrapper
+       * functions that create a networking layer for use in my specific case. If your game is networked, similar
        * helpers might be good for you too.
-       * Essentially, where I would normally just call the ECS function to add a given component, now I call these
+       * Essentially, where I would normally just call the ECS function to add a given component, now I can call these
        * instead from my high-level code so that I can hide the network access. These functions, instead of directly
        * calling the corresponding ECS functions, will make appropriate requests to a server if the game is running
        * in client mode, and will broadcast the changes if running in server mode, etc.
        */
-
-      /*
-       * All of the following members of EntityComponentSystemInterface are required by any such interface.
-       * This includes the following two typedefs, the aliases of which must be reproduced in your own implementation,
-       * and all of the public member methods here, whose signatures must also be reproduced.
-       */
-
-      typedef ezecs::entityId EcsId;
-      typedef ezecs::State State;
-
       EcsId openRequestId = 0;
       SLNet::BitStream stream;
       std::vector<std::unique_ptr<SLNet::BitStream>> compStreams;
@@ -92,8 +87,14 @@ namespace at3 {
       void requestTrackControls();
       void requestWalkControls(EcsId mouseCtrlId);
       void requestFreeControls(EcsId mouseCtrlId);
-      void requestMouseControls(bool invertedX, bool invertedY);
+      void requestMouseControls(bool invertedX, bool invertedY, bool independent);
       void requestPlayer(EcsId free, EcsId walk, EcsId pyramid, EcsId track);
+
+      /*
+       * All of the remaining members of EntityComponentSystemInterface that follow are required by any such interface.
+       * This includes the following two typedefs, the aliases of which must be reproduced in your own implementation,
+       * and all of the public member methods here, whose signatures must also be reproduced.
+       */
 
       /*
        * A transform is the transformation matrix from model space to world space encoding both world position and
@@ -108,7 +109,6 @@ namespace at3 {
        * may be used to create these fields.
        */
       bool hasTransform(const EcsId& id);
-      void addTransform(const EcsId& id, const glm::mat4& transform);
       glm::mat4 getTransform(const EcsId& id);
       glm::mat4 getAbsTransform(const EcsId& id);
       void setAbsTransform(const EcsId& id, const glm::mat4& transform);
@@ -117,12 +117,12 @@ namespace at3 {
        * A local mat3 override is a mechanism to allow an object in the scene tree to inherit only the positions of its
        * parent objects. Effectively, if hasLocalMat3Override returns true, then that entity will always have the
        * orientation and scale given by getTransform, regardless of whether it inherits its absolute transform from
-       * other objects. This override property can be enabled or disabled by using setLocalMat3Override.
+       * other objects.
        * This is useful for things like camera control, where it's convenient to have a camera follow an object, but
        * keep its own orientation information separate from its parent object's orientation.
+       * Currently this property is used for entities with mouse controls whose "independent" switch is turned on.
        */
       bool hasLocalMat3Override(const EcsId &id);
-      void setLocalMat3Override(const EcsId &id, bool value);
 
       /*
        * A custom model transform is an additional transform that is applied to an object before its normal transform
@@ -133,26 +133,5 @@ namespace at3 {
        */
       bool hasCustomModelTransform(const EcsId &id);
       glm::mat4 getCustomModelTransform(const EcsId &id);
-
-      /*
-       * These methods assume you keep some sort of state representing your cameras, which will include keeping
-       * data like the field of view and the near ans far planes.
-       */
-      void addCamera(const EcsId &id, float fovy, float nearPlane, float farPlane);
-
-      /*
-       * This is used when creating mouse-controlled cameras, but it's not a very clean or portable way to manage this,
-       * so I need to rethink it. Sorry. I'll probably move the third-person camera code up into my implementation
-       * layer instead of putting it in common, since it's NOT really common to all kinds of games. TODO: this.
-       */
-      void addMouseControl(const EcsId& id);
   };
-
-  /*
-   * These are not required in your implementation, and are just helper typedefs for us to shorten type names that would
-   * normally be long and ugly because of template arguments. They make high level code (the stuff in the class you
-   * write that CRTP-inherits from Game) much cleaner looking.
-   */
-  typedef SceneObject<EntityComponentSystemInterface> Object;
-
 }

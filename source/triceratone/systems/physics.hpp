@@ -46,6 +46,7 @@ namespace at3 {
       void deInit();
       bool onDiscover(const entityId& id);
       bool onForget(const entityId& id);
+      bool onDiscoverPyramidControls(const entityId& id);
       bool onDiscoverTrackControls(const entityId& id);
       bool onForgetTrackControls(const entityId& id);
       void setDebugDrawer();

@@ -36,7 +36,7 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       // Prepare the systems to listen for new components
       initializeSystems();
       // Make sure static transform functions are always registered in the same order, regardless of access order.
-      registerStaticTrasformFunctions();
+      registerStaticTransformFunctions();
       // Set up the world, or wait for a server to do it
       prepareWorld();
       // A client needs to wait for a connection. For non-clients, this should exit immediately.
@@ -58,7 +58,7 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       }
     }
 
-    void registerStaticTrasformFunctions() {
+    void registerStaticTransformFunctions() {
       Pyramid::getTopTransFuncDesc();
       Pyramid::getFireTransFuncDesc();
       DuneBuggy::getWheelTransFuncDesc();
@@ -128,19 +128,21 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
     }
     void switchToFreeControl() {
       Player *player;
-      SceneNode *sceneNode;
       state.getPlayer(playerId, &player);
       FreeCam::switchTo(state, player->free);
     }
     void switchToWalkControl() {
-
+      Player *player;
+      state.getPlayer(playerId, &player);
+      Walker::switchTo(state, player->walk);
     }
     void switchToPyramidControl() {
-
+      Player *player;
+      state.getPlayer(playerId, &player);
+      Pyramid::switchTo(state, player->pyramid);
     }
     void switchToBuggyControl() {
       Player *player;
-      SceneNode *sceneNode;
       state.getPlayer(playerId, &player);
       DuneBuggy::switchTo(state, player->track);
     }

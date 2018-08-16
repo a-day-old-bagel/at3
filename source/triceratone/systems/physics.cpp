@@ -4,14 +4,10 @@
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 #include <BulletCollision/CollisionShapes/btTriangleShape.h>
-//#include <BulletDynamics/Character/btKinematicCharacterController.h>
 
 #include "math.hpp"
 #include "cylinderMath.hpp"
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "IncompatibleTypes"
-#pragma ide diagnostic ignored "TemplateArgumentsIssues"
 using namespace ezecs;
 
 namespace at3 {
@@ -62,6 +58,7 @@ namespace at3 {
   bool PhysicsSystem::onInit() {
     registries[0].discoverHandler = RTU_MTHD_DLGT(&PhysicsSystem::onDiscover, this);
     registries[0].forgetHandler = RTU_MTHD_DLGT(&PhysicsSystem::onForget, this);
+    registries[1].discoverHandler = RTU_MTHD_DLGT(&PhysicsSystem::onDiscoverPyramidControls, this);
     registries[2].discoverHandler = RTU_MTHD_DLGT(&PhysicsSystem::onDiscoverTrackControls, this);
     registries[2].forgetHandler = RTU_MTHD_DLGT(&PhysicsSystem::onForgetTrackControls, this);
 
@@ -492,6 +489,7 @@ namespace at3 {
   }
 
   bool PhysicsSystem::onDiscoverTrackControls(const entityId &id) {
+    // TODO: probably just make all the wheels in here as local entities once local entities are a thing.
     // onDiscover is guaranteed to have been called already, since TrackControls requires Physics.
     Physics *physics;
     state->getPhysics(id, &physics);
@@ -537,6 +535,17 @@ namespace at3 {
   void PhysicsSystem::toggleDebugDraw(void* nothing) {
     debugDrawMode = !debugDrawMode;
   }
-}
 
-#pragma clang diagnostic pop
+  bool PhysicsSystem::onDiscoverPyramidControls(const entityId &id) {
+    Physics *physics;
+    state->getPhysics(id, &physics);
+    // Keep the vehicle from freezing in place
+    physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
+    // Damp angular velocity to make it look like it's gyroscopically stabilized or something
+    physics->rigidBody->setDamping(0.f, 0.8f);
+    // The slow stuff (CCD) to keep it from passing through things at high speed (doesn't help below threshold)
+    physics->rigidBody->setCcdMotionThreshold(1);
+    physics->rigidBody->setCcdSweptSphereRadius(0.2f);
+    return true;
+  }
+}

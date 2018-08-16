@@ -87,7 +87,8 @@ namespace at3 {
   void serializeMouseControls(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
                               std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
                               const bool *invertedX = nullptr,
-                              const bool *invertedY = nullptr);
+                              const bool *invertedY = nullptr,
+                              const bool *independent = nullptr);
   void serializePlayer(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
                        std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,
                        ezecs::entityId *free = nullptr,

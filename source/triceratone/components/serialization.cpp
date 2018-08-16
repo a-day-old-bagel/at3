@@ -25,9 +25,24 @@ namespace at3 {
    * clients so that they make it too (only a server should do this).
    */
 
-  // TODO: can some of this be moved into the ezecs generation code?
+  // TODO: move this repetitive crap into the ezecs generator.
   // Maybe provide the State object with callbacks to actual serialization functions (like BitStream.serialize)
   // so that ezecs can remain network-library-agnostic.
+
+  // AHKCHUALLY, just make generated template functions that take the BitStream class as a template parameter and have
+  // those functions call [component].serialize functions that explicitly take a BitStream and are defined in the user-
+  // provided component configuration file.
+  // The reason for the template middleman is to generate all this busywork code without bringing the RakNet
+  // dependency into ezecs.
+
+
+  /*
+   * WRITTEN APOLOGY:
+   * These functions break the philosophy of having one defined purpose for a function, instead taking switches and
+   * parameters that make them do completely different things. This is awful, but it also seems to be the way to do
+   * things under the "Serialization is both read and write" doctrine, which I'm finding useful for networking.
+   * There's no winning.
+   */
 
 
   void writeEntityRequestHeader(BitStream &stream) {
@@ -245,7 +260,6 @@ namespace at3 {
     BitStream *inStream = compStreams ? (*compStreams)[5].get() : nullptr;
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
-//        Physics::serialize<BitStream>(true, *inStream, *mass, *initData, *useCase);
         Physics::serialize(true, *inStream, *mass, *initData, *useCase);
       } else if (inStream->GetNumberOfBitsUsed()) { // Read mode in this case means copying from inStream to stream.
         stream->WriteCompressed((bool) true);
@@ -257,7 +271,6 @@ namespace at3 {
       if (rw) {
         Physics *physics;
         state.getPhysics(id, &physics);
-//        physics->serialize<BitStream>(true, stream);
         physics->serialize(true, *stream);
       } else {
         Physics physics(0, nullptr, Physics::INVALID);
@@ -384,7 +397,7 @@ namespace at3 {
 
   void serializeMouseControls(bool rw, BitStream *stream, State &state, entityId id,
                               std::vector<std::unique_ptr<BitStream>> *compStreams, const bool *invertedX,
-                              const bool *invertedY) {
+                              const bool *invertedY, const bool *independent) {
     BitStream *inStream = compStreams ? (*compStreams)[11].get() : nullptr;
     if (inStream) { // If component constructor data is present
       if (rw) { // Write mode in this case means writing component constructor arguments to inStream
@@ -402,11 +415,13 @@ namespace at3 {
         state.getMouseControls(id, &mouseControls);
         stream->WriteCompressed(mouseControls->invertedX);
         stream->WriteCompressed(mouseControls->invertedY);
+        stream->WriteCompressed(mouseControls->independent);
       } else {
-        bool invertedXIn, invertedYIn;
+        bool invertedXIn, invertedYIn, independentIn;
         stream->ReadCompressed(invertedXIn);
         stream->ReadCompressed(invertedYIn);
-        state.addMouseControls(id, invertedXIn, invertedYIn);
+        stream->ReadCompressed(independentIn);
+        state.addMouseControls(id, invertedXIn, invertedYIn, independentIn);
       }
     }
   }
