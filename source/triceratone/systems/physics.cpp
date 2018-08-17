@@ -61,6 +61,7 @@ namespace at3 {
     registries[1].discoverHandler = RTU_MTHD_DLGT(&PhysicsSystem::onDiscoverPyramidControls, this);
     registries[2].discoverHandler = RTU_MTHD_DLGT(&PhysicsSystem::onDiscoverTrackControls, this);
     registries[2].forgetHandler = RTU_MTHD_DLGT(&PhysicsSystem::onForgetTrackControls, this);
+    registries[3].discoverHandler = RTU_MTHD_DLGT(&PhysicsSystem::onDiscoverWalkControls, this);
 
     broadphase = new btDbvtBroadphase();
     collisionConfiguration = new btDefaultCollisionConfiguration();
@@ -534,6 +535,17 @@ namespace at3 {
 
   void PhysicsSystem::toggleDebugDraw(void* nothing) {
     debugDrawMode = !debugDrawMode;
+  }
+
+  bool PhysicsSystem::onDiscoverWalkControls(const entityId &id) {
+    Physics *physics;
+    state->getPhysics(id, &physics);
+    // Keep the vehicle from freezing in place
+    physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
+    // The slow stuff (CCD) to keep it from passing through things at high speed (doesn't help below threshold)
+    physics->rigidBody->setCcdMotionThreshold(1);
+    physics->rigidBody->setCcdSweptSphereRadius(0.2f);
+    return true;
   }
 
   bool PhysicsSystem::onDiscoverPyramidControls(const entityId &id) {

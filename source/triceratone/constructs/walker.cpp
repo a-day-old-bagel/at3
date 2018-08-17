@@ -79,9 +79,6 @@ namespace at3 {
       state.createEntity(&physicalId);
       state.addPlacement(physicalId, transform);
       state.addPhysics(physicalId, 1.f, nullptr, Physics::CHARA);
-      Physics* physics;
-      state.getPhysics(physicalId, &physics);
-      physics->rigidBody->setActivationState(DISABLE_DEACTIVATION);
       state.addNetworking(physicalId);
       state.addSceneNode(physicalId, 0);
 
