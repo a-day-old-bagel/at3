@@ -20,6 +20,7 @@ namespace at3 {
     name = "Net Sync System";
   }
   bool NetworkSystem::onInit() {
+    registries[1].discoverHandler = RTU_MTHD_DLGT(&NetworkSystem::onDiscoverNetworkedPhysics, this);
     return true;
   }
   void NetworkSystem::onTick(float dt) {
@@ -234,9 +235,27 @@ namespace at3 {
           } else {
             physics->rigidBody->getMotionState()->getWorldTransform(transform);
           }
-          transform.setOrigin(glmToBullet(pos));
-          physics->rigidBody->setLinearVelocity(glmToBullet(lin));
+          RTU_STATIC_SUB(strictWarpToggler, "key_down_f1", NetworkSystem::toggleStrictWarp, this);
+          if (strictWarp) { // just hard warp to position
+            transform.setOrigin(glmToBullet(pos));
+          } else { // "Smart" interpolate between current position and networked truth position
+            Networking *networking;
+            state->getNetworking(id, &networking);
+            ((NetworkedPhysicsData*) networking->nonpersistentCustomData.get())->truthPos = glmToBullet(pos);
+            btTransform localTrans;
+            physics->rigidBody->getMotionState()->getWorldTransform(localTrans);
+            glm::vec3 currentPos = bulletToGlm(localTrans.getOrigin());
+            glm::vec3 correction = (pos - bulletToGlm(localTrans.getOrigin()));
+            float correctionStiffness = 2.f;
+            if (correctionStiffness < 10.f) { // if it's just a little bit off
+              transform.setOrigin(localTrans.getOrigin()); // keep local position
+              lin += correction * correctionStiffness;  // only adjust using velocity
+            } else { // Just hard warp if too distant
+              transform.setOrigin(glmToBullet(pos));
+            }
+          }
           physics->rigidBody->setCenterOfMassTransform(transform);
+          physics->rigidBody->setLinearVelocity(glmToBullet(lin));
         }
       }
     }
@@ -332,5 +351,17 @@ namespace at3 {
   void NetworkSystem::switchToFreeCtrl(void *id) {
     keyControlId = *(entityId*)id;
     keyControlMessageId = ID_SYNC_FREECONTROLS;
+  }
+
+  bool NetworkSystem::onDiscoverNetworkedPhysics(const entityId &id) {
+    Networking *networking;
+    state->getNetworking(id, &networking);
+    networking->nonpersistentCustomData = std::make_shared<NetworkedPhysicsData>();
+    return true;
+  }
+
+  void NetworkSystem::toggleStrictWarp() {
+    strictWarp = !strictWarp;
+    printf("Strict Warp %s\n", strictWarp ? "On" : "Off");
   }
 }

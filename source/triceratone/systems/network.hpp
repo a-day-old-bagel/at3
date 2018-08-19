@@ -17,6 +17,7 @@ namespace at3 {
       entityId keyControlId = 0;
       SLNet::MessageID keyControlMessageId = ID_USER_PACKET_END_ENUM;
       float timeAccumulator = 0;
+      bool strictWarp = false;
 
       SLNet::BitStream outStream;
 
@@ -63,5 +64,7 @@ namespace at3 {
       explicit NetworkSystem(State * state);
       bool onInit();
       void onTick(float dt);
+      void toggleStrictWarp();
+      bool onDiscoverNetworkedPhysics(const entityId &id);
   };
 }

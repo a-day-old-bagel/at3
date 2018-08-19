@@ -849,42 +849,43 @@ void VulkanContext<EcsInterface>::render(
   }
 
 
+  // Draw the debug triangle edges
 
-  vkCmdNextSubpass(common.windowDependents.commandBuffers[imageIndex], VK_SUBPASS_CONTENTS_INLINE);
-  currentlyBound = -1;
-  vkCmdBindPipeline(common.windowDependents.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    pipelineRepo->at(TRI_DEBUG).handle);
-
-  for (auto pair : meshAssets) {
-    for (auto mesh : pair.second) {
-      for (auto instance : mesh.instances) {
-        glm::uint32 uboPage = instance.indices.getPage();
-
-        if (currentlyBound != uboPage) {
-          vkCmdBindDescriptorSets(common.windowDependents.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                  pipelineRepo->at(TRI_DEBUG).layout, 0, 1,
-                                  &pipelineRepo->at(TRI_DEBUG).descSets[uboPage], 0, nullptr);
-          currentlyBound = uboPage;
-        }
-
-        vkCmdPushConstants(
-            common.windowDependents.commandBuffers[imageIndex],
-            pipelineRepo->at(TRI_DEBUG).layout,
-            VK_SHADER_STAGE_VERTEX_BIT,
-            0,
-            sizeof(MeshInstanceIndices::rawType),
-            (void *) &instance.indices.raw);
-
-        VkBuffer vertexBuffers[] = {mesh.buffer};
-        VkDeviceSize vertexOffsets[] = {0};
-        vkCmdBindVertexBuffers(common.windowDependents.commandBuffers[imageIndex], 0, 1, vertexBuffers, vertexOffsets);
-        vkCmdBindIndexBuffer(common.windowDependents.commandBuffers[imageIndex], mesh.buffer, mesh.iOffset,
-                             VK_INDEX_TYPE_UINT32);
-        vkCmdDrawIndexed(common.windowDependents.commandBuffers[imageIndex], static_cast<uint32_t>(mesh.iCount), 1, 0, 0,
-                         0);
-      }
-    }
-  }
+//  vkCmdNextSubpass(common.windowDependents.commandBuffers[imageIndex], VK_SUBPASS_CONTENTS_INLINE);
+//  currentlyBound = -1;
+//  vkCmdBindPipeline(common.windowDependents.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
+//                    pipelineRepo->at(TRI_DEBUG).handle);
+//
+//  for (auto pair : meshAssets) {
+//    for (auto mesh : pair.second) {
+//      for (auto instance : mesh.instances) {
+//        glm::uint32 uboPage = instance.indices.getPage();
+//
+//        if (currentlyBound != uboPage) {
+//          vkCmdBindDescriptorSets(common.windowDependents.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
+//                                  pipelineRepo->at(TRI_DEBUG).layout, 0, 1,
+//                                  &pipelineRepo->at(TRI_DEBUG).descSets[uboPage], 0, nullptr);
+//          currentlyBound = uboPage;
+//        }
+//
+//        vkCmdPushConstants(
+//            common.windowDependents.commandBuffers[imageIndex],
+//            pipelineRepo->at(TRI_DEBUG).layout,
+//            VK_SHADER_STAGE_VERTEX_BIT,
+//            0,
+//            sizeof(MeshInstanceIndices::rawType),
+//            (void *) &instance.indices.raw);
+//
+//        VkBuffer vertexBuffers[] = {mesh.buffer};
+//        VkDeviceSize vertexOffsets[] = {0};
+//        vkCmdBindVertexBuffers(common.windowDependents.commandBuffers[imageIndex], 0, 1, vertexBuffers, vertexOffsets);
+//        vkCmdBindIndexBuffer(common.windowDependents.commandBuffers[imageIndex], mesh.buffer, mesh.iOffset,
+//                             VK_INDEX_TYPE_UINT32);
+//        vkCmdDrawIndexed(common.windowDependents.commandBuffers[imageIndex], static_cast<uint32_t>(mesh.iCount), 1, 0, 0,
+//                         0);
+//      }
+//    }
+//  }
 
 
 

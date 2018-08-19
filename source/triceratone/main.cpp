@@ -24,7 +24,6 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
     PhysicsSystem physicsSystem;
     SceneSystem   sceneSystem;
 
-    std::unique_ptr<Subscription> playerIdAssignmentSub, failedConnectSub, key1Sub, key2Sub, key3Sub, key4Sub;
     entityId playerId = 0;
     uint8_t clientKeepTryingToConnect = 6;
 
@@ -80,8 +79,8 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
         playerId = PlayerSet::create(state, *ecs, network->getRole());
       } else {
         // Set up the callback for player ID assignment
-        playerIdAssignmentSub = RTU_MAKE_SUB_UNIQUEPTR("set_player_id", Triceratone::assignPlayerId, this);
-        failedConnectSub = RTU_MAKE_SUB_UNIQUEPTR("client_could_not_connect", Triceratone::onFailedConnection, this);
+        RTU_STATIC_SUB(assignPlayerIdSub, "set_player_id", Triceratone::assignPlayerId, this);
+        RTU_STATIC_SUB(failedConnectSub, "client_could_not_connect", Triceratone::onFailedConnection, this);
       }
     }
 
@@ -101,10 +100,10 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
     }
 
     void registerAvatarSwitchingSubscriptions() {
-      key1Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_1", Triceratone::switchToFreeControl, this);
-      key2Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_2", Triceratone::switchToWalkControl, this);
-      key3Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_3", Triceratone::switchToPyramidControl, this);
-      key4Sub = RTU_MAKE_SUB_UNIQUEPTR("key_down_4", Triceratone::switchToBuggyControl, this);
+      RTU_STATIC_SUB(key1Sub, "key_down_1", Triceratone::switchToFreeControl, this);
+      RTU_STATIC_SUB(key2Sub, "key_down_2", Triceratone::switchToWalkControl, this);
+      RTU_STATIC_SUB(key3Sub, "key_down_3", Triceratone::switchToPyramidControl, this);
+      RTU_STATIC_SUB(key4Sub, "key_down_4", Triceratone::switchToBuggyControl, this);
     }
 
     void onTick(float dt) {
@@ -153,7 +152,7 @@ int main(int argc, char **argv) {
   Triceratone game;
 
   std::cout << std::endl << "AT3 is initializing..." << std::endl;
-  game.init("triceratone", "at3_triceratone_settings.ini");
+  game.init("triceratone", "settings.ini");
 
   std::cout << std::endl << "AT3 has started." << std::endl;
   while ( ! game.getIsQuit()) {

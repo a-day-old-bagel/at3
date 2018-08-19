@@ -130,7 +130,8 @@ namespace {
 
   // A possible nonpersistent data type to be held by the Networking component
   struct NetworkedPhysicsData {
-    uint32_t priorityAccumulator = 0;
+//    uint32_t priorityAccumulator = 0;
+    btVector3 truthPos = {0, 0, 0};
   };
   // So far this will be to indicate networked-ness of an entity and to hold data used for networked physics.
   // This networked physics data will not need to be persistent, thus the pointer.
@@ -138,7 +139,7 @@ namespace {
   // the id of each object that I send, but otherwise how will the client know which it's receiving, given that my
   // frames aren't synced and clients can join at any time? GafferOnGames does not handle this...
   struct Networking : public Component<Networking> {
-    void * nonpersistentCustomData;
+    std::shared_ptr<void> nonpersistentCustomData;
     Networking();
   };
 

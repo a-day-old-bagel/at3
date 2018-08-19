@@ -43,7 +43,13 @@ void main()
     float sunAmount = max(0, dot(norm,  incident));
     float skyAmount = 0.33 * (1.0 - sunAmount);
     vec4 lighting = ((sunAmount * sunColor) + (skyAmount * skyColor));
-    outColor = diffuseColor * lighting;
+    vec4 fullColor = diffuseColor * lighting;
 
-//    outColor = vec4(fragUV.x, fragUV.y, 1.0, 1.0);
+    float numChannelLevels = 2.0;
+    vec4 lowColor = fullColor;
+    lowColor.r = floor(lowColor.r * (numChannelLevels + 1.0)) / numChannelLevels;
+    lowColor.g = floor(lowColor.g * (numChannelLevels + 1.0)) / numChannelLevels;
+    lowColor.b = floor(lowColor.b * (numChannelLevels + 1.0)) / numChannelLevels;
+
+    outColor = fullColor;
 }
