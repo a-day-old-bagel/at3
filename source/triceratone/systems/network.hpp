@@ -16,18 +16,9 @@ namespace at3 {
       entityId mouseControlId = 0;
       entityId keyControlId = 0;
       SLNet::MessageID keyControlMessageId = ID_USER_PACKET_END_ENUM;
+      SLNet::BitStream outStream;
       float timeAccumulator = 0;
       bool strictWarp = false;
-
-      SLNet::BitStream outStream;
-
-      rtu::topics::Subscription setNetInterfaceSub;
-      rtu::topics::Subscription setEcsInterfaceSub;
-      rtu::topics::Subscription switchToMouseCtrlSub;
-      rtu::topics::Subscription switchToWalkCtrlSub;
-      rtu::topics::Subscription switchToPyramidCtrlSub;
-      rtu::topics::Subscription switchToTrackCtrlSub;
-      rtu::topics::Subscription switchToFreeCtrlSub;
 
       void setNetInterface(void *netInterface);
       void setEcsInterface(void *ecs);

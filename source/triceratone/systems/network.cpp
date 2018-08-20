@@ -7,17 +7,16 @@ using namespace SLNet;
 
 namespace at3 {
 
-  NetworkSystem::NetworkSystem(State * state)
-      : System(state),
-        setNetInterfaceSub("set_network_interface", RTU_MTHD_DLGT(&NetworkSystem::setNetInterface, this)),
-        setEcsInterfaceSub("set_ecs_interface", RTU_MTHD_DLGT(&NetworkSystem::setEcsInterface, this)),
-        switchToMouseCtrlSub("switch_to_mouse_controls", RTU_MTHD_DLGT(&NetworkSystem::switchToMouseCtrl, this)),
-        switchToWalkCtrlSub("switch_to_walking_controls", RTU_MTHD_DLGT(&NetworkSystem::switchToWalkCtrl, this)),
-        switchToPyramidCtrlSub("switch_to_pyramid_controls", RTU_MTHD_DLGT(&NetworkSystem::switchToPyramidCtrl, this)),
-        switchToTrackCtrlSub("switch_to_track_controls", RTU_MTHD_DLGT(&NetworkSystem::switchToTrackCtrl, this)),
-        switchToFreeCtrlSub("switch_to_free_controls", RTU_MTHD_DLGT(&NetworkSystem::switchToFreeCtrl, this))
-  {
+  NetworkSystem::NetworkSystem(State * state) : System(state) {
     name = "Net Sync System";
+    // Static subscriptions will only apply to the first instance of this class created. But usually only one exists.
+    RTU_STATIC_SUB(setNetInterfaceSub, "set_network_interface", NetworkSystem::setNetInterface, this);
+    RTU_STATIC_SUB(setEcsInterfaceSub, "set_ecs_interface", NetworkSystem::setEcsInterface, this);
+    RTU_STATIC_SUB(switchToMouseCtrlSub, "switch_to_mouse_controls", NetworkSystem::switchToMouseCtrl, this);
+    RTU_STATIC_SUB(switchToWalkCtrlSub, "switch_to_walking_controls", NetworkSystem::switchToWalkCtrl, this);
+    RTU_STATIC_SUB(switchToPyramidCtrlSub, "switch_to_pyramid_controls", NetworkSystem::switchToPyramidCtrl, this);
+    RTU_STATIC_SUB(switchToTrackCtrlSub, "switch_to_track_controls", NetworkSystem::switchToTrackCtrl, this);
+    RTU_STATIC_SUB(switchToFreeCtrlSub, "switch_to_free_controls", NetworkSystem::switchToFreeCtrl, this);
   }
   bool NetworkSystem::onInit() {
     registries[1].discoverHandler = RTU_MTHD_DLGT(&NetworkSystem::onDiscoverNetworkedPhysics, this);

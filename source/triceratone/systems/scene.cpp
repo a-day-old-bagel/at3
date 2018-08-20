@@ -6,13 +6,12 @@
 
 namespace at3 {
 
-  SceneSystem::SceneSystem(State *state)
-      : System(state),
-        setEcsInterfaceSub("set_ecs_interface", RTU_MTHD_DLGT(&SceneSystem::setEcsInterface, this)),
-        setVulkanContextSub("set_vulkan_context", RTU_MTHD_DLGT(&SceneSystem::setVulkanContext, this)),
-        registerTransformFuncSub("register_transform_function", RTU_MTHD_DLGT(&SceneSystem::registerTransFunc, this))
-  {
+  SceneSystem::SceneSystem(State *state) : System(state) {
     name = "Animation System";
+    // Static subscriptions will only apply to the first instance of this class created. But usually only one exists.
+    RTU_STATIC_SUB(setEcsInterfaceSub, "set_ecs_interface", SceneSystem::setEcsInterface, this);
+    RTU_STATIC_SUB(setVulkanContextSub, "set_vulkan_context", SceneSystem::setVulkanContext, this);
+    RTU_STATIC_SUB(registerTransformFuncSub, "register_transform_function", SceneSystem::registerTransFunc, this);
   }
   SceneSystem::~SceneSystem() {
     SceneObject<EntityComponentSystemInterface>::resetEcs();

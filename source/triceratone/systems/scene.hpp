@@ -9,16 +9,14 @@ using namespace ezecs;
 
 namespace at3 {
   class SceneSystem : public System<SceneSystem> {
+
       SceneTree<EntityComponentSystemInterface> scene;
       std::shared_ptr<vkc::VulkanContext<EntityComponentSystemInterface>> vulkan;
       std::shared_ptr<EntityComponentSystemInterface> ecs;
-      rtu::topics::Subscription setEcsInterfaceSub;
-      rtu::topics::Subscription setVulkanContextSub;
+      std::vector<transformFunc> transformFuncs;
+
       void setEcsInterface(void *ecsInterface);
       void setVulkanContext(void *vkc);
-
-      std::vector<transformFunc> transformFuncs;
-      rtu::topics::Subscription registerTransformFuncSub;
       void registerTransFunc(void *TransFuncDesc);
 
     public:

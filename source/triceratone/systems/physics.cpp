@@ -13,26 +13,23 @@ using namespace ezecs;
 namespace at3 {
 
   // A custom bullet collision callback to prevent collisions with backfaces (created for use with terrain).
-  static bool myCustomMaterialCombinerCallback
-      (
-      btManifoldPoint& cp,
-      const btCollisionObjectWrapper* colObj0Wrap,
+  static bool oneSidedMaterialCallback(
+      btManifoldPoint &cp,
+      const btCollisionObjectWrapper *colObj0Wrap,
       int partId0,
       int index0,
-      const btCollisionObjectWrapper* colObj1Wrap,
+      const btCollisionObjectWrapper *colObj1Wrap,
       int partId1,
-      int index1
-      )
-  {
+      int index1) {
     // one-sided triangles - This is used to allow for going back through the backside of terrain if you fall through.
     if (colObj1Wrap->getCollisionShape()->getShapeType() == TRIANGLE_SHAPE_PROXYTYPE) {
-      auto triShape = static_cast<const btTriangleShape*>( colObj1Wrap->getCollisionShape() );
-      const btVector3* v = triShape->m_vertices1;
+      auto triShape = static_cast<const btTriangleShape *>( colObj1Wrap->getCollisionShape());
+      const btVector3 *v = triShape->m_vertices1;
       btVector3 faceNormalLs = btCross(v[2] - v[0], v[1] - v[0]);
       faceNormalLs.normalize();
       btVector3 faceNormalWs = colObj1Wrap->getWorldTransform().getBasis() * faceNormalLs;
-      float nDotF = btDot( faceNormalWs, cp.m_normalWorldOnB );
-      if ( nDotF >= 0.0f ) { // switch this to switch forward/back faces
+      float nDotF = btDot(faceNormalWs, cp.m_normalWorldOnB);
+      if (nDotF >= 0.0f) { // switch this to switch forward/back faces
         // flip the contact normal to be aligned with the face normal
         cp.m_normalWorldOnB += -2.0f * nDotF * faceNormalWs;
       }
@@ -41,18 +38,19 @@ namespace at3 {
     return false;
   }
 
-  PhysicsSystem::PhysicsSystem(State *state) : System(state),
-      debugDrawToggleSub("key_down_f3", RTU_MTHD_DLGT(&PhysicsSystem::toggleDebugDraw, this)),
-      setVulkanContextSub("set_vulkan_context", RTU_MTHD_DLGT(&PhysicsSystem::setVulkanContext, this))
-  {
+  PhysicsSystem::PhysicsSystem(State *state) : System(state) {
     name = "Physics System";
+    // Static subscriptions will only apply to the first instance of this class created. But usually only one exists.
+    RTU_STATIC_SUB(debugDrawToggleSub, "key_down_f3", PhysicsSystem::toggleDebugDraw, this);
+    RTU_STATIC_SUB(setVulkanContextSub, "set_vulkan_context", PhysicsSystem::setVulkanContext, this);
   }
+
   PhysicsSystem::~PhysicsSystem() {
     deInit();
   }
 
   void PhysicsSystem::setVulkanContext(void *vkc) {
-    vulkan = *(std::shared_ptr<vkc::VulkanContext<EntityComponentSystemInterface>>*) vkc;
+    vulkan = *(std::shared_ptr<vkc::VulkanContext<EntityComponentSystemInterface>> *) vkc;
   }
 
   bool PhysicsSystem::onInit() {
@@ -72,7 +70,7 @@ namespace at3 {
     vehicleRaycaster = new btDefaultVehicleRaycaster(dynamicsWorld);
 
     // prevent backface collisions with anything that uses the custom collision callback (like terrain)
-    gContactAddedCallback = myCustomMaterialCombinerCallback;
+    gContactAddedCallback = oneSidedMaterialCallback;
 
     // set up ghost object collision detection
     dynamicsWorld->getPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
@@ -147,7 +145,7 @@ namespace at3 {
         anyRayHitGoodGround |= (groundSpringRayCallback.hasHit()); // TODO: add steepness check?
         rayHitPointAvg += groundSpringRayCallback.m_hitPointWorld;
         rayNormalAvg += groundSpringRayCallback.m_hitNormalWorld;
-        if ( ! groundVelocityFound && groundSpringRayCallback.m_collisionObject) { // Use the results of the first ray
+        if (!groundVelocityFound && groundSpringRayCallback.m_collisionObject) { // Use the results of the first ray
           groundVelocity = groundSpringRayCallback.m_collisionObject->getInterpolationLinearVelocity();
           groundVelocityFound = true;
         }
@@ -184,12 +182,12 @@ namespace at3 {
       ctrls->isGrounded = anyRayHitGoodGround; // not grounded if high in the air or on steep slope
       ctrls->isGrounded &= fabs(springForceOverMax) < 1.f; // extra range checks
       ctrls->isGrounded &= fabs(springForceOverMax) > -1.f;
-      ctrls->isGrounded &= (! ctrls->jumpInProgress); // not grounded if jumping
+      ctrls->isGrounded &= (!ctrls->jumpInProgress); // not grounded if jumping
 
       if (ctrls->isGrounded) { // Movement along ground - apply controls and a "stick to ground" force
-        auto sfomPow2 = (float)pow(springForceOverMax, 2);
-        auto sfomPow4 = (float)pow(springForceOverMax, 4);
-        auto sfom10Pow2 = (float)pow(springForceOverMax * 10.f, 2);
+        auto sfomPow2 = (float) pow(springForceOverMax, 2);
+        auto sfomPow4 = (float) pow(springForceOverMax, 4);
+        auto sfom10Pow2 = (float) pow(springForceOverMax * 10.f, 2);
         float springForceMagnitude = (1.0f - sfomPow2) - std::max(0.f, 1.f - sfom10Pow2);
         springForceMagnitude *= CHARA_SPRING_FACTOR;
         float mvmntForceMagnitude = std::max(CHARA_MIDAIR_FACTOR, 1.f - sfomPow2);
@@ -235,9 +233,9 @@ namespace at3 {
 
       } else { // movement while in air - apply greatly reduced controls
         physics->rigidBody->applyCentralForce({
-              ctrls->force.x * CHARA_MIDAIR_FACTOR,
-              ctrls->force.y * CHARA_MIDAIR_FACTOR,
-              ctrls->force.z * CHARA_MIDAIR_FACTOR});
+                                                  ctrls->force.x * CHARA_MIDAIR_FACTOR,
+                                                  ctrls->force.y * CHARA_MIDAIR_FACTOR,
+                                                  ctrls->force.z * CHARA_MIDAIR_FACTOR});
       }
 
       physics->rigidBody->setDamping(linDamp, angDamp); // Set damping
@@ -315,18 +313,19 @@ namespace at3 {
       btTransform transform;
       switch (physics->useCase) {
         case Physics::WHEEL: {
-          WheelInfo wi = *((WheelInfo*)physics->customData);
+          WheelInfo wi = *((WheelInfo *) physics->customData);
           TrackControls *trackControls;
           if (SUCCESS == state->getTrackControls(wi.parentVehicle, &trackControls)) {
-            transform = trackControls->vehicle->getWheelTransformWS(((WheelInfo*)physics->customData)->bulletWheelId);
+            transform = trackControls->vehicle->getWheelTransformWS(((WheelInfo *) physics->customData)->bulletWheelId);
           } else {
             // TODO: handle an orphan wheel
             // TODO: instead of deleting all wheels in onForgetTrackControls, do the following here:
             // replace the wheel's physics component with a normal physics component at the same location
           }
-        } break;
+        }
+          break;
         default: {
-          if ( ! physics->rigidBody->isActive()) { continue; }
+          if (!physics->rigidBody->isActive()) { continue; }
 
           physics->rigidBody->getMotionState()->getWorldTransform(transform);
 
@@ -347,7 +346,8 @@ namespace at3 {
             physics->rigidBody->setLinearVelocity(btVector3(0, 0, 0));
           }
 
-        } break;
+        }
+          break;
       }
       glm::mat4 newTransform(1.f);
       transform.getOpenGLMatrix((btScalar *) &newTransform);
@@ -375,30 +375,34 @@ namespace at3 {
     Physics *physics;
     state->getPhysics(id, &physics);
     // TODO: Re-use shapes instead of making a new one for each instance (like spheres with the same radius)
-    btCollisionShape* shape = nullptr;
+    btCollisionShape *shape = nullptr;
     switch (physics->useCase) {
       case Physics::SPHERE: {
         shape = new btSphereShape(*((float *) physics->initData.get()));
-      } break;
-      case Physics::PLANE: {
-        AT3_ASSERT(false, "missing plane collision implementation");
-      } break;
+      }
+        break;
+      case Physics::PLANE: { AT3_ASSERT(false, "missing plane collision implementation");
+      }
+        break;
       case Physics::BOX: {
-        shape = new btBoxShape(*((btVector3*) physics->initData.get()));
-      } break;
+        shape = new btBoxShape(*((btVector3 *) physics->initData.get()));
+      }
+        break;
       case Physics::DYNAMIC_CONVEX_MESH: {
         auto *points = (std::vector<float> *) physics->initData.get();
         shape = new btConvexHullShape(points->data(), (int) points->size() / 3, 3 * sizeof(float));
-      } break;
+      }
+        break;
       case Physics::CHARA: {
 //        shape = new btCapsuleShapeZ(HUMAN_WIDTH * 0.5f, HUMAN_HEIGHT * 0.33f);
         shape = new btSphereShape(HUMAN_WIDTH * 0.5f);
-      } break;
+      }
+        break;
       case Physics::STATIC_MESH: {
         physics->customData = new btTriangleMesh();
-        auto *mesh = reinterpret_cast<btTriangleMesh*>(physics->customData);
+        auto *mesh = reinterpret_cast<btTriangleMesh *>(physics->customData);
 
-        std::string terrainMeshName = *static_cast<std::string*>(physics->initData.get());
+        std::string terrainMeshName = *static_cast<std::string *>(physics->initData.get());
         std::vector<float> *verts = vulkan->getMeshStoredVertices(terrainMeshName);
         std::vector<uint32_t> *indices = vulkan->getMeshStoredIndices(terrainMeshName);
         uint32_t vertexStride = vulkan->getMeshStoredVertexStride();
@@ -420,12 +424,13 @@ namespace at3 {
         physics->rigidBody->setCollisionFlags(physics->rigidBody->getCollisionFlags() |
                                               btCollisionObject::CF_STATIC_OBJECT |
                                               btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
-        physics->rigidBody->setUserIndex(-(int)id); // negative of its ID signifies a static object
+        physics->rigidBody->setUserIndex(-(int) id); // negative of its ID signifies a static object
         dynamicsWorld->addRigidBody(physics->rigidBody);
 
-      } return true; // Too different from dynamic objects to use the code below, but do track.
+      }
+        return true; // Too different from dynamic objects to use the code below, but do track.
       case Physics::WHEEL: {
-        WheelInitInfo initInfo = *((WheelInitInfo*)physics->initData.get());
+        WheelInitInfo initInfo = *((WheelInitInfo *) physics->initData.get());
         TrackControls *trackControls;
         CompOpReturn status = state->getTrackControls(initInfo.wi.parentVehicle, &trackControls);
         if (status != SUCCESS) {
@@ -435,13 +440,14 @@ namespace at3 {
         trackControls->vehicle->addWheel(initInfo.connectionPoint, initInfo.direction, initInfo.axle,
                                          initInfo.suspensionRestLength, initInfo.wheelRadius,
                                          trackControls->tuning, initInfo.isFrontWheel);
-        initInfo.wi.bulletWheelId = (int)trackControls->wheels.size();
+        initInfo.wi.bulletWheelId = (int) trackControls->wheels.size();
         physics->customData = new WheelInfo(initInfo.wi);
         trackControls->wheels.push_back(initInfo.wi);
         trackControls->vehicle->resetSuspension();
         return true; // wheels do not need normal geometry/collisions (this is for the btRaycastVehicle), but do track.
       }
-      default: break;
+      default:
+        break;
     }
     btTransform transform;
     transform.setFromOpenGLMatrix((btScalar *) &placement->mat);
@@ -459,13 +465,15 @@ namespace at3 {
         // the slow stuff (CCD)
         physics->rigidBody->setCcdMotionThreshold(1);
         physics->rigidBody->setCcdSweptSphereRadius(0.1f);
-      } break;
+      }
+        break;
       default: {
         physics->rigidBody->setRestitution(0.5f);
         physics->rigidBody->setFriction(1.f);
-      } break;
+      }
+        break;
     }
-    physics->rigidBody->setUserIndex((int)id);
+    physics->rigidBody->setUserIndex((int) id);
     dynamicsWorld->addRigidBody(physics->rigidBody);
     return true;
   }
@@ -475,13 +483,13 @@ namespace at3 {
     state->getPhysics(id, &physics);
     if (physics->useCase == Physics::WHEEL) {
       // TODO: delete wheel from vehicle somehow? also remove from trackControl's vector?
-      delete ((WheelInfo*)physics->customData);
+      delete ((WheelInfo *) physics->customData);
       return true;
     }
     dynamicsWorld->removeRigidBody(physics->rigidBody);
     if (physics->useCase == Physics::STATIC_MESH) {
 //      delete ((btTriangleMeshShape*)physics->rigidBody->getCollisionShape())->getMeshInterface();
-      delete (btTriangleMesh*)physics->customData;
+      delete (btTriangleMesh *) physics->customData;
     }
     delete physics->rigidBody->getMotionState();
     delete physics->rigidBody->getCollisionShape();
@@ -507,6 +515,7 @@ namespace at3 {
     physics->rigidBody->setCcdSweptSphereRadius(0.2f);
     return true;
   }
+
   bool PhysicsSystem::onForgetTrackControls(const entityId &id) {
     // fixme: investigate the order of deletion if both this and the normal onForget are called on a chassis
     TrackControls *trackControls;
@@ -530,10 +539,10 @@ namespace at3 {
   }
 
   rayFuncType PhysicsSystem::getRayFunc() {
-    return std::bind( &PhysicsSystem::rayTest, this, std::placeholders::_1, std::placeholders::_2 );
+    return std::bind(&PhysicsSystem::rayTest, this, std::placeholders::_1, std::placeholders::_2);
   }
 
-  void PhysicsSystem::toggleDebugDraw(void* nothing) {
+  void PhysicsSystem::toggleDebugDraw(void *nothing) {
     debugDrawMode = !debugDrawMode;
   }
 

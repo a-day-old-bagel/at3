@@ -11,7 +11,6 @@
 
 using namespace ezecs;
 
-// TODO: figure out how to use bullet to simulate objects without collision components
 namespace at3 {
 
   typedef std::function<btCollisionWorld::ClosestRayResultCallback(btVector3 &, btVector3 &)> rayFuncType;
@@ -27,10 +26,7 @@ namespace at3 {
       bool debugDrawMode = false;
 
       std::shared_ptr<vkc::VulkanContext<EntityComponentSystemInterface>> vulkan;
-      rtu::topics::Subscription setVulkanContextSub;
       void setVulkanContext(void *vkc);
-
-      rtu::topics::Subscription debugDrawToggleSub;
 
     public:
       std::vector<compMask> requiredComponents = {

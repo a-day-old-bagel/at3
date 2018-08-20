@@ -24,11 +24,10 @@
 // TODO: move projection matrix into a global shared uniform thing to avoid duplicating data? (vulkan stuff)
 // TODO: make a debug line drawing interface for Vulkan stuff, and link it to bullet
 // TODO: replace raw pointers with smart pointers in places like VulkanContext and SceneObject (re-evaluate if this is a good idea) ???
-// TODO: have ezecs also generate a createEntity overload that takes an EntityCreateInfo or something so that you can create all components in one call (and network that one call with its info)
-// This EntityCreateInfo will include at least a componentMask and a list of constructor arguments to be used for each component present
 // TODO: the reversed-linear-z depth near/far plane switching trick (check discord history)
 // TODO: use the RakNet LobbyServer to manage logins, lobbies, matchmaking, accounts, etc.
 // TODO: write the component hash maps on top of a normal contiguous array/vector for iteration's sake
 // TODO: make entityId's grow from both ends of the integer range, one end for networked entities and the other end for purely local entities. This can also be used for client ECS requests, in that the client can make the temporary entity on the local end of the collection and replace it with network-end entity when a response comes back.
 // TODO: make ezecs state getters const methods
 // TODO: make vehicle wheels a local-only entity that is created on each host when the appropriate controls appear
+// TODO: profile and possibly replace the string hashing going on for topics/subscriptions

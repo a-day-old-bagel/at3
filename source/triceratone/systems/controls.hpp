@@ -15,15 +15,7 @@ namespace at3 {
   class ControlSystem : public System<ControlSystem> {
 
       std::shared_ptr<EntityComponentSystemInterface> ecs;
-      rtu::topics::Subscription setEcsInterfaceSub;
-
-      rtu::topics::Subscription switchToMouseCtrlSub;
       std::unique_ptr<EntityAssociatedERM> currentCtrlMouse;
-
-      rtu::topics::Subscription switchToWalkCtrlSub;
-      rtu::topics::Subscription switchToPyramidCtrlSub;
-      rtu::topics::Subscription switchToTrackCtrlSub;
-      rtu::topics::Subscription switchToFreeCtrlSub;
       std::unique_ptr<EntityAssociatedERM> currentCtrlKeys;
 
       void setEcsInterface(void *ecs);

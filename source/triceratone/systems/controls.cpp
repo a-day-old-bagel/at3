@@ -8,16 +8,15 @@ using namespace rtu::topics;
 
 namespace at3 {
 
-  ControlSystem::ControlSystem(State *state)
-      : System(state),
-        setEcsInterfaceSub("set_ecs_interface", RTU_MTHD_DLGT(&ControlSystem::setEcsInterface, this)),
-        switchToMouseCtrlSub("switch_to_mouse_controls", RTU_MTHD_DLGT(&ControlSystem::switchToMouseCtrl, this)),
-        switchToWalkCtrlSub("switch_to_walking_controls", RTU_MTHD_DLGT(&ControlSystem::switchToWalkCtrl, this)),
-        switchToPyramidCtrlSub("switch_to_pyramid_controls", RTU_MTHD_DLGT(&ControlSystem::switchToPyramidCtrl, this)),
-        switchToTrackCtrlSub("switch_to_track_controls", RTU_MTHD_DLGT(&ControlSystem::switchToTrackCtrl, this)),
-        switchToFreeCtrlSub("switch_to_free_controls", RTU_MTHD_DLGT(&ControlSystem::switchToFreeCtrl, this))
-  {
+  ControlSystem::ControlSystem(State *state) : System(state) {
     name = "Control System";
+    // Static subscriptions will only apply to the first instance of this class created. But usually only one exists.
+    RTU_STATIC_SUB(setEcsInterfaceSub, "set_ecs_interface", ControlSystem::setEcsInterface, this);
+    RTU_STATIC_SUB(switchToMouseCtrlSub, "switch_to_mouse_controls", ControlSystem::switchToMouseCtrl, this);
+    RTU_STATIC_SUB(switchToWalkCtrlSub, "switch_to_walking_controls", ControlSystem::switchToWalkCtrl, this);
+    RTU_STATIC_SUB(switchToPyramidCtrlSub, "switch_to_pyramid_controls", ControlSystem::switchToPyramidCtrl, this);
+    RTU_STATIC_SUB(switchToTrackCtrlSub, "switch_to_track_controls", ControlSystem::switchToTrackCtrl, this);
+    RTU_STATIC_SUB(switchToFreeCtrlSub, "switch_to_free_controls", ControlSystem::switchToFreeCtrl, this);
   }
   ControlSystem::~ControlSystem() {
     currentCtrlKeys.reset();
