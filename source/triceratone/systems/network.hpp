@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <queue>
+
 #include "ezecs.hpp"
 #include "topics.hpp"
 #include "netInterface.hpp"
@@ -19,6 +21,10 @@ namespace at3 {
       SLNet::BitStream outStream;
       float timeAccumulator = 0;
       bool strictWarp = false;
+
+      uint8_t maxStoredStates = 31;
+      uint8_t storedStateIndexCounter = 0;
+      std::queue<SLNet::BitStream> physicsStates;
 
       void setNetInterface(void *netInterface);
       void setEcsInterface(void *ecs);
@@ -41,7 +47,7 @@ namespace at3 {
       void respondToEntityRequest(SLNet::BitStream &);
       void respondToComponentRequest(SLNet::BitStream &);
 
-      void serializePhysicsSync(bool rw, SLNet::BitStream &);
+      void serializePhysicsSync(bool rw, SLNet::BitStream &, bool includeAll = false);
       void serializeControlSync(bool rw, SLNet::BitStream &, entityId mId, entityId cId,
                                 SLNet::MessageID syncType = ID_USER_PACKET_END_ENUM);
 
@@ -55,7 +61,9 @@ namespace at3 {
       explicit NetworkSystem(State * state);
       bool onInit();
       void onTick(float dt);
-      void toggleStrictWarp();
       bool onDiscoverNetworkedPhysics(const entityId &id);
+      void toggleStrictWarp();
+      void onAfterBulletPhysicsStep();
+      void rewindPhysics();
   };
 }

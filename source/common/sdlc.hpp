@@ -14,12 +14,14 @@ namespace at3 {
       explicit SdlContext(const char *applicationName);
       SDL_Window * getWindow();
       bool setFullscreenMode(uint32_t mode);
-      void toggleFullscreen(void *nothing);
+      void toggleFullscreen();
       void publishEvents();
       float getDeltaTime();
     private:
       SDL_Window *window = nullptr;
       uint32_t windowFlags = 0;
       float lastTime = (float)SDL_GetTicks() * msToS;
+      float frameTime = 0;
+      uint32_t frameCounter = 0;
   };
 }

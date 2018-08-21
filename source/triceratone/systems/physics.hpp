@@ -25,6 +25,8 @@ namespace at3 {
       btVehicleRaycaster * vehicleRaycaster;
       bool debugDrawMode = false;
 
+//      std::unique_ptr<rtu::Delegate<void(btDynamicsWorld *world, btScalar timeStep)>> onAfterSimulationStepCallback;
+
       std::shared_ptr<vkc::VulkanContext<EntityComponentSystemInterface>> vulkan;
       void setVulkanContext(void *vkc);
 
@@ -46,6 +48,8 @@ namespace at3 {
       bool onDiscoverPyramidControls(const entityId& id);
       bool onDiscoverTrackControls(const entityId& id);
       bool onForgetTrackControls(const entityId& id);
+//      void setOnAfterSimulationStep(void* dlgtPtr);
+//      void onAfterSimulationStep(btDynamicsWorld *world, btScalar timeStep);
       void setDebugDrawer();
       btCollisionWorld::ClosestRayResultCallback rayTest(const btVector3 &start, const btVector3 &end);
       rayFuncType getRayFunc();

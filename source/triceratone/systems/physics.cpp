@@ -38,11 +38,17 @@ namespace at3 {
     return false;
   }
 
+  // Don't run more than one PhysicsSystem at a time or things that depend on this topic will get double the trouble.
+  static void onAfterSimulationStep(btDynamicsWorld *world, btScalar timeStep) {
+    rtu::topics::publish("bullet_after_step");
+  }
+
   PhysicsSystem::PhysicsSystem(State *state) : System(state) {
     name = "Physics System";
     // Static subscriptions will only apply to the first instance of this class created. But usually only one exists.
     RTU_STATIC_SUB(debugDrawToggleSub, "key_down_f3", PhysicsSystem::toggleDebugDraw, this);
     RTU_STATIC_SUB(setVulkanContextSub, "set_vulkan_context", PhysicsSystem::setVulkanContext, this);
+//    RTU_STATIC_SUB(setBulletPostTickSub, "set_bullet_post_tick", PhysicsSystem::setOnAfterSimulationStep, this);
   }
 
   PhysicsSystem::~PhysicsSystem() {
@@ -74,6 +80,9 @@ namespace at3 {
 
     // set up ghost object collision detection
     dynamicsWorld->getPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
+
+    // set the simulation step callback
+    dynamicsWorld->setInternalTickCallback(onAfterSimulationStep);
 
     // TODO: somehow do this at the same time for a server and a client upon connect?
 //    solver->reset();
@@ -527,6 +536,17 @@ namespace at3 {
     delete trackControls->vehicle;
     return true;
   }
+
+//  void PhysicsSystem::setOnAfterSimulationStep(void* dlgtPtr) {
+//    auto * dlgt = (rtu::Delegate<void(btDynamicsWorld *world, btScalar timeStep)> *) dlgtPtr;
+//    onAfterSimulationStepCallback = std::make_unique<rtu::Delegate<void(btDynamicsWorld *world, btScalar timeStep)>>
+//        (dlgt);
+//  }
+//  void PhysicsSystem::onAfterSimulationStep(btDynamicsWorld *world, btScalar timeStep) {
+//    if (onAfterSimulationStepCallback) {
+//      (*onAfterSimulationStepCallback)(world, timeStep);
+//    }
+//  }
 
   void PhysicsSystem::setDebugDrawer() {
 //    dynamicsWorld->setDebugDrawer(thing);

@@ -15,7 +15,8 @@ template<typename EcsInterface>
 VulkanContext<EcsInterface>::VulkanContext(VulkanContextCreateInfo <EcsInterface> info) {
 
   // Subscribe to window resize events
-  sub_windowResize = SUBSCRIBE_TOPIC("window_resized", reInitRendering);
+//  sub_windowResize = SUBSCRIBE_TOPIC("window_resized", reInitRendering);
+  RTU_STATIC_SUB(windowResizeSub, "window_resized", VulkanContext<EcsInterface>::reInitRendering, this);
 
   // Store the window and entity-component-system pointers.
   common.window = info.window;

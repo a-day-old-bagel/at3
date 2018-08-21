@@ -17,6 +17,8 @@ namespace at3 {
     RTU_STATIC_SUB(switchToPyramidCtrlSub, "switch_to_pyramid_controls", NetworkSystem::switchToPyramidCtrl, this);
     RTU_STATIC_SUB(switchToTrackCtrlSub, "switch_to_track_controls", NetworkSystem::switchToTrackCtrl, this);
     RTU_STATIC_SUB(switchToFreeCtrlSub, "switch_to_free_controls", NetworkSystem::switchToFreeCtrl, this);
+    RTU_STATIC_SUB(bulletAfterStepSub, "bullet_after_step", NetworkSystem::onAfterBulletPhysicsStep, this);
+    RTU_STATIC_SUB(rewindPhysicsSub, "key_down_f4", NetworkSystem::rewindPhysics, this);
   }
   bool NetworkSystem::onInit() {
     registries[1].discoverHandler = RTU_MTHD_DLGT(&NetworkSystem::onDiscoverNetworkedPhysics, this);
@@ -187,18 +189,35 @@ namespace at3 {
 
   }
 
-  void NetworkSystem::serializePhysicsSync(bool rw, SLNet::BitStream &stream) {
+  void NetworkSystem::serializePhysicsSync(bool rw, SLNet::BitStream &stream, bool includeAll) {
+    // FIXME: Don't do this by iterating over IDs!
+    // Include some specifier of ID range or something instead, so that this doesn't cause problems.
     for (auto id : registries[1].ids) {
       Physics *physics;
       state->getPhysics(id, &physics);
 
       bool include;
       if (rw) {
+        // never write info for wheels or static meshes
         include = physics->useCase != Physics::WHEEL &&
-                  physics->useCase != Physics::STATIC_MESH &&
-                  physics->rigidBody->isActive();
-      } // else it's written to by the stream
+//                  physics->useCase != Physics::STATIC_MESH &&
+//                  physics->rigidBody->isActive();
+                  physics->useCase != Physics::STATIC_MESH;
+        if ( ! includeAll) { // if not saving entire physics state
+          // FIXME: Why on earth is 'include &= physics->rigidBody->isActive()' crashing while this version works?
+          include = include && physics->rigidBody->isActive(); // object must be active to be written
+        }
+      } // else it's read from the stream
       stream.SerializeCompressed(rw, include);
+
+//      // If includeAll is true, data is still written for an object that isn't included in networked physics messages.
+//      // This is useful for keeping a complete physics state history but also remembering which ones to network.
+//      bool saveStateInclude = false;
+//      if (includeAll) {
+//        saveStateInclude = physics->useCase != Physics::WHEEL && physics->useCase != Physics::STATIC_MESH;
+//      }
+
+//      if (netInclude || saveStateInclude) {
 
       if (include) {
 
@@ -362,5 +381,21 @@ namespace at3 {
   void NetworkSystem::toggleStrictWarp() {
     strictWarp = !strictWarp;
     printf("Strict Warp %s\n", strictWarp ? "On" : "Off");
+  }
+
+  void NetworkSystem::onAfterBulletPhysicsStep() {
+    physicsStates.emplace();
+    physicsStates.back().WriteBitsFromIntegerRange(storedStateIndexCounter++, (uint8_t) 0, maxStoredStates);
+    serializePhysicsSync(true, physicsStates.back(), true);
+    if (physicsStates.size() > maxStoredStates) {
+      physicsStates.pop();
+    }
+  }
+
+  void NetworkSystem::rewindPhysics() {
+    uint8_t storedStateIndex;
+    physicsStates.front().ReadBitsFromIntegerRange(storedStateIndex, (uint8_t) 0, maxStoredStates);
+    serializePhysicsSync(false, physicsStates.front(), true);
+    printf("restored %u\n", storedStateIndex);
   }
 }

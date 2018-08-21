@@ -69,7 +69,7 @@ namespace at3 {
     return (settings::graphics::fullscreen == mode);
   }
 
-  void SdlContext::toggleFullscreen(void *nothing) {
+  void SdlContext::toggleFullscreen() {
     auto isCurrentlyFull = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN);
     auto isCurrentlyFake = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN_DESKTOP);
     if (isCurrentlyFull || isCurrentlyFake) {
@@ -229,6 +229,16 @@ namespace at3 {
     float currentTime = (float)SDL_GetTicks() * msToS;
     float dt = currentTime - lastTime;
     lastTime = currentTime;
+
+    frameTime += dt;
+    ++frameCounter;
+    if (frameTime > 10.f) {
+      float frameTimeAvg = frameTime / (float)frameCounter;
+      printf("AVG FPS: %.0f\n", 1.f / frameTimeAvg);
+      frameTime = 0.f;
+      frameCounter = 0;
+    }
+
     return dt;
   }
 

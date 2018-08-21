@@ -22,8 +22,6 @@
 #include "vkcPipelines.hpp"
 #include "vkcTextures.hpp"
 
-#define SUBSCRIBE_TOPIC(e, x) std::make_unique<rtu::topics::Subscription>(e, RTU_MTHD_DLGT(&VulkanContext::x, this));
-
 namespace at3::vkc {
 
   // TODO: get rid of templating ... ugh. The only reason they're here is for the getAbsTransform function...
@@ -67,7 +65,6 @@ namespace at3::vkc {
       std::unique_ptr<TextureRepository> textureRepo;
       std::unique_ptr<PipelineRepository> pipelineRepo;
 
-      std::unique_ptr<rtu::topics::Subscription> sub_windowResize;
       VkDebugReportCallbackEXT callback;
 //      GlobalShaderDataStore globalData;
       static const uint32_t INVALID_QUEUE_FAMILY_IDX = (uint32_t) -1;
