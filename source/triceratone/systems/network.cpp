@@ -4,10 +4,158 @@
 #include "playerSet.hpp"
 
 using namespace SLNet;
+using namespace rtu;
 
 namespace at3 {
 
-  NetworkSystem::NetworkSystem(State * state) : System(state) {
+  template<typename T, typename indexType, indexType numSlots>
+  T &Ouroboros<T, indexType, numSlots>::defaultCtorImpl(T &in, const indexType &) {
+    return in;
+  }
+
+  template<typename T, typename indexType, indexType numSlots>
+  void Ouroboros<T, indexType, numSlots>::defaultDtorImpl(T &, const indexType &) {}
+
+  template<typename T, typename indexType, indexType numSlots>
+  typename Ouroboros<T, indexType, numSlots>::Ctor Ouroboros<T, indexType, numSlots>::defaultCtor =
+      RTU_FUNC_DLGT(Ouroboros::defaultCtorImpl);
+
+  template<typename T, typename indexType, indexType numSlots>
+  typename Ouroboros<T, indexType, numSlots>::Dtor Ouroboros<T, indexType, numSlots>::defaultDtor =
+      RTU_FUNC_DLGT(Ouroboros::defaultDtorImpl);
+
+  template<typename T, typename indexType, indexType numSlots>
+  Ouroboros<T, indexType, numSlots>::Ouroboros(const Ctor &ctor, const Dtor &dtor) : ctor(ctor), dtor(dtor) {}
+
+  template<typename T, typename indexType, indexType numSlots>
+  const indexType Ouroboros<T, indexType, numSlots>::getNumSlots() const {
+    return numSlots;
+  }
+
+  template<typename T, typename indexType, indexType numSlots>
+  const bool Ouroboros<T, indexType, numSlots>::isEmpty() const {
+    return emptyFlag;
+  }
+
+  template<typename T, typename indexType, indexType numSlots>
+  const bool Ouroboros<T, indexType, numSlots>::isFull() const {
+    return fullFlag;
+  }
+
+  template<typename T, typename indexType, indexType numSlots>
+  const bool Ouroboros<T, indexType, numSlots>::isValid() const {
+    return !errorFlag;
+  }
+
+  template<typename T, typename indexType, indexType numSlots>
+  const bool Ouroboros<T, indexType, numSlots>::isValid(indexType index) const {
+    bool isInRange;
+    if (nextHead > currentTail) {
+      isInRange = nextHead > index && currentTail <= index;
+    } else {
+      isInRange = nextHead > index || currentTail <= index;
+    }
+    return isInRange && !isEmpty();
+  }
+
+  template<typename T, typename indexType, indexType numSlots>
+  T &Ouroboros<T, indexType, numSlots>::capitate() {
+    return ctor(raw[advanceHead()]);
+  }
+
+  template<typename T, typename indexType, indexType numSlots>
+  inline T &Ouroboros<T, indexType, numSlots>::decaudate() {
+    dtor(raw[currentTail]);
+    return raw[advanceTail()];
+  }
+
+  template<typename T, typename indexType, indexType numSlots>
+  T &Ouroboros<T, indexType, numSlots>::decaudate(indexType upToButNot) {
+    for (; currentTail != upToButNot; decaudate());
+    return raw[currentTail];
+  }
+
+  template<typename T, typename indexType, indexType numSlots>
+  T &Ouroboros<T, indexType, numSlots>::operator[](indexType index) {
+    return raw[index % numSlots]; // Wraps around. No error case, but invalid slots may be returned.
+  }
+
+  template<typename T, typename indexType, indexType numSlots>
+  const T &Ouroboros<T, indexType, numSlots>::operator[](indexType index) const {
+    return raw[index % numSlots]; // Wraps around. No error case, but invalid slots may be returned.
+  }
+
+  template<typename T, typename indexType, indexType numSlots>
+  indexType Ouroboros<T, indexType, numSlots>::advanceHead() {
+    if (nextHead == currentTail) {
+      if (fullFlag) { haveBadTime(); }
+      else { emptyFlag = false; }
+    }
+    if (++nextHead == numSlots) { nextHead = 0; }
+    if (nextHead == currentTail) { fullFlag = true; }
+    return nextHead;
+  }
+
+  template<typename T, typename indexType, indexType numSlots>
+  indexType Ouroboros<T, indexType, numSlots>::advanceTail() {
+    if (nextHead == currentTail) {
+      if (emptyFlag) { haveBadTime(); }
+      else { fullFlag = false; }
+    }
+    if (++currentTail == numSlots) { currentTail = 0; }
+    if (nextHead == currentTail) { emptyFlag = true; }
+    return currentTail;
+  }
+
+  template<typename T, typename indexType, indexType numSlots>
+  void Ouroboros<T, indexType, numSlots>::haveBadTime() {
+    errorFlag = true;
+  }
+
+
+
+
+  template<typename playerIdType>
+  Delegate<SnapShot<playerIdType>&(SnapShot<playerIdType>&, const playerIdType&)> SnapShot<playerIdType>::init =
+      RTU_FUNC_DLGT(SnapShot::initImpl);
+
+  template<typename playerIdType>
+  Delegate<void(SnapShot<playerIdType>&, const playerIdType&)> SnapShot<playerIdType>::clear =
+      RTU_FUNC_DLGT(SnapShot::clearImpl);
+
+  template<typename playerIdType>
+  bool SnapShot<playerIdType>::addToInputState(const playerIdType &id, const BitStream &input) {
+    inputState.Write(input);
+    return false;
+  }
+
+  template<typename playerIdType>
+  void SnapShot<playerIdType>::addToPhysicsState(const BitStream &input) {
+    physicsState.Write(input);
+  }
+
+  template<typename playerIdType>
+  SnapShot<playerIdType> &SnapShot<playerIdType>::initImpl(SnapShot &snapShot, const playerIdType &index) {
+    return snapShot;
+  }
+
+  template<typename playerIdType>
+  void SnapShot<playerIdType>::clearImpl(SnapShot &snapShot, const playerIdType &index) {
+    snapShot.inputState.Reset();
+    snapShot.physicsState.Reset();
+  }
+
+
+
+
+  PhysicsHistory::PhysicsHistory() : snapShots(SnapShot<uint8_t>::init, SnapShot<uint8_t>::clear) {
+
+  }
+
+
+
+
+  NetworkSystem::NetworkSystem(State *state) : System(state) {
     name = "Net Sync System";
     // Static subscriptions will only apply to the first instance of this class created. But usually only one exists.
     RTU_STATIC_SUB(setNetInterfaceSub, "set_network_interface", NetworkSystem::setNetInterface, this);
@@ -20,25 +168,25 @@ namespace at3 {
     RTU_STATIC_SUB(bulletAfterStepSub, "bullet_after_step", NetworkSystem::onAfterBulletPhysicsStep, this);
     RTU_STATIC_SUB(rewindPhysicsSub, "key_down_f4", NetworkSystem::rewindPhysics, this);
   }
+
   bool NetworkSystem::onInit() {
     registries[1].discoverHandler = RTU_MTHD_DLGT(&NetworkSystem::onDiscoverNetworkedPhysics, this);
     return true;
   }
+
   void NetworkSystem::onTick(float dt) {
-    switch(network->getRole()) {
+    switch (network->getRole()) {
       case settings::network::SERVER: {
         handleNewClients();
         receiveAdministrativePackets();
-        if (mouseControlId) { // In case no controls are currently assigned (no type of control *doesn't* use the mouse)
-          writeControlSyncs();
-          // TODO: Is immediate or high priority even helpful here? Or bad?
-          send(HIGH_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);
-        }
         if (writePhysicsSyncs(dt)) {
           send(LOW_PRIORITY, UNRELIABLE_SEQUENCED, CH_PHYSICS_SYNC);
         }
+        if (mouseControlId) { // In case no controls are currently assigned (no type of control *doesn't* use the mouse)
+          writeControlSyncs();
+        }
         receiveSyncPackets();
-        // TODO: somehow send clients' controls to other clients
+        sendAllControlSyncs();
       } break;
       case settings::network::CLIENT: {
         receiveAdministrativePackets();
@@ -48,7 +196,8 @@ namespace at3 {
         }
         receiveSyncPackets();
       } break;
-      default: break;
+      default:
+        break;
     }
   }
 
@@ -57,7 +206,7 @@ namespace at3 {
     outStream.Reset();
   }
 
-  void NetworkSystem::sendTo(const AddressOrGUID & target, PacketPriority priority,
+  void NetworkSystem::sendTo(const AddressOrGUID &target, PacketPriority priority,
                              PacketReliability reliability, char channel) {
     network->sendTo(outStream, target, priority, reliability, channel);
     outStream.Reset();
@@ -68,15 +217,48 @@ namespace at3 {
     if (timeAccumulator < 0.1f) { return false; }
     timeAccumulator = 0;
 
-    outStream.Write((MessageID)ID_SYNC_PHYSICS);
+    outStream.Write((MessageID) ID_SYNC_PHYSICS);
     serializePhysicsSync(true, outStream);
     return true;
   }
 
   void NetworkSystem::writeControlSyncs() {
-    outStream.Write(keyControlMessageId);
-    outStream.Write(mouseControlId);
-    serializeControlSync(true, outStream, mouseControlId, keyControlId, keyControlMessageId);
+    switch (network->getRole()) {
+      case settings::network::SERVER: {
+        inputs.emplace_back();
+        serializeControlSyncShortType(true, inputs.back().data, keyControlMessageId);
+        inputs.back().data.Write(mouseControlId);
+        serializeControlSync(true, inputs.back().data, mouseControlId, keyControlId, keyControlMessageId);
+      } break;
+      case settings::network::CLIENT: {
+        outStream.Write(keyControlMessageId);
+        outStream.Write(mouseControlId);
+        serializeControlSync(true, outStream, mouseControlId, keyControlId, keyControlMessageId);
+      } break;
+      default: break;
+    }
+  }
+
+  // FIXME: TODO: use a hashmap of guid->stream so that duplicates don't get sent out
+  void NetworkSystem::sendAllControlSyncs() {
+    // FIXME: TODO: send to all clients, not just the senders, also, do this inside the new classes or whatever.
+    for (auto & receiveingClient : inputs) {
+      BitStream tempStream;
+      uint8_t numEntries = 0; // TODO: use robust type (templates in new classes or whatever)
+      for (auto & inputClient : inputs) {
+        if ( ! (receiveingClient.id == inputClient.id)) {
+          BitSize_t head = inputClient.data.GetReadOffset();
+          tempStream.Write(inputClient.data);
+          inputClient.data.SetReadOffset(head);
+          ++numEntries;
+        }
+      }
+      outStream.Write((MessageID) ID_SYNC_ALL_CONTROLS);
+      outStream.Write(numEntries);
+      outStream.Write(tempStream);
+      sendTo(receiveingClient.id, HIGH_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);
+    }
+    inputs.clear();
   }
 
   void NetworkSystem::receiveAdministrativePackets() {
@@ -87,7 +269,7 @@ namespace at3 {
       switch (reqType) {
         case ID_USER_PACKET_ECS_REQUEST_ENUM: {
           uint8_t request;
-          stream.ReadBitsFromIntegerRange(request, (uint8_t)0, (uint8_t)(REQ_END_ENUM - 1), false);
+          stream.ReadBitsFromIntegerRange(request, (uint8_t) 0, (uint8_t) (REQ_END_ENUM - 1), false);
           switch (request) {
             case REQ_ENTITY_OP: {
               respondToEntityRequest(stream);
@@ -95,7 +277,8 @@ namespace at3 {
             case REQ_COMPONENT_OP: {
 
             } break;
-            default: break;
+            default:
+              break;
           }
         } break;
         case ID_USER_PACKET_ECS_RESPONSE_ENUM: {
@@ -103,12 +286,13 @@ namespace at3 {
         } break;
         case ID_USER_PACKET_ADMIN_COMMAND: {
           uint8_t command;
-          stream.ReadBitsFromIntegerRange(command, (uint8_t)0, (uint8_t)(CMD_END_ENUM - 1), false);
+          stream.ReadBitsFromIntegerRange(command, (uint8_t) 0, (uint8_t) (CMD_END_ENUM - 1), false);
           switch (command) {
             case CMD_ASSIGN_PLAYER_ID: {
               serializePlayerAssignment(false, stream, 0);
             } break;
-            default: break;
+            default:
+              break;
           }
         } break;
         default: {
@@ -119,8 +303,10 @@ namespace at3 {
     network->discardRequestPackets();
   }
 
+  // TODO: FIXME: uncomment the printf's on ALL_CONTROL reception to see horrific bugs show up but not break anything.
   void NetworkSystem::receiveSyncPackets() {
     for (auto pack : network->getSyncPackets()) {
+      AddressOrGUID sender(pack->guid);
       BitStream stream(pack->data, pack->length, false);
       MessageID syncType;
       stream.Read(syncType);
@@ -132,12 +318,33 @@ namespace at3 {
         case ID_SYNC_PYRAMIDCONTROLS:
         case ID_SYNC_TRACKCONTROLS:
         case ID_SYNC_FREECONTROLS: {
+          if (network->getRole() == settings::network::SERVER) {
+            inputs.emplace_back();
+            serializeControlSyncShortType(true, inputs.back().data, syncType);
+            BitSize_t head = stream.GetReadOffset();
+            inputs.back().data.Write(stream);
+            inputs.back().id = sender;
+            stream.SetReadOffset(head);
+          }
           entityId mouseId = 0;
           stream.Read(mouseId);
           serializeControlSync(false, stream, mouseId, 0, syncType);
         } break;
+        case ID_SYNC_ALL_CONTROLS: {
+          uint8_t numEntries;
+          stream.Read(numEntries);
+          for (uint8_t i = 0; i < numEntries; ++i) {
+            MessageID controlType;
+            serializeControlSyncShortType(false, stream, controlType);
+            entityId mouseId = 0;
+            stream.Read(mouseId);
+            serializeControlSync(false, stream, mouseId, 0, controlType);
+//            printf("%u %u %u %u\n", mouseControlId, mouseId, controlType, ID_SYNC_FREECONTROLS);
+          }
+//          printf("\n");
+        } break;
         default: {
-          fprintf(stderr, "Received bad sync packet!\n");
+          fprintf(stderr, "Received bad sync packet! type was %u.\n", syncType);
         } break;
       }
     }
@@ -145,7 +352,7 @@ namespace at3 {
   }
 
   void NetworkSystem::handleNewClients() {
-    if ( ! network->getFreshConnections().empty()) {
+    if (!network->getFreshConnections().empty()) {
       // All existing entities sent here
       for (const auto &id : registries[0].ids) {
         writeEntityRequestHeader(outStream);
@@ -164,9 +371,9 @@ namespace at3 {
     }
   }
 
-  void NetworkSystem::respondToEntityRequest(SLNet::BitStream & stream) {
+  void NetworkSystem::respondToEntityRequest(BitStream &stream) {
     uint8_t operation;
-    stream.ReadBitsFromIntegerRange(operation, (uint8_t)0, (uint8_t)(OP_END_ENUM - 1), false);
+    stream.ReadBitsFromIntegerRange(operation, (uint8_t) 0, (uint8_t) (OP_END_ENUM - 1), false);
     switch (operation) {
       case OP_CREATE: {
         serializeEntityCreationRequest(false, stream, *state);
@@ -181,15 +388,16 @@ namespace at3 {
       case OP_DESTROY: {
 
       } break;
-      default: break;
+      default:
+        break;
     }
   }
 
-  void NetworkSystem::respondToComponentRequest(SLNet::BitStream & stream) {
+  void NetworkSystem::respondToComponentRequest(BitStream &stream) {
 
   }
 
-  void NetworkSystem::serializePhysicsSync(bool rw, SLNet::BitStream &stream, bool includeAll) {
+  void NetworkSystem::serializePhysicsSync(bool rw, BitStream &stream, bool includeAll) {
     // FIXME: Don't do this by iterating over IDs!
     // Include some specifier of ID range or something instead, so that this doesn't cause problems.
     for (auto id : registries[1].ids) {
@@ -200,10 +408,10 @@ namespace at3 {
       if (rw) {
         // never write info for wheels or static meshes
         include = physics->useCase != Physics::WHEEL &&
-//                  physics->useCase != Physics::STATIC_MESH &&
-//                  physics->rigidBody->isActive();
+                  //                  physics->useCase != Physics::STATIC_MESH &&
+                  //                  physics->rigidBody->isActive();
                   physics->useCase != Physics::STATIC_MESH;
-        if ( ! includeAll) { // if not saving entire physics state
+        if (!includeAll) { // if not saving entire physics state
           // FIXME: Why on earth is 'include &= physics->rigidBody->isActive()' crashing while this version works?
           include = include && physics->rigidBody->isActive(); // object must be active to be written
         }
@@ -245,11 +453,10 @@ namespace at3 {
           stream.Serialize(rw, rot);
           stream.Serialize(rw, ang);
         }
-        if ( ! rw) {
+        if (!rw) {
           if (needsRotation) {
             transform.setRotation(rot);
             physics->rigidBody->setAngularVelocity(glmToBullet(ang));
-
           } else {
             physics->rigidBody->getMotionState()->getWorldTransform(transform);
           }
@@ -259,7 +466,7 @@ namespace at3 {
           } else { // "Smart" interpolate between current position and networked truth position
             Networking *networking;
             state->getNetworking(id, &networking);
-            ((NetworkedPhysicsData*) networking->nonpersistentCustomData.get())->truthPos = glmToBullet(pos);
+            ((NetworkedPhysicsData *) networking->nonpersistentCustomData.get())->truthPos = glmToBullet(pos);
             btTransform localTrans;
             physics->rigidBody->getMotionState()->getWorldTransform(localTrans);
             glm::vec3 currentPos = bulletToGlm(localTrans.getOrigin());
@@ -279,11 +486,11 @@ namespace at3 {
     }
   }
 
-  void NetworkSystem::serializeControlSync(bool rw, SLNet::BitStream &stream, entityId mId, entityId cId,
+  void NetworkSystem::serializeControlSync(bool rw, BitStream &stream, entityId mId, entityId cId,
                                            MessageID syncType) {
     MouseControls *mouseControls;
     state->getMouseControls(mId, &mouseControls);
-    if ( ! mouseControls) { return; } // a client may not yet have the component being referred to.
+    if (!mouseControls) { return; } // a client may not yet have the component being referred to.
     stream.Serialize(rw, mouseControls->yaw);
     stream.Serialize(rw, mouseControls->pitch);
     stream.SerializeCompressed(rw, mouseControls->invertedX);
@@ -293,7 +500,7 @@ namespace at3 {
       case ID_SYNC_WALKCONTROLS: {
         WalkControls *walkControls;
         state->getWalkControls(cId, &walkControls);
-        if ( ! walkControls) { return; } // a client may not yet have the component being referred to.
+        if (!walkControls) { return; } // a client may not yet have the component being referred to.
         stream.Serialize(rw, walkControls->accel);
         stream.SerializeCompressed(rw, walkControls->jumpRequested);
         stream.SerializeCompressed(rw, walkControls->jumpInProgress);
@@ -303,7 +510,7 @@ namespace at3 {
       case ID_SYNC_PYRAMIDCONTROLS: {
         PyramidControls *pyramidControls;
         state->getPyramidControls(cId, &pyramidControls);
-        if ( ! pyramidControls) { return; } // a client may not yet have the component being referred to.
+        if (!pyramidControls) { return; } // a client may not yet have the component being referred to.
         stream.Serialize(rw, pyramidControls->accel);
         stream.SerializeCompressed(rw, pyramidControls->turbo);
         stream.SerializeCompressed(rw, pyramidControls->shoot);
@@ -312,7 +519,7 @@ namespace at3 {
       case ID_SYNC_TRACKCONTROLS: {
         TrackControls *trackControls;
         state->getTrackControls(cId, &trackControls);
-        if ( ! trackControls) { return; } // a client may not yet have the component being referred to.
+        if (!trackControls) { return; } // a client may not yet have the component being referred to.
         stream.Serialize(rw, trackControls->control);
         stream.Serialize(rw, trackControls->brakes);
         stream.SerializeCompressed(rw, trackControls->flipRequested);
@@ -324,50 +531,57 @@ namespace at3 {
         // And that's only if you're going to attach a visual to it. Otherwise don't bother syncing this at all.
         FreeControls *freeControls;
         state->getFreeControls(cId, &freeControls);
-        if ( ! freeControls) { return; } // a client may not yet have the component being referred to.
+        if (!freeControls) { return; } // a client may not yet have the component being referred to.
         stream.Serialize(rw, freeControls->control);
         stream.SerializeBitsFromIntegerRange(rw, freeControls->x10, 0, 3);
       } break;
-      default: break;
+      default:
+        break;
     }
   }
 
-  void NetworkSystem::serializePlayerAssignment(bool rw, SLNet::BitStream &stream, entityId playerId) {
+  bool NetworkSystem::serializeControlSyncShortType(bool rw, BitStream &stream, MessageID &type) {
+    return stream.SerializeBitsFromIntegerRange(rw, type,
+                                                (MessageID)ID_SYNC_WALKCONTROLS,
+                                                (MessageID)ID_SYNC_FREECONTROLS);
+  }
+
+  void NetworkSystem::serializePlayerAssignment(bool rw, BitStream &stream, entityId playerId) {
     stream.Serialize(rw, playerId);
-    if ( ! rw ) {
-      rtu::topics::publish<entityId>("set_player_id", playerId);
+    if (!rw) {
+      topics::publish<entityId>("set_player_id", playerId);
     }
   }
 
   void NetworkSystem::setNetInterface(void *netInterface) {
-    network = *(std::shared_ptr<NetInterface>*) netInterface;
+    network = *(std::shared_ptr<NetInterface> *) netInterface;
   }
 
   void NetworkSystem::setEcsInterface(void *ecs) {
-    this->ecs = *(std::shared_ptr<EntityComponentSystemInterface>*) ecs;
+    this->ecs = *(std::shared_ptr<EntityComponentSystemInterface> *) ecs;
   }
 
   void NetworkSystem::switchToMouseCtrl(void *id) {
-    mouseControlId = *(entityId*)id;
+    mouseControlId = *(entityId *) id;
   }
 
   void NetworkSystem::switchToWalkCtrl(void *id) {
-    keyControlId = *(entityId*)id;
+    keyControlId = *(entityId *) id;
     keyControlMessageId = ID_SYNC_WALKCONTROLS;
   }
 
   void NetworkSystem::switchToPyramidCtrl(void *id) {
-    keyControlId = *(entityId*)id;
+    keyControlId = *(entityId *) id;
     keyControlMessageId = ID_SYNC_PYRAMIDCONTROLS;
   }
 
   void NetworkSystem::switchToTrackCtrl(void *id) {
-    keyControlId = *(entityId*)id;
+    keyControlId = *(entityId *) id;
     keyControlMessageId = ID_SYNC_TRACKCONTROLS;
   }
 
   void NetworkSystem::switchToFreeCtrl(void *id) {
-    keyControlId = *(entityId*)id;
+    keyControlId = *(entityId *) id;
     keyControlMessageId = ID_SYNC_FREECONTROLS;
   }
 
@@ -396,6 +610,5 @@ namespace at3 {
     uint8_t storedStateIndex;
     physicsStates.front().ReadBitsFromIntegerRange(storedStateIndex, (uint8_t) 0, maxStoredStates);
     serializePhysicsSync(false, physicsStates.front(), true);
-    printf("restored %u\n", storedStateIndex);
   }
 }
