@@ -1,5 +1,6 @@
 
 #include <algorithm>
+#include <sstream>  // TODO: remove when ouroboros is moved to rtu
 #include "network.hpp"
 #include "playerSet.hpp"
 
@@ -33,6 +34,16 @@ namespace at3 {
   }
 
   template<typename T, typename indexType, indexType numSlots>
+  const indexType Ouroboros<T, indexType, numSlots>::getHeadSlot() const {
+    return nextHead ? nextHead - 1 : numSlots - 1;
+  }
+
+  template<typename T, typename indexType, indexType numSlots>
+  const indexType Ouroboros<T, indexType, numSlots>::getTailSlot() const {
+    return currentTail;
+  }
+
+  template<typename T, typename indexType, indexType numSlots>
   const bool Ouroboros<T, indexType, numSlots>::isEmpty() const {
     return emptyFlag;
   }
@@ -49,6 +60,7 @@ namespace at3 {
 
   template<typename T, typename indexType, indexType numSlots>
   const bool Ouroboros<T, indexType, numSlots>::isValid(indexType index) const {
+    if (errorFlag) { return false; }
     bool isInRange;
     if (nextHead > currentTail) {
       isInRange = nextHead > index && currentTail <= index;
@@ -60,19 +72,20 @@ namespace at3 {
 
   template<typename T, typename indexType, indexType numSlots>
   T &Ouroboros<T, indexType, numSlots>::capitate() {
-    return ctor(raw[advanceHead()]);
+    ctor(raw[nextHead], nextHead);
+    advanceHead();
+    return raw[getHeadSlot()];
   }
 
   template<typename T, typename indexType, indexType numSlots>
-  inline T &Ouroboros<T, indexType, numSlots>::decaudate() {
-    dtor(raw[currentTail]);
-    return raw[advanceTail()];
+  inline void Ouroboros<T, indexType, numSlots>::decaudate() {
+    dtor(raw[currentTail], currentTail);
+    advanceTail();
   }
 
   template<typename T, typename indexType, indexType numSlots>
-  T &Ouroboros<T, indexType, numSlots>::decaudate(indexType upToButNot) {
+  void Ouroboros<T, indexType, numSlots>::decaudate(indexType upToButNot) {
     for (; currentTail != upToButNot; decaudate());
-    return raw[currentTail];
   }
 
   template<typename T, typename indexType, indexType numSlots>
@@ -83,6 +96,15 @@ namespace at3 {
   template<typename T, typename indexType, indexType numSlots>
   const T &Ouroboros<T, indexType, numSlots>::operator[](indexType index) const {
     return raw[index % numSlots]; // Wraps around. No error case, but invalid slots may be returned.
+  }
+
+  template<typename T, typename indexType, indexType numSlots>
+  const std::string Ouroboros<T, indexType, numSlots>::toDebugString() const {
+    std::stringstream out;
+    for (indexType i = 0; i < numSlots; ++i) {
+      out << isValid(i);
+    }
+    return out.str();
   }
 
   template<typename T, typename indexType, indexType numSlots>
@@ -109,24 +131,27 @@ namespace at3 {
 
   template<typename T, typename indexType, indexType numSlots>
   void Ouroboros<T, indexType, numSlots>::haveBadTime() {
+    // If you like exceptions, here is the place to throw one.
     errorFlag = true;
   }
 
 
 
 
+
   template<typename playerIdType>
-  Delegate<SnapShot<playerIdType>&(SnapShot<playerIdType>&, const playerIdType&)> SnapShot<playerIdType>::init =
+  Delegate<SnapShot<playerIdType>&(SnapShot<playerIdType>&, const uint8_t&)> SnapShot<playerIdType>::init =
       RTU_FUNC_DLGT(SnapShot::initImpl);
 
   template<typename playerIdType>
-  Delegate<void(SnapShot<playerIdType>&, const playerIdType&)> SnapShot<playerIdType>::clear =
+  Delegate<void(SnapShot<playerIdType>&, const uint8_t&)> SnapShot<playerIdType>::clear =
       RTU_FUNC_DLGT(SnapShot::clearImpl);
 
   template<typename playerIdType>
   bool SnapShot<playerIdType>::addToInputState(const playerIdType &id, const BitStream &input) {
+    // TODO: check if player exists, return false if not.
     inputState.Write(input);
-    return false;
+    return true;
   }
 
   template<typename playerIdType>
@@ -135,12 +160,18 @@ namespace at3 {
   }
 
   template<typename playerIdType>
-  SnapShot<playerIdType> &SnapShot<playerIdType>::initImpl(SnapShot &snapShot, const playerIdType &index) {
+  uint8_t SnapShot<playerIdType>::getSlot() {
+    return slot;
+  }
+
+  template<typename playerIdType>
+  SnapShot<playerIdType> &SnapShot<playerIdType>::initImpl(SnapShot &snapShot, const uint8_t &index) {
+    snapShot.slot = index;
     return snapShot;
   }
 
   template<typename playerIdType>
-  void SnapShot<playerIdType>::clearImpl(SnapShot &snapShot, const playerIdType &index) {
+  void SnapShot<playerIdType>::clearImpl(SnapShot &snapShot, const uint8_t &index) {
     snapShot.inputState.Reset();
     snapShot.physicsState.Reset();
   }
@@ -149,7 +180,61 @@ namespace at3 {
 
 
   PhysicsHistory::PhysicsHistory() : snapShots(SnapShot<uint8_t>::init, SnapShot<uint8_t>::clear) {
+    RTU_STATIC_SUB(debugSub, "key_down_f8", PhysicsHistory::debugSnapShots, this);
+  }
 
+  bool PhysicsHistory::addToInputState(const uint8_t &snapShotId, const uint8_t &id, const SLNet::BitStream &input) {
+    if (snapShots.isValid(snapShotId)) {
+      return snapShots[snapShotId].addToInputState(id, input);
+    } else {
+      return false;
+    }
+  }
+
+  void PhysicsHistory::addToPhysicsState(const uint8_t &snapShotId, const SLNet::BitStream &input) {
+    if (snapShots.isValid(snapShotId)) {
+      snapShots[snapShotId].addToPhysicsState(input);
+    }
+  }
+
+  void PhysicsHistory::debugSnapShots() {
+
+    // Test 0
+//    bool fill = (bool)(rand() % 2);
+//    if (fill && ! snapShots.isFull()) {
+//      printf("NEW HEAD: %u\n", snapShots.capitate().getSlot());
+//    } else if (fill && snapShots.isFull()) {
+//      snapShots.decaudate();
+//      printf("NEW TAIL: %u\n", snapShots.getTailSlot());
+//    } else if ( ! fill && ! snapShots.isEmpty()) {
+//      snapShots.decaudate();
+//      printf("NEW TAIL: %u\n", snapShots.getTailSlot());
+//    } else if ( ! fill && snapShots.isEmpty()) {
+//      printf("NEW HEAD: %u\n", snapShots.capitate().getSlot());
+//    }
+
+    // Test 1
+//    static bool eat, poop;
+//    if (snapShots.isEmpty()) { eat = true; poop = false; }
+//    if (snapShots.isFull()) {
+//      poop = true;
+//      eat = false;
+//      snapShots.decaudate();
+//      snapShots.capitate();
+//    }
+//    if (eat) { snapShots.capitate(); }
+//    if (poop) { snapShots.decaudate(); }
+
+    // Test 2
+//    snapShots.capitate();
+//    if (snapShots.isValid(7) || snapShots.isValid(23)) {
+//      snapShots.decaudate();
+//    }
+//    if (snapShots.isValid(30) && snapShots.isValid(31)) {
+//      snapShots.decaudate(31);
+//    }
+
+    fprintf(snapShots.isValid() ? stdout : stderr, "%s\n", snapShots.toDebugString().c_str());
   }
 
 
@@ -160,17 +245,15 @@ namespace at3 {
     // Static subscriptions will only apply to the first instance of this class created. But usually only one exists.
     RTU_STATIC_SUB(setNetInterfaceSub, "set_network_interface", NetworkSystem::setNetInterface, this);
     RTU_STATIC_SUB(setEcsInterfaceSub, "set_ecs_interface", NetworkSystem::setEcsInterface, this);
+  }
+
+  bool NetworkSystem::onInit() {
+    registries[1].discoverHandler = RTU_MTHD_DLGT(&NetworkSystem::onDiscoverNetworkedPhysics, this);
     RTU_STATIC_SUB(switchToMouseCtrlSub, "switch_to_mouse_controls", NetworkSystem::switchToMouseCtrl, this);
     RTU_STATIC_SUB(switchToWalkCtrlSub, "switch_to_walking_controls", NetworkSystem::switchToWalkCtrl, this);
     RTU_STATIC_SUB(switchToPyramidCtrlSub, "switch_to_pyramid_controls", NetworkSystem::switchToPyramidCtrl, this);
     RTU_STATIC_SUB(switchToTrackCtrlSub, "switch_to_track_controls", NetworkSystem::switchToTrackCtrl, this);
     RTU_STATIC_SUB(switchToFreeCtrlSub, "switch_to_free_controls", NetworkSystem::switchToFreeCtrl, this);
-    RTU_STATIC_SUB(bulletAfterStepSub, "bullet_after_step", NetworkSystem::onAfterBulletPhysicsStep, this);
-    RTU_STATIC_SUB(rewindPhysicsSub, "key_down_f4", NetworkSystem::rewindPhysics, this);
-  }
-
-  bool NetworkSystem::onInit() {
-    registries[1].discoverHandler = RTU_MTHD_DLGT(&NetworkSystem::onDiscoverNetworkedPhysics, this);
     return true;
   }
 
@@ -597,7 +680,11 @@ namespace at3 {
     printf("Strict Warp %s\n", strictWarp ? "On" : "Off");
   }
 
-  void NetworkSystem::onAfterBulletPhysicsStep() {
+  void NetworkSystem::onBeforePhysicsStep() {
+
+  }
+
+  void NetworkSystem::onAfterPhysicsStep() {
     physicsStates.emplace();
     physicsStates.back().WriteBitsFromIntegerRange(storedStateIndexCounter++, (uint8_t) 0, maxStoredStates);
     serializePhysicsSync(true, physicsStates.back(), true);

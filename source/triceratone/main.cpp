@@ -42,8 +42,8 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       waitForServerConnection();
       // Start the player off in the freeCam avatar
       switchToFreeControl();
-      // Set up the controls for switching between player avatars
-      registerAvatarSwitchingSubscriptions();
+      // Set up the high-level controls
+      registerControlSubscriptions();
     }
 
     void initializeSystems() {
@@ -99,19 +99,31 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       }
     }
 
-    void registerAvatarSwitchingSubscriptions() {
+    void registerControlSubscriptions() {
       RTU_STATIC_SUB(key1Sub, "key_down_1", Triceratone::switchToFreeControl, this);
       RTU_STATIC_SUB(key2Sub, "key_down_2", Triceratone::switchToWalkControl, this);
       RTU_STATIC_SUB(key3Sub, "key_down_3", Triceratone::switchToPyramidControl, this);
       RTU_STATIC_SUB(key4Sub, "key_down_4", Triceratone::switchToBuggyControl, this);
+      RTU_STATIC_SUB(rewindPhysicsSub, "key_down_f4", NetworkSystem::rewindPhysics, &networkSystem);
     }
 
     void onTick(float dt) {
       // Order matters here
       networkSystem.tick(dt); // First receive and/or send any network updates about controls or physics state
-      controlSystem.tick(dt); // Process all control signals, remote or otherwise
-      physicsSystem.tick(dt); // Given these inputs, step the physics simulation
-      sceneSystem.tick(dt); // Given the most recent physics and world states, traverse the scene to cache transforms
+      controlSystem.tick(dt); // Process all non-physics-framerate-bound control signals, remote or otherwise
+      physicsSystem.tick(dt); // Step the physics simulation if needed, possibly calling onBeforePhysicsStep first
+      sceneSystem.tick(dt); // Given interpolated physics state and animations, traverse the scene to cache transforms
+    }
+
+    void onBeforePhysicsStep() {
+      // Order matters here
+      networkSystem.onBeforePhysicsStep(); // Record control states for synchronization and rewind/replay
+      controlSystem.onBeforePhysicsStep(); // Process all physics-framerate-bound control signals, remote or otherwise
+      physicsSystem.onBeforePhysicsStep(); // Apply those signals to the physics objects
+    }
+
+    void onAfterPhysicsStep() {
+      networkSystem.onAfterPhysicsStep(); // Record the new physics state for synchronization and rewind/replay
     }
 
     std::string exampleSetting = "1337_H4XX0R5";

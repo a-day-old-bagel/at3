@@ -16,6 +16,7 @@ namespace at3 {
       bool setFullscreenMode(uint32_t mode);
       void toggleFullscreen();
       void publishEvents();
+      void publishStates();
       float getDeltaTime();
     private:
       SDL_Window *window = nullptr;

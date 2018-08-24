@@ -29,6 +29,7 @@ namespace at3 {
 # define CASE_REPORT_PACKET(e, s) case ID_ ##e: fprintf(s, "Received %s\n", #e); break
   void Server::receive(std::vector<SLNet::Packet*> & requestBuffer, std::vector<SLNet::Packet*> & syncBuffer,
                        std::vector<SLNet::AddressOrGUID> & connectionBuffer) {
+    connectionListsDirty = true;
     Packet *packet;
     for (packet=peer->Receive(); packet; packet=peer->Receive()) {
       switch (packet->data[0]) {
@@ -53,6 +54,13 @@ namespace at3 {
   }
 # undef CASE_REPORT_PACKET
 
+  void Server::updateConnectionLists() {
+    if (connectionListsDirty) {
+      peer->GetSystemList(addresses, guids);
+      connectionListsDirty = false;
+    }
+  }
+
   void Server::tick(std::vector<SLNet::Packet*> & requestBuffer, std::vector<SLNet::Packet*> & syncBuffer,
                     std::vector<SLNet::AddressOrGUID> & connectionBuffer) {
     receive(requestBuffer, syncBuffer, connectionBuffer);
@@ -69,5 +77,15 @@ namespace at3 {
 
   void Server::deallocatePacket(Packet *packet) {
     peer->DeallocatePacket(packet);
+  }
+
+  const DataStructures::List<SLNet::SystemAddress> &Server::getClientAddresses() {
+    updateConnectionLists();
+    return addresses;
+  }
+
+  const DataStructures::List<SLNet::RakNetGUID> &Server::getClientGuids() {
+    updateConnectionLists();
+    return guids;
   }
 }

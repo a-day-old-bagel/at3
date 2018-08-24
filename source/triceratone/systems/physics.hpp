@@ -41,6 +41,7 @@ namespace at3 {
       ~PhysicsSystem() override;
       bool onInit();
       void onTick(float dt);
+      void onBeforePhysicsStep();
       void deInit();
       bool onDiscover(const entityId& id);
       bool onForget(const entityId& id);

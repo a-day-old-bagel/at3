@@ -11,8 +11,12 @@
 namespace at3 {
   class Server {
       SLNet::RakPeerInterface *peer;
+      DataStructures::List<SLNet::SystemAddress> addresses;
+      DataStructures::List<SLNet::RakNetGUID> guids;
+      bool connectionListsDirty = true;
       void receive(std::vector<SLNet::Packet*> & requestBuffer, std::vector<SLNet::Packet*> & syncBuffer,
                    std::vector<SLNet::AddressOrGUID> & connectionBuffer);
+      void updateConnectionLists();
     public:
       Server();
       virtual ~Server();
@@ -22,5 +26,7 @@ namespace at3 {
       void sendTo(const SLNet::BitStream &stream, const SLNet::AddressOrGUID &target, PacketPriority priority,
                   PacketReliability reliability, char channel);
       void deallocatePacket(SLNet::Packet * packet);
+      const DataStructures::List<SLNet::SystemAddress> & getClientAddresses();
+      const DataStructures::List<SLNet::RakNetGUID> & getClientGuids();
   };
 }

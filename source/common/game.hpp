@@ -19,7 +19,7 @@ namespace at3 {
 
     public:
 
-      Game();
+      Game() = default;
       virtual ~Game() = default;
       void init(const char *appName, const char *settingsName);
       void tick();
@@ -36,24 +36,17 @@ namespace at3 {
       std::unique_ptr<SdlContext> sdlc;
       std::shared_ptr<vkc::VulkanContext<EcsInterface>> vulkan;
 
-      rtu::topics::Subscription switchToCamSub;
-      rtu::topics::Subscription quitSub;
-
       typename EcsInterface::EcsId currentCameraId = 0;
       std::string settingsFileName;
       bool isQuit = false;
 
       Derived &game();
       void setCamera(void *camPtr);
+      void onBeforePhysicsStep();
+      void onAfterPhysicsStep();
       void deInit(void* nothing);
 
   };
-
-  template<typename EcsInterface, typename Derived>
-  Game<EcsInterface, Derived>::Game()
-      : switchToCamSub("switch_to_camera", RTU_MTHD_DLGT(&Game::setCamera, this)),
-        quitSub("quit", RTU_MTHD_DLGT(&Game::deInit, this))
-        { }
 
   template <typename EcsInterface, typename Derived>
   Derived & Game<EcsInterface, Derived>::game() {
@@ -69,6 +62,12 @@ namespace at3 {
    */
   template <typename EcsInterface, typename Derived>
   void Game<EcsInterface, Derived>::init(const char *appName, const char *settingsName) {
+
+    // Set up the event delegates (callbacks) (these only work for first instance to call init)
+    RTU_STATIC_SUB(switchToCameraSub, "switch_to_camera", Game::setCamera, this);
+    RTU_STATIC_SUB(quitSub, "quit", Game::deInit, this);
+    RTU_STATIC_SUB(onBeforePhysicsStepSub, "physics_before_step", Game::onBeforePhysicsStep, this);
+    RTU_STATIC_SUB(onAfterPhysicsStepSub, "physics_after_step", Game::onAfterPhysicsStep, this);
 
     // Read the settings from the ini file, including settings defined in the inheriting class (top level)
     settingsFileName = settingsName;
@@ -135,5 +134,16 @@ namespace at3 {
   template <typename EcsInterface, typename Derived>
   void Game<EcsInterface, Derived>::setCamera(void *camPtr) {
     currentCameraId = * (typename EcsInterface::EcsId *) camPtr;
+  }
+
+  template<typename EcsInterface, typename Derived>
+  void Game<EcsInterface, Derived>::onBeforePhysicsStep() {
+    sdlc->publishStates();
+    game().onBeforePhysicsStep();
+  }
+
+  template<typename EcsInterface, typename Derived>
+  void Game<EcsInterface, Derived>::onAfterPhysicsStep() {
+    game().onAfterPhysicsStep();
   }
 }

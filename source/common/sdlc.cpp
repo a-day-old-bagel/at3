@@ -200,7 +200,9 @@ namespace at3 {
         default: break;
       }
     }
+  }
 
+  void SdlContext::publishStates() {
     // publish current keyboard state
     const Uint8 *keyStates = SDL_GetKeyboardState(NULL);
     RTU_DO_ON_KEYS(publish("key_held_w"), keyStates, SDL_SCANCODE_W)

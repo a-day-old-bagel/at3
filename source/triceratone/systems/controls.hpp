@@ -37,6 +37,7 @@ namespace at3 {
       ~ControlSystem() override;
       bool onInit();
       void onTick(float dt);
+      void onBeforePhysicsStep();
       bool onDiscoverMouseControls(const entityId &id);
   };
 

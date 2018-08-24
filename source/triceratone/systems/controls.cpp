@@ -12,11 +12,6 @@ namespace at3 {
     name = "Control System";
     // Static subscriptions will only apply to the first instance of this class created. But usually only one exists.
     RTU_STATIC_SUB(setEcsInterfaceSub, "set_ecs_interface", ControlSystem::setEcsInterface, this);
-    RTU_STATIC_SUB(switchToMouseCtrlSub, "switch_to_mouse_controls", ControlSystem::switchToMouseCtrl, this);
-    RTU_STATIC_SUB(switchToWalkCtrlSub, "switch_to_walking_controls", ControlSystem::switchToWalkCtrl, this);
-    RTU_STATIC_SUB(switchToPyramidCtrlSub, "switch_to_pyramid_controls", ControlSystem::switchToPyramidCtrl, this);
-    RTU_STATIC_SUB(switchToTrackCtrlSub, "switch_to_track_controls", ControlSystem::switchToTrackCtrl, this);
-    RTU_STATIC_SUB(switchToFreeCtrlSub, "switch_to_free_controls", ControlSystem::switchToFreeCtrl, this);
   }
   ControlSystem::~ControlSystem() {
     currentCtrlKeys.reset();
@@ -25,6 +20,11 @@ namespace at3 {
 
   bool ControlSystem::onInit() {
     registries[0].discoverHandler = RTU_MTHD_DLGT(&ControlSystem::onDiscoverMouseControls, this);
+    RTU_STATIC_SUB(switchToMouseCtrlSub, "switch_to_mouse_controls", ControlSystem::switchToMouseCtrl, this);
+    RTU_STATIC_SUB(switchToWalkCtrlSub, "switch_to_walking_controls", ControlSystem::switchToWalkCtrl, this);
+    RTU_STATIC_SUB(switchToPyramidCtrlSub, "switch_to_pyramid_controls", ControlSystem::switchToPyramidCtrl, this);
+    RTU_STATIC_SUB(switchToTrackCtrlSub, "switch_to_track_controls", ControlSystem::switchToTrackCtrl, this);
+    RTU_STATIC_SUB(switchToFreeCtrlSub, "switch_to_free_controls", ControlSystem::switchToFreeCtrl, this);
     return true;
   }
 
@@ -48,6 +48,159 @@ namespace at3 {
       rot[3][2] = placement->mat[3][2];
       placement->mat = rot;
     }
+//    for (auto id : (registries[1].ids)) { // Pyramid
+//      PyramidControls* pyramidControls;
+//      state->getPyramidControls(id, &pyramidControls);
+//      Placement* placement;
+//      state->getPlacement(id, &placement);
+//      MouseControls *mouseControls;
+//      state->getMouseControls(pyramidControls->mouseCtrlId, &mouseControls);
+//
+//      // provide the up vector
+//      pyramidControls->up = glm::mat3(placement->absMat) * glm::vec3(0.f, 0.f, 1.f);
+//
+//      // zero control forces
+//      pyramidControls->force = glm::vec3(0, 0, 0);
+//
+//      // keep track of how much the engine is being "used" (just for looks right now, but
+//      // maybe later use to calculate fuel consumption)
+//      uint8_t level = 0;
+//
+//      if (length(pyramidControls->accel) > 0.0f) {
+//        // if thrusting upwards at all (boost or not) add to level
+//        if (pyramidControls->accel.y > 0) { ++level; }
+//        // handle turbo
+//        float turbo = 1.f;
+//        if (pyramidControls->turbo) {
+//          // if boosting anywhere except down, add to level
+//          if (pyramidControls->accel.y >= 0) { ++level; }
+//          turbo = 2.f;
+//          pyramidControls->turbo = false;
+//        }
+//        // Rotate the movement axis to the correct orientation
+//        pyramidControls->force = glm::mat3 {
+//            PYR_SIDE_ACCEL, 0, 0,
+//            0, PYR_SIDE_ACCEL, 0,
+//            0, 0, PYR_UP_ACCEL
+//        } * glm::normalize(mouseControls->lastHorizCtrlRot * pyramidControls->accel) * turbo;
+//        // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
+//        if (currentCtrlKeys && id == currentCtrlKeys->getId()) {
+//          pyramidControls->accel = glm::vec3(0, 0, 0);
+//        }
+//      }
+//
+//      // assign the engine utilization level
+//      pyramidControls->engineActivationLevel = level;
+//
+//      // deal with ball spawning
+//      if (pyramidControls->drop || pyramidControls->shoot) {
+//        if (settings::network::role != settings::network::CLIENT) {
+//          Placement *source;
+//          state->getPlacement(id, &source);
+//          Physics *sourcePhysics;
+//          state->getPhysics(id, &sourcePhysics);
+//          glm::mat4 sourceMat = glm::translate(source->absMat, {0.f, 0.f, 3.f});
+//          btVector3 sourceVel = sourcePhysics->rigidBody->getLinearVelocity();
+//          Physics *ballPhysics = nullptr;
+//
+//          entityId ballId = 0;
+//          uint32_t count = pyramidControls->shoot ? 1 : 4;  // 0 for shoot will crash
+//          for (uint32_t i = 0; i < count; ++i) {
+//            ecs->openEntityRequest();
+//            ecs->requestPlacement(sourceMat);
+//            ecs->requestMesh("sphere", "");
+//            std::shared_ptr<void> radius = std::make_shared<float>(1.f);
+//            ecs->requestPhysics(5.f, radius, Physics::SPHERE);
+//            ecs->requestNetworking();
+//            ecs->requestSceneNode(0);
+//            ballId = ecs->closeEntityRequest();
+//            state->getPhysics(ballId, &ballPhysics);
+//            ballPhysics->rigidBody->setLinearVelocity(sourceVel);
+//          }
+//          if (pyramidControls->shoot) {
+//            if (ballId) { // This just won't work on an unfulfilled request (which is another reason to get rid of them)
+//              glm::mat3 tiltRot = glm::rotate(.35f, glm::vec3(1.0f, 0.0f, 0.0f));
+//              glm::mat3 rot = getCylStandingRot(source->getTranslation(true), mouseControls->pitch, mouseControls->yaw);
+//              glm::vec3 shootDir = rot * tiltRot * glm::vec3(0, 0, -1);
+//              btVector3 shot = btVector3(shootDir.x, shootDir.y, shootDir.z) * 1000.f;
+//              ballPhysics->rigidBody->applyCentralImpulse(shot);
+//            }
+//          }
+//        }
+//        pyramidControls->shoot = false;
+//        pyramidControls->drop = false;
+//      }
+//    }
+//    for (auto id : (registries[2].ids)) { // Track/buggy
+//      TrackControls* trackControls;
+//      state->getTrackControls(id, &trackControls);
+//
+//      if (length(trackControls->control) > 0.f) {
+//        // Calculate torque to apply
+//        trackControls->torque += TRACK_TORQUE * trackControls->control;
+//        // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
+//        if (currentCtrlKeys && id == currentCtrlKeys->getId()) {
+//          trackControls->control = glm::vec2(0, 0);
+//        }
+//      }
+//    }
+//    for (auto id : (registries[3].ids)) { // Player/Walking
+//      WalkControls* walkControls;
+//      state->getWalkControls(id, &walkControls);
+//      Placement* placement;
+//      state->getPlacement(id, &placement);
+//      MouseControls *mouseControls;
+//      state->getMouseControls(walkControls->mouseCtrlId, &mouseControls);
+//
+//      // provide the up vector
+//      walkControls->up = glm::mat3(placement->absMat) * glm::vec3(0.f, 0.f, 1.f);
+//
+//      // zero control forces
+//      walkControls->force = glm::vec3(0, 0, 0);
+//
+//      if (length(walkControls->accel) > 0.0f) {
+//        // Rotate the movement axis to the correct orientation
+//        float speed = walkControls->isRunning ? CHARA_RUN : CHARA_WALK;
+//        walkControls->force = glm::mat3 {
+//            speed, 0, 0,
+//            0, speed, 0,
+//            0, 0, speed
+//        } * glm::normalize(mouseControls->lastHorizCtrlRot * walkControls->accel);
+//        // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
+//        if (currentCtrlKeys && id == currentCtrlKeys->getId()) {
+//          walkControls->accel = glm::vec3(0, 0, 0);
+//        }
+//      }
+//    }
+    for (auto id: (registries[4].ids)) { // Free Control
+      FreeControls *freeControls;
+      state->getFreeControls(id, &freeControls);
+      MouseControls *mouseControls;
+      state->getMouseControls(freeControls->mouseCtrlId, &mouseControls);
+
+      if (length(freeControls->control) > 0.0f) {
+        Placement *placement;
+        state->getPlacement(id, &placement);
+
+        glm::vec3 movement = (FREE_SPEED * powf(10.f, freeControls->x10) * dt) * glm::normalize(
+            mouseControls->lastCtrlRot * freeControls->control);
+
+        placement->mat[3][0] += movement.x;
+        placement->mat[3][1] += movement.y;
+        placement->mat[3][2] += movement.z;
+
+        // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
+        if (currentCtrlKeys && id == currentCtrlKeys->getId()) {
+          freeControls->control = glm::vec3(0, 0, 0);
+        }
+      }
+      if (freeControls->x10) {
+        freeControls->x10 = 0;
+      }
+    }
+  }
+
+  void ControlSystem::onBeforePhysicsStep() {
     for (auto id : (registries[1].ids)) { // Pyramid
       PyramidControls* pyramidControls;
       state->getPyramidControls(id, &pyramidControls);
@@ -170,32 +323,6 @@ namespace at3 {
         if (currentCtrlKeys && id == currentCtrlKeys->getId()) {
           walkControls->accel = glm::vec3(0, 0, 0);
         }
-      }
-    }
-    for (auto id: (registries[4].ids)) { // Free Control
-      FreeControls *freeControls;
-      state->getFreeControls(id, &freeControls);
-      MouseControls *mouseControls;
-      state->getMouseControls(freeControls->mouseCtrlId, &mouseControls);
-
-      if (length(freeControls->control) > 0.0f) {
-        Placement *placement;
-        state->getPlacement(id, &placement);
-
-        glm::vec3 movement = (FREE_SPEED * powf(10.f, freeControls->x10) * dt) * glm::normalize(
-            mouseControls->lastCtrlRot * freeControls->control);
-
-        placement->mat[3][0] += movement.x;
-        placement->mat[3][1] += movement.y;
-        placement->mat[3][2] += movement.z;
-
-        // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
-        if (currentCtrlKeys && id == currentCtrlKeys->getId()) {
-          freeControls->control = glm::vec3(0, 0, 0);
-        }
-      }
-      if (freeControls->x10) {
-        freeControls->x10 = 0;
       }
     }
   }

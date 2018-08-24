@@ -41,7 +41,7 @@ namespace at3 {
     packets.clear();
   }
 
-  uint32_t NetInterface::getRole() {
+  uint32_t NetInterface::getRole() const {
     return role;
   }
 
@@ -93,7 +93,7 @@ namespace at3 {
     }
   }
 
-  const std::vector<SLNet::Packet *> & NetInterface::getRequestPackets() {
+  const std::vector<SLNet::Packet *> & NetInterface::getRequestPackets() const {
     return requestPackets;
   }
 
@@ -101,7 +101,7 @@ namespace at3 {
     discardPacketCollection(requestPackets);
   }
 
-  const std::vector<SLNet::Packet *> & NetInterface::getSyncPackets() {
+  const std::vector<SLNet::Packet *> & NetInterface::getSyncPackets() const {
     return syncPackets;
   }
 
@@ -109,12 +109,28 @@ namespace at3 {
     discardPacketCollection(syncPackets);
   }
 
-  const std::vector<SLNet::AddressOrGUID> &NetInterface::getFreshConnections() {
+  const std::vector<SLNet::AddressOrGUID> &NetInterface::getFreshConnections() const {
     return freshConnections;
   }
 
   void NetInterface::discardFreshConnections() {
     freshConnections.clear();
+  }
+
+  const DataStructures::List<SLNet::SystemAddress> & NetInterface::getClientAddresses() const {
+    switch(role) {
+      case settings::network::Role::SERVER: { return server->getClientAddresses(); }
+      case settings::network::Role::CLIENT:
+      default: { return emptyAddresses; }
+    }
+  }
+
+  const DataStructures::List<SLNet::RakNetGUID> & NetInterface::getClientGuids() const {
+    switch(role) {
+      case settings::network::Role::SERVER: { return server->getClientGuids(); }
+      case settings::network::Role::CLIENT:
+      default: { return emptyGuids; }
+    }
   }
 
 }

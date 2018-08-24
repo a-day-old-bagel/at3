@@ -38,9 +38,12 @@ namespace at3 {
     return false;
   }
 
-  // Don't run more than one PhysicsSystem at a time or things that depend on this topic will get double the trouble.
+  // Don't run more than one PhysicsSystem at a time or things that depend on these topics will get double the trouble.
+  static void onBeforeSimulationStep(btDynamicsWorld *world, btScalar timeStep) {
+    rtu::topics::publish("physics_before_step");
+  }
   static void onAfterSimulationStep(btDynamicsWorld *world, btScalar timeStep) {
-    rtu::topics::publish("bullet_after_step");
+    rtu::topics::publish("physics_after_step");
   }
 
   PhysicsSystem::PhysicsSystem(State *state) : System(state) {
@@ -83,6 +86,7 @@ namespace at3 {
 
     // set the simulation step callback
     dynamicsWorld->setInternalTickCallback(onAfterSimulationStep);
+    dynamicsWorld->setInternalTickCallback(onBeforeSimulationStep, nullptr, true);
 
     // TODO: somehow do this at the same time for a server and a client upon connect?
 //    solver->reset();
@@ -92,6 +96,68 @@ namespace at3 {
 
   void PhysicsSystem::onTick(float dt) {
 
+    // Step the world at a fixed timestep (will only actually run simulation step if enough time has passed)
+    dynamicsWorld->stepSimulation(dt); // time step (s), max sub-steps, sub-step length (s)
+    if (debugDrawMode) { dynamicsWorld->debugDrawWorld(); }
+
+    // Update the visual transform of the wheels of any cars
+    for (auto id : registries[2].ids) {
+      TrackControls *trackControls;
+      state->getTrackControls(id, &trackControls);
+      for (int i = 0; i < trackControls->vehicle->getNumWheels(); ++i) {
+        trackControls->vehicle->updateWheelTransform(i, true);
+      }
+    }
+
+    // All Physics - access interpolated visual transform information and store it in placement component for graphics.
+    for (auto id : registries[0].ids) {
+      Physics *physics;
+      state->getPhysics(id, &physics);
+      Placement *placement;
+      state->getPlacement(id, &placement);
+      btTransform transform;
+      switch (physics->useCase) {
+        case Physics::WHEEL: {
+          WheelInfo wi = *((WheelInfo *) physics->customData);
+          TrackControls *trackControls;
+          if (SUCCESS == state->getTrackControls(wi.parentVehicle, &trackControls)) {
+            transform = trackControls->vehicle->getWheelTransformWS(((WheelInfo *) physics->customData)->bulletWheelId);
+          } else {
+            // TODO: handle an orphan wheel
+            // TODO: instead of deleting all wheels in onForgetTrackControls, do the following here:
+            // replace the wheel's physics component with a normal physics component at the same location
+          }
+        } break;
+        default: {
+          if (!physics->rigidBody->isActive()) { continue; }
+
+          physics->rigidBody->getMotionState()->getWorldTransform(transform);
+
+          btVector3 vel = physics->rigidBody->getLinearVelocity();
+          glm::vec3 grav = getCylGrav(placement->getTranslation(true), glm::vec3(vel.x(), vel.y(), vel.z()));
+
+          btVector3 btGrav = btVector3(grav.x, grav.y, grav.z);
+          physics->rigidBody->setGravity(btGrav);
+
+          // temporary hack to stop things from flying off to infinity if they escape the cylinder FIXME: hack
+          glm::vec3 pos = placement->getTranslation(true);
+          if (glm::length(glm::vec2(pos.x, pos.y)) > 810.f || pos.z < -2510.f) {
+            btTransform writeTransform = physics->rigidBody->getCenterOfMassTransform();
+            float xOffset = (rand() % 400) * .1f - 20.f;
+            float yOffset = (rand() % 400) * .1f - 20.f;
+            writeTransform.setOrigin(btVector3(xOffset, yOffset, 2200)); // appears near "top" end of cylinder
+            physics->rigidBody->setCenterOfMassTransform(writeTransform);
+            physics->rigidBody->setLinearVelocity(btVector3(0, 0, 0));
+          }
+        } break;
+      }
+      glm::mat4 newTransform(1.f);
+      transform.getOpenGLMatrix((btScalar *) &newTransform);
+      placement->mat = newTransform;
+    }
+  }
+
+  void PhysicsSystem::onBeforePhysicsStep() {
     // PyramidControls
     for (auto id : registries[1].ids) {
       Placement *placement;
@@ -256,16 +322,10 @@ namespace at3 {
       ctrls->isRunning = false;
     }
 
-    // Step the world here
-    dynamicsWorld->stepSimulation(dt); // time step (s), max sub-steps, sub-step length (s)
-    if (debugDrawMode) { dynamicsWorld->debugDrawWorld(); }
-
     // TrackControls
     for (auto id : registries[2].ids) {
       TrackControls *trackControls;
       state->getTrackControls(id, &trackControls);
-      //Todo: put engine force application *before* the sim update, with wheel update after?
-
 //      for (size_t i = 0; i < trackControls->wheels.size(); ++i) {
 //        if (trackControls->wheels.at(i).leftOrRight < 0) {
 //          trackControls->vehicle->applyEngineForce(trackControls->torque.x, trackControls->wheels.at(i).bulletWheelId);
@@ -305,62 +365,9 @@ namespace at3 {
         trackControls->flipRequested = false;
       }
 
-      for (int i = 0; i < trackControls->vehicle->getNumWheels(); ++i) {
-        trackControls->vehicle->updateWheelTransform(i, true);
-      }
       // zero control forces
       trackControls->torque = glm::vec2(0, 0);
       trackControls->brakes = glm::vec2(0, 0);
-    }
-
-    // All Physics
-    for (auto id : registries[0].ids) {
-      Physics *physics;
-      state->getPhysics(id, &physics);
-      Placement *placement;
-      state->getPlacement(id, &placement);
-      btTransform transform;
-      switch (physics->useCase) {
-        case Physics::WHEEL: {
-          WheelInfo wi = *((WheelInfo *) physics->customData);
-          TrackControls *trackControls;
-          if (SUCCESS == state->getTrackControls(wi.parentVehicle, &trackControls)) {
-            transform = trackControls->vehicle->getWheelTransformWS(((WheelInfo *) physics->customData)->bulletWheelId);
-          } else {
-            // TODO: handle an orphan wheel
-            // TODO: instead of deleting all wheels in onForgetTrackControls, do the following here:
-            // replace the wheel's physics component with a normal physics component at the same location
-          }
-        }
-          break;
-        default: {
-          if (!physics->rigidBody->isActive()) { continue; }
-
-          physics->rigidBody->getMotionState()->getWorldTransform(transform);
-
-          btVector3 vel = physics->rigidBody->getLinearVelocity();
-          glm::vec3 grav = getCylGrav(placement->getTranslation(true), glm::vec3(vel.x(), vel.y(), vel.z()));
-
-          btVector3 btGrav = btVector3(grav.x, grav.y, grav.z);
-          physics->rigidBody->setGravity(btGrav);
-
-          // temporary hack to stop things from flying off to infinity if they escape the cylinder FIXME: hack
-          glm::vec3 pos = placement->getTranslation(true);
-          if (glm::length(glm::vec2(pos.x, pos.y)) > 810.f || pos.z < -2510.f) {
-            btTransform writeTransform = physics->rigidBody->getCenterOfMassTransform();
-            float xOffset = (rand() % 400) * .1f - 20.f;
-            float yOffset = (rand() % 400) * .1f - 20.f;
-            writeTransform.setOrigin(btVector3(xOffset, yOffset, 2200)); // appears near "top" end of cylinder
-            physics->rigidBody->setCenterOfMassTransform(writeTransform);
-            physics->rigidBody->setLinearVelocity(btVector3(0, 0, 0));
-          }
-
-        }
-          break;
-      }
-      glm::mat4 newTransform(1.f);
-      transform.getOpenGLMatrix((btScalar *) &newTransform);
-      placement->mat = newTransform;
     }
   }
 
@@ -388,25 +395,20 @@ namespace at3 {
     switch (physics->useCase) {
       case Physics::SPHERE: {
         shape = new btSphereShape(*((float *) physics->initData.get()));
-      }
-        break;
+      } break;
       case Physics::PLANE: { AT3_ASSERT(false, "missing plane collision implementation");
-      }
-        break;
+      } break;
       case Physics::BOX: {
         shape = new btBoxShape(*((btVector3 *) physics->initData.get()));
-      }
-        break;
+      } break;
       case Physics::DYNAMIC_CONVEX_MESH: {
         auto *points = (std::vector<float> *) physics->initData.get();
         shape = new btConvexHullShape(points->data(), (int) points->size() / 3, 3 * sizeof(float));
-      }
-        break;
+      } break;
       case Physics::CHARA: {
 //        shape = new btCapsuleShapeZ(HUMAN_WIDTH * 0.5f, HUMAN_HEIGHT * 0.33f);
         shape = new btSphereShape(HUMAN_WIDTH * 0.5f);
-      }
-        break;
+      } break;
       case Physics::STATIC_MESH: {
         physics->customData = new btTriangleMesh();
         auto *mesh = reinterpret_cast<btTriangleMesh *>(physics->customData);
@@ -474,13 +476,11 @@ namespace at3 {
         // the slow stuff (CCD)
         physics->rigidBody->setCcdMotionThreshold(1);
         physics->rigidBody->setCcdSweptSphereRadius(0.1f);
-      }
-        break;
+      } break;
       default: {
         physics->rigidBody->setRestitution(0.5f);
         physics->rigidBody->setFriction(1.f);
-      }
-        break;
+      } break;
     }
     physics->rigidBody->setUserIndex((int) id);
     dynamicsWorld->addRigidBody(physics->rigidBody);

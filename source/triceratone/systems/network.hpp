@@ -24,15 +24,18 @@ namespace at3 {
       static Dtor defaultDtor;
       explicit Ouroboros(const Ctor & ctor = defaultCtor, const Dtor & dtor = defaultDtor);
       const indexType getNumSlots() const;
+      const indexType getHeadSlot() const;
+      const indexType getTailSlot() const;
       const bool isEmpty() const;
       const bool isFull() const;
       const bool isValid() const;
       const bool isValid(indexType index) const;
       T & capitate();
-      T & decaudate();
-      T & decaudate(indexType upToButNot);
+      void decaudate(); // TODO: don't return a T here, since if empty, will be invalid.
+      void decaudate(indexType upToButNot);
       T & operator [] (indexType index);
       const T & operator [] (indexType index) const;
+      const std::string toDebugString() const;
 
     private:
 
@@ -58,23 +61,32 @@ namespace at3 {
 
       bool addToInputState(const playerIdType &id, const SLNet::BitStream &input);
       void addToPhysicsState(const SLNet::BitStream &input);
+      uint8_t getSlot();
 
-      static rtu::Delegate<SnapShot&(SnapShot&, const playerIdType&)> init;
-      static rtu::Delegate<void(SnapShot&, const playerIdType&)> clear;
+      static rtu::Delegate<SnapShot&(SnapShot&, const uint8_t&)> init;
+      static rtu::Delegate<void(SnapShot&, const uint8_t&)> clear;
 
     private:
 
       SLNet::BitStream inputState, physicsState;
+      uint8_t slot = 0;
 
-      static SnapShot & initImpl(SnapShot &snapShot, const playerIdType &index);
-      static void clearImpl(SnapShot &snapShot, const playerIdType &index);
+      static SnapShot & initImpl(SnapShot &snapShot, const uint8_t &index);
+      static void clearImpl(SnapShot &snapShot, const uint8_t &index);
   };
 
   class PhysicsHistory {
     public:
+
       PhysicsHistory();
+      bool addToInputState(const uint8_t &snapShotId, const uint8_t &id, const SLNet::BitStream &input);
+      void addToPhysicsState(const uint8_t &snapShotId, const SLNet::BitStream &input);
+
     private:
+
       Ouroboros<SnapShot<uint8_t>, uint8_t, 32> snapShots;
+
+      void debugSnapShots();
 
       // TODO: store tail-time whenever a collapse happens, then set the bullet pre-step to walk through the control
       // states as it steps through the (currentTime(ms) - tailTime(ms)) / 16.67(ms) steps
@@ -82,6 +94,7 @@ namespace at3 {
       // TODO: Should switch control system to only fire on physics pre-step?
       // Maybe just the key-pressing part, not the mouse. OTherwise key-held events have more power depending on
       // framerate and those in-between-bullet-step updates are probably lost in networking anyway.
+
   };
 
   struct SingleClientInput {
@@ -151,7 +164,8 @@ namespace at3 {
       void onTick(float dt);
       bool onDiscoverNetworkedPhysics(const entityId &id);
       void toggleStrictWarp();
-      void onAfterBulletPhysicsStep();
+      void onBeforePhysicsStep();
+      void onAfterPhysicsStep();
       void rewindPhysics();
   };
 }
