@@ -203,6 +203,9 @@ namespace at3 {
   }
 
   void SdlContext::publishStates() {
+    // let all know that a new state poll has begun, in case that information is useful
+    publish("new_input_state_poll");
+
     // publish current keyboard state
     const Uint8 *keyStates = SDL_GetKeyboardState(NULL);
     RTU_DO_ON_KEYS(publish("key_held_w"), keyStates, SDL_SCANCODE_W)
