@@ -55,25 +55,31 @@ namespace at3 {
       void haveBadTime();
   };
 
-  template <typename playerIdType>
-  class SnapShot {
+  template <typename indexType>
+  class PhysicsState {
     public:
-
-      bool addToInputState(const playerIdType &id, const SLNet::BitStream &input);
-      void addToPhysicsState(const SLNet::BitStream &input);
-      uint8_t getSlot();
-
-      static rtu::Delegate<SnapShot&(SnapShot&, const uint8_t&)> init;
-      static rtu::Delegate<void(SnapShot&, const uint8_t&)> clear;
-
+      void addPhysicsData(const SLNet::BitStream &data) {
+        state.Write(data);
+      }
+      static rtu::Delegate<PhysicsState&(PhysicsState&, const indexType&)> init;
+      static rtu::Delegate<void(PhysicsState&, const indexType&)> clear;
     private:
-
-      SLNet::BitStream inputState, physicsState;
-      uint8_t slot = 0;
-
-      static SnapShot & initImpl(SnapShot &snapShot, const uint8_t &index);
-      static void clearImpl(SnapShot &snapShot, const uint8_t &index);
+      SLNet::BitStream state;
+      indexType index = 0;
+      static PhysicsState & initImpl(PhysicsState &physicsState, const indexType &index) {
+        physicsState.index = index;
+        return physicsState;
+      }
+      static void clearImpl(PhysicsState &physicsState, const indexType &index) {
+        physicsState.state.Reset();
+      }
   };
+  template<typename indexType>
+  rtu::Delegate<PhysicsState<indexType>&(PhysicsState<indexType>&, const indexType&)> PhysicsState<indexType>::init =
+      RTU_FUNC_DLGT(PhysicsState::initImpl);
+  template<typename indexType>
+  rtu::Delegate<void(PhysicsState<indexType>&, const indexType&)> PhysicsState<indexType>::clear =
+      RTU_FUNC_DLGT(PhysicsState::clearImpl);
 
   class PhysicsHistory {
     public:
@@ -84,7 +90,12 @@ namespace at3 {
 
     private:
 
-      Ouroboros<SnapShot<uint8_t>, uint8_t, 32> snapShots;
+      static const inline uint8_t physicsStatesPerSecond = 10;
+      static const inline uint8_t controlStatesPerPhysicsState = Physics::simulationFps / physicsStatesPerSecond;
+      static const inline uint8_t maxStoredControlStates = controlStatesPerPhysicsState * Physics::maxStoredStates;
+
+//      Ouroboros<SnapShot<uint8_t>, uint8_t, Physics::maxStoredStates> snapShots;
+      Ouroboros<PhysicsState<uint8_t>, uint8_t, Physics::maxStoredStates> states;
 
       void debugSnapShots();
 
@@ -111,7 +122,10 @@ namespace at3 {
       entityId keyControlId = 0;
       SLNet::MessageID keyControlMessageId = ID_USER_PACKET_END_ENUM;
       SLNet::BitStream outStream;
-      float timeAccumulator = 0;
+
+//      float timeAccumulator = 0;
+      uint8_t physicsStepAccumulator = 0;
+
       bool strictWarp = false;
 
       uint8_t maxStoredStates = 31;
@@ -132,9 +146,9 @@ namespace at3 {
       void switchToTrackCtrl(void *id);
       void switchToFreeCtrl(void *id);
 
-      bool writePhysicsSyncs(float dt);
+      bool sendPeriodicPhysicsUpdate();
 
-      void writeControlSyncs();
+      bool writeControlSync();
       void sendAllControlSyncs();
       void send(PacketPriority priority, PacketReliability reliability, char channel);
       void sendTo(const SLNet::AddressOrGUID & target, PacketPriority priority,

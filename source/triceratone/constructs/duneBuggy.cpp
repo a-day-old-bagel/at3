@@ -14,7 +14,7 @@ namespace at3 {
         const glm::mat4& absTransIn,
         uint32_t time,
         TransFuncEcsContext *ctxt = nullptr) {
-      return glm::scale(transIn, glm::vec3(WHEEL_RADIUS * 2.f));
+      return glm::scale(transIn, glm::vec3(TrackControls::wheelRadius * 2.f));
     }
     const TransformFunctionDescriptor & getWheelTransFuncDesc() {
       static TransformFunctionDescriptor wheelTransFuncDesc;
@@ -82,11 +82,11 @@ namespace at3 {
                 wheelConnectionPoint.x()  // x component of wheel's chassis-space connection point
             },
             wheelConnectionPoint, // connection point
-            {0.f, 0.f, -1.f},         // direction
-            {1.f, 0.f, 0.f},          // axle
-            0.4f,                     // suspension rest length
-            WHEEL_RADIUS,             // wheel radius
-            false                     // is front wheel
+            {0.f, 0.f, -1.f},           // direction
+            {1.f, 0.f, 0.f},            // axle
+            0.4f,                       // suspension rest length
+            TrackControls::wheelRadius, // wheel radius
+            false                       // is front wheel
         });
         state.addPhysics(wheelId, 10.f, wheelInitInfo, Physics::WHEEL);
         state.addTransformFunction(wheelId, getWheelTransFuncDesc().registrationId);

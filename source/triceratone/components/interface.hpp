@@ -74,6 +74,7 @@ namespace at3 {
       void openEntityRequest();
       EcsId closeEntityRequest();
       void broadcastManualEntity(const ezecs::entityId &id);
+      void requestEntityDeletion(const ezecs::entityId &id);
 
       void requestPlacement(const glm::mat4 & mat);
       void requestSceneNode(EcsId parentId);
@@ -133,5 +134,11 @@ namespace at3 {
        */
       bool hasCustomModelTransform(const EcsId &id);
       glm::mat4 getCustomModelTransform(const EcsId &id);
+
+      /*
+       * The scene tree may call this when a node is removed that has children. This will be called once for each child.
+       * It is assumed that the removal of the parent node is already known about and handled correctly.
+       */
+      void notifyOfSceneTreeRemoval(const EcsId &id);
   };
 }

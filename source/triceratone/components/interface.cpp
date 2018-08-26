@@ -77,6 +77,23 @@ namespace at3 {
     }
   }
 
+  void EntityComponentSystemInterface::requestEntityDeletion(const ezecs::entityId &id) {
+    switch (network->getRole()) {
+      case settings::network::SERVER: {
+        // TODO: broadcast a deletion message
+        stream.Reset();
+        serializeEntityDeletionRequest(true, stream, *state, id);
+        network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
+      } break;
+      case settings::network::CLIENT: {
+        // TODO: ?
+      } break;
+      default: {
+        state->deleteEntity(id);
+      } break;
+    }
+  }
+
   void EntityComponentSystemInterface::requestPlacement(const glm::mat4 &mat) {
     if (network->getRole() == settings::network::NONE) {
       state->addPlacement(openRequestId, mat);
@@ -234,5 +251,9 @@ namespace at3 {
     EZECS_CHECK_PRINT(EZECS_ERR(status));
     assert(status == ezecs::SUCCESS);
     return transformFunction->transformed;
+  }
+
+  void EntityComponentSystemInterface::notifyOfSceneTreeRemoval(const EntityComponentSystemInterface::EcsId &id) {
+    requestEntityDeletion(id);
   }
 };

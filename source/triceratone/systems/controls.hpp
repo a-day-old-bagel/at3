@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <stack> // just for ball removal
+
 #include <memory>
 #include <SDL.h>
 #include "ezecs.hpp"
@@ -17,6 +19,9 @@ namespace at3 {
       std::shared_ptr<EntityComponentSystemInterface> ecs;
       std::unique_ptr<EntityAssociatedERM> currentCtrlMouse;
       std::unique_ptr<EntityAssociatedERM> currentCtrlKeys;
+
+      std::stack<entityId> ballIds;
+      void deleteLastBall();
 
       void setEcsInterface(void *ecs);
       void switchToMouseCtrl(void *id);

@@ -125,6 +125,9 @@ namespace {
     // TODO: if writing to the component, it will have to be re-created in Bullet for changes to happen.
     void serialize(bool rw, SLNet::BitStream & stream);
     static void serialize(bool rw, SLNet::BitStream & stream, float & mass, sharedVoidPtr & initData, int & useCase);
+
+    static const inline uint8_t simulationFps = 60;
+    static const inline uint8_t maxStoredStates = 32;
   };
   EZECS_COMPONENT_DEPENDENCIES(Physics, Placement)
 
@@ -153,6 +156,9 @@ namespace {
     bool drop = false;
     uint8_t engineActivationLevel = 0;
     PyramidControls(entityId mouseCtrlId);
+
+    static const inline float sideAccelFactor = 2500.f;
+    static const inline float upAccelFactor = 4000.f;
   };
   EZECS_COMPONENT_DEPENDENCIES(PyramidControls, Physics)
 
@@ -166,6 +172,10 @@ namespace {
     btRaycastVehicle *vehicle;
     btRaycastVehicle::btVehicleTuning tuning;
     TrackControls();
+
+    static const inline float vacantBrake = 0.5f;
+    static const inline float torqueFactor = 100.f;
+    static const inline float wheelRadius = 1.5f;
   };
   EZECS_COMPONENT_DEPENDENCIES(TrackControls, Physics)
 
@@ -180,6 +190,13 @@ namespace {
     bool isGrounded = false;
     bool isRunning = false;
     WalkControls(entityId mouseCtrlId);
+
+    static const inline float humanTorsoRadius = 0.5f;
+    static const inline float jumpFactor = 5.f;
+    static const inline float midAirFactor = 0.05f;
+    static const inline float springFactor = 140.f;
+    static const inline float walkFactor = 100.f;
+    static const inline float runFactor = 250.f;
   };
   EZECS_COMPONENT_DEPENDENCIES(WalkControls, Physics)
 
@@ -188,6 +205,8 @@ namespace {
     entityId mouseCtrlId = 0;
     int x10 = 0;
     FreeControls(entityId mouseCtrlId);
+
+    static const inline float speedFactor = 5.f;
   };
   EZECS_COMPONENT_DEPENDENCIES(FreeControls, Placement)
 

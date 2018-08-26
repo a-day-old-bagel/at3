@@ -25,6 +25,10 @@ namespace at3 {
     RTU_STATIC_SUB(switchToPyramidCtrlSub, "switch_to_pyramid_controls", ControlSystem::switchToPyramidCtrl, this);
     RTU_STATIC_SUB(switchToTrackCtrlSub, "switch_to_track_controls", ControlSystem::switchToTrackCtrl, this);
     RTU_STATIC_SUB(switchToFreeCtrlSub, "switch_to_free_controls", ControlSystem::switchToFreeCtrl, this);
+
+//    RTU_STATIC_SUB(ballDeletionSub, "mouse_down_right", ControlSystem::deleteLastBall, this);
+    ballIds.push(0);
+
     return true;
   }
 
@@ -54,7 +58,7 @@ namespace at3 {
         Placement *placement;
         state->getPlacement(id, &placement);
 
-        glm::vec3 movement = (FREE_SPEED * powf(10.f, freeControls->x10) * dt) * glm::normalize(
+        glm::vec3 movement = (FreeControls::speedFactor * powf(10.f, freeControls->x10) * dt) * glm::normalize(
             mouseControls->lastCtrlRot * freeControls->control);
 
         placement->mat[3][0] += movement.x;
@@ -96,9 +100,9 @@ namespace at3 {
         }
         // Rotate the movement axis to the correct orientation
         pyramidControls->force = glm::mat3 {
-            PYR_SIDE_ACCEL, 0, 0,
-            0, PYR_SIDE_ACCEL, 0,
-            0, 0, PYR_UP_ACCEL
+            PyramidControls::sideAccelFactor, 0, 0,
+            0, PyramidControls::sideAccelFactor, 0,
+            0, 0, PyramidControls::upAccelFactor
         } * glm::normalize(mouseControls->lastHorizCtrlRot * pyramidControls->accel) * turbo;
         // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
         if (currentCtrlKeys && id == currentCtrlKeys->getId()) {
@@ -120,7 +124,7 @@ namespace at3 {
           btVector3 sourceVel = sourcePhysics->rigidBody->getLinearVelocity();
           Physics *ballPhysics = nullptr;
 
-          entityId ballId = 0;
+          ballIds.push(0);
           uint32_t count = pyramidControls->shoot ? 1 : 4;  // 0 for shoot will crash
           for (uint32_t i = 0; i < count; ++i) {
             ecs->openEntityRequest();
@@ -130,12 +134,12 @@ namespace at3 {
             ecs->requestPhysics(5.f, radius, Physics::SPHERE);
             ecs->requestNetworking();
             ecs->requestSceneNode(0);
-            ballId = ecs->closeEntityRequest();
-            state->getPhysics(ballId, &ballPhysics);
+            ballIds.top() = ecs->closeEntityRequest();
+            state->getPhysics(ballIds.top(), &ballPhysics);
             ballPhysics->rigidBody->setLinearVelocity(sourceVel);
           }
           if (pyramidControls->shoot) {
-            if (ballId) { // This just won't work on an unfulfilled request (which is another reason to get rid of them)
+            if (ballIds.top()) { // This just won't work on an unfulfilled request (which is another reason to get rid of them)
               glm::mat3 tiltRot = glm::rotate(.35f, glm::vec3(1.0f, 0.0f, 0.0f));
               glm::mat3 rot = getCylStandingRot(source->getTranslation(true), mouseControls->pitch, mouseControls->yaw);
               glm::vec3 shootDir = rot * tiltRot * glm::vec3(0, 0, -1);
@@ -154,7 +158,7 @@ namespace at3 {
 
       if (length(trackControls->control) > 0.f) {
         // Calculate torque to apply
-        trackControls->torque += TRACK_TORQUE * trackControls->control;
+        trackControls->torque += TrackControls::torqueFactor * trackControls->control;
         // zero inputs, but not for networked inputs (this is an attempt to smooth out networked movement)
         if (currentCtrlKeys && id == currentCtrlKeys->getId()) {
           trackControls->control = glm::vec2(0, 0);
@@ -177,7 +181,7 @@ namespace at3 {
 
       if (length(walkControls->accel) > 0.0f) {
         // Rotate the movement axis to the correct orientation
-        float speed = walkControls->isRunning ? CHARA_RUN : CHARA_WALK;
+        float speed = walkControls->isRunning ? WalkControls::runFactor : WalkControls::walkFactor;
         walkControls->force = glm::mat3 {
             speed, 0, 0,
             0, speed, 0,
@@ -200,6 +204,15 @@ namespace at3 {
       placement->forceLocalRotationAndScale = true;
     }
     return true;
+  }
+
+  void ControlSystem::deleteLastBall() {
+    if (ballIds.top()) {
+      ecs->requestEntityDeletion(ballIds.top());
+      ballIds.pop();
+    } else {
+      fprintf(stderr, "All balls deleted!\n");
+    }
   }
 
   void ControlSystem::setEcsInterface(void *ecs) {

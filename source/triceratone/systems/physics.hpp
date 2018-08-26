@@ -49,8 +49,6 @@ namespace at3 {
       bool onDiscoverPyramidControls(const entityId& id);
       bool onDiscoverTrackControls(const entityId& id);
       bool onForgetTrackControls(const entityId& id);
-//      void setOnAfterSimulationStep(void* dlgtPtr);
-//      void onAfterSimulationStep(btDynamicsWorld *world, btScalar timeStep);
       void setDebugDrawer();
       btCollisionWorld::ClosestRayResultCallback rayTest(const btVector3 &start, const btVector3 &end);
       rayFuncType getRayFunc();

@@ -6,6 +6,7 @@
 
 #include "transformRAII.hpp"
 #include "math.hpp"
+#include "delegate.hpp"
 
 #define SCENE_ Obj<EcsInterface>::
 #define SCENE_ECS SceneObject<EcsInterface>::ecs
@@ -21,59 +22,31 @@ namespace at3 {
   template<typename EcsInterface>
   class SceneObject {
     private:
-      std::unordered_map<const SceneObject<EcsInterface> *, std::shared_ptr<SceneObject<EcsInterface>>> children;
-      SceneObject<EcsInterface> *parent = nullptr;
+
+      std::unordered_map<typename EcsInterface::EcsId, std::shared_ptr<SceneObject<EcsInterface>>> children;
+
+      static std::shared_ptr<EcsInterface> ecs;
+      typename EcsInterface::EcsId id, parentId;
 
     public:
 
-      static std::shared_ptr<EcsInterface> ecs;
-      typename EcsInterface::EcsId id;
+      explicit SceneObject(const typename EcsInterface::EcsId & id, const typename EcsInterface::EcsId & parentId = 0);
 
-      explicit SceneObject(const typename EcsInterface::EcsId & id);
-      virtual ~SceneObject();
-
-      /**
-       * Adds a scene object as a child of this scene object.
-       *
-       * \param child Child scene object to add.
-       *
-       * \sa removeChild()
-       */
       void addChild(std::shared_ptr<SceneObject<EcsInterface>> child);
 
-      /**
-       * \param The address of the child scene object to look for.
-       * \return True if a scene object with the given address is a child of
-       * this node, false otherwise.
-       */
-      bool hasChild(const SceneObject<EcsInterface> *address);
+      void removeChild(const typename EcsInterface::EcsId & id);
 
-      /**
-       * Removes the child of this scene object with the given address.
-       *
-       * \param address The memory address of the child to remove.
-       *
-       * \sa addChild()
-       */
-      void removeChild(const SceneObject<EcsInterface> *address);
+      void removeChildrenFromEcs();
 
-      /**
-       * Caches this scene object's absolute world transform inside it's ECS transform component.
-       * This is done by traversing the scene tree.
-       *
-       * @param modelWorld
-       */
       virtual void traverseAndCache(Transform &modelWorld);
 
-      /**
-       * Get ID
-       * @return id of this entity according to ECS
-       */
       typename EcsInterface::EcsId getId() const;
 
-      /**
-       *
-       */
+      typename EcsInterface::EcsId getParentId() const;
+
+      const std::unordered_map<typename EcsInterface::EcsId, std::shared_ptr<SceneObject<EcsInterface>>> &
+            getChildren() const;
+
       static void linkEcs(std::shared_ptr<EcsInterface> &ecs);
       static void resetEcs();
   };
@@ -82,29 +55,28 @@ namespace at3 {
   std::shared_ptr<EcsInterface> SceneObject<EcsInterface>::ecs;
 
   template<typename EcsInterface>
-  SceneObject<EcsInterface>::SceneObject(const typename EcsInterface::EcsId & id) : id(id) { }
-
-  template<typename EcsInterface>
-  SceneObject<EcsInterface>::~SceneObject() { }
+  SceneObject<EcsInterface>::SceneObject(const typename EcsInterface::EcsId & id,
+      const typename EcsInterface::EcsId & parentId) : id(id), parentId(parentId) { }
 
   template<typename EcsInterface>
   void SceneObject<EcsInterface>::addChild(std::shared_ptr<SceneObject> child) {
-    children.insert({child.get(), child});
-    child.get()->parent = this;
+    children.insert({child->id, child});
   }
 
   template<typename EcsInterface>
-  void SceneObject<EcsInterface>::removeChild(const SceneObject *address) {
-    auto iterator = children.find(address);
-    assert(iterator != children.end());
-    // TODO: Set the parent member of this child to nullptr (SceneObjects
-    // do not have parent members at the time of this writing).
-    children.erase(iterator);
+  void SceneObject<EcsInterface>::removeChild(const typename EcsInterface::EcsId &id) {
+    if (children.count(id)) {
+      children.erase(id);
+    } else {
+      fprintf(stderr, "Attempted to remove non-existent scene child node!\n");
+    }
   }
 
   template<typename EcsInterface>
-  bool SceneObject<EcsInterface>::hasChild(const SceneObject *address) {
-    return children.find(address) != children.end();
+  void SceneObject<EcsInterface>::removeChildrenFromEcs() {
+    for (auto child : children) {
+      ecs->notifyOfSceneTreeRemoval(child.second->id);
+    }
   }
 
   template<typename EcsInterface>
@@ -135,6 +107,17 @@ namespace at3 {
   template<typename EcsInterface>
   typename EcsInterface::EcsId SceneObject<EcsInterface>::getId() const {
     return id;
+  }
+
+  template<typename EcsInterface>
+  typename EcsInterface::EcsId SceneObject<EcsInterface>::getParentId() const {
+    return parentId;
+  }
+
+  template<typename EcsInterface>
+  const std::unordered_map<typename EcsInterface::EcsId, std::shared_ptr<SceneObject<EcsInterface>>> &
+      SceneObject<EcsInterface>::getChildren() const {
+    return children;
   }
 
   template<typename EcsInterface>

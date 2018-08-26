@@ -96,8 +96,8 @@ namespace at3 {
 
   void PhysicsSystem::onTick(float dt) {
 
-    // Step the world at a fixed timestep (will only actually run simulation step if enough time has passed)
-    dynamicsWorld->stepSimulation(dt); // time step (s), max sub-steps, sub-step length (s)
+    // Step the world at a fixed timestep (will only actually run simulation steps if enough time has passed)
+    dynamicsWorld->stepSimulation(dt, Physics::maxStoredStates, btScalar(1.) / btScalar(Physics::simulationFps));
     if (debugDrawMode) { dynamicsWorld->debugDrawWorld(); }
 
     // Update the visual transform of the wheels of any cars
@@ -244,7 +244,7 @@ namespace at3 {
           ctrls->jumpInProgress = false;
         }
       } else if (ctrls->jumpRequested) {
-        physics->rigidBody->applyCentralImpulse(-rayDirection * CHARA_JUMP);
+        physics->rigidBody->applyCentralImpulse(-rayDirection * WalkControls::jumpFactor);
         ctrls->jumpInProgress = true;
       }
 
@@ -260,12 +260,12 @@ namespace at3 {
       ctrls->isGrounded &= (!ctrls->jumpInProgress); // not grounded if jumping
 
       if (ctrls->isGrounded) { // Movement along ground - apply controls and a "stick to ground" force
-        auto sfomPow2 = (float) pow(springForceOverMax, 2);
-        auto sfomPow4 = (float) pow(springForceOverMax, 4);
-        auto sfom10Pow2 = (float) pow(springForceOverMax * 10.f, 2);
+        float sfomPow2 = powf(springForceOverMax, 2);
+        float sfomPow4 = powf(springForceOverMax, 4);
+        float sfom10Pow2 = powf(springForceOverMax * 10.f, 2);
         float springForceMagnitude = (1.0f - sfomPow2) - std::max(0.f, 1.f - sfom10Pow2);
-        springForceMagnitude *= CHARA_SPRING_FACTOR;
-        float mvmntForceMagnitude = std::max(CHARA_MIDAIR_FACTOR, 1.f - sfomPow2);
+        springForceMagnitude *= WalkControls::springFactor;
+        float mvmntForceMagnitude = std::max(WalkControls::midAirFactor, 1.f - sfomPow2);
         float dampingMagnitude = std::min(0.9999999f, 1.1f - sfomPow4);
         linDamp = dampingMagnitude;
 
@@ -308,9 +308,9 @@ namespace at3 {
 
       } else { // movement while in air - apply greatly reduced controls
         physics->rigidBody->applyCentralForce({
-                                                  ctrls->force.x * CHARA_MIDAIR_FACTOR,
-                                                  ctrls->force.y * CHARA_MIDAIR_FACTOR,
-                                                  ctrls->force.z * CHARA_MIDAIR_FACTOR});
+                                                  ctrls->force.x * WalkControls::midAirFactor,
+                                                  ctrls->force.y * WalkControls::midAirFactor,
+                                                  ctrls->force.z * WalkControls::midAirFactor});
       }
 
       physics->rigidBody->setDamping(linDamp, angDamp); // Set damping
@@ -326,15 +326,6 @@ namespace at3 {
     for (auto id : registries[2].ids) {
       TrackControls *trackControls;
       state->getTrackControls(id, &trackControls);
-//      for (size_t i = 0; i < trackControls->wheels.size(); ++i) {
-//        if (trackControls->wheels.at(i).leftOrRight < 0) {
-//          trackControls->vehicle->applyEngineForce(trackControls->torque.x, trackControls->wheels.at(i).bulletWheelId);
-//          trackControls->vehicle->setBrake(trackControls->brakes.x, trackControls->wheels.at(i).bulletWheelId);
-//        } else if (trackControls->wheels.at(i).leftOrRight > 0) {
-//          trackControls->vehicle->applyEngineForce(trackControls->torque.y, trackControls->wheels.at(i).bulletWheelId);
-//          trackControls->vehicle->setBrake(trackControls->brakes.y, trackControls->wheels.at(i).bulletWheelId);
-//        }
-//      }
 
       if (trackControls->hasDriver) {
         for (size_t i = 0; i < trackControls->wheels.size(); ++i) {
@@ -350,7 +341,7 @@ namespace at3 {
         }
       } else {
         for (size_t i = 0; i < trackControls->wheels.size(); ++i) {
-          trackControls->vehicle->setBrake(TRACK_VACANT_BRAKE, trackControls->wheels.at(i).bulletWheelId);
+          trackControls->vehicle->setBrake(TrackControls::vacantBrake, trackControls->wheels.at(i).bulletWheelId);
         }
       }
 
@@ -407,7 +398,7 @@ namespace at3 {
       } break;
       case Physics::CHARA: {
 //        shape = new btCapsuleShapeZ(HUMAN_WIDTH * 0.5f, HUMAN_HEIGHT * 0.33f);
-        shape = new btSphereShape(HUMAN_WIDTH * 0.5f);
+        shape = new btSphereShape(WalkControls::humanTorsoRadius * 0.5f);
       } break;
       case Physics::STATIC_MESH: {
         physics->customData = new btTriangleMesh();

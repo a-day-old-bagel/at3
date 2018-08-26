@@ -55,18 +55,13 @@ namespace at3 {
   bool SceneSystem::onDiscoverSceneNode(const entityId &id) {
     SceneNode *sceneNode;
     state->getSceneNode(id, &sceneNode);
-    if (sceneNode->parentId) {  // ID 0 indicates no parent
-      scene.addChildObject(sceneNode->parentId, id);
-    } else {
-      scene.addObject(id);
-    }
+    scene.addObject(id, sceneNode->parentId);
     return true;
   }
   bool SceneSystem::onForgetSceneNode(const entityId &id) {
     SceneNode *sceneNode;
     state->getSceneNode(id, &sceneNode);
-    // TODO: maybe get the node's children and reassign their parent field to this object's parent here instead of
-    // inside SceneTree
+    scene.removeObject(id, sceneNode->parentId);
     return true;
   }
   bool SceneSystem::onDiscoverMesh(const entityId &id) {

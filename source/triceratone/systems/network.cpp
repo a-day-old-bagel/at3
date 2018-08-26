@@ -139,61 +139,62 @@ namespace at3 {
 
 
 
-  template<typename playerIdType>
-  Delegate<SnapShot<playerIdType>&(SnapShot<playerIdType>&, const uint8_t&)> SnapShot<playerIdType>::init =
-      RTU_FUNC_DLGT(SnapShot::initImpl);
-
-  template<typename playerIdType>
-  Delegate<void(SnapShot<playerIdType>&, const uint8_t&)> SnapShot<playerIdType>::clear =
-      RTU_FUNC_DLGT(SnapShot::clearImpl);
-
-  template<typename playerIdType>
-  bool SnapShot<playerIdType>::addToInputState(const playerIdType &id, const BitStream &input) {
-    // TODO: check if player exists, return false if not.
-    inputState.Write(input);
-    return true;
-  }
-
-  template<typename playerIdType>
-  void SnapShot<playerIdType>::addToPhysicsState(const BitStream &input) {
-    physicsState.Write(input);
-  }
-
-  template<typename playerIdType>
-  uint8_t SnapShot<playerIdType>::getSlot() {
-    return slot;
-  }
-
-  template<typename playerIdType>
-  SnapShot<playerIdType> &SnapShot<playerIdType>::initImpl(SnapShot &snapShot, const uint8_t &index) {
-    snapShot.slot = index;
-    return snapShot;
-  }
-
-  template<typename playerIdType>
-  void SnapShot<playerIdType>::clearImpl(SnapShot &snapShot, const uint8_t &index) {
-    snapShot.inputState.Reset();
-    snapShot.physicsState.Reset();
-  }
-
-
+//  template<typename playerIdType>
+//  Delegate<SnapShot<playerIdType>&(SnapShot<playerIdType>&, const uint8_t&)> SnapShot<playerIdType>::init =
+//      RTU_FUNC_DLGT(SnapShot::initImpl);
+//
+//  template<typename playerIdType>
+//  Delegate<void(SnapShot<playerIdType>&, const uint8_t&)> SnapShot<playerIdType>::clear =
+//      RTU_FUNC_DLGT(SnapShot::clearImpl);
+//
+//  template<typename playerIdType>
+//  bool SnapShot<playerIdType>::addToInputState(const playerIdType &id, const BitStream &input) {
+//    // TODO: check if player exists, return false if not.
+//    inputState.Write(input);
+//    return true;
+//  }
+//
+//  template<typename playerIdType>
+//  void SnapShot<playerIdType>::addToPhysicsState(const BitStream &input) {
+//    physicsState.Write(input);
+//  }
+//
+//  template<typename playerIdType>
+//  uint8_t SnapShot<playerIdType>::getSlot() {
+//    return slot;
+//  }
+//
+//  template<typename playerIdType>
+//  SnapShot<playerIdType> &SnapShot<playerIdType>::initImpl(SnapShot &snapShot, const uint8_t &index) {
+//    snapShot.slot = index;
+//    return snapShot;
+//  }
+//
+//  template<typename playerIdType>
+//  void SnapShot<playerIdType>::clearImpl(SnapShot &snapShot, const uint8_t &index) {
+//    snapShot.inputState.Reset();
+//    snapShot.physicsState.Reset();
+//  }
 
 
-  PhysicsHistory::PhysicsHistory() : snapShots(SnapShot<uint8_t>::init, SnapShot<uint8_t>::clear) {
+
+
+  PhysicsHistory::PhysicsHistory() : states(PhysicsState<uint8_t>::init, PhysicsState<uint8_t>::clear) {
     RTU_STATIC_SUB(debugSub, "key_down_f8", PhysicsHistory::debugSnapShots, this);
   }
 
   bool PhysicsHistory::addToInputState(const uint8_t &snapShotId, const uint8_t &id, const SLNet::BitStream &input) {
-    if (snapShots.isValid(snapShotId)) {
-      return snapShots[snapShotId].addToInputState(id, input);
-    } else {
-      return false;
-    }
+//    if (states.isValid(snapShotId)) {
+//      return states[snapShotId].addToInputState(id, input);
+//    } else {
+//      return false;
+//    }
+    return false;
   }
 
   void PhysicsHistory::addToPhysicsState(const uint8_t &snapShotId, const SLNet::BitStream &input) {
-    if (snapShots.isValid(snapShotId)) {
-      snapShots[snapShotId].addToPhysicsState(input);
+    if (states.isValid(snapShotId)) {
+      states[snapShotId].addPhysicsData(input);
     }
   }
 
@@ -201,40 +202,40 @@ namespace at3 {
 
     // Test 0
 //    bool fill = (bool)(rand() % 2);
-//    if (fill && ! snapShots.isFull()) {
-//      printf("NEW HEAD: %u\n", snapShots.capitate().getSlot());
-//    } else if (fill && snapShots.isFull()) {
-//      snapShots.decaudate();
-//      printf("NEW TAIL: %u\n", snapShots.getTailSlot());
-//    } else if ( ! fill && ! snapShots.isEmpty()) {
-//      snapShots.decaudate();
-//      printf("NEW TAIL: %u\n", snapShots.getTailSlot());
-//    } else if ( ! fill && snapShots.isEmpty()) {
-//      printf("NEW HEAD: %u\n", snapShots.capitate().getSlot());
+//    if (fill && ! states.isFull()) {
+//      printf("NEW HEAD: %u\n", states.capitate().getSlot());
+//    } else if (fill && states.isFull()) {
+//      states.decaudate();
+//      printf("NEW TAIL: %u\n", states.getTailSlot());
+//    } else if ( ! fill && ! states.isEmpty()) {
+//      states.decaudate();
+//      printf("NEW TAIL: %u\n", states.getTailSlot());
+//    } else if ( ! fill && states.isEmpty()) {
+//      printf("NEW HEAD: %u\n", states.capitate().getSlot());
 //    }
 
     // Test 1
 //    static bool eat, poop;
-//    if (snapShots.isEmpty()) { eat = true; poop = false; }
-//    if (snapShots.isFull()) {
+//    if (states.isEmpty()) { eat = true; poop = false; }
+//    if (states.isFull()) {
 //      poop = true;
 //      eat = false;
-//      snapShots.decaudate();
-//      snapShots.capitate();
+//      states.decaudate();
+//      states.capitate();
 //    }
-//    if (eat) { snapShots.capitate(); }
-//    if (poop) { snapShots.decaudate(); }
+//    if (eat) { states.capitate(); }
+//    if (poop) { states.decaudate(); }
 
     // Test 2
-//    snapShots.capitate();
-//    if (snapShots.isValid(7) || snapShots.isValid(23)) {
-//      snapShots.decaudate();
+//    states.capitate();
+//    if (states.isValid(7) || states.isValid(23)) {
+//      states.decaudate();
 //    }
-//    if (snapShots.isValid(30) && snapShots.isValid(31)) {
-//      snapShots.decaudate(31);
+//    if (states.isValid(30) && states.isValid(31)) {
+//      states.decaudate(31);
 //    }
 
-    fprintf(snapShots.isValid() ? stdout : stderr, "%s\n", snapShots.toDebugString().c_str());
+    fprintf(states.isValid() ? stdout : stderr, "%s\n", states.toDebugString().c_str());
   }
 
 
@@ -262,22 +263,9 @@ namespace at3 {
       case settings::network::SERVER: {
         handleNewClients();
         receiveAdministrativePackets();
-        if (writePhysicsSyncs(dt)) {
-          send(LOW_PRIORITY, UNRELIABLE_SEQUENCED, CH_PHYSICS_SYNC);
-        }
-        if (mouseControlId) { // In case no controls are currently assigned (no type of control *doesn't* use the mouse)
-          writeControlSyncs();
-        }
-        receiveSyncPackets();
-        sendAllControlSyncs();
       } break;
       case settings::network::CLIENT: {
         receiveAdministrativePackets();
-        if (mouseControlId) { // In case no controls are currently assigned (no type of control *doesn't* use the mouse)
-          writeControlSyncs();
-          send(IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);
-        }
-        receiveSyncPackets();
       } break;
       default:
         break;
@@ -295,17 +283,31 @@ namespace at3 {
     outStream.Reset();
   }
 
-  bool NetworkSystem::writePhysicsSyncs(float dt) {
-    timeAccumulator += dt;
-    if (timeAccumulator < 0.1f) { return false; }
-    timeAccumulator = 0;
+//  bool NetworkSystem::writePhysicsSyncs(float dt) {
+//    timeAccumulator += dt;
+//    if (timeAccumulator < 0.1f) { return false; }
+//    timeAccumulator = 0;
+//
+//    outStream.Write((MessageID) ID_SYNC_PHYSICS);
+//    serializePhysicsSync(true, outStream);
+//    return true;
+//  }
+
+  bool NetworkSystem::sendPeriodicPhysicsUpdate() {
+    // Only send physics state update every 6 steps, which is 10 times per second if physics framerate is 60 fps.
+    if (++physicsStepAccumulator < 6) { return false; }
+    physicsStepAccumulator = 0;
 
     outStream.Write((MessageID) ID_SYNC_PHYSICS);
     serializePhysicsSync(true, outStream);
+    send(LOW_PRIORITY, UNRELIABLE_SEQUENCED, CH_PHYSICS_SYNC);
     return true;
   }
 
-  void NetworkSystem::writeControlSyncs() {
+  bool NetworkSystem::writeControlSync() {
+    if ( ! mouseControlId) { // In case no controls are currently assigned (no type of control *doesn't* use the mouse)
+      return false;
+    }
     switch (network->getRole()) {
       case settings::network::SERVER: {
         inputs.emplace_back();
@@ -320,6 +322,7 @@ namespace at3 {
       } break;
       default: break;
     }
+    return true;
   }
 
   // FIXME: TODO: use a hashmap of guid->stream so that duplicates don't get sent out
@@ -437,6 +440,7 @@ namespace at3 {
   void NetworkSystem::handleNewClients() {
     if (!network->getFreshConnections().empty()) {
       // All existing entities sent here
+      // TODO: revert to last complete snapshot before sending this, and then send that snapShot index
       for (const auto &id : registries[0].ids) {
         writeEntityRequestHeader(outStream);
         serializeEntityCreationRequest(true, outStream, *state, id);
@@ -555,7 +559,7 @@ namespace at3 {
             glm::vec3 currentPos = bulletToGlm(localTrans.getOrigin());
             glm::vec3 correction = (pos - bulletToGlm(localTrans.getOrigin()));
             float correctionStiffness = 2.f;
-            if (correctionStiffness < 10.f) { // if it's just a little bit off
+            if (glm::length(correction) < 5.f) { // if it's just a little bit off
               transform.setOrigin(localTrans.getOrigin()); // keep local position
               lin += correction * correctionStiffness;  // only adjust using velocity
             } else { // Just hard warp if too distant
@@ -674,10 +678,36 @@ namespace at3 {
   }
 
   void NetworkSystem::onBeforePhysicsStep() {
-
+    switch (network->getRole()) {
+      case settings::network::SERVER: {
+        writeControlSync();
+        receiveSyncPackets();
+        sendAllControlSyncs();
+      } break;
+      case settings::network::CLIENT: {
+        if (writeControlSync()) {
+          send(IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);
+        }
+        receiveSyncPackets();
+      } break;
+      default:
+        break;
+    }
   }
 
   void NetworkSystem::onAfterPhysicsStep() {
+
+    switch (network->getRole()) {
+      case settings::network::SERVER: {
+        sendPeriodicPhysicsUpdate();
+      } break;
+      case settings::network::CLIENT: {
+
+      } break;
+      default:
+        break;
+    }
+
     physicsStates.emplace();
     physicsStates.back().WriteBitsFromIntegerRange(storedStateIndexCounter++, (uint8_t) 0, maxStoredStates);
     serializePhysicsSync(true, physicsStates.back(), true);

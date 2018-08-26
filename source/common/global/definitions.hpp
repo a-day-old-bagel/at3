@@ -51,24 +51,3 @@
 #define VC_EXTRALEAN
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
-
-// Physics and controls defines
-#define HUMAN_HEIGHT 1.83f
-#define HUMAN_WIDTH 0.5f
-#define HUMAN_DEPTH 0.3f
-
-#define CHARA_JUMP 8.f
-#define CHARA_MIDAIR_FACTOR 0.05f // 0.02f
-#define CHARA_SPRING_FACTOR 140.f
-#define CHARA_USE_FOUR_RAYS 0
-#define CHARA_WALK 100.f
-#define CHARA_RUN 250.f
-
-#define TRACK_VACANT_BRAKE 0.5f
-#define TRACK_TORQUE 100.f
-#define WHEEL_RADIUS 1.5f
-
-#define PYR_SIDE_ACCEL 2500.f
-#define PYR_UP_ACCEL 4000.f
-
-#define FREE_SPEED 5.f
