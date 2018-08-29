@@ -6,6 +6,7 @@
 
 #include "ezecs.hpp"
 #include "topics.hpp"
+#include "ouroboros.hpp"
 #include "netInterface.hpp"
 #include "serialization.hpp"
 #include "interface.hpp"
@@ -13,47 +14,6 @@
 using namespace ezecs;
 
 namespace at3 {
-
-  template <typename T, typename indexType, indexType numSlots>
-  class Ouroboros {
-    public:
-
-      typedef rtu::Delegate<T&(T&, const indexType&)> Ctor;
-      typedef rtu::Delegate<void(T&, const indexType&)> Dtor;
-      static Ctor defaultCtor;
-      static Dtor defaultDtor;
-      explicit Ouroboros(const Ctor & ctor = defaultCtor, const Dtor & dtor = defaultDtor);
-      const indexType getNumSlots() const;
-      const indexType getHeadSlot() const;
-      const indexType getTailSlot() const;
-      const bool isEmpty() const;
-      const bool isFull() const;
-      const bool isValid() const;
-      const bool isValid(indexType index) const;
-      T & capitate();
-      void decaudate(); // TODO: don't return a T here, since if empty, will be invalid.
-      void decaudate(indexType upToButNot);
-      T & operator [] (indexType index);
-      const T & operator [] (indexType index) const;
-      const std::string toDebugString() const;
-
-    private:
-
-      std::array<T, numSlots> raw;
-      Ctor ctor;
-      Dtor dtor;
-      indexType nextHead = 0;
-      indexType currentTail = 0;
-      bool emptyFlag = true;
-      bool fullFlag = false;
-      bool errorFlag = false;
-
-      static T& defaultCtorImpl(T&, const indexType&);
-      static void defaultDtorImpl(T&, const indexType&);
-      indexType advanceHead();
-      indexType advanceTail();
-      void haveBadTime();
-  };
 
   template <typename indexType>
   class PhysicsState {
@@ -95,7 +55,7 @@ namespace at3 {
       static const inline uint8_t maxStoredControlStates = controlStatesPerPhysicsState * Physics::maxStoredStates;
 
 //      Ouroboros<SnapShot<uint8_t>, uint8_t, Physics::maxStoredStates> snapShots;
-      Ouroboros<PhysicsState<uint8_t>, uint8_t, Physics::maxStoredStates> states;
+      rtu::Ouroboros<PhysicsState<uint8_t>, uint8_t, Physics::maxStoredStates> states;
 
       void debugSnapShots();
 

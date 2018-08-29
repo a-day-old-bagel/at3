@@ -20,9 +20,6 @@ namespace at3 {
       std::unique_ptr<EntityAssociatedERM> currentCtrlMouse;
       std::unique_ptr<EntityAssociatedERM> currentCtrlKeys;
 
-      std::stack<entityId> ballIds;
-      void deleteLastBall();
-
       void setEcsInterface(void *ecs);
       void switchToMouseCtrl(void *id);
       void switchToWalkCtrl(void* id);

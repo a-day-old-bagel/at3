@@ -48,7 +48,8 @@ namespace at3 {
   void serializeComponentCreationRequest(
       bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id = 0,
       std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr);
-  void serializeEntityDeletionRequest(bool rw, SLNet::BitStream &stream, ezecs::State &state, ezecs::entityId id = 0);
+  ezecs::entityId serializeEntityDeletionRequest(bool rw, SLNet::BitStream &stream, ezecs::State &state,
+      ezecs::entityId id = 0);
 
   void serializePlacement(bool rw, SLNet::BitStream *stream, ezecs::State &state, ezecs::entityId id,
                           std::vector<std::unique_ptr<SLNet::BitStream>> *compStreams = nullptr,

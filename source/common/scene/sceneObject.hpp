@@ -31,6 +31,7 @@ namespace at3 {
     public:
 
       explicit SceneObject(const typename EcsInterface::EcsId & id, const typename EcsInterface::EcsId & parentId = 0);
+      ~SceneObject();
 
       void addChild(std::shared_ptr<SceneObject<EcsInterface>> child);
 
@@ -56,17 +57,26 @@ namespace at3 {
 
   template<typename EcsInterface>
   SceneObject<EcsInterface>::SceneObject(const typename EcsInterface::EcsId & id,
-      const typename EcsInterface::EcsId & parentId) : id(id), parentId(parentId) { }
+      const typename EcsInterface::EcsId & parentId) : id(id), parentId(parentId) {
+//    printf("Created %u\n", id);
+  }
+
+  template<typename EcsInterface>
+  SceneObject<EcsInterface>::~SceneObject() {
+//    printf("Destroyed %u\n", id);
+  }
 
   template<typename EcsInterface>
   void SceneObject<EcsInterface>::addChild(std::shared_ptr<SceneObject> child) {
     children.insert({child->id, child});
+//    printf("Added %u to %u\n", child->id, id);
   }
 
   template<typename EcsInterface>
   void SceneObject<EcsInterface>::removeChild(const typename EcsInterface::EcsId &id) {
     if (children.count(id)) {
       children.erase(id);
+//      printf("Removed %u from %u\n", id, this->id);
     } else {
       fprintf(stderr, "Attempted to remove non-existent scene child node!\n");
     }

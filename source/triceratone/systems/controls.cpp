@@ -1,8 +1,10 @@
 
 #include <global/settings.hpp>
 #include "controls.hpp"
-
 #include "cylinderMath.hpp"
+
+#include "pyramid.hpp" // just for testing using pyramids instead of balls
+#include "duneBuggy.hpp" // just for testing using pyramids instead of balls
 
 using namespace rtu::topics;
 
@@ -25,10 +27,6 @@ namespace at3 {
     RTU_STATIC_SUB(switchToPyramidCtrlSub, "switch_to_pyramid_controls", ControlSystem::switchToPyramidCtrl, this);
     RTU_STATIC_SUB(switchToTrackCtrlSub, "switch_to_track_controls", ControlSystem::switchToTrackCtrl, this);
     RTU_STATIC_SUB(switchToFreeCtrlSub, "switch_to_free_controls", ControlSystem::switchToFreeCtrl, this);
-
-//    RTU_STATIC_SUB(ballDeletionSub, "mouse_down_right", ControlSystem::deleteLastBall, this);
-    ballIds.push(0);
-
     return true;
   }
 
@@ -124,32 +122,54 @@ namespace at3 {
           btVector3 sourceVel = sourcePhysics->rigidBody->getLinearVelocity();
           Physics *ballPhysics = nullptr;
 
-          ballIds.push(0);
+          pyramidControls->projectiles.push(0);
           uint32_t count = pyramidControls->shoot ? 1 : 4;  // 0 for shoot will crash
           for (uint32_t i = 0; i < count; ++i) {
-            ecs->openEntityRequest();
-            ecs->requestPlacement(sourceMat);
-            ecs->requestMesh("sphere", "");
-            std::shared_ptr<void> radius = std::make_shared<float>(1.f);
-            ecs->requestPhysics(5.f, radius, Physics::SPHERE);
-            ecs->requestNetworking();
-            ecs->requestSceneNode(0);
-            ballIds.top() = ecs->closeEntityRequest();
-            state->getPhysics(ballIds.top(), &ballPhysics);
+
+            // SPAWN A BALL
+//            ecs->openEntityRequest();
+//            ecs->requestPlacement(sourceMat);
+//            ecs->requestMesh("sphere", "");
+//            std::shared_ptr<void> radius = std::make_shared<float>(1.f);
+//            ecs->requestPhysics(5.f, radius, Physics::SPHERE);
+//            ecs->requestNetworking();
+//            ecs->requestSceneNode(0);
+//            pyramidControls->projectiles.top() = ecs->closeEntityRequest();
+//            state->getPhysics(pyramidControls->projectiles.top(), &ballPhysics);
+//            ballPhysics->rigidBody->setLinearVelocity(sourceVel);
+
+            // SPAWN A BUGGY
+            entityId camId = DuneBuggy::create(*state, sourceMat);
+            SceneNode *sceneNode;
+            state->getSceneNode(camId, &sceneNode);
+            entityId gimbalId = sceneNode->parentId;
+            state->getSceneNode(gimbalId, &sceneNode);
+            pyramidControls->projectiles.top() = sceneNode->parentId;
+            state->getPhysics(pyramidControls->projectiles.top(), &ballPhysics);
             ballPhysics->rigidBody->setLinearVelocity(sourceVel);
+            DuneBuggy::broadcastLatest(*state, *ecs);
+
           }
           if (pyramidControls->shoot) {
-            if (ballIds.top()) { // This just won't work on an unfulfilled request (which is another reason to get rid of them)
+            if (pyramidControls->projectiles.top()) { // This just won't work on an unfulfilled request (which is another reason to get rid of them)
               glm::mat3 tiltRot = glm::rotate(.35f, glm::vec3(1.0f, 0.0f, 0.0f));
               glm::mat3 rot = getCylStandingRot(source->getTranslation(true), mouseControls->pitch, mouseControls->yaw);
               glm::vec3 shootDir = rot * tiltRot * glm::vec3(0, 0, -1);
-              btVector3 shot = btVector3(shootDir.x, shootDir.y, shootDir.z) * 1000.f;
+//              btVector3 shot = btVector3(shootDir.x, shootDir.y, shootDir.z) * 1000.f; // FOR BALL
+              btVector3 shot = btVector3(shootDir.x, shootDir.y, shootDir.z) * 4000.f; // FOR BUGGY
               ballPhysics->rigidBody->applyCentralImpulse(shot);
             }
           }
         }
         pyramidControls->shoot = false;
         pyramidControls->drop = false;
+      }
+      if (pyramidControls->pop) {
+        if ( ! pyramidControls->projectiles.empty()) {
+          ecs->requestEntityDeletion(pyramidControls->projectiles.top());
+          pyramidControls->projectiles.pop();
+        }
+        pyramidControls->pop = false;
       }
     }
     for (auto id : (registries[2].ids)) { // Track/buggy Controls updated at physics framerate
@@ -204,15 +224,6 @@ namespace at3 {
       placement->forceLocalRotationAndScale = true;
     }
     return true;
-  }
-
-  void ControlSystem::deleteLastBall() {
-    if (ballIds.top()) {
-      ecs->requestEntityDeletion(ballIds.top());
-      ballIds.pop();
-    } else {
-      fprintf(stderr, "All balls deleted!\n");
-    }
   }
 
   void ControlSystem::setEcsInterface(void *ecs) {
@@ -329,6 +340,7 @@ namespace at3 {
       void turbo() { getComponent()->turbo = true; }
       void shoot() { getComponent()->shoot = true; }
       void drop() { getComponent()->drop = true; }
+      void pop() { getComponent()->pop = true; }
     public:
       ActivePyramidControl(State *state, const entityId id) : EntityAssociatedERM(state, id) {
         setAction("key_held_w", RTU_MTHD_DLGT(&ActivePyramidControl::key_forward, this));
@@ -339,7 +351,8 @@ namespace at3 {
         setAction("key_held_space", RTU_MTHD_DLGT(&ActivePyramidControl::key_up, this));
         setAction("key_held_f", RTU_MTHD_DLGT(&ActivePyramidControl::turbo, this));
         setAction("mouse_down_left", RTU_MTHD_DLGT(&ActivePyramidControl::shoot, this));
-        setAction("mouse_down_right", RTU_MTHD_DLGT(&ActivePyramidControl::drop, this));
+//        setAction("mouse_down_right", RTU_MTHD_DLGT(&ActivePyramidControl::drop, this));
+        setAction("mouse_down_right", RTU_MTHD_DLGT(&ActivePyramidControl::pop, this));
       }
   };
   void ControlSystem::switchToPyramidCtrl(void *id) {

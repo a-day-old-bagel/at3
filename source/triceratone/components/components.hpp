@@ -5,6 +5,7 @@
 // BEGIN INCLUDES
 
 #include <vector>
+#include <stack>
 #include <memory>
 
 #include <btBulletDynamicsCommon.h>
@@ -154,7 +155,9 @@ namespace {
     bool turbo = false;
     bool shoot = false;
     bool drop = false;
+    bool pop = false;
     uint8_t engineActivationLevel = 0;
+    std::stack<entityId> projectiles;
     PyramidControls(entityId mouseCtrlId);
 
     static const inline float sideAccelFactor = 2500.f;

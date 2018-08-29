@@ -30,7 +30,6 @@ namespace at3 {
       state.addPlacement(gimbalId, ident);
       Placement *placement;
       state.getPlacement(gimbalId, &placement);
-      placement->forceLocalRotationAndScale = true;
       state.addMouseControls(
           gimbalId, settings::controls::mouseInvertX, settings::controls::mouseInvertY, false);
       state.addNetworking(gimbalId);

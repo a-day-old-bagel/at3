@@ -80,13 +80,19 @@ namespace at3 {
   void EntityComponentSystemInterface::requestEntityDeletion(const ezecs::entityId &id) {
     switch (network->getRole()) {
       case settings::network::SERVER: {
-        // TODO: broadcast a deletion message
         stream.Reset();
         serializeEntityDeletionRequest(true, stream, *state, id);
         network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
+
+        ezecs::CompOpReturn status = state->deleteEntity(id);
+        EZECS_CHECK_PRINT(EZECS_ERR(status));
+//        printf("Entity %u deleted.\n", id);
       } break;
       case settings::network::CLIENT: {
-        // TODO: ?
+        // TODO: Along with entity creation, decide if clients should be able to send these at all.
+//        stream.Reset();
+//        serializeEntityDeletionRequest(true, stream, *state, id);
+//        network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
       } break;
       default: {
         state->deleteEntity(id);
@@ -254,6 +260,10 @@ namespace at3 {
   }
 
   void EntityComponentSystemInterface::notifyOfSceneTreeRemoval(const EntityComponentSystemInterface::EcsId &id) {
-    requestEntityDeletion(id);
+    // We can just access the state directly since this function should only be called when a parent object has
+    // been deleted, which deletion should have already been networked if networking was required. This should
+    // guarantee that the correct children are deleted on both server and client.
+    state->deleteEntity(id);
+//    printf("ECS notified of scene tree removal of %u\n", id);
   }
 };

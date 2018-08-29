@@ -820,7 +820,7 @@ void VulkanContext<EcsInterface>::render(
   for (auto pair : meshAssets) {
     for (auto mesh : pair.second) {
       for (auto instance : mesh.instances) {
-        glm::uint32 uboPage = instance.indices.getPage();
+        glm::uint32 uboPage = instance.second.indices.getPage();
 
         if (currentlyBound != uboPage) {
           vkCmdBindDescriptorSets(common.windowDependents.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -835,7 +835,7 @@ void VulkanContext<EcsInterface>::render(
             VK_SHADER_STAGE_VERTEX_BIT | /*VK_SHADER_STAGE_GEOMETRY_BIT |*/ VK_SHADER_STAGE_FRAGMENT_BIT,
             0,
             sizeof(MeshInstanceIndices::rawType),
-            (void *) &instance.indices.raw);
+            (void *) &instance.second.indices.raw);
 
         VkBuffer vertexBuffers[] = {mesh.buffer};
         VkDeviceSize vertexOffsets[] = {0};

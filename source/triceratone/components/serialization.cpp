@@ -110,14 +110,19 @@ namespace at3 {
     serializePlayer(rw, &stream, state, id, compStreams);
   }
 
-  void serializeEntityDeletionRequest(bool rw, BitStream &stream, State &state, entityId id) {
+  entityId serializeEntityDeletionRequest(bool rw, BitStream &stream, State &state, entityId id) {
     if (rw) {
       stream.Write((MessageID)ID_USER_PACKET_ECS_REQUEST_ENUM);
       stream.WriteBitsFromIntegerRange((uint8_t)REQ_ENTITY_OP, (uint8_t)0, (uint8_t)(REQ_END_ENUM - 1), false);
       stream.WriteBitsFromIntegerRange((uint8_t)OP_DESTROY, (uint8_t)0, (uint8_t)(OP_END_ENUM - 1), false);
     }
     stream.Serialize(rw, id);
-    state.deleteEntity(id);
+    if (! rw) {
+      ezecs::CompOpReturn status = state.deleteEntity(id);
+      EZECS_CHECK_PRINT(EZECS_ERR(status));
+//      printf("Entity %u deleted.\n", id);
+    }
+    return id;
   }
 
   bool hasComponent(bool rw, BitStream *stream, State &state, entityId id,

@@ -71,7 +71,9 @@ namespace at3 {
     return true;
   }
   bool SceneSystem::onForgetMesh(const entityId &id) {
-    vulkan->deRegisterMeshInstance(id);
+    Mesh *mesh;
+    state->getMesh(id, &mesh);
+    vulkan->deRegisterMeshInstance(id, mesh->meshFileName, mesh->textureFileName);
     return true;
   }
 

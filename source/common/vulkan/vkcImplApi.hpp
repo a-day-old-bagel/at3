@@ -126,27 +126,43 @@ void VulkanContext<EcsInterface>::tick(const glm::mat4 &viewMatrix) {
 template<typename EcsInterface>
 void VulkanContext<EcsInterface>::registerMeshInstance(
     const typename EcsInterface::EcsId id, const std::string &meshFileName, const std::string &textureFileName) {
-  AT3_ASSERT(meshRepo.count(meshFileName), "No mesh file \"%s\" found\n!", meshFileName.c_str());
-  for (auto &mesh : meshRepo.at(meshFileName)) {
+  // TODO: Get rid of runtime checks?
+  if ( ! meshRepo.count(meshFileName)) {
+    fprintf(stderr, "No mesh file \"%s\" found\n!", meshFileName.c_str());
+    return;
+  }
+  for (auto &mesh : meshRepo[meshFileName]) {
     MeshInstance<EcsInterface> instance;
     UboPageMgr::AcquireStatus didAcquire = dataStore->acquire(instance.indices);
     AT3_ASSERT(didAcquire != UboPageMgr::AcquireStatus::FAILURE, "Error acquiring ubo index");
     if (didAcquire == UboPageMgr::AcquireStatus::NEWPAGE) {
       updateDescriptorSets(dataStore.get());
     }
-    instance.id = id;
     if (textureFileName.length() && textureRepo->textureExists(textureFileName)) {
       instance.indices.setTexture(textureRepo->getTextureArrayIndex(textureFileName));
     } else {
       instance.indices.setTexture(0u);  // The first texture will be used (probably "0.ktx", alphabetically, or debug).
     }
-    mesh.instances.push_back(instance);
+    mesh.instances[id] = instance;
   }
 }
 
 template<typename EcsInterface>
-void VulkanContext<EcsInterface>::deRegisterMeshInstance(const typename EcsInterface::EcsId id) {
-  fprintf(stderr, "Vulkan: De-registration of a mesh is not yet implemented!\n");
+void VulkanContext<EcsInterface>::deRegisterMeshInstance(
+    const typename EcsInterface::EcsId id, const std::string &meshFileName, const std::string &textureFileName) {
+  // TODO: Get rid of runtime checks?
+  if ( ! meshRepo.count(meshFileName)) {
+    fprintf(stderr, "No mesh file \"%s\" found\n!", meshFileName.c_str());
+    return;
+  }
+  for (auto &mesh : meshRepo[meshFileName]) {
+    if ( ! mesh.instances.count(id)) {
+      fprintf(stderr, "No mesh \"%s\" registered at id %u!\n!", meshFileName.c_str(), id);
+      return;
+    }
+    dataStore->free(mesh.instances[id].indices);
+    mesh.instances.erase(id);
+  }
 }
 
 template<typename EcsInterface>

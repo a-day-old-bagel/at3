@@ -187,7 +187,6 @@ namespace at3::vkc {
 
   template<typename EcsInterface>
   struct MeshInstance {
-    typename EcsInterface::EcsId id = 0;
     MeshInstanceIndices indices;
   };
 
@@ -205,7 +204,7 @@ namespace at3::vkc {
     glm::vec3 min;
     glm::vec3 max;
 
-    std::vector<MeshInstance<EcsInterface>> instances;
+    std::unordered_map<typename EcsInterface::EcsId, MeshInstance<EcsInterface>> instances;
 
     std::shared_ptr<std::vector<float>> storedVertices;
     std::shared_ptr<std::vector<uint32_t>> storedIndices;

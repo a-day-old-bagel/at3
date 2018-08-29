@@ -51,7 +51,7 @@ namespace at3 {
     // Static subscriptions will only apply to the first instance of this class created. But usually only one exists.
     RTU_STATIC_SUB(debugDrawToggleSub, "key_down_f3", PhysicsSystem::toggleDebugDraw, this);
     RTU_STATIC_SUB(setVulkanContextSub, "set_vulkan_context", PhysicsSystem::setVulkanContext, this);
-//    RTU_STATIC_SUB(setBulletPostTickSub, "set_bullet_post_tick", PhysicsSystem::setOnAfterSimulationStep, this);
+    RTU_STATIC_SUB(setEcsInterfaceSub, "set_ecs_interface", PhysicsSystem::setEcsInterface, this);
   }
 
   PhysicsSystem::~PhysicsSystem() {
@@ -60,6 +60,10 @@ namespace at3 {
 
   void PhysicsSystem::setVulkanContext(void *vkc) {
     vulkan = *(std::shared_ptr<vkc::VulkanContext<EntityComponentSystemInterface>> *) vkc;
+  }
+
+  void PhysicsSystem::setEcsInterface(void *ecs) {
+    this->ecs = *(std::shared_ptr<EntityComponentSystemInterface>*) ecs;
   }
 
   bool PhysicsSystem::onInit() {
@@ -517,27 +521,15 @@ namespace at3 {
   }
 
   bool PhysicsSystem::onForgetTrackControls(const entityId &id) {
-    // fixme: investigate the order of deletion if both this and the normal onForget are called on a chassis
     TrackControls *trackControls;
     state->getTrackControls(id, &trackControls);
     for (auto wheel : trackControls->wheels) {
-      state->remPhysics(wheel.myId);
+      ecs->requestEntityDeletion(wheel.myId);
     }
     dynamicsWorld->removeVehicle(trackControls->vehicle);
     delete trackControls->vehicle;
     return true;
   }
-
-//  void PhysicsSystem::setOnAfterSimulationStep(void* dlgtPtr) {
-//    auto * dlgt = (rtu::Delegate<void(btDynamicsWorld *world, btScalar timeStep)> *) dlgtPtr;
-//    onAfterSimulationStepCallback = std::make_unique<rtu::Delegate<void(btDynamicsWorld *world, btScalar timeStep)>>
-//        (dlgt);
-//  }
-//  void PhysicsSystem::onAfterSimulationStep(btDynamicsWorld *world, btScalar timeStep) {
-//    if (onAfterSimulationStepCallback) {
-//      (*onAfterSimulationStepCallback)(world, timeStep);
-//    }
-//  }
 
   void PhysicsSystem::setDebugDrawer() {
 //    dynamicsWorld->setDebugDrawer(thing);

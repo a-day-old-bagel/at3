@@ -30,6 +30,9 @@ namespace at3 {
       std::shared_ptr<vkc::VulkanContext<EntityComponentSystemInterface>> vulkan;
       void setVulkanContext(void *vkc);
 
+      std::shared_ptr<EntityComponentSystemInterface> ecs;
+      void setEcsInterface(void *ecs);
+
     public:
       std::vector<compMask> requiredComponents = {
               PHYSICS,

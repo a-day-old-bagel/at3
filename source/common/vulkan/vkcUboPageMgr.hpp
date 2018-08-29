@@ -123,6 +123,7 @@ namespace at3::vkc {
       AcquireStatus acquire(MeshInstanceIndices &outIdx) {
         Page *p = nullptr;
 
+        // TODO: this is probably slow if mesh registration is frequent
         for (auto &page : pages) {
           if (page.freeIndices.size() > 0) {
             p = &page;
@@ -142,6 +143,10 @@ namespace at3::vkc {
         outIdx.set(p->index, slot);
 
         return newPage ? NEWPAGE : SUCCESS;
+      }
+
+      void free(const MeshInstanceIndices &idx) {
+        pages[idx.getPage()].freeIndices.push_front(idx.getSlot());
       }
 
       uint32_t getNumPages() {
@@ -173,11 +178,10 @@ namespace at3::vkc {
         for (auto pair : meshRepo) {
           for (auto mesh : pair.second) {
             for (auto instance : mesh.instances) {
-              glm::uint32 uboSlot = instance.indices.getSlot();
-              glm::uint32 uboPage = instance.indices.getPage();
+              glm::uint32 uboSlot = instance.second.indices.getSlot();
+              glm::uint32 uboPage = instance.second.indices.getPage();
               objPtrs[uboPage][uboSlot].vp = projMatrix * viewMatrix;
-//              objPtrs[uboPage][uboSlot].custom = glm::transpose(glm::inverse(modelViewMatrix));
-              objPtrs[uboPage][uboSlot].m = ecs->getAbsTransform(instance.id);
+              objPtrs[uboPage][uboSlot].m = ecs->getAbsTransform(instance.first);
             }
           }
         }

@@ -113,7 +113,6 @@ namespace at3 {
       state.addPlacement(camGimbalId, ident);
       Placement *placement;
       state.getPlacement(camGimbalId, &placement);
-      placement->forceLocalRotationAndScale = true;
       state.addMouseControls(camGimbalId, settings::controls::mouseInvertX, settings::controls::mouseInvertY, true);
       state.addNetworking(camGimbalId);
       state.addSceneNode(camGimbalId, bottomId);
