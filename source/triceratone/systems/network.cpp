@@ -343,7 +343,7 @@ namespace at3 {
                   //                  physics->useCase != Physics::STATIC_MESH &&
                   //                  physics->rigidBody->isActive();
                   physics->useCase != Physics::STATIC_MESH;
-        if (!includeAll) { // if not saving entire physics state
+        if ( ! includeAll) { // if not saving entire physics state
           // FIXME: Why on earth is 'include &= physics->rigidBody->isActive()' crashing while this version works?
           include = include && physics->rigidBody->isActive(); // object must be active to be written
         }

@@ -31,4 +31,5 @@
 // TODO: make ezecs state getters const methods
 // TODO: make vehicle wheels a local-only entity that is created on each host when the appropriate controls appear
 // TODO: profile and possibly replace the string hashing going on for topics/subscriptions
-// TODO: investigate the out-of-order deletions that happen on the client when constructs are deleted on the server. These do not currently cause problems other than that the freed ids are pushed onto the stack in a different order, leading to a different creation order of new entities afterwards, which, again, doesn't cause any apparent trouble. But it might be better if that didn't happen since it could cause hard-to-diagnose problems later
+// TODO: investigate the out-of-order deletions that happen on the client when constructs are deleted on the server. These do not currently cause problems other than that the freed ids are pushed onto the stack in a different order, leading to a different creation order of new entities afterwards, which, again, doesn't cause any apparent trouble. But it might be better if that didn't happen since it could cause hard-to-diagnose problems later.
+// TODO: Also, if rigid bodies are added in different orders, determinism is messed up. So there's one hard-to-diagnose problem already. https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=11228
