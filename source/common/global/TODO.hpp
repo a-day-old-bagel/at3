@@ -33,3 +33,9 @@
 // TODO: profile and possibly replace the string hashing going on for topics/subscriptions
 // TODO: investigate the out-of-order deletions that happen on the client when constructs are deleted on the server. These do not currently cause problems other than that the freed ids are pushed onto the stack in a different order, leading to a different creation order of new entities afterwards, which, again, doesn't cause any apparent trouble. But it might be better if that didn't happen since it could cause hard-to-diagnose problems later.
 // TODO: Also, if rigid bodies are added in different orders, determinism is messed up. So there's one hard-to-diagnose problem already. https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=11228
+// TODO: one potential security hole is that clients will know the GUID's of other clients. This will not identify the other clients in any way, but if a client spoofs another client's GUID somehow, they may be able to hide the input of the victim or even control their input. This might not be an issue though if you can't derive IP from GUID, in which case an attacker attempting this would have a mismatch between their serverAddress and GUID. Need to check this more.
+
+// TODO: FIXME: Make sure that if a game runs for over 46 days that uint32_t overflow doesn't break anything when using SDL_GetTicks.
+
+// TODO: Get rid of all printf/fprintf statements and replace the important ones with in-game terminal output
+// TODO: Replace GUID's as client identifiers with player entityId's or something to prevent collisions and possible 0-values.

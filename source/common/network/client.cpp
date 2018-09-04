@@ -93,4 +93,8 @@ namespace at3 {
   void Client::deallocatePacket(Packet *packet) {
     peer->DeallocatePacket(packet);
   }
+
+  SLNet::RakNetGUID Client::getGuid() {
+    return peer->GetMyGUID();
+  }
 }

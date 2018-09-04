@@ -1,9 +1,6 @@
 
 #pragma once
 
-#include <array>
-#include <queue>
-
 #include "ezecs.hpp"
 #include "topics.hpp"
 #include "ouroboros.hpp"
@@ -15,63 +12,11 @@ using namespace ezecs;
 
 namespace at3 {
 
-  template <typename indexType>
-  class PhysicsState {
-    public:
-      void addPhysicsData(const SLNet::BitStream &data) {
-        state.Write(data);
-      }
-      static rtu::Delegate<PhysicsState&(PhysicsState&, const indexType&)> init;
-      static rtu::Delegate<void(PhysicsState&, const indexType&)> clear;
-    private:
-      SLNet::BitStream state;
-      indexType index = 0;
-      static PhysicsState & initImpl(PhysicsState &physicsState, const indexType &index) {
-        physicsState.index = index;
-        return physicsState;
-      }
-      static void clearImpl(PhysicsState &physicsState, const indexType &index) {
-        physicsState.state.Reset();
-      }
-  };
-  template<typename indexType>
-  rtu::Delegate<PhysicsState<indexType>&(PhysicsState<indexType>&, const indexType&)> PhysicsState<indexType>::init =
-      RTU_FUNC_DLGT(PhysicsState::initImpl);
-  template<typename indexType>
-  rtu::Delegate<void(PhysicsState<indexType>&, const indexType&)> PhysicsState<indexType>::clear =
-      RTU_FUNC_DLGT(PhysicsState::clearImpl);
-
-  class PhysicsHistory {
-    public:
-
-      PhysicsHistory();
-      bool addToInputState(const uint8_t &snapShotId, const uint8_t &id, const SLNet::BitStream &input);
-      void addToPhysicsState(const uint8_t &snapShotId, const SLNet::BitStream &input);
-
-    private:
-
-      static const inline uint8_t physicsStatesPerSecond = 10;
-      static const inline uint8_t controlStatesPerPhysicsState = Physics::simulationFps / physicsStatesPerSecond;
-      static const inline uint8_t maxStoredControlStates = controlStatesPerPhysicsState * Physics::maxStoredStates;
-
-//      Ouroboros<SnapShot<uint8_t>, uint8_t, Physics::maxStoredStates> snapShots;
-      rtu::Ouroboros<PhysicsState<uint8_t>, uint8_t, Physics::maxStoredStates> states;
-
-      void debugSnapShots();
-
-      // TODO: store tail-time whenever a collapse happens, then set the bullet pre-step to walk through the control
-      // states as it steps through the (currentTime(ms) - tailTime(ms)) / 16.67(ms) steps
-      // should verify that correct number of steps are taken?
-      // TODO: Should switch control system to only fire on physics pre-step?
-      // Maybe just the key-pressing part, not the mouse. OTherwise key-held events have more power depending on
-      // framerate and those in-between-bullet-step updates are probably lost in networking anyway.
-
-  };
-
   struct SingleClientInput {
     SingleClientInput() = default;
     SingleClientInput(const SingleClientInput &) {}
-    SLNet::AddressOrGUID id;
+    SLNet::AddressOrGUID id = SLNet::RakNetGUID(0);
+    uint8_t index = 0;
     SLNet::BitStream data;
   };
 
@@ -86,13 +31,15 @@ namespace at3 {
 //      float timeAccumulator = 0;
       uint8_t physicsStepAccumulator = 0;
 
-      bool strictWarp = false;
+      bool strictWarp = true;
 
-      uint8_t maxStoredStates = 31;
-      uint8_t storedStateIndexCounter = 0;
-      std::queue<SLNet::BitStream> physicsStates;
+      bool initialStep = false;
 
-      PhysicsHistory physicsHistory;
+//      uint8_t maxStoredStates = 31;
+//      uint8_t storedStateIndexCounter = 0;
+//      std::queue<SLNet::BitStream> physicsStates;
+
+//      PhysicsHistory physicsHistory;
 
       // TODO: use hashmap of guid->stream instead, and keep a list of all clients to check against so that no poopy
       // entries are inserted into the hashmap (use [] to insert upon join, use at() and check first to put streams in)
@@ -115,7 +62,8 @@ namespace at3 {
                   PacketReliability reliability, char channel);
 
       void receiveAdministrativePackets();
-      void receiveSyncPackets();
+      bool receiveSyncPackets();
+      void applyCombinedInputPacket(SLNet::BitStream &);
       void handleNewClients();
 
       void respondToEntityRequest(SLNet::BitStream &);

@@ -7,6 +7,7 @@
 #include "netInterface.hpp"
 #include "sceneTree.hpp"
 #include "sceneObject.hpp"
+#include "stateHistory.hpp"
 
 namespace at3 {
 
@@ -44,9 +45,9 @@ namespace at3 {
   class EntityComponentSystemInterface {
 
       ezecs::State* state;
+
       std::shared_ptr<NetInterface> network;
       rtu::topics::Subscription setNetInterfaceSub;
-
       void setNetInterface(void *netInterface);
 
     public:
@@ -67,6 +68,9 @@ namespace at3 {
        * calling the corresponding ECS functions, will make appropriate requests to a server if the game is running
        * in client mode, and will broadcast the changes if running in server mode, etc.
        */
+
+      StateHistory<uint8_t, ezecs::Physics::maxStoredStates> physicsHistory;
+
       EcsId openRequestId = 0;
       SLNet::BitStream stream;
       std::vector<std::unique_ptr<SLNet::BitStream>> compStreams;

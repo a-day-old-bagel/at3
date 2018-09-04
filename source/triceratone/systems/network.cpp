@@ -8,68 +8,6 @@ using namespace rtu;
 
 namespace at3 {
 
-  PhysicsHistory::PhysicsHistory() : states(PhysicsState<uint8_t>::init, PhysicsState<uint8_t>::clear) {
-    RTU_STATIC_SUB(debugSub, "key_down_f8", PhysicsHistory::debugSnapShots, this);
-  }
-
-  bool PhysicsHistory::addToInputState(const uint8_t &snapShotId, const uint8_t &id, const SLNet::BitStream &input) {
-//    if (states.isValid(snapShotId)) {
-//      return states[snapShotId].addToInputState(id, input);
-//    } else {
-//      return false;
-//    }
-    return false;
-  }
-
-  void PhysicsHistory::addToPhysicsState(const uint8_t &snapShotId, const SLNet::BitStream &input) {
-    if (states.isValid(snapShotId)) {
-      states[snapShotId].addPhysicsData(input);
-    }
-  }
-
-  void PhysicsHistory::debugSnapShots() {
-
-    // Test 0
-//    bool fill = (bool)(rand() % 2);
-//    if (fill && ! states.isFull()) {
-//      printf("NEW HEAD: %u\n", states.capitate().getSlot());
-//    } else if (fill && states.isFull()) {
-//      states.decaudate();
-//      printf("NEW TAIL: %u\n", states.getTailSlot());
-//    } else if ( ! fill && ! states.isEmpty()) {
-//      states.decaudate();
-//      printf("NEW TAIL: %u\n", states.getTailSlot());
-//    } else if ( ! fill && states.isEmpty()) {
-//      printf("NEW HEAD: %u\n", states.capitate().getSlot());
-//    }
-
-    // Test 1
-//    static bool eat, poop;
-//    if (states.isEmpty()) { eat = true; poop = false; }
-//    if (states.isFull()) {
-//      poop = true;
-//      eat = false;
-//      states.decaudate();
-//      states.capitate();
-//    }
-//    if (eat) { states.capitate(); }
-//    if (poop) { states.decaudate(); }
-
-    // Test 2
-//    states.capitate();
-//    if (states.isValid(7) || states.isValid(23)) {
-//      states.decaudate();
-//    }
-//    if (states.isValid(30) && states.isValid(31)) {
-//      states.decaudate(31);
-//    }
-
-    fprintf(states.isValid() ? stdout : stderr, "%s\n", states.toDebugString().c_str());
-  }
-
-
-
-
   NetworkSystem::NetworkSystem(State *state) : System(state) {
     name = "Net Sync System";
     // Static subscriptions will only apply to the first instance of this class created. But usually only one exists.
@@ -96,8 +34,10 @@ namespace at3 {
       case settings::network::CLIENT: {
         receiveAdministrativePackets();
       } break;
-      default:
-        break;
+      default: return;
+    }
+    if (ecs->physicsHistory.findTheTruth()) {
+      // TODO: send truth update to clients
     }
   }
 
@@ -128,12 +68,16 @@ namespace at3 {
     physicsStepAccumulator = 0;
 
     outStream.Write((MessageID) ID_SYNC_PHYSICS);
+    outStream.WriteBitsFromIntegerRange(ecs->physicsHistory.getLatestIndex(), (uint8_t)0,
+                                        (uint8_t)(ezecs::Physics::maxStoredStates - 1));
+    outStream.Write(ecs->physicsHistory.getInputChecksum(ecs->physicsHistory.getLatestIndex()));
     serializePhysicsSync(true, outStream);
     send(LOW_PRIORITY, UNRELIABLE_SEQUENCED, CH_PHYSICS_SYNC);
     return true;
   }
 
   bool NetworkSystem::writeControlSync() {
+    // TODO: check for physics base index - NO, just send base index with initial state so never without
     if ( ! mouseControlId) { // In case no controls are currently assigned (no type of control *doesn't* use the mouse)
       return false;
     }
@@ -142,12 +86,25 @@ namespace at3 {
         inputs.emplace_back();
         serializeControlSyncShortType(true, inputs.back().data, keyControlMessageId);
         inputs.back().data.Write(mouseControlId);
+        inputs.back().data.WriteBitsFromIntegerRange(ecs->physicsHistory.getLatestIndex(), (uint8_t)0,
+                                                     (uint8_t)(ezecs::Physics::maxStoredStates - 1));
         serializeControlSync(true, inputs.back().data, mouseControlId, keyControlId, keyControlMessageId);
+
+        // ecs->physicsHistory.addToInput(inputs.back().data, ecs->physicsHistory.getLatestIndex(), SLNet::RakNetGUID(1));
+        ecs->physicsHistory.addToInput(inputs.back().data, ecs->physicsHistory.getLatestIndex());
+        ecs->physicsHistory.addToInputChecksum(ecs->physicsHistory.getLatestIndex(), 1); // 1 signifies server input
+
+        inputs.back().data.SetReadOffset(0);
+
       } break;
       case settings::network::CLIENT: {
         outStream.Write(keyControlMessageId);
         outStream.Write(mouseControlId);
+        outStream.WriteBitsFromIntegerRange(ecs->physicsHistory.getLatestIndex(), (uint8_t)0,
+                                            (uint8_t)(ezecs::Physics::maxStoredStates - 1));
         serializeControlSync(true, outStream, mouseControlId, keyControlId, keyControlMessageId);
+
+        printf("\nSending control type %u at index %u\n", keyControlMessageId, ecs->physicsHistory.getLatestIndex());
       } break;
       default: break;
     }
@@ -157,23 +114,53 @@ namespace at3 {
   // FIXME: TODO: use a hashmap of guid->stream so that duplicates don't get sent out
   void NetworkSystem::sendAllControlSyncs() {
     // FIXME: TODO: send to all clients, not just the senders, also, do this inside the new classes or whatever.
-    for (auto & receiveingClient : inputs) {
-      BitStream tempStream;
-      uint8_t numEntries = 0; // TODO: use robust type (templates in new classes or whatever)
-      for (auto & inputClient : inputs) {
-        if ( ! (receiveingClient.id == inputClient.id)) {
-          BitSize_t head = inputClient.data.GetReadOffset();
-          tempStream.Write(inputClient.data);
-          inputClient.data.SetReadOffset(head);
-          ++numEntries;
-        }
-      }
-      outStream.Write((MessageID) ID_SYNC_ALL_CONTROLS);
-      outStream.Write(numEntries);
-      outStream.Write(tempStream);
-      sendTo(receiveingClient.id, HIGH_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);
+//    for (auto & receiveingClient : inputs) {
+//      BitStream tempStream;
+//      uint8_t numEntries = 0; // TODO: use robust type (templates in new classes or whatever)
+//      for (auto & inputClient : inputs) {
+//        if ( ! (receiveingClient.id == inputClient.id)) {
+//          BitSize_t head = inputClient.data.GetReadOffset();
+//          tempStream.Write(inputClient.data);
+//          inputClient.data.SetReadOffset(head);
+//          ++numEntries;
+//        }
+//      }
+//      outStream.Write((MessageID) ID_SYNC_ALL_CONTROLS);
+//      outStream.Write(numEntries);
+//      outStream.Write(tempStream);
+//      sendTo(receiveingClient.id, HIGH_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);
+//    }
+//    inputs.clear();
+
+
+    BitStream dataStream, checksumStream;
+    std::unordered_map<uint8_t, uint32_t> indexedChecksums;
+    uint8_t numEntries = 0; // TODO: use robust type (templates in new classes or whatever)
+    uint8_t numIndices = 0;
+    for (auto & input : inputs) {
+      indexedChecksums[input.index] += RakNetGUID::ToUint32(input.id.rakNetGuid);
+      BitSize_t head = input.data.GetReadOffset();
+      dataStream.Write(input.data);
+      input.data.SetReadOffset(head);
+      ++numEntries;
     }
+    numIndices = (uint8_t)indexedChecksums.size();
+    for (auto & index : indexedChecksums) {
+      checksumStream.WriteBitsFromIntegerRange(index.first, (uint8_t)0, (uint8_t)(ezecs::Physics::maxStoredStates - 1));
+      checksumStream.Write(index.second);
+    }
+
+    outStream.Write((MessageID) ID_SYNC_MULTIPLE_CONTROLS);
+    outStream.Write(numEntries);
+    outStream.Write(numIndices);
+
+    outStream.Write(checksumStream);
+    outStream.Write(dataStream);
+
+    send(HIGH_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);
     inputs.clear();
+
+
   }
 
   void NetworkSystem::receiveAdministrativePackets() {
@@ -218,8 +205,8 @@ namespace at3 {
     network->discardRequestPackets();
   }
 
-  // TODO: FIXME: uncomment the printf's on ALL_CONTROL reception to see horrific bugs show up but not break anything.
-  void NetworkSystem::receiveSyncPackets() {
+  bool NetworkSystem::receiveSyncPackets() {
+    bool atLeastOneClientCtrl = false;
     for (auto pack : network->getSyncPackets()) {
       AddressOrGUID sender(pack->guid);
       BitStream stream(pack->data, pack->length, false);
@@ -227,36 +214,87 @@ namespace at3 {
       stream.Read(syncType);
       switch (syncType) {
         case ID_SYNC_PHYSICS: {
-          serializePhysicsSync(false, stream);
+          if (network->getRole() == settings::network::CLIENT) { // Only clients should receive these
+
+            // These should contain the current network-wide physics state index number, so receiving at least one of
+            // these is required to proceed with normal execution. This only applies to clients.
+
+            // TODO: just write stream to history. This should only be called when reading history.
+
+            uint8_t index;
+            stream.ReadBitsFromIntegerRange(index, (uint8_t)0, (uint8_t)(ezecs::Physics::maxStoredStates - 1));
+            uint32_t inputChecksum;
+            stream.Read(inputChecksum);
+            ecs->physicsHistory.setInputChecksum(index, inputChecksum);
+            ecs->physicsHistory.addToState(stream, index, true);
+
+
+            printf("\nReceived Physics with input checksum %u = %u\n", index, inputChecksum);
+
+
+//            serializePhysicsSync(false, stream);   // ACTUALLY APPLY IT
+          }
         } break;
         case ID_SYNC_WALKCONTROLS:
         case ID_SYNC_PYRAMIDCONTROLS:
         case ID_SYNC_TRACKCONTROLS:
         case ID_SYNC_FREECONTROLS: {
-          if (network->getRole() == settings::network::SERVER) {
+          if (network->getRole() == settings::network::SERVER) { // Only servers should receive these
+            atLeastOneClientCtrl = true;
             inputs.emplace_back();
             serializeControlSyncShortType(true, inputs.back().data, syncType);
             BitSize_t head = stream.GetReadOffset();
             inputs.back().data.Write(stream);
             inputs.back().id = sender;
             stream.SetReadOffset(head);
-          }
-          entityId mouseId = 0;
-          stream.Read(mouseId);
-          serializeControlSync(false, stream, mouseId, 0, syncType);
-        } break;
-        case ID_SYNC_ALL_CONTROLS: {
-          uint8_t numEntries;
-          stream.Read(numEntries);
-          for (uint8_t i = 0; i < numEntries; ++i) {
-            MessageID controlType;
-            serializeControlSyncShortType(false, stream, controlType);
+
             entityId mouseId = 0;
             stream.Read(mouseId);
-            serializeControlSync(false, stream, mouseId, 0, controlType);
-//            printf("%u %u %u %u\n", mouseControlId, mouseId, controlType, ID_SYNC_FREECONTROLS);
+
+            uint8_t index;
+            stream.ReadBitsFromIntegerRange(index, (uint8_t)0, (uint8_t)(Physics::maxStoredStates - 1));
+            ecs->physicsHistory.addToInput(inputs.back().data, index, pack->guid);
+            inputs.back().data.SetReadOffset(0);
+
+            inputs.back().index = index;
+
+            printf("\nReceived input to %u from %lu\n", index, RakNetGUID::ToUint32(pack->guid));
+
+//            serializeControlSync(false, stream, mouseId, 0, syncType);  // ACTUALLY APPLY IT
           }
-//          printf("\n");
+        } break;
+        case ID_SYNC_MULTIPLE_CONTROLS: {
+          if (network->getRole() == settings::network::CLIENT) { // Only clients should receive these
+
+//            applyCombinedInputPacket(stream);  // ACTUALLY APPLY IT
+
+
+
+            uint8_t numEntries;
+            stream.Read(numEntries);
+            uint8_t numIndices;
+            stream.Read(numIndices);
+            for (uint8_t i = 0; i < numIndices; ++i) {
+              uint8_t index;
+              stream.Read(index);
+              uint32_t checksumPart;
+              stream.Read(checksumPart);
+              ecs->physicsHistory.addToInputChecksum(index, checksumPart);
+
+              printf("\nRecieved input checksum %u += %u\n", index, checksumPart);
+            }
+            for (uint8_t i = 0; i < numEntries; ++i) {
+              MessageID controlType;
+              serializeControlSyncShortType(false, stream, controlType);
+              entityId mouseId = 0;
+              stream.Read(mouseId);
+              uint8_t index;
+              stream.ReadBitsFromIntegerRange(index, (uint8_t) 0, (uint8_t) (Physics::maxStoredStates - 1));
+              ecs->physicsHistory.addToInput(stream, index);
+
+              printf("\nRecieved multi-controls %u\n", index);
+            }
+          }
         } break;
         default: {
           fprintf(stderr, "Received bad sync packet! type was %u.\n", syncType);
@@ -264,12 +302,31 @@ namespace at3 {
       }
     }
     network->discardSyncPackets();
+    return atLeastOneClientCtrl;
+  }
+
+  void NetworkSystem::applyCombinedInputPacket(BitStream &stream) {
+    uint8_t numEntries;
+    stream.Read(numEntries);
+    for (uint8_t i = 0; i < numEntries; ++i) {
+      MessageID controlType;
+      serializeControlSyncShortType(false, stream, controlType);
+      entityId mouseId = 0;
+      stream.Read(mouseId);
+
+      uint8_t index;
+      stream.ReadBitsFromIntegerRange(index, (uint8_t) 0, (uint8_t) (Physics::maxStoredStates - 1));
+
+      serializeControlSync(false, stream, mouseId, 0, controlType);
+//      printf("%u %u %u %u\n", mouseControlId, mouseId, controlType, ID_SYNC_FREECONTROLS);
+    }
   }
 
   void NetworkSystem::handleNewClients() {
     if (!network->getFreshConnections().empty()) {
       // All existing entities sent here
       // TODO: revert to last complete snapshot before sending this, and then send that snapShot index
+      // TODO: Maybe just use whatever's in the state currently like this instead and let the client correct itself.
       for (const auto &id : registries[0].ids) {
         writeEntityRequestHeader(outStream);
         serializeEntityCreationRequest(true, outStream, *state, id);
@@ -474,8 +531,19 @@ namespace at3 {
 
   void NetworkSystem::serializePlayerAssignment(bool rw, BitStream &stream, entityId playerId) {
     stream.Serialize(rw, playerId);
-    if (!rw) {
+    if (rw) {
+      outStream.Write(ecs->physicsHistory.getLatestIndex());
+      outStream.Write(ecs->physicsHistory.getInputChecksum(ecs->physicsHistory.getLatestIndex()));
+    } else {
+      uint8_t index;
+      stream.Read(index);
+      uint32_t inputChecksum;
+      stream.Read(inputChecksum);
+      ecs->physicsHistory.setEmptyIndex(index);
+      ecs->physicsHistory.appendIndex();
+      ecs->physicsHistory.setInputChecksum(index, inputChecksum);
       topics::publish<entityId>("set_player_id", playerId);
+      initialStep = true;
     }
   }
 
@@ -524,47 +592,98 @@ namespace at3 {
   }
 
   void NetworkSystem::onBeforePhysicsStep() {
+
+    if (network->getRole() == settings::network::NONE) {
+      return;
+    }
+
+    BitStream physics;
+    serializePhysicsSync(true, physics, true); // copy of entire local state, but not authorized truth state
+
+    uint8_t newStateIndex;
+    if (initialStep) {
+      newStateIndex = ecs->physicsHistory.getLatestIndex();
+      initialStep = false;
+    } else {
+      newStateIndex = ecs->physicsHistory.appendIndex();
+    }
+
     switch (network->getRole()) {
       case settings::network::SERVER: {
-        writeControlSync();
-        receiveSyncPackets();
-        sendAllControlSyncs();
+
+        ecs->physicsHistory.setInputSources(network->getClientGuids(), newStateIndex);
+        ecs->physicsHistory.setAdditionalInputChecksum(newStateIndex, 1);
+
+        if (writeControlSync()) { // Write server's own controls plus any client controls received
+          receiveSyncPackets();
+          sendAllControlSyncs();
+        } else if (receiveSyncPackets()) { // Write any client controls received anyway
+          sendAllControlSyncs();
+        }
+
+        // local state, authorized by server, but still not complete until all inputs have been received and applied.
+        ecs->physicsHistory.addToState(physics, newStateIndex, true);
       } break;
       case settings::network::CLIENT: {
+
+        // TODO: get desired input checksum from server
+
         if (writeControlSync()) {
           send(IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);
+          printf("sent\n");
         }
         receiveSyncPackets();
+
+        // local state, not authorized by server, and not input-complete.
+        ecs->physicsHistory.addToState(physics, newStateIndex);
       } break;
       default:
         break;
     }
+
+    // TODO: find where this should really go. Maybe even after the step?
+    ecs->physicsHistory.setTime(newStateIndex, SDL_GetTicks());
+
   }
 
   void NetworkSystem::onAfterPhysicsStep() {
 
-    switch (network->getRole()) {
-      case settings::network::SERVER: {
-        sendPeriodicPhysicsUpdate();
-      } break;
-      case settings::network::CLIENT: {
-
-      } break;
-      default:
-        break;
+    if (network->getRole() == settings::network::NONE) {
+      return;
     }
 
-    physicsStates.emplace();
-    physicsStates.back().WriteBitsFromIntegerRange(storedStateIndexCounter++, (uint8_t) 0, maxStoredStates);
-    serializePhysicsSync(true, physicsStates.back(), true);
-    if (physicsStates.size() > maxStoredStates) {
-      physicsStates.pop();
+    if (network->getRole() == settings::network::SERVER) {
+      sendPeriodicPhysicsUpdate(); // TODO: get rid of this and the function once history is working
     }
+
+//    BitStream physics;
+//    serializePhysicsSync(true, physics, true); // complete state copy
+//
+//    switch (network->getRole()) {
+//      case settings::network::SERVER: {
+//        ecs->physicsHistory.addToState(physics, ecs->physicsHistory.getLatestIndex(), true);
+//        sendPeriodicPhysicsUpdate(); // TODO: get rid of this and the function
+//      } break;
+//      case settings::network::CLIENT: {
+//        ecs->physicsHistory.addToState(physics, ecs->physicsHistory.getLatestIndex());
+//      } break;
+//      default:
+//        break;
+//    }
+
+
+//    physicsStates.emplace();
+//    physicsStates.back().WriteBitsFromIntegerRange(storedStateIndexCounter++, (uint8_t) 0, maxStoredStates);
+//    serializePhysicsSync(true, physicsStates.back(), true);
+//    if (physicsStates.size() > maxStoredStates) {
+//      physicsStates.pop();
+//    }
   }
 
   void NetworkSystem::rewindPhysics() {
-    uint8_t storedStateIndex;
-    physicsStates.front().ReadBitsFromIntegerRange(storedStateIndex, (uint8_t) 0, maxStoredStates);
-    serializePhysicsSync(false, physicsStates.front(), true);
+//    uint8_t storedStateIndex;
+//    physicsStates.front().ReadBitsFromIntegerRange(storedStateIndex, (uint8_t) 0, maxStoredStates);
+//    serializePhysicsSync(false, physicsStates.front(), true);
   }
+
 }

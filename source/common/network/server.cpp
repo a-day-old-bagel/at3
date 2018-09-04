@@ -29,14 +29,21 @@ namespace at3 {
 # define CASE_REPORT_PACKET(e, s) case ID_ ##e: fprintf(s, "Received %s\n", #e); break
   void Server::receive(std::vector<SLNet::Packet*> & requestBuffer, std::vector<SLNet::Packet*> & syncBuffer,
                        std::vector<SLNet::AddressOrGUID> & connectionBuffer) {
-    connectionListsDirty = true;
     Packet *packet;
     for (packet=peer->Receive(); packet; packet=peer->Receive()) {
       switch (packet->data[0]) {
-          CASE_REPORT_PACKET(DISCONNECTION_NOTIFICATION, stdout);
-          CASE_REPORT_PACKET(CONNECTION_LOST, stderr);
+        CASE_REPORT_PACKET(CONNECTION_BANNED, stderr);
+        CASE_REPORT_PACKET(INVALID_PASSWORD, stderr);
+        case ID_DISCONNECTION_NOTIFICATION:
+        case ID_CONNECTION_LOST: {
+          connectionListsDirty = true;
+          clientSum -= RakNetGUID::ToUint32(AddressOrGUID(packet).rakNetGuid);
+          printf("Client Disconnected: %s\n", AddressOrGUID(packet).systemAddress.ToString());
+        } break;
         case ID_NEW_INCOMING_CONNECTION: {
+          connectionListsDirty = true;
           connectionBuffer.emplace_back(AddressOrGUID(packet));
+          clientSum += RakNetGUID::ToUint32(AddressOrGUID(packet).rakNetGuid);
           printf("Client Connected: %s\n", connectionBuffer.back().systemAddress.ToString());
         } break;
         default: {
@@ -87,5 +94,13 @@ namespace at3 {
   const DataStructures::List<SLNet::RakNetGUID> &Server::getClientGuids() {
     updateConnectionLists();
     return guids;
+  }
+
+  uint32_t Server::getClientSum() {
+    return clientSum;
+  }
+
+  SLNet::RakNetGUID Server::getGuid() {
+    return peer->GetMyGUID();
   }
 }

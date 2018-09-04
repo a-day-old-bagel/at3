@@ -85,7 +85,7 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
     }
 
     void waitForServerConnection() {
-      while ( ! playerId) {
+      while ( ! playerId ) {
         network->tick();
         networkSystem.tick(0);
         SDL_Delay(50);

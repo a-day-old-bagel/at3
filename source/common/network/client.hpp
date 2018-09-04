@@ -23,5 +23,6 @@ namespace at3 {
       void sendTo(const SLNet::BitStream &stream, const SLNet::AddressOrGUID &target, PacketPriority priority,
                   PacketReliability reliability, char channel);
       void deallocatePacket(SLNet::Packet * packet);
+      SLNet::RakNetGUID getGuid();
   };
 }

@@ -8,6 +8,7 @@
 
 namespace at3 {
   class NetInterface {
+
       std::unique_ptr<Server> server;
       std::unique_ptr<Client> client;
       std::vector<SLNet::Packet*> requestPackets;
@@ -16,8 +17,10 @@ namespace at3 {
       uint32_t role = settings::network::role;
       DataStructures::List<SLNet::SystemAddress> emptyAddresses;
       DataStructures::List<SLNet::RakNetGUID> emptyGuids;
+
       void assumeRole();
       void discardPacketCollection(std::vector<SLNet::Packet*> & packets);
+
     public:
 
       NetInterface();
@@ -41,5 +44,7 @@ namespace at3 {
 
       const DataStructures::List<SLNet::SystemAddress> & getClientAddresses() const;
       const DataStructures::List<SLNet::RakNetGUID> & getClientGuids() const;
+      uint32_t getClientSum() const;
+
   };
 }

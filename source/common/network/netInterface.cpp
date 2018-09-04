@@ -14,10 +14,18 @@ namespace at3 {
       case settings::network::Role::SERVER: {
         client.reset();
         server = std::make_unique<Server>();
+        if (RakNetGUID::ToUint32(server->getGuid()) < 2) {
+          fprintf(stderr, "Attempted server creation using reserved GUID - recreating.\n");
+          assumeRole(); // Recurse until guid is acceptable.
+        }
       } break;
       case settings::network::Role::CLIENT: {
         server.reset();
         client = std::make_unique<Client>();
+        if (RakNetGUID::ToUint32(client->getGuid()) < 2) {
+          fprintf(stderr, "Attempted client creation using reserved GUID - recreating.\n");
+          assumeRole(); // Recurse until guid is acceptable.
+        }
       } break;
       default: {
         server.reset();
@@ -130,6 +138,14 @@ namespace at3 {
       case settings::network::Role::SERVER: { return server->getClientGuids(); }
       case settings::network::Role::CLIENT:
       default: { return emptyGuids; }
+    }
+  }
+
+  uint32_t NetInterface::getClientSum() const {
+    switch(role) {
+      case settings::network::Role::SERVER: { return server->getClientSum(); }
+      case settings::network::Role::CLIENT:
+      default: { return 0; }
     }
   }
 

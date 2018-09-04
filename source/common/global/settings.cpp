@@ -30,7 +30,7 @@ namespace at3 {
 
     namespace network {
       uint32_t role = Role::NONE;
-      std::string serverAddress = "127.0.0.1";
+      std::string serverAddress = "localhost";
       uint32_t serverPort = 22022; // the entire range 22022-22122 is available
       uint32_t clientPort = 0; // 0 means OS will pick a port when the client starts. 22122 is a memorable non-zero one.
       uint32_t maxServerConns = 150;
