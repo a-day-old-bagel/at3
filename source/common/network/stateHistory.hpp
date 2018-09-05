@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+#include <memory>
 #include <unordered_map>
 
 #include <SDL_timer.h>
@@ -410,8 +412,11 @@ namespace at3 {
         if (replayRunning) {
           stateOut.Write(states[currentReplayHead].getState());
           inputOut.Write(states[currentReplayHead].getInput());
-          if (states.isValid(rtu::Ouroboros::getNext(currentReplayHead))) {
-            currentReplayHead = rtu::Ouroboros::getNext(currentReplayHead);
+          if (states.isValid(rtu::Ouroboros<StateSnapShot<indexType>, indexType, maxStoredStates>::
+              getNext(currentReplayHead)))
+          {
+            currentReplayHead = rtu::Ouroboros<StateSnapShot<indexType>, indexType, maxStoredStates>::
+                getNext(currentReplayHead);
           } else {
             replayRunning = false;
           }
@@ -421,7 +426,7 @@ namespace at3 {
 
       std::vector<SLNet::RakNetGUID> getUnfulfilledInputs(indexType index) {
         if (states.isValid(index)) {
-          return states[index]getUnfulfilledInputs();
+          return states[index].getUnfulfilledInputs();
         } else {
           return std::vector<SLNet::RakNetGUID>();
         }
@@ -429,7 +434,7 @@ namespace at3 {
 
       uint32_t getReplayBeginTime() {
         // TODO: once the replay has finished, will there be extra time lost (the time it takes to replay) that won't be considered by Game's dt? Or will that timer take care of it?
-        return isReplaying() ? states[latestCompletion].time;
+        return isReplaying() ? states[latestCompletion].time : 0;
       }
 
 

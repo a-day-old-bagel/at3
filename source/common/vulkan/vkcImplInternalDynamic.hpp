@@ -851,7 +851,7 @@ void VulkanContext<EcsInterface>::render(
 
   // Draw the debug triangle edges
 
-//  vkCmdNextSubpass(common.windowDependents.commandBuffers[imageIndex], VK_SUBPASS_CONTENTS_INLINE);
+  vkCmdNextSubpass(common.windowDependents.commandBuffers[imageIndex], VK_SUBPASS_CONTENTS_INLINE);
 //  currentlyBound = -1;
 //  vkCmdBindPipeline(common.windowDependents.commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS,
 //                    pipelineRepo->at(TRI_DEBUG).handle);
