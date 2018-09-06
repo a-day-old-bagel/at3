@@ -362,7 +362,7 @@ namespace at3 {
         }
       }
 
-      bool findTheTruth() {\
+      bool findTheTruth() {
         if (completeSnapShotReady) {
           states.decaudate(latestCompletion);
           currentReplayHead = latestCompletion;
@@ -374,6 +374,10 @@ namespace at3 {
           printf("\n");
           return true;
         } else {
+          printf("\n");
+          printf("NO TRUTH @ %u with %lu of %lu\n", latestCompletion, (unsigned long)states[latestCompletion].getCurrentChecksum(), (unsigned long)states[latestCompletion].getInputChecksum());
+          debugOuroboros();
+          printf("\n");
           return false;
         }
       }
@@ -398,7 +402,11 @@ namespace at3 {
 
       bool isReplaying() {
         return replayRunning;
-      };
+      }
+
+      indexType getLatestCompleteIndex() {
+        return states.getTailSlot();
+      }
 
       const SLNet::BitStream & getLatestCompleteState() {
         return states[states.getTailSlot()].getState();
@@ -439,6 +447,13 @@ namespace at3 {
 
 
 
+
+      void _turnOffReplay() {
+        replayRunning = false;
+      }
+
+
+
     private:
 
       rtu::Ouroboros<StateSnapShot<indexType>, indexType, maxStoredStates> states;
@@ -457,11 +472,6 @@ namespace at3 {
             latestCompletion = index;
             completeSnapShotReady = true;
           }
-        } else {
-          // printf("\n");
-          // printf("NO TRUTH @ %u with %u of %u\n", index, states[index].getCurrentChecksum(), states[index].getInputChecksum());
-          // debugOuroboros();
-          // printf("\n");
         }
       }
 

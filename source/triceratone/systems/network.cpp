@@ -26,19 +26,22 @@ namespace at3 {
   }
 
   void NetworkSystem::onTick(float dt) {
-    switch (network->getRole()) {
-      case settings::network::SERVER: {
-        handleNewClients();
-        receiveAdministrativePackets();
-      } break;
-      case settings::network::CLIENT: {
-        receiveAdministrativePackets();
-      } break;
-      default: return;
-    }
-    if (ecs->physicsHistory.findTheTruth()) {
-      // TODO: send truth update to clients
-    }
+
+    receiveAdministrativePackets();
+
+    // switch (network->getRole()) {
+    //   case settings::network::SERVER: {
+    //     handleNewClients();
+    //     receiveAdministrativePackets();
+    //   } break;
+    //   case settings::network::CLIENT: {
+    //     receiveAdministrativePackets();
+    //   } break;
+    //   default: return;
+    // }
+    // if (ecs->physicsHistory.findTheTruth()) {
+    //   // TODO: send truth update to clients
+    // }
   }
 
   void NetworkSystem::send(PacketPriority priority, PacketReliability reliability, char channel) {
@@ -191,6 +194,7 @@ namespace at3 {
           stream.ReadBitsFromIntegerRange(command, (uint8_t) 0, (uint8_t) (CMD_END_ENUM - 1), false);
           switch (command) {
             case CMD_ASSIGN_PLAYER_ID: {
+              fprintf(stderr, "poop POOP\n");
               serializePlayerAssignment(false, stream, 0);
             } break;
             default:
@@ -597,52 +601,71 @@ namespace at3 {
       return;
     }
 
-    BitStream physics;
-    serializePhysicsSync(true, physics, true); // copy of entire local state, but not authorized truth state
+    // if (ecs->physicsHistory.isReplaying() || ecs->physicsHistory.findTheTruth()) {
+    //
+    //   // TODO: load next replay state
+    //   ecs->physicsHistory._turnOffReplay();
+    //
+    // } else {
+    { ecs->physicsHistory.findTheTruth();
 
-    uint8_t newStateIndex;
-    if (initialStep) {
-      newStateIndex = ecs->physicsHistory.getLatestIndex();
-      initialStep = false;
-    } else {
-      newStateIndex = ecs->physicsHistory.appendIndex();
-    }
+      if (ecs->physicsHistory.isFull()) {
+        uint8_t tail = ecs->physicsHistory.getLatestCompleteIndex();
+        std::vector<RakNetGUID> slowClients = ecs->physicsHistory.getUnfulfilledInputs(tail);
+        for (const auto &client : slowClients) {
+          fprintf(stderr, "\nSlow Client: %lu\n", RakNetGUID::ToUint32(client));
+        }
+      }
 
-    switch (network->getRole()) {
-      case settings::network::SERVER: {
+      BitStream physics;
+      serializePhysicsSync(true, physics, true); // copy of entire local state, but not authorized truth state
 
-        ecs->physicsHistory.setInputSources(network->getClientGuids(), newStateIndex);
-        ecs->physicsHistory.setAdditionalInputChecksum(newStateIndex, 1);
+      uint8_t newStateIndex;
+      if (initialStep) {
+        newStateIndex = ecs->physicsHistory.getLatestIndex();
+        initialStep = false;
+      } else {
+        newStateIndex = ecs->physicsHistory.appendIndex();
+      }
 
-        if (writeControlSync()) { // Write server's own controls plus any client controls received
+      switch (network->getRole()) {
+        case settings::network::SERVER: {
+
+          handleNewClients();
+
+          ecs->physicsHistory.setInputSources(network->getClientGuids(), newStateIndex);
+          ecs->physicsHistory.setAdditionalInputChecksum(newStateIndex, 1);
+
+          if (writeControlSync()) { // Write server's own controls plus any client controls received
+            receiveSyncPackets();
+            sendAllControlSyncs();
+          } else if (receiveSyncPackets()) { // Write any client controls received anyway
+            sendAllControlSyncs();
+          }
+
+          // local state, authorized by server, but still not complete until all inputs have been received and applied.
+          ecs->physicsHistory.addToState(physics, newStateIndex, true);
+        } break;
+        case settings::network::CLIENT: {
+
+          // TODO: get desired input checksum from server
+
+          if (writeControlSync()) {
+            send(IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);
+            printf("sent\n");
+          }
           receiveSyncPackets();
-          sendAllControlSyncs();
-        } else if (receiveSyncPackets()) { // Write any client controls received anyway
-          sendAllControlSyncs();
-        }
 
-        // local state, authorized by server, but still not complete until all inputs have been received and applied.
-        ecs->physicsHistory.addToState(physics, newStateIndex, true);
-      } break;
-      case settings::network::CLIENT: {
+          // local state, not authorized by server, and not input-complete.
+          ecs->physicsHistory.addToState(physics, newStateIndex);
+        } break;
+        default: break;
+      }
 
-        // TODO: get desired input checksum from server
+      // TODO: find where this should really go. Maybe even after the step?
+      ecs->physicsHistory.setTime(newStateIndex, SDL_GetTicks());
 
-        if (writeControlSync()) {
-          send(IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);
-          printf("sent\n");
-        }
-        receiveSyncPackets();
-
-        // local state, not authorized by server, and not input-complete.
-        ecs->physicsHistory.addToState(physics, newStateIndex);
-      } break;
-      default:
-        break;
     }
-
-    // TODO: find where this should really go. Maybe even after the step?
-    ecs->physicsHistory.setTime(newStateIndex, SDL_GetTicks());
 
   }
 
