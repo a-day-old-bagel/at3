@@ -6,6 +6,9 @@
 using namespace SLNet;
 using namespace rtu;
 
+// How the physics and multi-control packets are sent from server (they use the same channel)
+#define SERVER_SIM_SYNC_PACKET_SEQUENCING RELIABLE_ORDERED // UNRELIABLE_SEQUENCED
+
 namespace at3 {
 
   NetworkSystem::NetworkSystem(State *state) : System(state) {
@@ -72,10 +75,10 @@ namespace at3 {
 
     outStream.Write((MessageID) ID_SYNC_PHYSICS);
     outStream.WriteBitsFromIntegerRange(ecs->physicsHistory.getLatestIndex(), (uint8_t)0,
-                                        (uint8_t)(ezecs::Physics::maxStoredStates - 1));
-    outStream.Write(ecs->physicsHistory.getInputChecksum(ecs->physicsHistory.getLatestIndex()));
+                                        (uint8_t)(Physics::maxStoredStates - 1));
+    // outStream.Write(ecs->physicsHistory.getInputChecksum(ecs->physicsHistory.getLatestIndex()));
     serializePhysicsSync(true, outStream);
-    send(LOW_PRIORITY, UNRELIABLE_SEQUENCED, CH_PHYSICS_SYNC);
+    send(LOW_PRIORITY, SERVER_SIM_SYNC_PACKET_SEQUENCING, CH_SIMULATION_UPDATE);
     return true;
   }
 
@@ -90,79 +93,100 @@ namespace at3 {
         serializeControlSyncShortType(true, inputs.back().data, keyControlMessageId);
         inputs.back().data.Write(mouseControlId);
         inputs.back().data.WriteBitsFromIntegerRange(ecs->physicsHistory.getLatestIndex(), (uint8_t)0,
-                                                     (uint8_t)(ezecs::Physics::maxStoredStates - 1));
+                                                     (uint8_t)(Physics::maxStoredStates - 1));
         serializeControlSync(true, inputs.back().data, mouseControlId, keyControlId, keyControlMessageId);
 
+        inputs.back().id = SLNet::RakNetGUID(1); // 1 is server id
+        inputs.back().index = ecs->physicsHistory.getLatestIndex();
+
         // ecs->physicsHistory.addToInput(inputs.back().data, ecs->physicsHistory.getLatestIndex(), SLNet::RakNetGUID(1));
-        ecs->physicsHistory.addToInput(inputs.back().data, ecs->physicsHistory.getLatestIndex());
+        ecs->physicsHistory.addToInput(inputs.back().data, inputs.back().index);
         ecs->physicsHistory.addToInputChecksum(ecs->physicsHistory.getLatestIndex(), 1); // 1 signifies server input
 
-        inputs.back().data.SetReadOffset(0);
+        if ( ! RakNetGUID::ToUint32(inputs.back().id.rakNetGuid)) {
+          fprintf(stderr, "BooFar at %u\n", inputs.back().index);
+        }
+
+        // inputs.back().data.SetReadOffset(0);
 
       } break;
       case settings::network::CLIENT: {
-        outStream.Write(keyControlMessageId);
-        outStream.Write(mouseControlId);
-        outStream.WriteBitsFromIntegerRange(ecs->physicsHistory.getLatestIndex(), (uint8_t)0,
-                                            (uint8_t)(ezecs::Physics::maxStoredStates - 1));
-        serializeControlSync(true, outStream, mouseControlId, keyControlId, keyControlMessageId);
+        // outStream.Write(keyControlMessageId);
+        // outStream.Write(mouseControlId);
+        // outStream.WriteBitsFromIntegerRange(ecs->physicsHistory.getLatestIndex(), (uint8_t)0,
+        //                                     (uint8_t)(Physics::maxStoredStates - 1));
+        // serializeControlSync(true, outStream, mouseControlId, keyControlId, keyControlMessageId);
 
-        printf("\nSending control type %u at index %u\n", keyControlMessageId, ecs->physicsHistory.getLatestIndex());
+        BitStream commonStream, historyStream;
+        commonStream.Write(mouseControlId);
+        commonStream.WriteBitsFromIntegerRange(ecs->physicsHistory.getLatestIndex(), (uint8_t)0,
+                                            (uint8_t)(Physics::maxStoredStates - 1));
+        serializeControlSync(true, commonStream, mouseControlId, keyControlId, keyControlMessageId);
+
+        serializeControlSyncShortType(true, historyStream, keyControlMessageId);
+        historyStream.Write(commonStream);
+        ecs->physicsHistory.addToInput(historyStream, ecs->physicsHistory.getLatestIndex());
+
+        outStream.Write(keyControlMessageId);
+        commonStream.SetReadOffset(0);
+        outStream.Write(commonStream);
+
+        printf("\nSending type %u with mouse %u at %u\n", keyControlMessageId, mouseControlId, ecs->physicsHistory.getLatestIndex());
       } break;
       default: break;
     }
     return true;
   }
 
-  // FIXME: TODO: use a hashmap of guid->stream so that duplicates don't get sent out
   void NetworkSystem::sendAllControlSyncs() {
-    // FIXME: TODO: send to all clients, not just the senders, also, do this inside the new classes or whatever.
-//    for (auto & receiveingClient : inputs) {
-//      BitStream tempStream;
-//      uint8_t numEntries = 0; // TODO: use robust type (templates in new classes or whatever)
-//      for (auto & inputClient : inputs) {
-//        if ( ! (receiveingClient.id == inputClient.id)) {
-//          BitSize_t head = inputClient.data.GetReadOffset();
-//          tempStream.Write(inputClient.data);
-//          inputClient.data.SetReadOffset(head);
-//          ++numEntries;
-//        }
-//      }
-//      outStream.Write((MessageID) ID_SYNC_ALL_CONTROLS);
-//      outStream.Write(numEntries);
-//      outStream.Write(tempStream);
-//      sendTo(receiveingClient.id, HIGH_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);
-//    }
-//    inputs.clear();
+
+    // TODO: READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS
+    // TODO: Maybe clients don't need the checksums at all, and can just collapse to truth whenever a physics update comes, while using whatever inputs they *do* have to rebuild the current state.
 
 
-    BitStream dataStream, checksumStream;
-    std::unordered_map<uint8_t, uint32_t> indexedChecksums;
+
+
+
+    // TODO: READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS READ THIS
+    // TODO: Replace entityId's with playerId's ranging from 0-127 or whatever and keep a mapping of those id's to Player components
+    // TODO: These player components will contain all the necessary id's for avatar control.
+    // TODO: also replace control innards with boolean representations.
+
+
+
+
+
+    printf("\nSending multi-controls:\n");
+
+    BitStream dataStream;//, checksumStream;
+    // std::unordered_map<uint8_t, uint32_t> indexedChecksums;
     uint8_t numEntries = 0; // TODO: use robust type (templates in new classes or whatever)
-    uint8_t numIndices = 0;
+    // uint8_t numIndices = 0;
     for (auto & input : inputs) {
-      indexedChecksums[input.index] += RakNetGUID::ToUint32(input.id.rakNetGuid);
-      BitSize_t head = input.data.GetReadOffset();
+      // indexedChecksums[input.index] += RakNetGUID::ToUint32(input.id.rakNetGuid);
+      // BitSize_t head = input.data.GetReadOffset(); // pointless
       dataStream.Write(input.data);
-      input.data.SetReadOffset(head);
+      // input.data.SetReadOffset(head); // pointless
       ++numEntries;
+
+      printf("from %lu at %u\n", RakNetGUID::ToUint32(input.id.rakNetGuid), input.index);
+      // printf("%s\n", input.data.)
     }
-    numIndices = (uint8_t)indexedChecksums.size();
-    for (auto & index : indexedChecksums) {
-      checksumStream.WriteBitsFromIntegerRange(index.first, (uint8_t)0, (uint8_t)(ezecs::Physics::maxStoredStates - 1));
-      checksumStream.Write(index.second);
-    }
+    // numIndices = (uint8_t)indexedChecksums.size();
+    // for (auto & index : indexedChecksums) {
+    //   checksumStream.WriteBitsFromIntegerRange(index.first, (uint8_t)0, (uint8_t)(Physics::maxStoredStates - 1));
+    //   checksumStream.Write(index.second);
+    // }
 
     outStream.Write((MessageID) ID_SYNC_MULTIPLE_CONTROLS);
     outStream.Write(numEntries);
-    outStream.Write(numIndices);
+    // outStream.Write(numIndices);
 
-    outStream.Write(checksumStream);
+    // outStream.Write(checksumStream);
     outStream.Write(dataStream);
 
-    send(HIGH_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);
+    send(HIGH_PRIORITY, SERVER_SIM_SYNC_PACKET_SEQUENCING, CH_SIMULATION_UPDATE);
     inputs.clear();
-
 
   }
 
@@ -194,11 +218,36 @@ namespace at3 {
           stream.ReadBitsFromIntegerRange(command, (uint8_t) 0, (uint8_t) (CMD_END_ENUM - 1), false);
           switch (command) {
             case CMD_ASSIGN_PLAYER_ID: {
-              fprintf(stderr, "poop POOP\n");
+              printf("received player id\n");
               serializePlayerAssignment(false, stream, 0);
+              // network->discardSyncPackets();
+            } break;
+            case CMD_WORLD_INIT: {
+              network->discardSyncPackets();
+              printf("received world init\n");
+              outStream.Write((MessageID) ID_USER_PACKET_CLIENT_READY);
+              send(IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_UPDATE);
             } break;
             default:
               break;
+          }
+        } break;
+        case ID_USER_PACKET_CLIENT_READY: {
+          printf("received client ready\n");
+          if (freshPlayers.empty()) {
+            fprintf(stderr, "No new fresh player avatar sets available for client %lu\n",
+                RakNetGUID::ToUint32(pack->guid));
+          } else {
+            outStream.Write((MessageID) ID_USER_PACKET_ADMIN_COMMAND);
+            outStream.WriteBitsFromIntegerRange((uint8_t) CMD_ASSIGN_PLAYER_ID, (uint8_t) 0,
+                                                (uint8_t) (CMD_END_ENUM - 1));
+            serializePlayerAssignment(true, outStream, freshPlayers.top());
+            freshPlayers.pop();
+            sendTo(AddressOrGUID(pack->guid), IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_UPDATE);
+            uint32_t indexOfIgnorance = ignoredInputSources.GetIndexOf(pack->guid);
+            if (indexOfIgnorance != MAX_UNSIGNED_LONG) {
+              ignoredInputSources.RemoveAtIndexFast(indexOfIgnorance);
+            }
           }
         } break;
         default: {
@@ -226,14 +275,15 @@ namespace at3 {
             // TODO: just write stream to history. This should only be called when reading history.
 
             uint8_t index;
-            stream.ReadBitsFromIntegerRange(index, (uint8_t)0, (uint8_t)(ezecs::Physics::maxStoredStates - 1));
-            uint32_t inputChecksum;
-            stream.Read(inputChecksum);
-            ecs->physicsHistory.setInputChecksum(index, inputChecksum);
+            stream.ReadBitsFromIntegerRange(index, (uint8_t)0, (uint8_t)(Physics::maxStoredStates - 1));
+            // uint32_t inputChecksum;
+            // stream.Read(inputChecksum);
+            // ecs->physicsHistory.setInputChecksum(index, inputChecksum);
             ecs->physicsHistory.addToState(stream, index, true);
 
 
-            printf("\nReceived Physics with input checksum %u = %u\n", index, inputChecksum);
+            // printf("\nReceived Physics with input checksum %u = %u\n", index, inputChecksum);
+            printf("\nReceived Physics %u.\n", index);
 
 
 //            serializePhysicsSync(false, stream);   // ACTUALLY APPLY IT
@@ -246,8 +296,10 @@ namespace at3 {
           if (network->getRole() == settings::network::SERVER) { // Only servers should receive these
             atLeastOneClientCtrl = true;
             inputs.emplace_back();
+
             serializeControlSyncShortType(true, inputs.back().data, syncType);
             BitSize_t head = stream.GetReadOffset();
+
             inputs.back().data.Write(stream);
             inputs.back().id = sender;
             stream.SetReadOffset(head);
@@ -262,7 +314,11 @@ namespace at3 {
 
             inputs.back().index = index;
 
-            printf("\nReceived input to %u from %lu\n", index, RakNetGUID::ToUint32(pack->guid));
+            printf("\nReceived input to %u from %lu\n", inputs.back().index, RakNetGUID::ToUint32(inputs.back().id.rakNetGuid));
+
+            if ( ! RakNetGUID::ToUint32(inputs.back().id.rakNetGuid)) {
+              fprintf(stderr, "FooBar at %u\n", inputs.back().index);
+            }
 
 //            serializeControlSync(false, stream, mouseId, 0, syncType);  // ACTUALLY APPLY IT
           }
@@ -274,29 +330,56 @@ namespace at3 {
 
 
 
+
+
+
             uint8_t numEntries;
             stream.Read(numEntries);
-            uint8_t numIndices;
-            stream.Read(numIndices);
-            for (uint8_t i = 0; i < numIndices; ++i) {
-              uint8_t index;
-              stream.Read(index);
-              uint32_t checksumPart;
-              stream.Read(checksumPart);
-              ecs->physicsHistory.addToInputChecksum(index, checksumPart);
-
-              printf("\nRecieved input checksum %u += %u\n", index, checksumPart);
-            }
+            printf("\nRecieved %u multi-controls:\n", numEntries);
+            // uint8_t numIndices;
+            // stream.Read(numIndices);
+            // for (uint8_t i = 0; i < numIndices; ++i) {
+            //   uint8_t index;
+            //   stream.ReadBitsFromIntegerRange(index, (uint8_t)0, (uint8_t)(Physics::maxStoredStates - 1));
+            //   uint32_t checksumPart;
+            //   stream.Read(checksumPart);
+            //   ecs->physicsHistory.addToInputChecksum(index, checksumPart);
+            //
+            //   printf("\nRecieved input checksum %u += %u\n", index, checksumPart);
+            // }
             for (uint8_t i = 0; i < numEntries; ++i) {
+
+              BitSize_t head0 = stream.GetReadOffset();
+
               MessageID controlType;
               serializeControlSyncShortType(false, stream, controlType);
               entityId mouseId = 0;
               stream.Read(mouseId);
               uint8_t index;
               stream.ReadBitsFromIntegerRange(index, (uint8_t) 0, (uint8_t) (Physics::maxStoredStates - 1));
-              ecs->physicsHistory.addToInput(stream, index);
 
-              printf("\nRecieved multi-controls %u\n", index);
+              serializeControlSync(false, stream, mouseId, 0, controlType, true);
+
+              BitSize_t head1 = stream.GetReadOffset();
+
+
+
+
+              stream.SetReadOffset(head0);
+
+              // FIXME: read the entire rest of the stream in.
+              ecs->physicsHistory.addToInput(stream, index, head1 - head0);
+
+              // FIXME: Actual control data is not read off the stream, causing too much left over.
+
+              stream.SetReadOffset(head1);
+
+
+
+
+
+
+              printf("Type %u with mouse %u at %u\n", controlType, mouseId, index);
             }
           }
         } break;
@@ -327,25 +410,54 @@ namespace at3 {
   }
 
   void NetworkSystem::handleNewClients() {
-    if (!network->getFreshConnections().empty()) {
+    // if (!network->getFreshConnections().empty()) {
+    //   // All existing entities sent here
+    //   // TODO: revert to last complete snapshot before sending this, and then send that snapShot index
+    //   // TODO: Maybe just use whatever's in the state currently like this instead and let the client correct itself.
+    //   for (const auto &id : registries[0].ids) {
+    //     writeEntityRequestHeader(outStream);
+    //     serializeEntityCreationRequest(true, outStream, *state, id);
+    //     send(LOW_PRIORITY, RELIABLE_ORDERED, CH_ECS_UPDATE);
+    //   }
+    //   // Any new player and avatar components sent here, along with the player ID assignments
+    //   for (const auto &client : network->getFreshConnections()) {
+    //     outStream.Write((MessageID) ID_USER_PACKET_ADMIN_COMMAND);
+    //     outStream.WriteBitsFromIntegerRange((uint8_t) CMD_ASSIGN_PLAYER_ID, (uint8_t) 0,
+    //                                         (uint8_t) (CMD_END_ENUM - 1));
+    //     serializePlayerAssignment(true, outStream, PlayerSet::create(*state, *ecs, network->getRole()));
+    //     sendTo(client, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_UPDATE);
+    //   }
+    //   network->discardFreshConnections();
+    // }
+
+
+    if ( ! network->getFreshConnections().empty()) {
       // All existing entities sent here
       // TODO: revert to last complete snapshot before sending this, and then send that snapShot index
       // TODO: Maybe just use whatever's in the state currently like this instead and let the client correct itself.
+      BitStream stream;
       for (const auto &id : registries[0].ids) {
-        writeEntityRequestHeader(outStream);
-        serializeEntityCreationRequest(true, outStream, *state, id);
-        send(LOW_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
+        writeEntityRequestHeader(stream);
+        serializeEntityCreationRequest(true, stream, *state, id);
+        for (const auto &client : network->getFreshConnections()) {
+          network->sendTo(stream, client, LOW_PRIORITY, RELIABLE_ORDERED, CH_ECS_UPDATE);
+        }
+        stream.Reset();
       }
-      // Any new player and avatar components sent here, along with the player ID assignments
+      // New player avatar sets send out to everyone here
       for (const auto &client : network->getFreshConnections()) {
-        outStream.Write((MessageID) ID_USER_PACKET_ADMIN_COMMAND);
-        outStream.WriteBitsFromIntegerRange((uint8_t) CMD_ASSIGN_PLAYER_ID, (uint8_t) 0,
-                                            (uint8_t) (CMD_END_ENUM - 1));
-        serializePlayerAssignment(true, outStream, PlayerSet::create(*state, *ecs, network->getRole()));
-        sendTo(client, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
+        freshPlayers.push(PlayerSet::create(*state, *ecs));
+        ignoredInputSources.Push(client.rakNetGuid, __FILE__, __LINE__);
+      }
+      stream.Write((MessageID) ID_USER_PACKET_ADMIN_COMMAND);
+      stream.WriteBitsFromIntegerRange((uint8_t) CMD_WORLD_INIT, (uint8_t) 0, (uint8_t) (CMD_END_ENUM - 1));
+      for (const auto &client : network->getFreshConnections()) {
+        printf("sent world init to %lu\n", (long unsigned)RakNetGUID::ToUint32(client.rakNetGuid));
+        network->sendTo(stream, client, LOW_PRIORITY, RELIABLE_ORDERED, CH_ECS_UPDATE);
       }
       network->discardFreshConnections();
     }
+
   }
 
   void NetworkSystem::respondToEntityRequest(BitStream &stream) {
@@ -359,12 +471,12 @@ namespace at3 {
 //          BitStream fullStream;
 //          writeEntityRequestHeader(fullStream);
 //          fullStream.Write(stream);
-//          network->send(fullStream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
+//          network->send(fullStream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_UPDATE);
 //        }
         switch (network->getRole()) {
           case settings::network::SERVER: {
             stream.SetReadOffset(0);
-            network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
+            network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_UPDATE);
           } break;
           case settings::network::CLIENT: { } break;
           default: break;
@@ -375,7 +487,7 @@ namespace at3 {
         switch (network->getRole()) {
           case settings::network::SERVER: {
             stream.SetReadOffset(0);
-            network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
+            network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_UPDATE);
           } break;
           case settings::network::CLIENT: { } break;
           default: break;
@@ -480,9 +592,10 @@ namespace at3 {
   }
 
   void NetworkSystem::serializeControlSync(bool rw, BitStream &stream, entityId mId, entityId cId,
-                                           MessageID syncType) {
+                                           MessageID syncType, bool useDummies) {
     MouseControls *mouseControls;
-    state->getMouseControls(mId, &mouseControls);
+    if (useDummies) { mouseControls = &dummies.mouse; }
+    else { state->getMouseControls(mId, &mouseControls); }
     if (!mouseControls) { return; } // a client may not yet have the component being referred to.
     stream.Serialize(rw, mouseControls->yaw);
     stream.Serialize(rw, mouseControls->pitch);
@@ -492,7 +605,8 @@ namespace at3 {
     switch (syncType) {
       case ID_SYNC_WALKCONTROLS: {
         WalkControls *walkControls;
-        state->getWalkControls(cId, &walkControls);
+        if (useDummies) { walkControls = &dummies.walk; }
+        else { state->getWalkControls(cId, &walkControls); }
         if (!walkControls) { return; } // a client may not yet have the component being referred to.
         stream.Serialize(rw, walkControls->accel);
         stream.SerializeCompressed(rw, walkControls->jumpRequested);
@@ -502,7 +616,8 @@ namespace at3 {
       } break;
       case ID_SYNC_PYRAMIDCONTROLS: {
         PyramidControls *pyramidControls;
-        state->getPyramidControls(cId, &pyramidControls);
+        if (useDummies) { pyramidControls = &dummies.pyramid; }
+        else { state->getPyramidControls(cId, &pyramidControls); }
         if (!pyramidControls) { return; } // a client may not yet have the component being referred to.
         stream.Serialize(rw, pyramidControls->accel);
         stream.SerializeCompressed(rw, pyramidControls->turbo);
@@ -512,7 +627,8 @@ namespace at3 {
       } break;
       case ID_SYNC_TRACKCONTROLS: {
         TrackControls *trackControls;
-        state->getTrackControls(cId, &trackControls);
+        if (useDummies) { trackControls = &dummies.track; }
+        else { state->getTrackControls(cId, &trackControls); }
         if (!trackControls) { return; } // a client may not yet have the component being referred to.
         stream.Serialize(rw, trackControls->control);
         stream.Serialize(rw, trackControls->brakes);
@@ -537,18 +653,26 @@ namespace at3 {
     stream.Serialize(rw, playerId);
     if (rw) {
       outStream.Write(ecs->physicsHistory.getLatestIndex());
-      outStream.Write(ecs->physicsHistory.getInputChecksum(ecs->physicsHistory.getLatestIndex()));
+      printf("Sent initial index %u and playerId %u\n", ecs->physicsHistory.getLatestIndex(), playerId);
+      // outStream.Write(ecs->physicsHistory.getInputChecksum(ecs->physicsHistory.getLatestIndex()));
     } else {
       uint8_t index;
       stream.Read(index);
-      uint32_t inputChecksum;
-      stream.Read(inputChecksum);
+      // uint32_t inputChecksum;
+      // stream.Read(inputChecksum);
       ecs->physicsHistory.setEmptyIndex(index);
+
+      printf("Set initial index: %u\n", index);
+
       ecs->physicsHistory.appendIndex();
-      ecs->physicsHistory.setInputChecksum(index, inputChecksum);
+      // ecs->physicsHistory.setInputChecksum(index, inputChecksum);
       topics::publish<entityId>("set_player_id", playerId);
       initialStep = true;
     }
+  }
+
+  void NetworkSystem::serializeWorldInit(bool rw, SLNet::BitStream &) {
+
   }
 
   void NetworkSystem::setNetInterface(void *netInterface) {
@@ -609,7 +733,7 @@ namespace at3 {
     // } else {
     { ecs->physicsHistory.findTheTruth();
 
-      if (ecs->physicsHistory.isFull()) {
+      if (ecs->physicsHistory.isFull()) { // FIXME
         uint8_t tail = ecs->physicsHistory.getLatestCompleteIndex();
         std::vector<RakNetGUID> slowClients = ecs->physicsHistory.getUnfulfilledInputs(tail);
         for (const auto &client : slowClients) {
@@ -618,6 +742,7 @@ namespace at3 {
       }
 
       BitStream physics;
+      // TODO: get which indices will be used for server physics update and only store complete state in those.
       serializePhysicsSync(true, physics, true); // copy of entire local state, but not authorized truth state
 
       uint8_t newStateIndex;
@@ -633,7 +758,11 @@ namespace at3 {
 
           handleNewClients();
 
+          // TODO: don't set sources to getClientIds, rather wait for new clients to be ready before adding them.
           ecs->physicsHistory.setInputSources(network->getClientGuids(), newStateIndex);
+          if (ignoredInputSources.Size()) {
+            ecs->physicsHistory.excludeInputSources(ignoredInputSources, newStateIndex);
+          }
           ecs->physicsHistory.setAdditionalInputChecksum(newStateIndex, 1);
 
           if (writeControlSync()) { // Write server's own controls plus any client controls received
@@ -651,8 +780,7 @@ namespace at3 {
           // TODO: get desired input checksum from server
 
           if (writeControlSync()) {
-            send(IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_CONTROL_SYNC);
-            printf("sent\n");
+            send(IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_SIMULATION_UPDATE);
           }
           receiveSyncPackets();
 
@@ -708,5 +836,7 @@ namespace at3 {
 //    physicsStates.front().ReadBitsFromIntegerRange(storedStateIndex, (uint8_t) 0, maxStoredStates);
 //    serializePhysicsSync(false, physicsStates.front(), true);
   }
+
+
 
 }

@@ -76,7 +76,7 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
         ecs->requestSceneNode(0);
         ecs->closeEntityRequest();
         // Create a player
-        playerId = PlayerSet::create(state, *ecs, network->getRole());
+        playerId = PlayerSet::create(state, *ecs);
       } else {
         // Set up the callback for player ID assignment
         RTU_STATIC_SUB(assignPlayerIdSub, "set_player_id", Triceratone::assignPlayerId, this);

@@ -40,7 +40,8 @@ namespace at3 {
    * WRITTEN APOLOGY:
    * These functions break the philosophy of having one defined purpose for a function, instead taking switches and
    * parameters that make them do completely different things. This is awful, but it also seems to be the way to do
-   * things under the "Serialization is both read and write" doctrine, which I'm finding useful for networking.
+   * things under the "Serialization is both read and write" doctrine that RakNet/SlikeNet uses, which I'm finding
+   * useful for networking.
    * There's no winning.
    */
 
@@ -56,6 +57,9 @@ namespace at3 {
     stream.Serialize(rw, id);
     if (!rw) {  // reading a request
       if (id) { // Receive a remote server request to change the local client ECS, which gets fulfilled.
+
+        printf("received entity creation request for %u\n", id);
+
         // If outgoing ECS request server messages are ordered, we shouldn't need to check for inappropriate id.
         // That means this loop should always do exactly one iteration, but if it doesn't, we need to fix it.
         int i = 0;

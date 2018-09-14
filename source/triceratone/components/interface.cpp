@@ -59,7 +59,7 @@ namespace at3 {
         } break;
         default: break;
       }
-      network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
+      network->send(stream, LOW_PRIORITY, RELIABLE_ORDERED, CH_ECS_UPDATE);
     } else {
       fprintf(stderr, "Entity request is not open. Cannot finalize until opened!\n");
     }
@@ -73,7 +73,7 @@ namespace at3 {
       stream.Reset();
       writeEntityRequestHeader(stream);
       serializeEntityCreationRequest(true, stream, *state, id);
-      network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
+      network->send(stream, LOW_PRIORITY, RELIABLE_ORDERED, CH_ECS_UPDATE);
     }
   }
 
@@ -82,7 +82,7 @@ namespace at3 {
       case settings::network::SERVER: {
         stream.Reset();
         serializeEntityDeletionRequest(true, stream, *state, id);
-        network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
+        network->send(stream, LOW_PRIORITY, RELIABLE_ORDERED, CH_ECS_UPDATE);
 
         ezecs::CompOpReturn status = state->deleteEntity(id);
         EZECS_CHECK_PRINT(EZECS_ERR(status));
@@ -92,7 +92,7 @@ namespace at3 {
         // TODO: Along with entity creation, decide if clients should be able to send these at all.
 //        stream.Reset();
 //        serializeEntityDeletionRequest(true, stream, *state, id);
-//        network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_REQUEST);
+//        network->send(stream, IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_UPDATE);
       } break;
       default: {
         state->deleteEntity(id);

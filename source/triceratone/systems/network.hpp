@@ -20,6 +20,21 @@ namespace at3 {
     SLNet::BitStream data;
   };
 
+  struct DummyControls {
+    MouseControls mouse;
+    WalkControls walk;
+    PyramidControls pyramid;
+    TrackControls track;
+    FreeControls freeCam;
+    DummyControls() :
+      mouse(false, false, false),
+      walk(0),
+      pyramid(0),
+      track(),
+      freeCam(0)
+    { }
+  };
+
   class NetworkSystem : public System<NetworkSystem> {
       std::shared_ptr<NetInterface> network;
       std::shared_ptr<EntityComponentSystemInterface> ecs;
@@ -34,6 +49,14 @@ namespace at3 {
       bool strictWarp = true;
 
       bool initialStep = false;
+      // bool discardSyncs = false;
+
+      std::stack<entityId> freshPlayers;
+
+      DataStructures::List<SLNet::RakNetGUID> ignoredInputSources;
+
+      DummyControls dummies;
+
 
 //      uint8_t maxStoredStates = 31;
 //      uint8_t storedStateIndexCounter = 0;
@@ -71,10 +94,11 @@ namespace at3 {
 
       void serializePhysicsSync(bool rw, SLNet::BitStream &, bool includeAll = false);
       void serializeControlSync(bool rw, SLNet::BitStream &, entityId mId, entityId cId,
-                                SLNet::MessageID syncType = ID_USER_PACKET_END_ENUM);
+                                SLNet::MessageID syncType = ID_USER_PACKET_END_ENUM, bool useDummies = false);
       bool serializeControlSyncShortType(bool rw, SLNet::BitStream &, SLNet::MessageID &type);
 
       void serializePlayerAssignment(bool rw, SLNet::BitStream &, entityId);
+      void serializeWorldInit(bool rw, SLNet::BitStream &);
 
     public:
       std::vector<compMask> requiredComponents = {

@@ -128,7 +128,8 @@ namespace {
     static void serialize(bool rw, SLNet::BitStream & stream, float & mass, sharedVoidPtr & initData, int & useCase);
 
     static const inline uint8_t simulationFps = 60;
-    static const inline uint8_t maxStoredStates = 32;
+    static const inline uint8_t maxStoredStates = 64;
+    static const inline uint8_t maxStepsPerFrame = 20;
   };
   EZECS_COMPONENT_DEPENDENCIES(Physics, Placement)
 

@@ -12,26 +12,23 @@ using namespace rtu::topics;
 
 namespace at3 {
   namespace PlayerSet {
-    entityId create(State &state, EntityComponentSystemInterface &ecs, uint32_t role) {
+    entityId create(State &state, EntityComponentSystemInterface &ecs) {
       entityId playerId = 0;
-      if (role != settings::network::CLIENT) {
-        // This component will be sent to the network once the Scene System picks it up in SceneSystem::onDiscoverPlayer.
-        // This is done instead of using the ecs functions because onDiscoverPlayer creates the avatars and stores their
-        // ids inside the player component before the player component is sent out.
-        state.createEntity(&playerId);
-        state.addNetworking(playerId);
-        state.addPlayer(playerId, 0, 0, 0, 0); // These will be filled in SceneSystem::onDiscoverPlayer.
-        if (role == settings::network::SERVER) {
-
-          // TODO: make the player component just sit in the freeCam
-          ecs.broadcastManualEntity(playerId);
-          Player * player;
-          state.getPlayer(playerId, &player);
-          FreeCam::broadcastLatest(state, ecs);
-          Walker::broadcastLatest(state, ecs);
-          Pyramid::broadcastLatest(state, ecs);
-          DuneBuggy::broadcastLatest(state, ecs);
-        }
+      // This component will be sent to the network once the Scene System picks it up in SceneSystem::onDiscoverPlayer.
+      // This is done instead of using the ecs functions because onDiscoverPlayer creates the avatars and stores their
+      // ids inside the player component before the player component is sent out.
+      state.createEntity(&playerId);
+      state.addNetworking(playerId);
+      state.addPlayer(playerId, 0, 0, 0, 0); // These will be filled in SceneSystem::onDiscoverPlayer.
+      if (settings::network::role == settings::network::SERVER) {
+        // TODO: make the player component just sit in the freeCam
+        ecs.broadcastManualEntity(playerId);
+        Player * player;
+        state.getPlayer(playerId, &player);
+        FreeCam::broadcastLatest(state, ecs);
+        Walker::broadcastLatest(state, ecs);
+        Pyramid::broadcastLatest(state, ecs);
+        DuneBuggy::broadcastLatest(state, ecs);
       }
       return playerId;
     }

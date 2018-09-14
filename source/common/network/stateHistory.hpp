@@ -59,9 +59,11 @@ namespace at3 {
        * stateIsAuthorized just indicates that an authority has had *some* say in this current snapshot.
        */
       void addStateData(const SLNet::BitStream &data, bool authoritative = false) {
-        state.Write(data);
         if (authoritative) {
+          authState.Write(data);
           stateIsAuthorized = true;
+        } else {
+          state.Write(data);
         }
       }
 
@@ -73,19 +75,48 @@ namespace at3 {
        * can be considered complete.
        */
       void addInputData(const SLNet::BitStream &data, const SLNet::RakNetGUID & guid) {
+        // if (inputSources) { // if no input sources defined, no checking will occur.
+        //   if (inputSources->count(guid)) {
+        //     if ((*inputSources)[guid]) {
+        //       fprintf(stderr, "Discarded duplicate client input stream at state snapshot %u\n", index);
+        //       return; // don't add more than one stream per client into the snapshot
+        //     }
+        //     (*inputSources)[guid] = true;
+        //   } else {
+        //     fprintf(stderr, "Received input %u from unexpected GUID %lu!\n", index, SLNet::RakNetGUID::ToUint32(guid));
+        //     return; // don't add invalid guid's to the checksum or their inputs to the stream
+        //   }
+        // }
+
         if (inputSources) { // if no input sources defined, no checking will occur.
           if (inputSources->count(guid)) {
             if ((*inputSources)[guid]) {
-              fprintf(stderr, "Discarded duplicate client input stream at state snapshot %u\n", index);
-              return; // don't add more than one stream per client into the snapshot
+              printf("Duplicate input from %lu at %u!\n", SLNet::RakNetGUID::ToUint32(guid), index);
+              inputSum -= SLNet::RakNetGUID::ToUint32(guid);
             }
-            (*inputSources)[guid] = true;
           } else {
-            fprintf(stderr, "Received client input from unregistered GUID %lu!\n", SLNet::RakNetGUID::ToUint32(guid));
-            return; // don't add invalid guid's to the checksum or their inputs to the stream
+            printf("Unexpected input from %lu at %u!\n", SLNet::RakNetGUID::ToUint32(guid), index);
           }
+          (*inputSources)[guid] = true;
         }
+
         input.Write(data);
+        inputSum += SLNet::RakNetGUID::ToUint32(guid);
+      }
+      void addInputData(SLNet::BitStream &data, const SLNet::RakNetGUID & guid, SLNet::BitSize_t length) {
+        if (inputSources) { // if no input sources defined, no checking will occur.
+          if (inputSources->count(guid)) {
+            if ((*inputSources)[guid]) {
+              printf("Duplicate input from %lu at %u!\n", SLNet::RakNetGUID::ToUint32(guid), index);
+              inputSum -= SLNet::RakNetGUID::ToUint32(guid);
+            }
+          } else {
+            printf("Unexpected input from %lu at %u!\n", SLNet::RakNetGUID::ToUint32(guid), index);
+          }
+          (*inputSources)[guid] = true;
+        }
+
+        input.Write(data, length);
         inputSum += SLNet::RakNetGUID::ToUint32(guid);
       }
 
@@ -96,6 +127,9 @@ namespace at3 {
       void addInputData(const SLNet::BitStream &data) {
         input.Write(data);
       }
+      void addInputData(SLNet::BitStream &data, SLNet::BitSize_t length) {
+        input.Write(data, length);
+      }
 
       void addToInputChecksum(uint32_t checksumPart) {
         inputSum += checksumPart;
@@ -103,6 +137,10 @@ namespace at3 {
 
       const SLNet::BitStream & getState() {
         return state;
+      }
+
+      const SLNet::BitStream & getAuthState() {
+        return authState;
       }
 
       const SLNet::BitStream & getInput() {
@@ -127,17 +165,33 @@ namespace at3 {
        * To this end, you can call getUnfulfilledGuids to know which clients still haven't provided input.
        */
       void setInputSources(const DataStructures::List<SLNet::RakNetGUID> & guids) {
-        desiredInputSum = 0;
-        inputSources = std::make_unique<std::unordered_map<SLNet::RakNetGUID, bool, GuidHash>>();
+        // desiredInputSum = 0;
+        // if (inputSources) {
+        //   inputSources->clear();
+        // } else {
+        //   inputSources = std::make_unique<std::unordered_map<SLNet::RakNetGUID, bool, GuidHash>>();
+        // }
+
+        if ( ! inputSources) {
+          inputSources = std::make_unique<std::unordered_map<SLNet::RakNetGUID, bool, GuidHash>>();
+        }
+
         for (uint32_t i = 0; i < guids.Size(); ++i) {
-          if (SLNet::RakNetGUID::ToUint32(guids[i]) == 0) {
-            fprintf(stderr, "State snapshot received input source with GUID of 0!\n");
-          }
-          if (inputSources && inputSources->count(guids[i])) {
-            fprintf(stderr, "Discarded duplicate input source GUID at state snapshot %u\n", index);
+          if (inputSources->count(guids[i])) {
+            printf("Duplicate input source registration %lu at %u!\n", SLNet::RakNetGUID::ToUint32(guids[i]), index);
           }
           desiredInputSum += SLNet::RakNetGUID::ToUint32(guids[i]);
           inputSources->emplace(guids[i], false);
+        }
+      }
+
+      void excludeInputSources(const DataStructures::List<SLNet::RakNetGUID> & guids) {
+        for (uint32_t i = 0; i < guids.Size(); ++i) {
+          if (inputSources && ! inputSources->erase(guids[i])) {
+            printf("Attempted to exclude unregistered input source %u at %u!\n", guids[i], index);
+          } else {
+            desiredInputSum -= SLNet::RakNetGUID::ToUint32(guids[i]);
+          }
         }
       }
 
@@ -180,8 +234,7 @@ namespace at3 {
 
     private:
 
-      SLNet::BitStream state;
-      SLNet::BitStream input;
+      SLNet::BitStream input, state, authState;
       indexType index = 0;
       uint32_t inputSum = 0;
       uint32_t desiredInputSum = 0;
@@ -196,11 +249,14 @@ namespace at3 {
         return stateSnapShot;
       }
       static void clearImpl(StateSnapShot &stateSnapShot, const indexType &index) {
-        stateSnapShot.state.Reset();
         stateSnapShot.input.Reset();
+        stateSnapShot.state.Reset();
+        stateSnapShot.authState.Reset();
+
         if (stateSnapShot.inputSources) {
           stateSnapShot.inputSources->clear();
         }
+
         stateSnapShot.inputSum = 0;
         stateSnapShot.desiredInputSum = 0;
         stateSnapShot.stateIsAuthorized = false;
@@ -230,18 +286,27 @@ namespace at3 {
         if (states[index].isComplete()) {
           printf("Adding input to an already complete state %u!\n", index);
         }
-        if (states.isValid(index)) {
-          if (states.isFull()) {
-            states.decaudate();
-          }
-          states[index].addInputData(input, id);
-          // return handlePossibleCollapseToTruth(index);
-          checkForCompleteness(index);
-          return true;
-        } else {
-          printf("Attempted to add input to invalid state history index %u!\n", index);
-          return false;
+
+        // if (states.isValid(index)) {
+        //   states[index].addInputData(input, id);
+        //   checkForCompleteness(index);
+        //   return true;
+        // } else {
+        //   printf("Attempted to add input to invalid state history index %u!\n", index);
+        //   return false;
+        // }
+
+        states[index].addInputData(input, id);
+        checkForCompleteness(index);
+        return states.isValid(index);
+      }
+      bool addToInput(SLNet::BitStream &input, indexType index, const SLNet::RakNetGUID &id, SLNet::BitSize_t length) {
+        if (states[index].isComplete()) {
+          printf("Adding input to an already complete state %u!\n", index);
         }
+        states[index].addInputData(input, id, length);
+        checkForCompleteness(index);
+        return states.isValid(index);
       }
 
       /*
@@ -251,39 +316,51 @@ namespace at3 {
         if (states[index].isComplete()) {
           printf("Adding input to an already complete state %u!\n", index);
         }
-        if (states.isValid(index)) {
-          if (states.isFull()) {
-            states.decaudate();
-          }
-          states[index].addInputData(input);
-          // return handlePossibleCollapseToTruth(index);
-          checkForCompleteness(index);
-          return true;
-        } else {
-          printf("\n");
-          printf("Attempted to add input to invalid state history index %u!\n", index);
-          debugOuroboros();
-          printf("\n");
-          return false;
+        // if (states.isValid(index)) {
+        //   states[index].addInputData(input);
+        //   checkForCompleteness(index);
+        //   return true;
+        // } else {
+        //   printf("\n");
+        //   printf("Attempted to add input to invalid state history index %u!\n", index);
+        //   debugOuroboros();
+        //   printf("\n");
+        //   return false;
+        // }
+
+        states[index].addInputData(input);
+        checkForCompleteness(index);
+        return states.isValid(index);
+      }
+      bool addToInput(SLNet::BitStream &input, indexType index, SLNet::BitSize_t length) {
+        if (states[index].isComplete()) {
+          printf("Adding input to an already complete state %u!\n", index);
         }
+        states[index].addInputData(input, length);
+        checkForCompleteness(index);
+        return states.isValid(index);
       }
 
       bool addToInputChecksum(indexType index, uint32_t checksumPart) {
         if (states[index].isComplete()) {
           printf("Adding to the input checksum of an already complete state %u!\n", index);
         }
-        if (states.isValid(index)) {
-          states[index].addToInputChecksum(checksumPart);
-          // return handlePossibleCollapseToTruth(index);
-          checkForCompleteness(index);
-          return true;
-        } else {
-          printf("\n");
-          printf("Attempted to add to the input checksum of invalid state history index %u!\n", index);
-          debugOuroboros();
-          printf("\n");
-          return false;
-        }
+
+        // if (states.isValid(index)) {
+        //   states[index].addToInputChecksum(checksumPart);
+        //   checkForCompleteness(index);
+        //   return true;
+        // } else {
+        //   printf("\n");
+        //   printf("Attempted to add to the input checksum of invalid state history index %u!\n", index);
+        //   debugOuroboros();
+        //   printf("\n");
+        //   return false;
+        // }
+
+        states[index].addToInputChecksum(checksumPart);
+        checkForCompleteness(index);
+        return states.isValid(index);
       }
 
 //#     define AT3_STATE_HISTORY_DEBUG
@@ -291,93 +368,114 @@ namespace at3 {
         if (states[index].isComplete()) {
           printf("Adding state to an already complete state %u!\n", index);
         }
-        if (states.isValid(index)) {
-          if (states.isFull()) {
-#           ifdef AT3_STATE_HISTORY_DEBUG
-            printf("\nIS FULL: @@@@\n");
-            debugOuroboros();
-            states.decaudate();
-            debugOuroboros();
-#           else //AT3_STATE_HISTORY_DEBUG
-            states.decaudate();
-#           endif //AT3_STATE_HISTORY_DEBUG
-          }
-          states[index].addStateData(state, authoritative);
-          // return handlePossibleCollapseToTruth(index);
-          checkForCompleteness(index);
-          return true;
-        } else {
-          printf("Attempted to add state to invalid state history index %u!\n", index);
-          return false;
-        }
+
+        // if (states.isValid(index)) {
+        //   states[index].addStateData(state, authoritative);
+        //   checkForCompleteness(index);
+        //   return true;
+        // } else {
+        //   printf("Attempted to add state to invalid state history index %u!\n", index);
+        //   return false;
+        // }
+
+        states[index].addStateData(state, authoritative);
+        checkForCompleteness(index);
+        return states.isValid(index);
       }
 #     undef AT3_STATE_HISTORY_DEBUG
 
       bool setInputChecksum(indexType index, uint32_t sum) {
-        if (states.isValid(index)) {
-          states[index].setInputChecksum(sum);
-          // return handlePossibleCollapseToTruth(index);
-          checkForCompleteness(index);
-          return true;
-        } else {
-          return false;
-        }
+        // if (states.isValid(index)) {
+        //   states[index].setInputChecksum(sum);
+        //   checkForCompleteness(index);
+        //   return true;
+        // } else {
+        //   return false;
+        // }
+
+        states[index].setInputChecksum(sum);
+        checkForCompleteness(index);
+        return states.isValid(index);
       }
 
       bool setAdditionalInputChecksum(indexType index, uint32_t sum) {
-        if (states.isValid(index)) {
-          states[index].setAdditionalInputChecksum(sum);
-          // return handlePossibleCollapseToTruth(index);
-          checkForCompleteness(index);
-          return true;
-        } else {
-          return false;
-        }
+        // if (states.isValid(index)) {
+        //   states[index].setAdditionalInputChecksum(sum);
+        //   checkForCompleteness(index);
+        //   return true;
+        // } else {
+        //   return false;
+        // }
+
+        states[index].setAdditionalInputChecksum(sum);
+        checkForCompleteness(index);
+        return states.isValid(index);
       }
 
       void setTime(indexType index, uint32_t time) {
-        if (states.isValid(index)) {
-          states[index].time = time;
-        } else {
-          printf("Attempted to set the time for invalid state history index %u!\n", index);
-        }
+        // if (states.isValid(index)) {
+        //   states[index].time = time;
+        // } else {
+        //   printf("Attempted to set the time for invalid state history index %u!\n", index);
+        // }
+
+        states[index].time = time;
       }
 
       uint32_t getInputChecksum(indexType index) {
-        if (states.isValid(index)) {
-          return states[index].getInputChecksum();
-        } else {
-          return 0;
-        }
+        // if (states.isValid(index)) {
+        //   return states[index].getInputChecksum();
+        // } else {
+        //   return 0;
+        // }
+
+        return states[index].getInputChecksum();
       }
 
       bool setInputSources(const DataStructures::List<SLNet::RakNetGUID> &guids, indexType index) {
-        if (states.isValid(index)) {
-          states[index].setInputSources(guids);
-          // return handlePossibleCollapseToTruth(index);
-          checkForCompleteness(index);
-          return true;
-        } else {
-          return false;
-        }
+        // if (states.isValid(index)) {
+        //   states[index].setInputSources(guids);
+        //   checkForCompleteness(index);
+        //   return true;
+        // } else {
+        //   return false;
+        // }
+
+        states[index].setInputSources(guids);
+        return states.isValid(index);
+      }
+
+      bool excludeInputSources(const DataStructures::List<SLNet::RakNetGUID> & guids, indexType index) {
+        // if (states.isValid(index)) {
+        //   states[index].excludeInputSources(guids);
+        //   return true;
+        // } else {
+        //   return false;
+        // }
+
+        states[index].excludeInputSources(guids);
+        return states.isValid(index);
       }
 
       bool findTheTruth() {
         if (completeSnapShotReady) {
+
+          printf("\nTRUTH @ %u with %lu of %lu\n", latestCompletion,
+                 (unsigned long)states[latestCompletion].getCurrentChecksum(),
+                 (unsigned long)states[latestCompletion].getInputChecksum());
+          debugOuroboros();
+
           states.decaudate(latestCompletion);
           currentReplayHead = latestCompletion;
           completeSnapShotReady = false;
           replayRunning = true;
-          printf("\n");
-          printf("truth @ %u with %lu of %lu\n", latestCompletion, (unsigned long)states[latestCompletion].getCurrentChecksum(), (unsigned long)states[latestCompletion].getInputChecksum());
+
           debugOuroboros();
-          printf("\n");
+
           return true;
         } else {
-          printf("\n");
-          printf("NO TRUTH @ %u with %lu of %lu\n", latestCompletion, (unsigned long)states[latestCompletion].getCurrentChecksum(), (unsigned long)states[latestCompletion].getInputChecksum());
+          printf("\nNO TRUTH\n");
           debugOuroboros();
-          printf("\n");
           return false;
         }
       }
@@ -386,9 +484,25 @@ namespace at3 {
         return states.setEmptyIndex(index);
       }
 
+#     define AT3_STATE_HISTORY_DEBUG
       indexType appendIndex() {
-        // debugOuroboros();
-        return states.capitate().getIndex();
+        printf("\nAPPEND INDEX\n");
+        debugOuroboros();
+        if (states.isFull()) {
+#         ifdef AT3_STATE_HISTORY_DEBUG
+            printf("\nHISTORY FULL AT %u:\n", states.getTailSlot());
+            debugOuroboros();
+            states.decaudate();
+            debugOuroboros();
+#         else //AT3_STATE_HISTORY_DEBUG
+            states.decaudate();
+#         endif //AT3_STATE_HISTORY_DEBUG
+        }
+        indexType index = states.capitate().getIndex();
+        checkForCompleteness(index);
+        debugOuroboros();
+        return index;
+        // return states.capitate().getIndex();
       }
 
       indexType getLatestIndex() {
@@ -412,13 +526,18 @@ namespace at3 {
         return states[states.getTailSlot()].getState();
       }
 
+      const SLNet::BitStream & getLatestCompleteAuthState() {
+        return states[states.getTailSlot()].getAuthState();
+      }
+
       const SLNet::BitStream & getLatestCompleteInput() {
         return states[states.getTailSlot()].getInput();
       }
 
-      bool getNextReplayStreams(SLNet::BitStream & stateOut, SLNet::BitStream & inputOut) {
+      bool getNextReplayStreams(SLNet::BitStream & stateOut, SLNet::BitStream & authOut, SLNet::BitStream & inputOut) {
         if (replayRunning) {
           stateOut.Write(states[currentReplayHead].getState());
+          authOut.Write(states[currentReplayHead].getAuthState());
           inputOut.Write(states[currentReplayHead].getInput());
           if (states.isValid(rtu::Ouroboros<StateSnapShot<indexType>, indexType, maxStoredStates>::
               getNext(currentReplayHead)))
@@ -433,11 +552,12 @@ namespace at3 {
       }
 
       std::vector<SLNet::RakNetGUID> getUnfulfilledInputs(indexType index) {
-        if (states.isValid(index)) {
-          return states[index].getUnfulfilledInputs();
-        } else {
-          return std::vector<SLNet::RakNetGUID>();
-        }
+        // if (states.isValid(index)) {
+        //   return states[index].getUnfulfilledInputs();
+        // } else {
+        //   return std::vector<SLNet::RakNetGUID>();
+        // }
+        return states[index].getUnfulfilledInputs();
       }
 
       uint32_t getReplayBeginTime() {
@@ -463,7 +583,7 @@ namespace at3 {
       indexType currentReplayHead = 0;
 
       void checkForCompleteness(indexType index) {
-        if (states[index].isComplete()) {
+        if (states.isValid(index) && states[index].isComplete()) {
           if (completeSnapShotReady) {
             if (states.firstIsFresherThanSecond(index, latestCompletion)) {
               latestCompletion = index;
@@ -512,7 +632,7 @@ namespace at3 {
 //      states.decaudate(31);
 //    }
 
-        fprintf(states.isValid() ? stdout : stderr, "%s\n", states.toDebugString().c_str());
+        printf("%s\n", states.toDebugString().c_str());
       }
 
       // TODO: store tail-time whenever a collapse happens, then set the bullet pre-step to walk through the control

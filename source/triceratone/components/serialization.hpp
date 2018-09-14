@@ -28,7 +28,7 @@ namespace at3 {
     OP_END_ENUM
   };
   enum CommandSpecifierEnums {
-    CMD_KICK = 0,
+    CMD_WORLD_INIT = 0,
     CMD_ASSIGN_PLAYER_ID,
 
     CMD_END_ENUM
@@ -36,9 +36,8 @@ namespace at3 {
   enum ChannelEnums {
     CH_ZERO_UNUSED = 0,
     CH_ADMIN_MESSAGE,
-    CH_ECS_REQUEST,
-    CH_CONTROL_SYNC,
-    CH_PHYSICS_SYNC,
+    CH_ECS_UPDATE,
+    CH_SIMULATION_UPDATE,
   };
 
   void writeEntityRequestHeader(SLNet::BitStream &stream);

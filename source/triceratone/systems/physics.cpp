@@ -101,7 +101,7 @@ namespace at3 {
   void PhysicsSystem::onTick(float dt) {
 
     // Step the world at a fixed timestep (will only actually run simulation steps if enough time has passed)
-    dynamicsWorld->stepSimulation(dt, Physics::maxStoredStates, btScalar(1.) / btScalar(Physics::simulationFps));
+    dynamicsWorld->stepSimulation(dt, Physics::maxStepsPerFrame, btScalar(1.) / btScalar(Physics::simulationFps));
     if (debugDrawMode) { dynamicsWorld->debugDrawWorld(); }
 
     // Update the visual transform of the wheels of any cars
