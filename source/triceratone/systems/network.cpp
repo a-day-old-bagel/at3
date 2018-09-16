@@ -725,12 +725,17 @@ namespace at3 {
 
       // TODO: load truth state to begin replay, make sure that original truth state is the one being sent
 
-      // Send truth state to clients
-      outStream.Write((MessageID) ID_SYNC_PHYSICS);
-      outStream.WriteBitsFromIntegerRange(ecs->physicsHistory.getLatestIndex(), (uint8_t)0,
-                                          (uint8_t)(Physics::maxStoredStates - 1));
-      serializePhysicsSync(true, outStream);
-      send(LOW_PRIORITY, SERVER_SIM_SYNC_PACKET_SEQUENCING, CH_SIMULATION_UPDATE);
+      switch (network->getRole()) {
+        case settings::network::SERVER: {
+          // Send truth state to clients
+          outStream.Write((MessageID) ID_SYNC_PHYSICS);
+          outStream.WriteBitsFromIntegerRange(ecs->physicsHistory.getLatestIndex(), (uint8_t)0,
+                                              (uint8_t)(Physics::maxStoredStates - 1));
+          serializePhysicsSync(true, outStream);
+          send(LOW_PRIORITY, SERVER_SIM_SYNC_PACKET_SEQUENCING, CH_SIMULATION_UPDATE);
+        } break;
+        default: break;
+      }
 
       { // TODO: get rid of this section once replay is working
         ecs->physicsHistory._turnOffReplay();
