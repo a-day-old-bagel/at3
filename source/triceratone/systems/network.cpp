@@ -103,9 +103,7 @@ namespace at3 {
         ecs->physicsHistory.addToInput(inputs.back().data, inputs.back().index);
         ecs->physicsHistory.addToInputChecksum(ecs->physicsHistory.getLatestIndex(), 1); // 1 signifies server input
 
-        if ( ! RakNetGUID::ToUint32(inputs.back().id.rakNetGuid)) {
-          fprintf(stderr, "BooFar at %u\n", inputs.back().index);
-        }
+        printf("\nServer input %u with mouse %u at %u (%u)\n", keyControlMessageId, mouseControlId, ecs->physicsHistory.getLatestIndex(), inputs.back().data.GetNumberOfBitsUsed());
 
         // inputs.back().data.SetReadOffset(0);
 
@@ -131,7 +129,7 @@ namespace at3 {
         commonStream.SetReadOffset(0);
         outStream.Write(commonStream);
 
-        printf("\nSending type %u with mouse %u at %u\n", keyControlMessageId, mouseControlId, ecs->physicsHistory.getLatestIndex());
+        printf("\nSending type %u with mouse %u at %u (%u)\n", keyControlMessageId, mouseControlId, ecs->physicsHistory.getLatestIndex(), outStream.GetNumberOfBitsUsed());
       } break;
       default: break;
     }
@@ -163,14 +161,14 @@ namespace at3 {
     uint8_t numEntries = 0; // TODO: use robust type (templates in new classes or whatever)
     // uint8_t numIndices = 0;
     for (auto & input : inputs) {
+
+      printf("from %lu at %u (%u)\n", RakNetGUID::ToUint32(input.id.rakNetGuid), input.index, input.data.GetNumberOfBitsUsed());
+
       // indexedChecksums[input.index] += RakNetGUID::ToUint32(input.id.rakNetGuid);
       // BitSize_t head = input.data.GetReadOffset(); // pointless
       dataStream.Write(input.data);
       // input.data.SetReadOffset(head); // pointless
       ++numEntries;
-
-      printf("from %lu at %u\n", RakNetGUID::ToUint32(input.id.rakNetGuid), input.index);
-      // printf("%s\n", input.data.)
     }
     // numIndices = (uint8_t)indexedChecksums.size();
     // for (auto & index : indexedChecksums) {
@@ -223,10 +221,10 @@ namespace at3 {
               // network->discardSyncPackets();
             } break;
             case CMD_WORLD_INIT: {
-              network->discardSyncPackets();
               printf("received world init\n");
               outStream.Write((MessageID) ID_USER_PACKET_CLIENT_READY);
               send(IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_UPDATE);
+              network->discardSyncPackets();
             } break;
             default:
               break;
@@ -314,11 +312,7 @@ namespace at3 {
 
             inputs.back().index = index;
 
-            printf("\nReceived input to %u from %lu\n", inputs.back().index, RakNetGUID::ToUint32(inputs.back().id.rakNetGuid));
-
-            if ( ! RakNetGUID::ToUint32(inputs.back().id.rakNetGuid)) {
-              fprintf(stderr, "FooBar at %u\n", inputs.back().index);
-            }
+            // printf("\nReceived input to %u from %lu (%u -> %u)\n", inputs.back().index, RakNetGUID::ToUint32(inputs.back().id.rakNetGuid), stream.GetNumberOfBitsUsed(), inputs.back().data.GetNumberOfBitsUsed());
 
 //            serializeControlSync(false, stream, mouseId, 0, syncType);  // ACTUALLY APPLY IT
           }
@@ -335,7 +329,9 @@ namespace at3 {
 
             uint8_t numEntries;
             stream.Read(numEntries);
+
             printf("\nRecieved %u multi-controls:\n", numEntries);
+
             // uint8_t numIndices;
             // stream.Read(numIndices);
             // for (uint8_t i = 0; i < numIndices; ++i) {
@@ -379,7 +375,7 @@ namespace at3 {
 
 
 
-              printf("Type %u with mouse %u at %u\n", controlType, mouseId, index);
+              printf("Type %u with mouse %u at %u (%u)\n", controlType, mouseId, index, head1 - head0);
             }
           }
         } break;
@@ -725,13 +721,27 @@ namespace at3 {
       return;
     }
 
-    // if (ecs->physicsHistory.isReplaying() || ecs->physicsHistory.findTheTruth()) {
-    //
-    //   // TODO: load next replay state
-    //   ecs->physicsHistory._turnOffReplay();
-    //
-    // } else {
-    { ecs->physicsHistory.findTheTruth();
+    if (ecs->physicsHistory.findTheTruth()) {
+
+      // TODO: load truth state to begin replay, make sure that original truth state is the one being sent
+
+      // Send truth state to clients
+      outStream.Write((MessageID) ID_SYNC_PHYSICS);
+      outStream.WriteBitsFromIntegerRange(ecs->physicsHistory.getLatestIndex(), (uint8_t)0,
+                                          (uint8_t)(Physics::maxStoredStates - 1));
+      serializePhysicsSync(true, outStream);
+      send(LOW_PRIORITY, SERVER_SIM_SYNC_PACKET_SEQUENCING, CH_SIMULATION_UPDATE);
+
+      { // TODO: get rid of this section once replay is working
+        ecs->physicsHistory._turnOffReplay();
+        onBeforePhysicsStep();
+      }
+
+    } else if (ecs->physicsHistory.isReplaying()) { // || ecs->physicsHistory.findTheTruth()) {
+
+      // TODO: load next replay inputs until replay is done.
+
+    } else {
 
       if (ecs->physicsHistory.isFull()) { // FIXME
         uint8_t tail = ecs->physicsHistory.getLatestCompleteIndex();
@@ -803,9 +813,9 @@ namespace at3 {
       return;
     }
 
-    if (network->getRole() == settings::network::SERVER) {
-      sendPeriodicPhysicsUpdate(); // TODO: get rid of this and the function once history is working
-    }
+    // if (network->getRole() == settings::network::SERVER) {
+    //   sendPeriodicPhysicsUpdate(); // TODO: get rid of this and the function once history is working
+    // }
 
 //    BitStream physics;
 //    serializePhysicsSync(true, physics, true); // complete state copy

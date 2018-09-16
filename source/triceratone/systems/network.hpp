@@ -14,7 +14,11 @@ namespace at3 {
 
   struct SingleClientInput {
     SingleClientInput() = default;
-    SingleClientInput(const SingleClientInput &) {}
+    SingleClientInput(SingleClientInput && original) noexcept {
+      id = original.id;
+      index = original.index;
+      data.Write(original.data);
+    }
     SLNet::AddressOrGUID id = SLNet::RakNetGUID(0);
     uint8_t index = 0;
     SLNet::BitStream data;

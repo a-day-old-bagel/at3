@@ -474,8 +474,8 @@ namespace at3 {
 
           return true;
         } else {
-          printf("\nNO TRUTH\n");
-          debugOuroboros();
+          // printf("\nNO TRUTH\n");
+          // debugOuroboros();
           return false;
         }
       }
@@ -486,8 +486,8 @@ namespace at3 {
 
 #     define AT3_STATE_HISTORY_DEBUG
       indexType appendIndex() {
-        printf("\nAPPEND INDEX\n");
-        debugOuroboros();
+        // printf("\nAPPEND INDEX\n");
+        // debugOuroboros();
         if (states.isFull()) {
 #         ifdef AT3_STATE_HISTORY_DEBUG
             printf("\nHISTORY FULL AT %u:\n", states.getTailSlot());
@@ -500,7 +500,7 @@ namespace at3 {
         }
         indexType index = states.capitate().getIndex();
         checkForCompleteness(index);
-        debugOuroboros();
+        // debugOuroboros();
         return index;
         // return states.capitate().getIndex();
       }
