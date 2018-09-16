@@ -3,6 +3,7 @@
 #include <SDL.h>
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 #include "transformRAII.hpp"
 #include "math.hpp"
@@ -84,8 +85,14 @@ namespace at3 {
 
   template<typename EcsInterface>
   void SceneObject<EcsInterface>::removeChildrenFromEcs() {
-    for (auto child : children) {
-      ecs->notifyOfSceneTreeRemoval(child.second->id);
+    std::vector<typename EcsInterface::EcsId> idsToRemove;
+    for (const auto & child : children) {
+      // calling notifyOfSceneTreeRemoval directly here can invalidate the iterator by removing objects during the loop.
+      // So add the ids to a temporary list and operate on that instead.
+      idsToRemove.emplace_back(child.second->id);
+    }
+    for (const auto & id : idsToRemove) {
+      ecs->notifyOfSceneTreeRemoval(id);
     }
   }
 
