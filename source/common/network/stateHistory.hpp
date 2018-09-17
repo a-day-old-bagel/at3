@@ -58,7 +58,7 @@ namespace at3 {
        * record, since just part of the state may be sent over the network at a time as incremental corrections.
        * stateIsAuthorized just indicates that an authority has had *some* say in this current snapshot.
        */
-      void addStateData(const SLNet::BitStream &data, bool authoritative = false) {
+      void addStateData(SLNet::BitStream &data, bool authoritative = false) {
         if (authoritative) {
           authState.Write(data);
           stateIsAuthorized = true;
@@ -74,20 +74,7 @@ namespace at3 {
        * need to wait for the authority to also send the corresponding authoritative state update(s) before the state
        * can be considered complete.
        */
-      void addInputData(const SLNet::BitStream &data, const SLNet::RakNetGUID & guid) {
-        // if (inputSources) { // if no input sources defined, no checking will occur.
-        //   if (inputSources->count(guid)) {
-        //     if ((*inputSources)[guid]) {
-        //       fprintf(stderr, "Discarded duplicate client input stream at state snapshot %u\n", index);
-        //       return; // don't add more than one stream per client into the snapshot
-        //     }
-        //     (*inputSources)[guid] = true;
-        //   } else {
-        //     fprintf(stderr, "Received input %u from unexpected GUID %lu!\n", index, SLNet::RakNetGUID::ToUint32(guid));
-        //     return; // don't add invalid guid's to the checksum or their inputs to the stream
-        //   }
-        // }
-
+      void addInputData(SLNet::BitStream &data, const SLNet::RakNetGUID & guid, SLNet::BitSize_t length = 0) {
         if (inputSources) { // if no input sources defined, no checking will occur.
           if (inputSources->count(guid)) {
             if ((*inputSources)[guid]) {
@@ -100,31 +87,64 @@ namespace at3 {
           (*inputSources)[guid] = true;
         }
 
-        input.Write(data);
-        inputSum += SLNet::RakNetGUID::ToUint32(guid);
-      }
-      void addInputData(SLNet::BitStream &data, const SLNet::RakNetGUID & guid, SLNet::BitSize_t length) {
-        if (inputSources) { // if no input sources defined, no checking will occur.
-          if (inputSources->count(guid)) {
-            if ((*inputSources)[guid]) {
-              printf("Duplicate input from %lu at %u!\n", SLNet::RakNetGUID::ToUint32(guid), index);
-              inputSum -= SLNet::RakNetGUID::ToUint32(guid);
-            }
-          } else {
-            printf("Unexpected input from %lu at %u!\n", SLNet::RakNetGUID::ToUint32(guid), index);
-          }
-          (*inputSources)[guid] = true;
+        if (length) {
+          input.Write(data, length);
+        } else {
+          input.Write(data);
         }
-
-        input.Write(data, length);
         inputSum += SLNet::RakNetGUID::ToUint32(guid);
       }
+      // void addInputData(SLNet::BitStream &data, const SLNet::RakNetGUID & guid) {
+      //   // if (inputSources) { // if no input sources defined, no checking will occur.
+      //   //   if (inputSources->count(guid)) {
+      //   //     if ((*inputSources)[guid]) {
+      //   //       fprintf(stderr, "Discarded duplicate client input stream at state snapshot %u\n", index);
+      //   //       return; // don't add more than one stream per client into the snapshot
+      //   //     }
+      //   //     (*inputSources)[guid] = true;
+      //   //   } else {
+      //   //     fprintf(stderr, "Received input %u from unexpected GUID %lu!\n", index, SLNet::RakNetGUID::ToUint32(guid));
+      //   //     return; // don't add invalid guid's to the checksum or their inputs to the stream
+      //   //   }
+      //   // }
+      //
+      //   if (inputSources) { // if no input sources defined, no checking will occur.
+      //     if (inputSources->count(guid)) {
+      //       if ((*inputSources)[guid]) {
+      //         printf("Duplicate input from %lu at %u!\n", SLNet::RakNetGUID::ToUint32(guid), index);
+      //         inputSum -= SLNet::RakNetGUID::ToUint32(guid);
+      //       }
+      //     } else {
+      //       printf("Unexpected input from %lu at %u!\n", SLNet::RakNetGUID::ToUint32(guid), index);
+      //     }
+      //     (*inputSources)[guid] = true;
+      //   }
+      //
+      //   input.Write(data);
+      //   inputSum += SLNet::RakNetGUID::ToUint32(guid);
+      // }
+      // void addInputData(SLNet::BitStream &data, const SLNet::RakNetGUID & guid, SLNet::BitSize_t length) {
+      //   if (inputSources) { // if no input sources defined, no checking will occur.
+      //     if (inputSources->count(guid)) {
+      //       if ((*inputSources)[guid]) {
+      //         printf("Duplicate input from %lu at %u!\n", SLNet::RakNetGUID::ToUint32(guid), index);
+      //         inputSum -= SLNet::RakNetGUID::ToUint32(guid);
+      //       }
+      //     } else {
+      //       printf("Unexpected input from %lu at %u!\n", SLNet::RakNetGUID::ToUint32(guid), index);
+      //     }
+      //     (*inputSources)[guid] = true;
+      //   }
+      //
+      //   input.Write(data, length);
+      //   inputSum += SLNet::RakNetGUID::ToUint32(guid);
+      // }
 
       /*
        * Same as above, but instead of handling an individual guid, you must manage the checksum yourself by calling
        * addToInputChecksum.
        */
-      void addInputData(const SLNet::BitStream &data) {
+      void addInputData(SLNet::BitStream &data) {
         input.Write(data);
       }
       void addInputData(SLNet::BitStream &data, SLNet::BitSize_t length) {
@@ -135,15 +155,23 @@ namespace at3 {
         inputSum += checksumPart;
       }
 
-      const SLNet::BitStream & getState() {
+      const SLNet::BitStream & getState() const {
         return state;
       }
-
-      const SLNet::BitStream & getAuthState() {
+      const SLNet::BitStream & getAuthState() const {
         return authState;
       }
+      const SLNet::BitStream & getInput() const {
+        return input;
+      }
 
-      const SLNet::BitStream & getInput() {
+      SLNet::BitStream & getState() {
+        return state;
+      }
+      SLNet::BitStream & getAuthState() {
+        return authState;
+      }
+      SLNet::BitStream & getInput() {
         return input;
       }
 
@@ -282,25 +310,8 @@ namespace at3 {
         RTU_STATIC_SUB(debugSub, "key_down_f8", StateHistory::debugOuroboros, this);
       }
 
-      bool addToInput(const SLNet::BitStream &input, indexType index, const SLNet::RakNetGUID &id) {
-        if (states[index].isComplete()) {
-          printf("Adding input to an already complete state %u!\n", index);
-        }
-
-        // if (states.isValid(index)) {
-        //   states[index].addInputData(input, id);
-        //   checkForCompleteness(index);
-        //   return true;
-        // } else {
-        //   printf("Attempted to add input to invalid state history index %u!\n", index);
-        //   return false;
-        // }
-
-        states[index].addInputData(input, id);
-        checkForCompleteness(index);
-        return states.isValid(index);
-      }
-      bool addToInput(SLNet::BitStream &input, indexType index, const SLNet::RakNetGUID &id, SLNet::BitSize_t length) {
+      bool addToInput(SLNet::BitStream &input, indexType index, const SLNet::RakNetGUID &id,
+          SLNet::BitSize_t length = 0) {
         if (states[index].isComplete()) {
           printf("Adding input to an already complete state %u!\n", index);
         }
@@ -308,31 +319,37 @@ namespace at3 {
         checkForCompleteness(index);
         return states.isValid(index);
       }
+      // bool addToInput(SLNet::BitStream &input, indexType index, const SLNet::RakNetGUID &id) {
+      //   if (states[index].isComplete()) {
+      //     printf("Adding input to an already complete state %u!\n", index);
+      //   }
+      //
+      //   // if (states.isValid(index)) {
+      //   //   states[index].addInputData(input, id);
+      //   //   checkForCompleteness(index);
+      //   //   return true;
+      //   // } else {
+      //   //   printf("Attempted to add input to invalid state history index %u!\n", index);
+      //   //   return false;
+      //   // }
+      //
+      //   states[index].addInputData(input, id);
+      //   checkForCompleteness(index);
+      //   return states.isValid(index);
+      // }
+      // bool addToInput(SLNet::BitStream &input, indexType index, const SLNet::RakNetGUID &id, SLNet::BitSize_t length) {
+      //   if (states[index].isComplete()) {
+      //     printf("Adding input to an already complete state %u!\n", index);
+      //   }
+      //   states[index].addInputData(input, id, length);
+      //   checkForCompleteness(index);
+      //   return states.isValid(index);
+      // }
 
       /*
        * Must also call addToInputChecksum if you use this version since it doesnt take the GUID.
        */
-      bool addToInput(const SLNet::BitStream &input, indexType index) {
-        if (states[index].isComplete()) {
-          printf("Adding input to an already complete state %u!\n", index);
-        }
-        // if (states.isValid(index)) {
-        //   states[index].addInputData(input);
-        //   checkForCompleteness(index);
-        //   return true;
-        // } else {
-        //   printf("\n");
-        //   printf("Attempted to add input to invalid state history index %u!\n", index);
-        //   debugOuroboros();
-        //   printf("\n");
-        //   return false;
-        // }
-
-        states[index].addInputData(input);
-        checkForCompleteness(index);
-        return states.isValid(index);
-      }
-      bool addToInput(SLNet::BitStream &input, indexType index, SLNet::BitSize_t length) {
+      bool addToInput(SLNet::BitStream &input, indexType index, SLNet::BitSize_t length = 0) {
         if (states[index].isComplete()) {
           printf("Adding input to an already complete state %u!\n", index);
         }
@@ -340,6 +357,34 @@ namespace at3 {
         checkForCompleteness(index);
         return states.isValid(index);
       }
+      // bool addToInput(SLNet::BitStream &input, indexType index) {
+      //   if (states[index].isComplete()) {
+      //     printf("Adding input to an already complete state %u!\n", index);
+      //   }
+      //   // if (states.isValid(index)) {
+      //   //   states[index].addInputData(input);
+      //   //   checkForCompleteness(index);
+      //   //   return true;
+      //   // } else {
+      //   //   printf("\n");
+      //   //   printf("Attempted to add input to invalid state history index %u!\n", index);
+      //   //   debugOuroboros();
+      //   //   printf("\n");
+      //   //   return false;
+      //   // }
+      //
+      //   states[index].addInputData(input);
+      //   checkForCompleteness(index);
+      //   return states.isValid(index);
+      // }
+      // bool addToInput(SLNet::BitStream &input, indexType index, SLNet::BitSize_t length) {
+      //   if (states[index].isComplete()) {
+      //     printf("Adding input to an already complete state %u!\n", index);
+      //   }
+      //   states[index].addInputData(input, length);
+      //   checkForCompleteness(index);
+      //   return states.isValid(index);
+      // }
 
       bool addToInputChecksum(indexType index, uint32_t checksumPart) {
         if (states[index].isComplete()) {
@@ -364,7 +409,7 @@ namespace at3 {
       }
 
 //#     define AT3_STATE_HISTORY_DEBUG
-      bool addToState(const SLNet::BitStream &state, indexType index, bool authoritative = false) {
+      bool addToState(SLNet::BitStream &state, indexType index, bool authoritative = false) {
         if (states[index].isComplete()) {
           printf("Adding state to an already complete state %u!\n", index);
         }
@@ -522,15 +567,23 @@ namespace at3 {
         return states.getTailSlot();
       }
 
-      const SLNet::BitStream & getLatestCompleteState() {
+      const SLNet::BitStream & getLatestCompleteState() const {
         return states[states.getTailSlot()].getState();
       }
-
-      const SLNet::BitStream & getLatestCompleteAuthState() {
+      const SLNet::BitStream & getLatestCompleteAuthState() const {
         return states[states.getTailSlot()].getAuthState();
       }
+      const SLNet::BitStream & getLatestCompleteInput() const {
+        return states[states.getTailSlot()].getInput();
+      }
 
-      const SLNet::BitStream & getLatestCompleteInput() {
+      SLNet::BitStream & getLatestCompleteState() {
+        return states[states.getTailSlot()].getState();
+      }
+      SLNet::BitStream & getLatestCompleteAuthState() {
+        return states[states.getTailSlot()].getAuthState();
+      }
+      SLNet::BitStream & getLatestCompleteInput() {
         return states[states.getTailSlot()].getInput();
       }
 

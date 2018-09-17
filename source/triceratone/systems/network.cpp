@@ -1,4 +1,10 @@
 
+
+#include <iostream>
+
+
+
+
 #include <algorithm>
 #include "network.hpp"
 #include "playerSet.hpp"
@@ -10,6 +16,8 @@ using namespace rtu;
 #define SERVER_SIM_SYNC_PACKET_SEQUENCING RELIABLE_ORDERED // UNRELIABLE_SEQUENCED
 
 namespace at3 {
+
+  static uint32_t theThing = 0;
 
   NetworkSystem::NetworkSystem(State *state) : System(state) {
     name = "Net Sync System";
@@ -101,7 +109,8 @@ namespace at3 {
 
         // ecs->physicsHistory.addToInput(inputs.back().data, ecs->physicsHistory.getLatestIndex(), SLNet::RakNetGUID(1));
         ecs->physicsHistory.addToInput(inputs.back().data, inputs.back().index);
-        ecs->physicsHistory.addToInputChecksum(ecs->physicsHistory.getLatestIndex(), 1); // 1 signifies server input
+        ecs->physicsHistory.addToInputChecksum(ecs->physicsHistory.getLatestIndex(), theThing); // 1 signifies server input
+        if (theThing) { theThing = 0; }
 
         printf("\nServer input %u with mouse %u at %u (%u)\n", keyControlMessageId, mouseControlId, ecs->physicsHistory.getLatestIndex(), inputs.back().data.GetNumberOfBitsUsed());
 
@@ -218,13 +227,13 @@ namespace at3 {
             case CMD_ASSIGN_PLAYER_ID: {
               printf("received player id\n");
               serializePlayerAssignment(false, stream, 0);
-              // network->discardSyncPackets();
+              network->discardSyncPackets();
             } break;
             case CMD_WORLD_INIT: {
               printf("received world init\n");
               outStream.Write((MessageID) ID_USER_PACKET_CLIENT_READY);
               send(IMMEDIATE_PRIORITY, RELIABLE_ORDERED, CH_ECS_UPDATE);
-              network->discardSyncPackets();
+              // network->discardSyncPackets();
             } break;
             default:
               break;
@@ -312,7 +321,7 @@ namespace at3 {
 
             inputs.back().index = index;
 
-            // printf("\nReceived input to %u from %lu (%u -> %u)\n", inputs.back().index, RakNetGUID::ToUint32(inputs.back().id.rakNetGuid), stream.GetNumberOfBitsUsed(), inputs.back().data.GetNumberOfBitsUsed());
+            printf("\nReceived input to %u from %lu (%u -> %u)\n", inputs.back().index, RakNetGUID::ToUint32(inputs.back().id.rakNetGuid), stream.GetNumberOfBitsUsed(), inputs.back().data.GetNumberOfBitsUsed());
 
 //            serializeControlSync(false, stream, mouseId, 0, syncType);  // ACTUALLY APPLY IT
           }
@@ -499,9 +508,20 @@ namespace at3 {
   }
 
   void NetworkSystem::serializePhysicsSync(bool rw, BitStream &stream, bool includeAll) {
+
+
+    printf("\nSerialize Physics: %s\n", rw ? "Writing" : "Reading");
+    // bool debugStupidCrap = true;
+
+
     // FIXME: Don't do this by iterating over IDs!
     // Include some specifier of ID range or something instead, so that this doesn't cause problems.
     for (auto id : registries[1].ids) {
+
+
+      printf("%u: ", id);
+
+
       Physics *physics;
       state->getPhysics(id, &physics);
 
@@ -517,7 +537,12 @@ namespace at3 {
           include = include && physics->rigidBody->isActive(); // object must be active to be written
         }
       } // else it's read from the stream
-      stream.SerializeCompressed(rw, include);
+      if ( ! stream.SerializeCompressed(rw, include)) {
+        printf("break ");
+        break; // Stop if the stream is empty
+      } else {
+        printf("good ");
+      }
 
 //      // If includeAll is true, data is still written for an object that isn't included in networked physics messages.
 //      // This is useful for keeping a complete physics state history but also remembering which ones to network.
@@ -528,7 +553,12 @@ namespace at3 {
 
 //      if (netInclude || saveStateInclude) {
 
+
       if (include) {
+
+        printf("included\n");
+
+        // if (! rw) { debugStupidCrap = false; }
 
         bool needsRotation;
         if (rw) {
@@ -580,11 +610,45 @@ namespace at3 {
               transform.setOrigin(glmToBullet(pos));
             }
           }
+
+
+          std::cout << "PHYS: " << physics->rigidBody->getCenterOfMassPosition().length();
+
+
           physics->rigidBody->setCenterOfMassTransform(transform);
           physics->rigidBody->setLinearVelocity(glmToBullet(lin));
+
+
+          std::cout << " -> " << physics->rigidBody->getCenterOfMassPosition().length() << std::endl;
+
+
         }
+      } else {
+        printf("zeroed\n");
       }
     }
+
+
+
+    // if (stream.GetNumberOfBitsUsed()) {
+    //   stream.SetReadOffset(0);
+    //   char streamStr[stream.GetNumberOfBitsUsed() * 2];
+    //   // stream.PrintBits(streamStr);
+    //   stream.PrintHex(streamStr);
+    //   std::string streamStrCpp(streamStr);
+    //   std::cout << streamStrCpp << std::endl;
+    // }
+
+
+
+    // if ( ! rw && debugStupidCrap) {
+    //   stream.SetReadOffset(0);
+    //   char streamStr[stream.GetNumberOfBitsUsed()];
+    //   stream.PrintBits(streamStr);
+    //   std::cout << streamStr << std::endl;
+    // }
+
+
   }
 
   void NetworkSystem::serializeControlSync(bool rw, BitStream &stream, entityId mId, entityId cId,
@@ -725,6 +789,19 @@ namespace at3 {
 
       // TODO: load truth state to begin replay, make sure that original truth state is the one being sent
 
+      serializePhysicsSync(false, ecs->physicsHistory.getLatestCompleteState());
+      serializePhysicsSync(false, ecs->physicsHistory.getLatestCompleteAuthState());
+
+
+
+      char streamStr[ecs->physicsHistory.getLatestCompleteAuthState().GetNumberOfBitsUsed() * 2];
+      ecs->physicsHistory.getLatestCompleteAuthState().PrintBits(streamStr);
+      // ecs->physicsHistory.getLatestCompleteAuthState().PrintHex(streamStr);
+      printf("\nReplay %u: %s\n", ecs->physicsHistory.getLatestCompleteIndex(), streamStr);
+      ecs->physicsHistory.getLatestCompleteAuthState().SetReadOffset(0);
+
+
+
       switch (network->getRole()) {
         case settings::network::SERVER: {
           // Send truth state to clients
@@ -767,6 +844,16 @@ namespace at3 {
       } else {
         newStateIndex = ecs->physicsHistory.appendIndex();
       }
+
+
+
+      char streamStr[physics.GetNumberOfBitsUsed() * 2];
+      physics.PrintBits(streamStr);
+      // physics.PrintHex(streamStr);
+      printf("\n%u: %s\n", newStateIndex, streamStr);
+      physics.SetReadOffset(0);
+
+
 
       switch (network->getRole()) {
         case settings::network::SERVER: {
@@ -847,6 +934,9 @@ namespace at3 {
   }
 
   void NetworkSystem::rewindPhysics() {
+
+    theThing = 1;
+
 //    uint8_t storedStateIndex;
 //    physicsStates.front().ReadBitsFromIntegerRange(storedStateIndex, (uint8_t) 0, maxStoredStates);
 //    serializePhysicsSync(false, physicsStates.front(), true);
