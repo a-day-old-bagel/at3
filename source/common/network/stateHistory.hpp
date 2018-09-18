@@ -502,20 +502,20 @@ namespace at3 {
         return states.isValid(index);
       }
 
-      bool findTheTruth() {
+      bool truthIsAvailable() {
         if (completeSnapShotReady) {
 
-          printf("\nTRUTH @ %u with %lu of %lu\n", latestCompletion,
-                 (unsigned long)states[latestCompletion].getCurrentChecksum(),
-                 (unsigned long)states[latestCompletion].getInputChecksum());
-          debugOuroboros();
-
-          states.decaudate(latestCompletion);
-          currentReplayHead = latestCompletion;
-          completeSnapShotReady = false;
-          replayRunning = true;
-
-          debugOuroboros();
+          // printf("\nTRUTH @ %u with %lu of %lu\n", latestCompletion,
+          //        (unsigned long)states[latestCompletion].getCurrentChecksum(),
+          //        (unsigned long)states[latestCompletion].getInputChecksum());
+          // debugOuroboros();
+          //
+          // states.decaudate(latestCompletion);
+          // currentReplayHead = latestCompletion;
+          // completeSnapShotReady = false;
+          // replayRunning = true;
+          //
+          // debugOuroboros();
 
           return true;
         } else {
@@ -523,6 +523,20 @@ namespace at3 {
           // debugOuroboros();
           return false;
         }
+      }
+
+      void becomeTheTruth() {
+        printf("\nTRUTH @ %u with %lu of %lu\n", latestCompletion,
+               (unsigned long)states[latestCompletion].getCurrentChecksum(),
+               (unsigned long)states[latestCompletion].getInputChecksum());
+        debugOuroboros();
+
+        states.decaudate(latestCompletion);
+        currentReplayHead = latestCompletion;
+        completeSnapShotReady = false;
+        replayRunning = true;
+
+        debugOuroboros();
       }
 
       bool setEmptyIndex(indexType index) {

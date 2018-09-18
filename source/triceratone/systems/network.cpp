@@ -785,20 +785,26 @@ namespace at3 {
       return;
     }
 
-    if (ecs->physicsHistory.findTheTruth()) {
+    if (ecs->physicsHistory.isReplaying()) {
+
+      // TODO: load next replay inputs until replay is done.
+
+    } else if (ecs->physicsHistory.truthIsAvailable()) {
 
       // TODO: load truth state to begin replay, make sure that original truth state is the one being sent
 
       serializePhysicsSync(false, ecs->physicsHistory.getLatestCompleteState());
       serializePhysicsSync(false, ecs->physicsHistory.getLatestCompleteAuthState());
 
+      ecs->physicsHistory.becomeTheTruth();
 
 
-      char streamStr[ecs->physicsHistory.getLatestCompleteAuthState().GetNumberOfBitsUsed() * 2];
-      ecs->physicsHistory.getLatestCompleteAuthState().PrintBits(streamStr);
-      // ecs->physicsHistory.getLatestCompleteAuthState().PrintHex(streamStr);
-      printf("\nReplay %u: %s\n", ecs->physicsHistory.getLatestCompleteIndex(), streamStr);
-      ecs->physicsHistory.getLatestCompleteAuthState().SetReadOffset(0);
+
+      // char streamStr[ecs->physicsHistory.getLatestCompleteAuthState().GetNumberOfBitsUsed() * 2];
+      // ecs->physicsHistory.getLatestCompleteAuthState().PrintBits(streamStr);
+      // // ecs->physicsHistory.getLatestCompleteAuthState().PrintHex(streamStr);
+      // printf("\nReplay %u: %s\n", ecs->physicsHistory.getLatestCompleteIndex(), streamStr);
+      // ecs->physicsHistory.getLatestCompleteAuthState().SetReadOffset(0);
 
 
 
@@ -818,10 +824,6 @@ namespace at3 {
         ecs->physicsHistory._turnOffReplay();
         onBeforePhysicsStep();
       }
-
-    } else if (ecs->physicsHistory.isReplaying()) { // || ecs->physicsHistory.findTheTruth()) {
-
-      // TODO: load next replay inputs until replay is done.
 
     } else {
 
@@ -847,11 +849,11 @@ namespace at3 {
 
 
 
-      char streamStr[physics.GetNumberOfBitsUsed() * 2];
-      physics.PrintBits(streamStr);
-      // physics.PrintHex(streamStr);
-      printf("\n%u: %s\n", newStateIndex, streamStr);
-      physics.SetReadOffset(0);
+      // char streamStr[physics.GetNumberOfBitsUsed() * 2];
+      // physics.PrintBits(streamStr);
+      // // physics.PrintHex(streamStr);
+      // printf("\n%u: %s\n", newStateIndex, streamStr);
+      // physics.SetReadOffset(0);
 
 
 
