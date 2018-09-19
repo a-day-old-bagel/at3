@@ -82,7 +82,7 @@ namespace at3 {
     physicsStepAccumulator = 0;
 
     outStream.Write((MessageID) ID_SYNC_PHYSICS);
-    outStream.WriteBitsFromIntegerRange(ecs->physicsHistory.getLatestIndex(), (uint8_t)0,
+    outStream.WriteBitsFromIntegerRange(ecs->physicsHistory.getNewestIndex(), (uint8_t)0,
                                         (uint8_t)(Physics::maxStoredStates - 1));
     // outStream.Write(ecs->physicsHistory.getInputChecksum(ecs->physicsHistory.getLatestIndex()));
     serializePhysicsSync(true, outStream);
@@ -100,19 +100,20 @@ namespace at3 {
         inputs.emplace_back();
         serializeControlSyncShortType(true, inputs.back().data, keyControlMessageId);
         inputs.back().data.Write(mouseControlId);
-        inputs.back().data.WriteBitsFromIntegerRange(ecs->physicsHistory.getLatestIndex(), (uint8_t)0,
+        inputs.back().data.WriteBitsFromIntegerRange(ecs->physicsHistory.getNewestIndex(), (uint8_t)0,
                                                      (uint8_t)(Physics::maxStoredStates - 1));
         serializeControlSync(true, inputs.back().data, mouseControlId, keyControlId, keyControlMessageId);
 
         inputs.back().id = SLNet::RakNetGUID(1); // 1 is server id
-        inputs.back().index = ecs->physicsHistory.getLatestIndex();
+        inputs.back().index = ecs->physicsHistory.getNewestIndex();
 
         // ecs->physicsHistory.addToInput(inputs.back().data, ecs->physicsHistory.getLatestIndex(), SLNet::RakNetGUID(1));
         ecs->physicsHistory.addToInput(inputs.back().data, inputs.back().index);
-        ecs->physicsHistory.addToInputChecksum(ecs->physicsHistory.getLatestIndex(), theThing); // 1 signifies server input
+        ecs->physicsHistory.addToInputChecksum(ecs->physicsHistory.getNewestIndex(), theThing); // 1 signifies server input
         if (theThing) { theThing = 0; }
 
-        printf("\nServer input %u with mouse %u at %u (%u)\n", keyControlMessageId, mouseControlId, ecs->physicsHistory.getLatestIndex(), inputs.back().data.GetNumberOfBitsUsed());
+        printf("\nServer input %u with mouse %u at %u (%u)\n", keyControlMessageId, mouseControlId,
+               ecs->physicsHistory.getNewestIndex(), inputs.back().data.GetNumberOfBitsUsed());
 
         // inputs.back().data.SetReadOffset(0);
 
@@ -126,19 +127,20 @@ namespace at3 {
 
         BitStream commonStream, historyStream;
         commonStream.Write(mouseControlId);
-        commonStream.WriteBitsFromIntegerRange(ecs->physicsHistory.getLatestIndex(), (uint8_t)0,
+        commonStream.WriteBitsFromIntegerRange(ecs->physicsHistory.getNewestIndex(), (uint8_t)0,
                                             (uint8_t)(Physics::maxStoredStates - 1));
         serializeControlSync(true, commonStream, mouseControlId, keyControlId, keyControlMessageId);
 
         serializeControlSyncShortType(true, historyStream, keyControlMessageId);
         historyStream.Write(commonStream);
-        ecs->physicsHistory.addToInput(historyStream, ecs->physicsHistory.getLatestIndex());
+        ecs->physicsHistory.addToInput(historyStream, ecs->physicsHistory.getNewestIndex());
 
         outStream.Write(keyControlMessageId);
         commonStream.SetReadOffset(0);
         outStream.Write(commonStream);
 
-        printf("\nSending type %u with mouse %u at %u (%u)\n", keyControlMessageId, mouseControlId, ecs->physicsHistory.getLatestIndex(), outStream.GetNumberOfBitsUsed());
+        printf("\nSending type %u with mouse %u at %u (%u)\n", keyControlMessageId, mouseControlId,
+               ecs->physicsHistory.getNewestIndex(), outStream.GetNumberOfBitsUsed());
       } break;
       default: break;
     }
@@ -712,8 +714,8 @@ namespace at3 {
   void NetworkSystem::serializePlayerAssignment(bool rw, BitStream &stream, entityId playerId) {
     stream.Serialize(rw, playerId);
     if (rw) {
-      outStream.Write(ecs->physicsHistory.getLatestIndex());
-      printf("Sent initial index %u and playerId %u\n", ecs->physicsHistory.getLatestIndex(), playerId);
+      outStream.Write(ecs->physicsHistory.getNewestIndex());
+      printf("Sent initial index %u and playerId %u\n", ecs->physicsHistory.getNewestIndex(), playerId);
       // outStream.Write(ecs->physicsHistory.getInputChecksum(ecs->physicsHistory.getLatestIndex()));
     } else {
       uint8_t index;
@@ -793,10 +795,10 @@ namespace at3 {
 
       // TODO: load truth state to begin replay, make sure that original truth state is the one being sent
 
-      serializePhysicsSync(false, ecs->physicsHistory.getLatestCompleteState());
-      serializePhysicsSync(false, ecs->physicsHistory.getLatestCompleteAuthState());
+      serializePhysicsSync(false, ecs->physicsHistory.getNewestCompleteState());
+      serializePhysicsSync(false, ecs->physicsHistory.getNewestCompleteAuthState());
 
-      ecs->physicsHistory.becomeTheTruth();
+      ecs->physicsHistory.beginReplayFromTruth();
 
 
 
@@ -812,7 +814,7 @@ namespace at3 {
         case settings::network::SERVER: {
           // Send truth state to clients
           outStream.Write((MessageID) ID_SYNC_PHYSICS);
-          outStream.WriteBitsFromIntegerRange(ecs->physicsHistory.getLatestIndex(), (uint8_t)0,
+          outStream.WriteBitsFromIntegerRange(ecs->physicsHistory.getNewestIndex(), (uint8_t)0,
                                               (uint8_t)(Physics::maxStoredStates - 1));
           serializePhysicsSync(true, outStream);
           send(LOW_PRIORITY, SERVER_SIM_SYNC_PACKET_SEQUENCING, CH_SIMULATION_UPDATE);
@@ -828,7 +830,7 @@ namespace at3 {
     } else {
 
       if (ecs->physicsHistory.isFull()) { // FIXME
-        uint8_t tail = ecs->physicsHistory.getLatestCompleteIndex();
+        uint8_t tail = ecs->physicsHistory.getNewestCompleteIndex();
         std::vector<RakNetGUID> slowClients = ecs->physicsHistory.getUnfulfilledInputs(tail);
         for (const auto &client : slowClients) {
           fprintf(stderr, "\nSlow Client: %lu\n", RakNetGUID::ToUint32(client));
@@ -841,7 +843,7 @@ namespace at3 {
 
       uint8_t newStateIndex;
       if (initialStep) {
-        newStateIndex = ecs->physicsHistory.getLatestIndex();
+        newStateIndex = ecs->physicsHistory.getNewestIndex();
         initialStep = false;
       } else {
         newStateIndex = ecs->physicsHistory.appendIndex();

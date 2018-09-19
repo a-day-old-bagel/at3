@@ -525,14 +525,14 @@ namespace at3 {
         }
       }
 
-      void becomeTheTruth() {
-        printf("\nTRUTH @ %u with %lu of %lu\n", latestCompletion,
-               (unsigned long)states[latestCompletion].getCurrentChecksum(),
-               (unsigned long)states[latestCompletion].getInputChecksum());
+      void beginReplayFromTruth() {
+        printf("\nTRUTH @ %u with %lu of %lu\n", newestCompletion,
+               (unsigned long)states[newestCompletion].getCurrentChecksum(),
+               (unsigned long)states[newestCompletion].getInputChecksum());
         debugOuroboros();
 
-        states.decaudate(latestCompletion);
-        currentReplayHead = latestCompletion;
+        states.decaudate(newestCompletion);
+        currentReplayHead = newestCompletion;
         completeSnapShotReady = false;
         replayRunning = true;
 
@@ -549,7 +549,7 @@ namespace at3 {
         // debugOuroboros();
         if (states.isFull()) {
 #         ifdef AT3_STATE_HISTORY_DEBUG
-            printf("\nHISTORY FULL AT %u:\n", states.getTailSlot());
+            printf("\nHISTORY FULL AT %u:\n", getNewestCompleteIndex());
             debugOuroboros();
             states.decaudate();
             debugOuroboros();
@@ -564,7 +564,7 @@ namespace at3 {
         // return states.capitate().getIndex();
       }
 
-      indexType getLatestIndex() {
+      indexType getNewestIndex() {
         return states[states.getHeadSlot()].getIndex();
       }
 
@@ -577,28 +577,32 @@ namespace at3 {
         return replayRunning;
       }
 
-      indexType getLatestCompleteIndex() {
+      indexType getNewestCompleteIndex() {
         return states.getTailSlot();
       }
 
-      const SLNet::BitStream & getLatestCompleteState() const {
-        return states[states.getTailSlot()].getState();
-      }
-      const SLNet::BitStream & getLatestCompleteAuthState() const {
-        return states[states.getTailSlot()].getAuthState();
-      }
-      const SLNet::BitStream & getLatestCompleteInput() const {
-        return states[states.getTailSlot()].getInput();
+      indexType getOldestCompleteIndex() {
+        return 0; // TODO
       }
 
-      SLNet::BitStream & getLatestCompleteState() {
-        return states[states.getTailSlot()].getState();
+      const SLNet::BitStream & getNewestCompleteState() const {
+        return states[getNewestCompleteIndex()].getState();
       }
-      SLNet::BitStream & getLatestCompleteAuthState() {
-        return states[states.getTailSlot()].getAuthState();
+      const SLNet::BitStream & getNewestCompleteAuthState() const {
+        return states[getNewestCompleteIndex()].getAuthState();
       }
-      SLNet::BitStream & getLatestCompleteInput() {
-        return states[states.getTailSlot()].getInput();
+      const SLNet::BitStream & getNewestCompleteInput() const {
+        return states[getNewestCompleteIndex()].getInput();
+      }
+
+      SLNet::BitStream & getNewestCompleteState() {
+        return states[getNewestCompleteIndex()].getState();
+      }
+      SLNet::BitStream & getNewestCompleteAuthState() {
+        return states[getNewestCompleteIndex()].getAuthState();
+      }
+      SLNet::BitStream & getNewestCompleteInput() {
+        return states[getNewestCompleteIndex()].getInput();
       }
 
       bool getNextReplayStreams(SLNet::BitStream & stateOut, SLNet::BitStream & authOut, SLNet::BitStream & inputOut) {
@@ -629,7 +633,7 @@ namespace at3 {
 
       uint32_t getReplayBeginTime() {
         // TODO: once the replay has finished, will there be extra time lost (the time it takes to replay) that won't be considered by Game's dt? Or will that timer take care of it?
-        return isReplaying() ? states[latestCompletion].time : 0;
+        return isReplaying() ? states[newestCompletion].time : 0;
       }
 
 
@@ -645,18 +649,18 @@ namespace at3 {
 
       rtu::Ouroboros<StateSnapShot<indexType>, indexType, maxStoredStates> states;
       bool completeSnapShotReady = false;
-      indexType latestCompletion = 0;
+      indexType newestCompletion = 0;
       bool replayRunning = false;
       indexType currentReplayHead = 0;
 
       void checkForCompleteness(indexType index) {
         if (states.isValid(index) && states[index].isComplete()) {
           if (completeSnapShotReady) {
-            if (states.firstIsFresherThanSecond(index, latestCompletion)) {
-              latestCompletion = index;
+            if (states.firstIsFresherThanSecond(index, newestCompletion)) {
+              newestCompletion = index;
             }
           } else {
-            latestCompletion = index;
+            newestCompletion = index;
             completeSnapShotReady = true;
           }
         }
@@ -670,10 +674,10 @@ namespace at3 {
 //      printf("NEW HEAD: %u\n", states.capitate().getIndex());
 //    } else if (fill && states.isFull()) {
 //      states.decaudate();
-//      printf("NEW TAIL: %u\n", states.getTailSlot());
+//      printf("NEW TAIL: %u\n", getNewestCompleteIndex());
 //    } else if ( ! fill && ! states.isEmpty()) {
 //      states.decaudate();
-//      printf("NEW TAIL: %u\n", states.getTailSlot());
+//      printf("NEW TAIL: %u\n", getNewestCompleteIndex());
 //    } else if ( ! fill && states.isEmpty()) {
 //      printf("NEW HEAD: %u\n", states.capitate().getIndex());
 //    }
