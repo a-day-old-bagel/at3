@@ -787,6 +787,11 @@ namespace at3 {
       return;
     }
 
+    /*
+     * NOTE: Several assumptions are made for this to work:
+     * 1. Input from each client is ordered internally. Input x+1 from client y will not come in before input x from y.
+     */
+
     if (ecs->physicsHistory.isReplaying()) {
 
       // TODO: load next replay inputs until replay is done.

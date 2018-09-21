@@ -304,6 +304,9 @@ namespace at3 {
 
   template <typename indexType, indexType maxStoredStates>
   class StateHistory {
+
+      typedef rtu::Ouroboros<StateSnapShot<indexType>, indexType, maxStoredStates> Otype;
+
     public:
 
       StateHistory() : states(StateSnapShot<indexType>::init, StateSnapShot<indexType>::clear) {
@@ -503,26 +506,28 @@ namespace at3 {
       }
 
       bool truthIsAvailable() {
-        if (completeSnapShotReady) {
+        // if (completeSnapShotReady) {
+        //
+        //   // printf("\nTRUTH @ %u with %lu of %lu\n", latestCompletion,
+        //   //        (unsigned long)states[latestCompletion].getCurrentChecksum(),
+        //   //        (unsigned long)states[latestCompletion].getInputChecksum());
+        //   // debugOuroboros();
+        //   //
+        //   // states.decaudate(latestCompletion);
+        //   // currentReplayHead = latestCompletion;
+        //   // completeSnapShotReady = false;
+        //   // replayRunning = true;
+        //   //
+        //   // debugOuroboros();
+        //
+        //   return true;
+        // } else {
+        //   // printf("\nNO TRUTH\n");
+        //   // debugOuroboros();
+        //   return false;
+        // }
 
-          // printf("\nTRUTH @ %u with %lu of %lu\n", latestCompletion,
-          //        (unsigned long)states[latestCompletion].getCurrentChecksum(),
-          //        (unsigned long)states[latestCompletion].getInputChecksum());
-          // debugOuroboros();
-          //
-          // states.decaudate(latestCompletion);
-          // currentReplayHead = latestCompletion;
-          // completeSnapShotReady = false;
-          // replayRunning = true;
-          //
-          // debugOuroboros();
-
-          return true;
-        } else {
-          // printf("\nNO TRUTH\n");
-          // debugOuroboros();
-          return false;
-        }
+        return newCompletionsReady;
       }
 
       void beginReplayFromTruth() {
@@ -533,7 +538,7 @@ namespace at3 {
 
         states.decaudate(newestCompletion);
         currentReplayHead = newestCompletion;
-        completeSnapShotReady = false;
+        newCompletionsReady = false;
         replayRunning = true;
 
         debugOuroboros();
@@ -610,11 +615,8 @@ namespace at3 {
           stateOut.Write(states[currentReplayHead].getState());
           authOut.Write(states[currentReplayHead].getAuthState());
           inputOut.Write(states[currentReplayHead].getInput());
-          if (states.isValid(rtu::Ouroboros<StateSnapShot<indexType>, indexType, maxStoredStates>::
-              getNext(currentReplayHead)))
-          {
-            currentReplayHead = rtu::Ouroboros<StateSnapShot<indexType>, indexType, maxStoredStates>::
-                getNext(currentReplayHead);
+          if (states.isValid(Otype::getNext(currentReplayHead))) {
+            currentReplayHead = Otype::getNext(currentReplayHead);
           } else {
             replayRunning = false;
           }
@@ -647,22 +649,33 @@ namespace at3 {
 
     private:
 
-      rtu::Ouroboros<StateSnapShot<indexType>, indexType, maxStoredStates> states;
-      bool completeSnapShotReady = false;
+      Otype states;
       indexType newestCompletion = 0;
-      bool replayRunning = false;
+      indexType contiguousCompletion = 0;
       indexType currentReplayHead = 0;
+      bool newCompletionsReady = false;
+      bool replayRunning = false;
+      bool contiguousCompletionsReady = false;
+
 
       void checkForCompleteness(indexType index) {
+
+        for (indexType i = Otype::getNext(contiguousCompletion);
+             states.isValid(i) && states[i].isComplete() && ! states.firstIsFresherThanSecond(i, index);
+             i = Otype::getNext(i))
+        {
+          contiguousCompletion = i;
+          contiguousCompletionsReady = true;
+        }
+
         if (states.isValid(index) && states[index].isComplete()) {
-          if (completeSnapShotReady) {
-            if (states.firstIsFresherThanSecond(index, newestCompletion)) {
-              newestCompletion = index;
+          if (newCompletionsReady) {
+            if ( ! states.firstIsFresherThanSecond(index, newestCompletion)) {
+              return;
             }
-          } else {
-            newestCompletion = index;
-            completeSnapShotReady = true;
           }
+          newestCompletion = index;
+          newCompletionsReady = true;
         }
       }
 
