@@ -21,8 +21,11 @@ namespace at3 {
     private:
       SDL_Window *window = nullptr;
       uint32_t windowFlags = 0;
-      float lastTime = (float)SDL_GetTicks() * msToS;
-      float frameTime = 0;
+
+      uint64_t lastTime = 0;
+      double toSeconds = 0;
+
       uint32_t frameCounter = 0;
+      float frameTime = 0;
   };
 }

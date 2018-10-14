@@ -50,10 +50,12 @@ namespace at3 {
 //      float timeAccumulator = 0;
       uint8_t physicsStepAccumulator = 0;
 
-      bool strictWarp = true;
+      // static const uint32_t serverInputSummand = 1;
+      static inline const SLNet::RakNetGUID serverInputSummand = SLNet::RakNetGUID(1);
 
+      bool strictWarp = true;
       bool initialStep = false;
-      // bool discardSyncs = false;
+      bool includeServerInput = false;
 
       std::stack<entityId> freshPlayers;
 
@@ -104,6 +106,8 @@ namespace at3 {
       void serializePlayerAssignment(bool rw, SLNet::BitStream &, entityId);
       void serializeWorldInit(bool rw, SLNet::BitStream &);
 
+      bool appropriateTruthIsAvailable();
+
     public:
       std::vector<compMask> requiredComponents = {
         NETWORKING,
@@ -116,6 +120,10 @@ namespace at3 {
       void toggleStrictWarp();
       void onBeforePhysicsStep();
       void onAfterPhysicsStep();
+
+
+      // DEBUGGING
+      void includeInput();
       void rewindPhysics();
   };
 }

@@ -11,6 +11,7 @@
 #include "BitStream.h"
 #include "RakNetTypes.h"
 
+#include "math.hpp"
 #include "ouroboros.hpp"
 
 namespace at3 {
@@ -151,8 +152,12 @@ namespace at3 {
         input.Write(data, length);
       }
 
-      void addToInputChecksum(uint32_t checksumPart) {
-        inputSum += checksumPart;
+      void addToInputChecksum(const SLNet::RakNetGUID & checksumPart) {
+        inputSum += SLNet::RakNetGUID::ToUint32(checksumPart);
+      }
+
+      void acknowledgeCompletion() {
+        authorizationAcknowledged = true;
       }
 
       const SLNet::BitStream & getState() const {
@@ -238,6 +243,9 @@ namespace at3 {
       bool isComplete() {
         return stateIsAuthorized && inputSum == desiredInputSum;
       }
+      bool completionAcked() {
+        return authorizationAcknowledged;
+      }
 
       std::vector<SLNet::RakNetGUID> getUnfulfilledInputs() {
         std::vector<SLNet::RakNetGUID> unfulfilledGuids;
@@ -268,6 +276,7 @@ namespace at3 {
       uint32_t desiredInputSum = 0;
       std::unique_ptr<std::unordered_map<SLNet::RakNetGUID, bool, GuidHash>> inputSources;
       bool stateIsAuthorized = false;
+      bool authorizationAcknowledged = false;
 
       /*
        * These are used as the targets of the constructor/destructor-like function delegates described by init/clear
@@ -288,6 +297,7 @@ namespace at3 {
         stateSnapShot.inputSum = 0;
         stateSnapShot.desiredInputSum = 0;
         stateSnapShot.stateIsAuthorized = false;
+        stateSnapShot.authorizationAcknowledged = false;
       }
   };
   template<typename indexType>
@@ -304,10 +314,9 @@ namespace at3 {
 
   template <typename indexType, indexType maxStoredStates>
   class StateHistory {
+    public:
 
       typedef rtu::Ouroboros<StateSnapShot<indexType>, indexType, maxStoredStates> Otype;
-
-    public:
 
       StateHistory() : states(StateSnapShot<indexType>::init, StateSnapShot<indexType>::clear) {
         RTU_STATIC_SUB(debugSub, "key_down_f8", StateHistory::debugOuroboros, this);
@@ -389,7 +398,7 @@ namespace at3 {
       //   return states.isValid(index);
       // }
 
-      bool addToInputChecksum(indexType index, uint32_t checksumPart) {
+      bool addToInputChecksum(indexType index, const SLNet::RakNetGUID & checksumPart) {
         if (states[index].isComplete()) {
           printf("Adding to the input checksum of an already complete state %u!\n", index);
         }
@@ -470,16 +479,6 @@ namespace at3 {
         states[index].time = time;
       }
 
-      uint32_t getInputChecksum(indexType index) {
-        // if (states.isValid(index)) {
-        //   return states[index].getInputChecksum();
-        // } else {
-        //   return 0;
-        // }
-
-        return states[index].getInputChecksum();
-      }
-
       bool setInputSources(const DataStructures::List<SLNet::RakNetGUID> &guids, indexType index) {
         // if (states.isValid(index)) {
         //   states[index].setInputSources(guids);
@@ -505,7 +504,21 @@ namespace at3 {
         return states.isValid(index);
       }
 
-      bool truthIsAvailable() {
+      bool newTruthIsAvailable() {
+        return newCompletionReady;
+      }
+
+      uint32_t getInputChecksum(indexType index) {
+        // if (states.isValid(index)) {
+        //   return states[index].getInputChecksum();
+        // } else {
+        //   return 0;
+        // }
+
+        return states[index].getInputChecksum();
+      }
+
+      bool contiguousTruthIsAvailable() {
         // if (completeSnapShotReady) {
         //
         //   // printf("\nTRUTH @ %u with %lu of %lu\n", latestCompletion,
@@ -527,18 +540,36 @@ namespace at3 {
         //   return false;
         // }
 
-        return newCompletionsReady;
+        return contiguousCompletionReady;
       }
 
-      void beginReplayFromTruth() {
-        printf("\nTRUTH @ %u with %lu of %lu\n", newestCompletion,
+      void beginReplayFromNewTruth() {
+        printf("\nNEW TRUTH @ %u with %lu of %lu\n", newestCompletion,
                (unsigned long)states[newestCompletion].getCurrentChecksum(),
                (unsigned long)states[newestCompletion].getInputChecksum());
         debugOuroboros();
 
         states.decaudate(newestCompletion);
         currentReplayHead = newestCompletion;
-        newCompletionsReady = false;
+        // addExtraReplayTime(currentReplayHead);
+        addExtraReplayFrames(currentReplayHead);
+        newCompletionReady = false;
+        replayRunning = true;
+
+        debugOuroboros();
+      }
+
+      void beginReplayFromContiguousTruth() {
+        printf("\nCONTIGUOUS TRUTH @ %u with %lu of %lu\n", contiguousCompletion,
+               (unsigned long)states[contiguousCompletion].getCurrentChecksum(),
+               (unsigned long)states[contiguousCompletion].getInputChecksum());
+        debugOuroboros();
+
+        states.decaudate(contiguousCompletion);
+        currentReplayHead = contiguousCompletion;
+        // addExtraReplayTime(currentReplayHead);
+        addExtraReplayFrames(currentReplayHead);
+        contiguousCompletionReady = false;
         replayRunning = true;
 
         debugOuroboros();
@@ -582,22 +613,23 @@ namespace at3 {
         return replayRunning;
       }
 
+      float getExtraReplayTime() {
+        float extraTime = extraReplayTime;
+        extraReplayTime = 0.f;
+        return extraTime;
+      }
+
+      indexType getReplayFrameCount() {
+        indexType frames = extraFrames;
+        extraFrames = 0;
+        return frames;
+      }
+
       indexType getNewestCompleteIndex() {
-        return states.getTailSlot();
+        return newestCompletion;
       }
-
-      indexType getOldestCompleteIndex() {
-        return 0; // TODO
-      }
-
-      const SLNet::BitStream & getNewestCompleteState() const {
-        return states[getNewestCompleteIndex()].getState();
-      }
-      const SLNet::BitStream & getNewestCompleteAuthState() const {
-        return states[getNewestCompleteIndex()].getAuthState();
-      }
-      const SLNet::BitStream & getNewestCompleteInput() const {
-        return states[getNewestCompleteIndex()].getInput();
+      indexType getNewestContiguousCompleteIndex() {
+        return contiguousCompletion;
       }
 
       SLNet::BitStream & getNewestCompleteState() {
@@ -608,6 +640,16 @@ namespace at3 {
       }
       SLNet::BitStream & getNewestCompleteInput() {
         return states[getNewestCompleteIndex()].getInput();
+      }
+
+      SLNet::BitStream & getNewestContiguousCompleteState() {
+        return states[getNewestContiguousCompleteIndex()].getState();
+      }
+      SLNet::BitStream & getNewestContiguousCompleteAuthState() {
+        return states[getNewestContiguousCompleteIndex()].getAuthState();
+      }
+      SLNet::BitStream & getNewestContiguousCompleteInput() {
+        return states[getNewestContiguousCompleteIndex()].getInput();
       }
 
       bool getNextReplayStreams(SLNet::BitStream & stateOut, SLNet::BitStream & authOut, SLNet::BitStream & inputOut) {
@@ -633,9 +675,13 @@ namespace at3 {
         return states[index].getUnfulfilledInputs();
       }
 
-      uint32_t getReplayBeginTime() {
+      uint32_t getNewestReplayBeginTime() {
         // TODO: once the replay has finished, will there be extra time lost (the time it takes to replay) that won't be considered by Game's dt? Or will that timer take care of it?
         return isReplaying() ? states[newestCompletion].time : 0;
+      }
+      uint32_t getContiguousReplayBeginTime() {
+        // TODO: once the replay has finished, will there be extra time lost (the time it takes to replay) that won't be considered by Game's dt? Or will that timer take care of it?
+        return isReplaying() ? states[contiguousCompletion].time : 0;
       }
 
 
@@ -653,29 +699,52 @@ namespace at3 {
       indexType newestCompletion = 0;
       indexType contiguousCompletion = 0;
       indexType currentReplayHead = 0;
-      bool newCompletionsReady = false;
+      float extraReplayTime = 0.f;
+      uint8_t extraFrames = 0;
+      bool newCompletionReady = false;
+      bool contiguousCompletionReady = false;
       bool replayRunning = false;
-      bool contiguousCompletionsReady = false;
 
+
+      void addExtraReplayTime(indexType index) {
+
+        fprintf(stderr, "addExtraReplayTime not implemented!\n");
+        // indexType diff = index - getNewestIndex();
+
+        // TODO: Use SDL_GetPerformanceTimer() instead if this code is re-enabled
+
+        // float extraTime = (states[getNewestIndex()].time - states[index].time) * msToS;
+        // float gapTime = (SDL_GetTicks() - states[getNewestIndex()].time) * msToS;
+        // // float gapTime = 0.f;
+        // printf("Extra Replay Time (%u, %u): %u - %u = %f\n", getNewestIndex(), index, states[getNewestIndex()].time, states[index].time, extraTime + gapTime);
+        // extraReplayTime += extraTime + gapTime;
+      }
+
+      void addExtraReplayFrames(indexType startingIndex) {
+        extraFrames = getNewestIndex() - startingIndex;
+      }
 
       void checkForCompleteness(indexType index) {
+
+        if ( ! states[index].isComplete() || states[index].completionAcked()) {
+          return; // the following checks only occur when a state becomes complete
+        }
+        states[index].acknowledgeCompletion();
 
         for (indexType i = Otype::getNext(contiguousCompletion);
              states.isValid(i) && states[i].isComplete() && ! states.firstIsFresherThanSecond(i, index);
              i = Otype::getNext(i))
         {
           contiguousCompletion = i;
-          contiguousCompletionsReady = true;
+          contiguousCompletionReady = true;
         }
 
-        if (states.isValid(index) && states[index].isComplete()) {
-          if (newCompletionsReady) {
-            if ( ! states.firstIsFresherThanSecond(index, newestCompletion)) {
-              return;
-            }
+        if (states.isValid(index)) {
+          if (newCompletionReady && ! states.firstIsFresherThanSecond(index, newestCompletion)) {
+            return;
           }
           newestCompletion = index;
-          newCompletionsReady = true;
+          newCompletionReady = true;
         }
       }
 

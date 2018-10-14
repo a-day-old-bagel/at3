@@ -11,7 +11,7 @@ namespace at3 {
   SdlContext::SdlContext(const char *applicationName) {
     SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO);
     SDL_SetHint(SDL_HINT_FRAMEBUFFER_ACCELERATION, "1");
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) != 0) {
       fprintf(stderr, "Failed to initialize SDL: %s\n", SDL_GetError());
     }
     switch (settings::graphics::fullscreen) {
@@ -37,6 +37,8 @@ namespace at3 {
     if (window == nullptr) {
       fprintf(stderr, "Failed to create SDL window: %s\n", SDL_GetError());
     }
+    lastTime = SDL_GetPerformanceCounter();
+    toSeconds = 1.0 / (double)SDL_GetPerformanceFrequency();
   }
 
   SDL_Window * SdlContext::getWindow() {
@@ -220,6 +222,18 @@ namespace at3 {
     RTU_DO_ON_KEYS(publish("key_held_lshift"), keyStates, SDL_SCANCODE_LSHIFT)
     RTU_DO_ON_KEYS(publish("key_held_lalt"), keyStates, SDL_SCANCODE_LALT)
     RTU_DO_ON_KEYS(publish("key_held_lctrl"), keyStates, SDL_SCANCODE_LCTRL)
+    RTU_DO_ON_KEYS(publish("key_held_f1"), keyStates, SDL_SCANCODE_F1)
+    RTU_DO_ON_KEYS(publish("key_held_f2"), keyStates, SDL_SCANCODE_F2)
+    RTU_DO_ON_KEYS(publish("key_held_f3"), keyStates, SDL_SCANCODE_F3)
+    RTU_DO_ON_KEYS(publish("key_held_f4"), keyStates, SDL_SCANCODE_F4)
+    RTU_DO_ON_KEYS(publish("key_held_f5"), keyStates, SDL_SCANCODE_F5)
+    RTU_DO_ON_KEYS(publish("key_held_f6"), keyStates, SDL_SCANCODE_F6)
+    RTU_DO_ON_KEYS(publish("key_held_f7"), keyStates, SDL_SCANCODE_F7)
+    RTU_DO_ON_KEYS(publish("key_held_f8"), keyStates, SDL_SCANCODE_F8)
+    RTU_DO_ON_KEYS(publish("key_held_f9"), keyStates, SDL_SCANCODE_F9)
+    RTU_DO_ON_KEYS(publish("key_held_f10"), keyStates, SDL_SCANCODE_F10)
+    RTU_DO_ON_KEYS(publish("key_held_f11"), keyStates, SDL_SCANCODE_F11)
+    RTU_DO_ON_KEYS(publish("key_held_f12"), keyStates, SDL_SCANCODE_F12)
 
     // publish current mouse state
     const uint32_t mouseState = SDL_GetMouseState(nullptr, nullptr);
@@ -231,11 +245,13 @@ namespace at3 {
   }
 
   float SdlContext::getDeltaTime() {
-    float currentTime = (float)SDL_GetTicks() * msToS;
-    float dt = currentTime - lastTime;
+    uint64_t currentTime = SDL_GetPerformanceCounter();
+    uint64_t dt = currentTime - lastTime;
     lastTime = currentTime;
 
-    frameTime += dt;
+    double dtFloatSeconds = (double)dt * toSeconds;
+
+    frameTime += dtFloatSeconds;
     ++frameCounter;
     if (frameTime > 10.f) {
       float frameTimeAvg = frameTime / (float)frameCounter;
@@ -244,7 +260,7 @@ namespace at3 {
       frameCounter = 0;
     }
 
-    return dt;
+    return (float)dtFloatSeconds; // TODO: should keep double precision?
   }
 
 }

@@ -100,8 +100,17 @@ namespace at3 {
 
   void PhysicsSystem::onTick(float dt) {
 
+    // float totalTickTime = dt + ecs->physicsHistory.getAnyExtraReplayTime();
+    btScalar frameStepSec = btScalar(1.f) / btScalar(Physics::simulationFps);
+    float totalTickTime = dt + (ecs->physicsHistory.getReplayFrameCount() * frameStepSec);
+
+    if (totalTickTime != dt) {
+      printf("extra time: dt = %f, total = %f\n", dt, totalTickTime);
+    }
+
     // Step the world at a fixed timestep (will only actually run simulation steps if enough time has passed)
-    dynamicsWorld->stepSimulation(dt, Physics::maxStepsPerFrame, btScalar(1.) / btScalar(Physics::simulationFps));
+    // dynamicsWorld->stepSimulation(dt, Physics::maxStepsPerFrame, btScalar(1.) / btScalar(Physics::simulationFps));
+    dynamicsWorld->stepSimulation(totalTickTime, Physics::maxStepsPerFrame, frameStepSec);
     if (debugDrawMode) { dynamicsWorld->debugDrawWorld(); }
 
     // Update the visual transform of the wheels of any cars
@@ -162,6 +171,9 @@ namespace at3 {
   }
 
   void PhysicsSystem::onBeforePhysicsStep() {
+
+
+
     // PyramidControls
     for (auto id : registries[1].ids) {
       Placement *placement;

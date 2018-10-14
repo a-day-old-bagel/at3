@@ -104,7 +104,7 @@ class Triceratone : public Game<EntityComponentSystemInterface, Triceratone> {
       RTU_STATIC_SUB(key2Sub, "key_down_2", Triceratone::switchToWalkControl, this);
       RTU_STATIC_SUB(key3Sub, "key_down_3", Triceratone::switchToPyramidControl, this);
       RTU_STATIC_SUB(key4Sub, "key_down_4", Triceratone::switchToBuggyControl, this);
-      RTU_STATIC_SUB(rewindPhysicsSub, "key_down_f4", NetworkSystem::rewindPhysics, &networkSystem);
+      RTU_STATIC_SUB(rewindPhysicsSub, "key_held_f4", NetworkSystem::includeInput, &networkSystem);
     }
 
     void onTick(float dt) {

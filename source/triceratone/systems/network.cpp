@@ -17,8 +17,6 @@ using namespace rtu;
 
 namespace at3 {
 
-  static uint32_t theThing = 0;
-
   NetworkSystem::NetworkSystem(State *state) : System(state) {
     name = "Net Sync System";
     // Static subscriptions will only apply to the first instance of this class created. But usually only one exists.
@@ -95,25 +93,31 @@ namespace at3 {
     if ( ! mouseControlId) { // In case no controls are currently assigned (no type of control *doesn't* use the mouse)
       return false;
     }
+
+    uint8_t newestIndex = ecs->physicsHistory.getNewestIndex();
+
     switch (network->getRole()) {
       case settings::network::SERVER: {
+
         inputs.emplace_back();
         serializeControlSyncShortType(true, inputs.back().data, keyControlMessageId);
         inputs.back().data.Write(mouseControlId);
-        inputs.back().data.WriteBitsFromIntegerRange(ecs->physicsHistory.getNewestIndex(), (uint8_t)0,
-                                                     (uint8_t)(Physics::maxStoredStates - 1));
+        inputs.back().data.WriteBitsFromIntegerRange(newestIndex, (uint8_t)0, (uint8_t)(Physics::maxStoredStates - 1));
         serializeControlSync(true, inputs.back().data, mouseControlId, keyControlId, keyControlMessageId);
 
+        uint8_t tempNewestIndex = StateHistory<uint8_t, ezecs::Physics::maxStoredStates>::Otype::getPrev(newestIndex);
+
         inputs.back().id = SLNet::RakNetGUID(1); // 1 is server id
-        inputs.back().index = ecs->physicsHistory.getNewestIndex();
+        // inputs.back().index = StateHistory<uint8_t, ezecs::Physics::maxStoredStates>::Otype::getPrev(newestIndex);
+        inputs.back().index = StateHistory<uint8_t, ezecs::Physics::maxStoredStates>::Otype::getPrev(StateHistory<uint8_t, ezecs::Physics::maxStoredStates>::Otype::getPrev(tempNewestIndex));
 
-        // ecs->physicsHistory.addToInput(inputs.back().data, ecs->physicsHistory.getLatestIndex(), SLNet::RakNetGUID(1));
-        ecs->physicsHistory.addToInput(inputs.back().data, inputs.back().index);
-        ecs->physicsHistory.addToInputChecksum(ecs->physicsHistory.getNewestIndex(), theThing); // 1 signifies server input
-        if (theThing) { theThing = 0; }
+        if (includeServerInput) {
+          ecs->physicsHistory.addToInput(inputs.back().data, inputs.back().index);
+          ecs->physicsHistory.addToInputChecksum(inputs.back().index, serverInputSummand);
 
-        printf("\nServer input %u with mouse %u at %u (%u)\n", keyControlMessageId, mouseControlId,
-               ecs->physicsHistory.getNewestIndex(), inputs.back().data.GetNumberOfBitsUsed());
+          printf("\nServer input %u with mouse %u at %u (%u)\n", keyControlMessageId, mouseControlId,
+                 newestIndex, inputs.back().data.GetNumberOfBitsUsed());
+        }
 
         // inputs.back().data.SetReadOffset(0);
 
@@ -127,20 +131,20 @@ namespace at3 {
 
         BitStream commonStream, historyStream;
         commonStream.Write(mouseControlId);
-        commonStream.WriteBitsFromIntegerRange(ecs->physicsHistory.getNewestIndex(), (uint8_t)0,
+        commonStream.WriteBitsFromIntegerRange(newestIndex, (uint8_t)0,
                                             (uint8_t)(Physics::maxStoredStates - 1));
         serializeControlSync(true, commonStream, mouseControlId, keyControlId, keyControlMessageId);
 
         serializeControlSyncShortType(true, historyStream, keyControlMessageId);
         historyStream.Write(commonStream);
-        ecs->physicsHistory.addToInput(historyStream, ecs->physicsHistory.getNewestIndex());
+        ecs->physicsHistory.addToInput(historyStream, newestIndex);
 
         outStream.Write(keyControlMessageId);
         commonStream.SetReadOffset(0);
         outStream.Write(commonStream);
 
         printf("\nSending type %u with mouse %u at %u (%u)\n", keyControlMessageId, mouseControlId,
-               ecs->physicsHistory.getNewestIndex(), outStream.GetNumberOfBitsUsed());
+               newestIndex, outStream.GetNumberOfBitsUsed());
       } break;
       default: break;
     }
@@ -737,6 +741,14 @@ namespace at3 {
 
   }
 
+  bool NetworkSystem::appropriateTruthIsAvailable() {
+    switch (network->getRole()) {
+      case settings::network::SERVER: { return ecs->physicsHistory.contiguousTruthIsAvailable(); }
+      case settings::network::CLIENT: { return ecs->physicsHistory.newTruthIsAvailable(); }
+      default: return false;
+    }
+  }
+
   void NetworkSystem::setNetInterface(void *netInterface) {
     network = *(std::shared_ptr<NetInterface> *) netInterface;
   }
@@ -788,7 +800,7 @@ namespace at3 {
     }
 
     /*
-     * NOTE: Several assumptions are made for this to work:
+     * NOTE: Assumptions are made for this to work:
      * 1. Input from each client is ordered internally. Input x+1 from client y will not come in before input x from y.
      */
 
@@ -796,14 +808,14 @@ namespace at3 {
 
       // TODO: load next replay inputs until replay is done.
 
-    } else if (ecs->physicsHistory.truthIsAvailable()) {
+    } else if (appropriateTruthIsAvailable()) {
 
       // TODO: load truth state to begin replay, make sure that original truth state is the one being sent
 
       serializePhysicsSync(false, ecs->physicsHistory.getNewestCompleteState());
       serializePhysicsSync(false, ecs->physicsHistory.getNewestCompleteAuthState());
 
-      ecs->physicsHistory.beginReplayFromTruth();
+      ecs->physicsHistory.beginReplayFromContiguousTruth();
 
 
 
@@ -835,10 +847,18 @@ namespace at3 {
     } else {
 
       if (ecs->physicsHistory.isFull()) { // FIXME
-        uint8_t tail = ecs->physicsHistory.getNewestCompleteIndex();
-        std::vector<RakNetGUID> slowClients = ecs->physicsHistory.getUnfulfilledInputs(tail);
-        for (const auto &client : slowClients) {
-          fprintf(stderr, "\nSlow Client: %lu\n", RakNetGUID::ToUint32(client));
+        switch (network->getRole()) {
+          case settings::network::SERVER: {
+            uint8_t tail = ecs->physicsHistory.getNewestContiguousCompleteIndex();
+            std::vector<RakNetGUID> slowClients = ecs->physicsHistory.getUnfulfilledInputs(tail);
+            for (const auto &client : slowClients) {
+              fprintf(stderr, "\nSlow Client: %lu\n", RakNetGUID::ToUint32(client));
+            }
+          } break;
+          case settings::network::CLIENT: {
+            // TODO: Disconnect
+          } break;
+          default: break;
         }
       }
 
@@ -902,7 +922,7 @@ namespace at3 {
       }
 
       // TODO: find where this should really go. Maybe even after the step?
-      ecs->physicsHistory.setTime(newStateIndex, SDL_GetTicks());
+      // ecs->physicsHistory.setTime(newStateIndex, SDL_GetTicks());
 
     }
 
@@ -942,15 +962,18 @@ namespace at3 {
 //    }
   }
 
-  void NetworkSystem::rewindPhysics() {
+  void NetworkSystem::includeInput() {
 
-    theThing = 1;
+    includeServerInput = !includeServerInput;
 
 //    uint8_t storedStateIndex;
 //    physicsStates.front().ReadBitsFromIntegerRange(storedStateIndex, (uint8_t) 0, maxStoredStates);
 //    serializePhysicsSync(false, physicsStates.front(), true);
   }
 
+  void NetworkSystem::rewindPhysics() {
+
+  }
 
 
 }
