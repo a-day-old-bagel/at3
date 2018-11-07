@@ -38,6 +38,7 @@ list( APPEND ${AT3_TARGET_PREFIX}external_includes
   )
 
 # BULLET
+OPTION( BUILD_BULLET3 "Set when you want to build Bullet 3" ON )
 option( USE_DOUBLE_PRECISION "Use double precision" OFF )
 option( USE_GRAPHICAL_BENCHMARK "Use Graphical Benchmark" ON )
 option( BUILD_SHARED_LIBS "Use shared libraries" OFF )                                            # CHANGED
@@ -56,11 +57,14 @@ option( BUILD_EXTRAS "Set when you want to build the extras" OFF )              
 option( INSTALL_LIBS "Set when you want to install libraries" OFF )                               # CHANGED
 option( INSTALL_EXTRA_LIBS "Set when you want extra libraries installed" OFF )
 option( BUILD_UNIT_TESTS "Build Unit Tests" OFF )
+set( OpenGL_GL_PREFERENCE GLVND )
 add_subdirectory( bullet3 )
-list( APPEND ${AT3_TARGET_PREFIX}bullet_libs  # TODO: Use Bullet 3 libs instead
+list( APPEND ${AT3_TARGET_PREFIX}bullet_libs  # TODO: Make sure we're using bullet 3 and not older versions
   BulletSoftBody
   BulletDynamics
   BulletCollision
+#  Bullet3Dynamics
+#  Bullet3Collision
   BulletInverseDynamics
   LinearMath
   )
